@@ -1,0 +1,103 @@
+#!/bin/bash
+
+#   calibre_cvc: runs calibre svs to create a standardized netlist
+
+#   Copyright 2106 D. Mitch Bailey
+
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+echo $0 $*
+
+timestamp=`date +%Y%m%d_%H%M`
+rulefile=cvc.svrf
+
+if [[ ${#*} -ne 3 ]]; then 
+	echo "usage: calibre_cvc topBlock dataPath output"
+	exit 1
+fi
+
+PRIMARY="$1"
+DATA="$2"
+OUTPUT="$3"
+
+additionalRules="cvc.include"
+#   Additional rules include the following statements
+#   CASE
+#   GLOBAL
+#   TRACE
+#   LVS INITIALIZE
+#   STRICT WL
+#   GLOBALS ARE PORTS
+#   LVS REDUCE
+#   LVS FILTER
+
+cellOverrides="override.list"
+#   Cell overrides are
+#   EXPAND cell  <- force flattening
+#   KEEP cell    <- prevent explicit flattening (parameterized cells always flattened)
+#   IGNORE cell  <- ignore
+
+if [[ "${OUTPUT##*.}" == "gz" ]]; then
+	compress=
+	OUTPUT="${OUTPUT%%.gz}"
+fi
+
+SOURCE_DATA=$DATA
+
+log="cdl.log"
+echo "log file: $log"
+
+cat > $rulefile <<-svs_rule
+	LAYOUT PRIMARY $PRIMARY
+	LAYOUT PATH "$DATA"
+	SOURCE PRIMARY $PRIMARY
+	SOURCE PATH "$SOURCE_DATA"
+	LVS WRITE SOURCE NETLIST "$OUTPUT.0"
+	LVS SPICE CULL PRIMITIVE SUBCIRCUITS YES
+	LVS SPICE SLASH IS SPACE NO
+
+	LVS REPORT "lvs_cdl.rep"
+	LVS REPORT MAXIMUM 100
+	LVS REPORT OPTION F R S V
+	MASK RESULTS DATABASE none
+
+	SOURCE SYSTEM SPICE
+	LAYOUT SYSTEM SPICE
+
+	VIRTUAL CONNECT COLON YES
+svs_rule
+
+if [[ -f $additionalRules ]]; then
+	cat $additionalRules >> $rulefile
+fi
+if [[ -f $cellOverrides ]]; then
+        echo "Finding cells to expand..."
+        expand_cells.py $cellOverrides $PRIMARY $DATA >> $rulefile
+fi
+
+calibre -hier -automatch -lvs -64 $rulefile > $log
+tail -15 $log
+
+echo "Remove leading double characters and changing commented parameters ..."
+sed -e 's/^\(.\)\1/\1/' \
+    -e 's/\$SUB=/^SUB=/' \
+    -e 's/\$LDD//' \
+    -e 's/\$//g' \
+    -e 's/\^SUB=/$SUB=/' $OUTPUT.0 > $OUTPUT
+
+if [[ ! -z "${compress+x}" ]]; then
+	gzip $OUTPUT
+fi
+
+#23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
