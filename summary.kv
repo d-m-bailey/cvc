@@ -1,0 +1,920 @@
+#:kivy 1.0.9
+
+##kivy file for SummaryApp used in check_cvc
+
+##Copyright 2106 D. Mitch Bailey  d.mitch.bailey at gmail dot com
+##
+##This file is part of check_cvc.
+##
+##check_cvc is free software: you can redistribute it and/or modify
+##it under the terms of the GNU General Public License as published by
+##the Free Software Foundation, either version 3 of the License, or
+##(at your option) any later version.
+##
+##check_cvc is distributed in the hope that it will be useful,
+##but WITHOUT ANY WARRANTY; without even the implied warranty of
+##MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+##GNU General Public License for more details.
+##
+##You should have received a copy of the GNU General Public License
+##along with check_cvc.  If not, see <http://www.gnu.org/licenses/>.
+##
+##You can download check_cvc from https://github.com/d-m-bailey/check_cvc.git
+
+#:import os os
+#:import sys sys
+#:import re re
+#:import Label kivy.uix.label.Label
+#:import ListAdapter kivy.adapters.listadapter.ListAdapter
+#:import SimpleListAdapter kivy.adapters.simplelistadapter.SimpleListAdapter
+#:import SpinnerOption kivy.uix.spinner.SpinnerOption
+#:import Factory kivy.factory.Factory
+#:import FileChooser kivy.uix.filechooser.FileChooser
+#:import pdb pdb
+#:import Window kivy.core.window.Window
+
+<MouseMotionEventProvider>:
+    disable_multitouch: True
+
+<Widget>:  # Set default font for all widgets to fixed pitch
+    font_name: "RobotoMono-Regular"
+
+<ScrollView>:
+    scroll_type: ['bars', 'content']
+    bar_width: 15
+
+#:set gSelectedButtonColor (1, 1, 1, 1)  # white (grey because merged with black)
+#:set gUnselectedButtonColor (0, 0, 0, 1)  # black
+
+<ReferenceModeButton>:
+    size_hint: None, None
+    height: self.texture_size[1]
+    color: self.r, self.g, self.b, 1
+    background_color: gSelectedButtonColor if self.is_selected else gUnselectedButtonColor
+    is_selected: False
+    on_press:
+        self.ToggleButton()
+
+<TabbedPanelStrip>:
+    cols: app.modeColumns
+    rows: app.modeRows
+    spacing: 2
+
+#:set gStandardHeight 30
+            
+<TabbedPanelHeader>:
+    r: 1
+    g: 0
+    b: 0
+    size_hint: None, None
+    color: self.r, self.g, self.b, 1
+    height: gStandardHeight * 2/3
+    width: Window.size[0] / app.modeColumns
+        
+#:set gSelectedTextColor (0.9, 0.9, 0.2, 1)  # yellow
+#:set gDeselectedTextColor (0.6, 0.6, 0.6, 1)  # light grey
+
+<SummaryListItem>:
+    errorText: ""
+    is_selected: error_id.is_selected
+    size_hint: 1, None
+    height: 15
+    type: None
+    errorRef: error_id
+    ListItemLabel:
+        id: error_id
+        index: root.index
+        is_selected: False
+        text: root.errorText
+        markup: True
+        font_size: 12
+        auto_scale: False
+        padding_x: 2
+        shorten: True
+        shorten_from: 'right'
+        height: self.texture_size[1]
+        text_size: self.size[0], self.texture_size[1]
+        color: gSelectedTextColor if self.is_selected else gDeselectedTextColor
+        on_touch_down:
+            if self.collide_point(*args[1].pos): root.TouchListItem(args[1], app.root, root.index)
+        on_touch_move:
+            if self.collide_point(*args[1].pos) and not app.root.modifiers: root.DragSelect()
+
+<LabeledText@BoxLayout>:
+    orientation: 'horizontal'
+    size_hint_y: None
+    height: 25
+    heading: ""
+    text: ""
+    Label:
+        text: root.heading
+        font_size: self.height/2
+        size_hint_x: None
+        padding: 5, 0
+        size: self.texture_size
+    Label:
+        text: root.text
+        border: 0, 0, 10, 0
+        font_size: self.height/2
+        size_hint_x: 1
+        padding: 5, 0
+        text_size: self.size
+        shorten: True
+        shorten_from: 'left'
+        halign: 'left'
+        valign: 'middle'
+
+<SummaryTabContent>:  # error lists and log/error file names
+    orientation: 'vertical'
+    minimum_height: 50
+    size_hint_y: 1
+    listRef: list_id
+    spacing: 1
+    canvas.before:
+        Color:
+            rgba: 0, 0, 0, 1
+        Rectangle:
+            size: self.size
+            pos: self.pos     
+    ListView:  # filtered error list
+        size_hint_x: 1
+        id: list_id
+        selectMode: ""
+        selectType: ""
+        adapter:
+            ListAdapter( \
+            data = [{'errorText': 'dummy', \
+            'is_selected': False, \
+            'type': 'unknown', \
+            'baseIndex': index} \
+            for index in range(len(root.report.displayList))],
+            args_converter = lambda row_index, rec: \
+            {'errorText': rec['errorText'], \
+            'is_selected': rec['is_selected'], \
+            'parentView': self, \
+            'index': row_index, \
+            'type': rec['type'], \
+            'baseIndex': rec['baseIndex']}, \
+            cls = 'SummaryListItem', \
+            selection_mode = 'multiple', \
+            propagate_selection_to_data = True, \
+            allow_empty_selection = True)
+        on_touch_up:
+            # grab is handled in child SummaryListItem
+            if args[1].grab_current == self: root.FinishSelection(args[1], self)
+    BoxLayout:  # log and summary file names
+        orientation: 'horizontal'
+        size_hint_y: None
+        height: 25
+        LabeledText:
+            id: logFileName_id
+            heading: "Log:"
+        LabeledText:
+            id: summaryFileName_id
+            heading: "Summary:"
+
+<FilterCheckBox@BoxLayout>:
+    orientation: 'vertical'
+    padding: 0, 0, 0, 4
+    text: ""
+    count: ""
+    checkRef: check_id
+    active: False
+    color: 1, 1, 1, 1
+    Label:
+        text: root.text
+        size: self.texture_size
+        font_size: self.height*.75
+        color: root.color
+    CheckBox:
+        id: check_id
+        active: root.active
+        on_touch_down:
+            if self.collide_point(*args[1].pos): app.SetCheckFilters(root.text) 
+    Label:
+        text: root.count
+        size: self.texture_size
+        font_size: self.height*.8
+
+<CopyCheckBox@BoxLayout>:
+    orientation: 'vertical'
+    padding: 0, 0, 0, 4
+    text: ""
+    active: False
+    checkRef: check_id
+    color: 1, 1, 1, 1
+    Label:
+        text: root.text
+        size: self.texture_size
+        font_size: self.height*.8
+        color: root.color
+    CheckBox:
+        id: check_id
+        active: root.active
+        on_touch_down:
+            if self.collide_point(*args[1].pos): app.SetCopyFilters(root.text)
+
+<BasicCheckBox@BoxLayout>:
+    orientation: 'vertical'
+    padding: 0, 0, 0, 4
+    text: ""
+    active: False
+    checkRef: check_id
+    Label:
+        text: root.text
+        size: self.texture_size
+        font_size: self.height*.8
+    CheckBox:
+        id: check_id
+        active: root.active
+
+<SummaryOption@SpinnerOption>:
+    size: self.texture_size
+    size_hint: 1, None
+
+<HistoryTextInput>
+    orientation: 'horizontal'
+    undoList: []
+    redoList: []
+    textRef: textInput_id
+    containsNumber: False
+    redisplayFlag: False
+    TextInput:
+        id: textInput_id
+        multiline: False
+        font_size: self.height / 2.5
+        valign: 'middle'
+        size_hint: 1, 1
+        text: ""
+        on_focus:
+            root.Set(args[1], root.textRef, root.redisplayFlag)
+        on_touch_down:
+            if self.collide_point(*args[1].pos) and args[1].button == 'middle': self.paste()
+        on_text:
+            root.containsNumber = True if re.search("[0-9]", self.text) else False
+    Button:
+        text: '<'
+        size_hint: None, 1
+        size: self.texture_size
+        font_size: self.height / 2
+        padding: 5, 5
+        disabled: True if len(root.undoList) == 0 else False
+        on_press:
+            root.Undo(root.textRef, root.redisplayFlag)
+    Button:
+        text: 'X'
+        size_hint: None, 1
+        size: self.texture_size
+        font_size: self.height / 2
+        padding: 5, 5
+        disabled: False if textInput_id.text else True
+        on_press:
+            root.Clear(root.textRef, root.redisplayFlag)
+    Button:
+        text: '>'
+        size_hint: None, 1
+        size: self.texture_size
+        font_size: self.height / 2
+        padding: 5, 5
+        disabled: True if len(root.redoList) == 0 else False
+        on_press:
+            root.Redo(root.textRef, root.redisplayFlag)
+
+<SummaryWidget>:
+    filterTextRef: filterText_id
+    modePanelRef: modePanel_id
+    copyPopupRef: copyPopup_id.__self__
+    savePopupRef: savePopup_id.__self__
+    confirmPopupRef: confirmPopup_id.__self__
+    detailPopupRef: detailPopup_id.__self__
+    filterPopupRef: filterPopup_id.__self__
+    quitPopupRef: quitPopup_id.__self__
+    workingPopupRef: workingPopup_id.__self__
+    changedFlag: False
+    BoxLayout:
+        orientation: 'vertical'
+        size: root.size
+        spacing: 1
+        BoxLayout: # text, option and section filters
+            orientation: 'horizontal'
+            size_hint_x: 1.0
+            size_hint_y: None
+            height: gStandardHeight
+            BoxLayout:
+                orientation: 'horizontal'
+                Label:
+                    text: "Filter"
+                    font_size: self.height/2
+                    size_hint_x: None
+                    padding: 5, 5
+                    size: self.texture_size
+                HistoryTextInput:
+                    id: filterText_id
+                    root: root
+                    redisplayFlag: True
+                    size_hint: 1, 1
+            Button:
+                text: "Options"
+                size: self.texture_size
+                font_size: self.height / 2
+                padding: 5, 5
+                on_press: root.filterPopupRef.open()
+                size_hint: None, None
+                b: 0 if hideLogic_id.active or hideVth_id.active or hideReference_id.active else 1
+                color: 1, 1, self.b, 1
+            Spinner:
+                id: sectionSpinner_id
+                text: ""
+                values: []
+                size_hint: .8, None
+                size: self.texture_size
+                pos_hint: {'center_x': 0, 'center_y': 0.5}
+                padding: 5, 5
+                sync_height: True
+                option_cls: 'SummaryOption'
+                on_press:
+                    root.setSectionFlag = True
+                on_text:
+                    if root.setSectionFlag: root.SetSectionFilter(args[1])
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 50
+            padding: 2, 2, 2, 2
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint: 1/15, 1
+                Label:
+                    id: countLabel_id
+                    text: "Show"
+                    size_hint_x: 1
+                    size: self.texture_size
+                    b: 1
+                    color: 1, 1, self.b, 1  # yellow if display is filtered
+                ProgressBar:  # currently unused. just spacing
+                    id: progress_id
+                    size_hint: 1, None
+                    height: 10
+                    value: 0
+                Label:
+                    id: displayCount_id
+                    text: ""
+                    text_size: self.size
+                    font_size: self.height*0.8
+                    halign: 'right'
+                    on_text:
+                        countLabel_id.b = 1 if displayCount_id.text == show_all.count else 0
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint_y: None
+                height: 50
+                FilterCheckBox:
+                    id: show_all
+                    text: 'all'
+                FilterCheckBox:
+                    id: show_ERROR
+                    text: 'ERROR'
+                    color: 1, 0, 0, 1
+                FilterCheckBox:
+                    id: show_Warning
+                    text: 'Warning'
+                    color: 1, 0.5, 0, 1
+                FilterCheckBox:
+                    id: show_Check
+                    text: 'Check'
+                    color: 1, 1, 0, 1
+                FilterCheckBox:
+                    id: show_ignore
+                    text: 'ignore'
+                    color: 0, 1, 0, 1
+                FilterCheckBox:
+                    id: show_unchecked
+                    text: 'unchecked'
+                FilterCheckBox:
+                    id: show_uncommitted
+                    text: 'uncommitted'
+                FilterCheckBox:
+                    id: show_unmatched
+                    text: 'unmatched'
+                FilterCheckBox:
+                    id: show_comment
+                    text: 'comment'
+                FilterCheckBox:
+                    id: show_none
+                    text: 'none'
+        TabbedPanel:
+            id: modePanel_id
+            minimum_height: 100
+            size_hint_x: 1
+            tab_height: (21+2) * app.modeRows
+            tab_width: Window.size[0] / app.modeColumns
+            do_default_tab: False
+            on_current_tab:
+                if self.current_tab.content: self.current_tab.content.RedisplayErrors()
+        BoxLayout:
+            orientation: "horizontal"
+            size_hint_y: None
+            height: gStandardHeight
+            Label:
+                text: "Reference"
+                font_size: self.height/2
+                size_hint_x: None
+                size: self.texture_size
+                padding: 5, 5
+            Button:
+                text: "-"
+                size_hint_x: None
+                size: self.texture_size
+                padding: 5, 5
+                disabled: not referenceText_id.containsNumber
+                on_press:
+                    root.IncrementReference(-1)
+            Button:
+                text: "+"
+                size_hint_x: None
+                size: self.texture_size
+                padding: 5, 5
+                disabled: not referenceText_id.containsNumber
+                on_press:
+                    root.IncrementReference(1)
+            HistoryTextInput:
+                id: referenceText_id
+                root: root
+                size_hint: 1, 1
+            Label:
+                text: "Comment"
+                font_size: self.height/2
+                size_hint_x: None
+                padding: 5, 5
+                size: self.texture_size
+            HistoryTextInput:
+                id: commentText_id
+                root: root
+                size_hint: 1, 1
+        BoxLayout:
+            # middle buttons
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: errorButton.height
+            Button:
+                id: errorButton
+                text: "ERROR"
+                padding: 5, 5
+                size: self.texture_size
+                on_press:
+                    root.AddReference('ERROR')
+            Button:
+                id: warningButton
+                text: "Warning"
+                padding: 5, 5
+                size: self.texture_size
+                on_press:
+                    root.AddReference('Warning')
+            Button:
+                id: checkButton
+                text: "Check"
+                padding: 5, 5
+                size: self.texture_size
+                on_press:
+                    root.AddReference('Check')
+            Button:
+                id: ignoreButton
+                text: "ignore"
+                padding: 5, 5
+                size: self.texture_size
+                on_press:
+                    root.AddReference('ignore')
+            Button:
+                id: commitButton
+                text: "commit"
+                padding: 5, 5
+                size: self.texture_size
+                on_press:
+                    root.CommitReferences()
+            Button:
+                id: clearButton
+                text: "Clear"
+                padding: 5, 5
+                size: self.texture_size
+                on_press:
+                    root.ClearReference()
+            Button:
+                id: commentButton
+                text: "Comment"
+                padding: 5, 5
+                size: self.texture_size                       
+                on_press:
+                    root.AddComment()
+            Button:
+                id: deleteButton
+                text: "Delete"
+                padding: 5, 5
+                size: self.texture_size                       
+                on_press:
+                    root.DeleteSummary()
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint: 1, None
+            height: selectAllButton.height
+            Button:
+                id: selectAllButton
+                text: "Select All"
+                padding: 5, 5
+                size: self.texture_size
+                on_press:
+                    root.SelectAll()
+            Button:
+                id: unselectAllButton
+                text: "Unselect All"
+                padding: 5, 5
+                size: self.texture_size
+                on_press:
+                    root.DeselectAll()
+            Button:
+                id: undoButton
+                text: "undo"
+                padding: 5, 5
+                size: self.texture_size
+                on_press:
+                    root.UndoChanges()
+            Button:
+                id: redoButton
+                text: "redo"
+                padding: 5, 5
+                size: self.texture_size
+                on_press:
+                    root.RedoChanges()
+        BoxLayout:
+            id: bottomButtons
+            orientation: 'horizontal'
+            size_hint: 1, None
+            height: viewButton.height
+            Button:
+                id: viewButton
+                text: "View"
+                size_hint_y: None
+                padding: 5, 5
+                size: self.texture_size
+                disabled: False if filterText_id.textRef.text else True
+                on_press:
+                    os.system("echo '" \
+                    + filterText_id.textRef.text \
+                    + "' | search_report_cvc '" \
+                    + root.currentContent.report.errorFileName \
+                    + "'")
+            Button:
+                id: referenceButton
+                text: "Copy Checks"
+                size_hint_y: None
+                padding: 5, 5
+                size: self.texture_size
+                on_press:
+                    root.copyPopupRef.open()
+            Button:
+                id: saveButton
+                text: "Save"
+                size_hint_y: None
+                padding: 5, 5
+                size: self.texture_size
+                disabled: False if root.changedFlag else True
+                on_press:
+                    root.SaveSummary( \
+                    theFileName=root.summary.summaryFileName, \
+                    theAutoCommitFlag=False, \
+                    theSaveUnmatchedFlag=True)
+            Button:
+                size_hint_y: None
+                id: saveAsButton
+                padding: 5, 5
+                size: self.texture_size
+                text: "Save As"
+                on_press:
+                    root.savePopupRef.open()
+            Button:
+                size_hint_y: None
+                id: quitButton
+                padding: 5, 5
+                size: self.texture_size
+                text: "Quit"
+                on_press:
+                    root.Quit()
+            Popup:
+                id: copyPopup_id
+                size_hint_x: 0.8
+                size_hint_y: 0.8
+                baseMode: ""
+                title: "Copy checked references from " + self.baseMode + " mode to selected modes"
+                auto_dismiss: False
+                size: self.size
+                title_font: "RobotoMono-Regular"
+                on_parent:
+                    if self.parent == bottomButtons: self.parent.remove_widget(self)
+                on_open:
+                    root.AddReferenceModes(referenceGrid_id)
+                BoxLayout:
+                    orientation: 'vertical'
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        size_hint_y: None
+                        height: 35
+                        padding: 2, 2, 2, 2
+                        root: root
+                        Label:
+                            text: "Copy"
+                            width: self.texture_size[0] + 10
+                            size_hint_x: None
+                        CopyCheckBox:
+                            text: 'all'
+                            id: copy_all
+                        CopyCheckBox:
+                            text: 'ERROR'
+                            id: copy_ERROR
+                            color: 1, 0, 0, 1
+                        CopyCheckBox:
+                            text: 'Warning'
+                            id: copy_Warning
+                            color: 1, 0.5, 0, 1
+                        CopyCheckBox:
+                            text: 'Check'
+                            id: copy_Check
+                            color: 1, 1, 0, 1                            
+                        CopyCheckBox:
+                            text: 'ignore'
+                            id: copy_ignore
+                            color: 0, 1, 0, 1                            
+                        CopyCheckBox:
+                            text: 'comment'
+                            id: copy_comment
+                        CopyCheckBox:
+                            text: 'none'
+                            id: copy_none
+                    GridLayout:
+                        id: referenceGrid_id
+                        size_hint: 1, None
+                        col_force_default: True
+                        col_default_width: self.parent.width / 8
+                        cols: 8
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        Button:
+                            text: 'Cancel'
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            padding: 5, 5
+                            on_press:
+                                root.copyPopupRef.dismiss()
+                        Button:
+                            id: selectAllModesButton
+                            text: 'Select All'
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            padding: 5, 5
+                            on_press:
+                                root.SetAllReferences(True)
+                        Button:
+                            id: unselectAllModesButton
+                            text: 'Unselect All'
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            padding: 5, 5
+                            on_press:
+                                root.SetAllReferences(False)
+                        Button:
+                            id: copyReferencesButton
+                            text: 'OK'
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            padding: 5, 5
+                            on_press:
+                                root.CopyReferences()
+            Popup:
+                id: savePopup_id
+                size_hint_x: 0.8
+                size_hint_y: 0.8
+                title: "Save summary file"
+                auto_dismiss: False
+                size: self.size
+                title_font: "RobotoMono-Regular"
+                on_parent:
+                    if self.parent == bottomButtons: self.parent.remove_widget(self)
+                on_open:
+                    filechooser.path = os.path.dirname(root.summary.summaryFileName)
+                    filenameInput_id.text = os.path.basename(root.summary.summaryFileName)
+                BoxLayout:
+                    orientation: 'vertical'
+                    FileChooserListView:
+                        id: filechooser
+                        on_selection:
+                            filenameInput_id.text = self.selection and self.selection[0] or ''
+                    TextInput:
+                        id: filenameInput_id
+                        size_hint_y: None
+                        height: gStandardHeight
+                        multiline: False
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        size_hint_y: None
+                        height: 35
+                        padding: 2, 2, 2, 2
+                        BasicCheckBox:
+                            id: autoCommit_id
+                            text: 'Auto commit'
+                            active: False
+                        BasicCheckBox:
+                            id: saveUnmatched_id
+                            text: 'Save unmatched'
+                            active: True
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        size_hint_y: None
+                        height: gStandardHeight
+                        Button:
+                            text: "Cancel"
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            padding: 5, 5
+                            on_release:
+                                root.savePopupRef.dismiss()
+                        Button:
+                            text: "Save"
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            padding: 5, 5
+                            on_press:
+                                root.SaveSummaryAs( \
+                                theFileName=os.path.join(filechooser.path, filenameInput_id.text),\
+                                theAutoCommitFlag=autoCommit_id.checkRef.active, \
+                                theSaveUnmatchedFlag=saveUnmatched_id.checkRef.active)
+            Popup:
+                id: confirmPopup_id
+                size_hint_x: 0.90
+                size_hint_y: 0.2
+                title: ""
+                auto_dismiss: False
+                size: self.size
+                title_font: "RobotoMono-Regular"
+                on_parent:
+                    if self.parent == bottomButtons: self.parent.remove_widget(self)
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    Button:
+                        text: "Cancel"
+                        size_hint_y: None
+                        height: self.texture_size[1]
+                        padding: 5, 5
+                        on_press:
+                            root.confirmPopupRef.dismiss()
+                    Button:
+                        text: "Save"
+                        size_hint_y: None
+                        height: self.texture_size[1]
+                        padding: 5, 5
+                        on_press:
+                            root.SaveSummary( \
+                            theFileName=os.path.join(filechooser.path, filenameInput_id.text), \
+                            theAutoCommitFlag=autoCommit_id.checkRef.active, \
+                            theSaveUnmatchedFlag=saveUnmatched_id.checkRef.active)
+            Popup:
+                id: detailPopup_id
+                size_hint_x: 0.9
+                size_hint_y: 0.9
+                title: "Error Details"
+                auto_dismiss: True
+                size: self.size
+                title_font: "RobotoMono-Regular"
+                on_parent:
+                    if self.parent == bottomButtons: self.parent.remove_widget(self)
+                TextInput:
+                    id: errorDetails_id
+                    scroll_type: ['bars', 'content']
+                    bar_width: 15
+                    padding: 5, 5
+                    text_size: errorDetails_id.width, None
+                    size_hint: 1, 1
+                    valign: 'top'
+                    halign: 'left'
+                    readonly: True
+                    background_color: 0.2, 0.2, 0.2, 1
+                    foreground_color: 1, 1, 1, 1
+                    on_focus:
+                        self.cursor = (0, 0)
+                    on_selection_text:
+                        self.copy()
+            Popup:
+                id: quitPopup_id
+                size_hint_x: 0.3
+                size_hint_y: 0.2
+                title: "Save changes?"
+                auto_dismiss: False
+                size: self.size
+                title_font: "RobotoMono-Regular"
+                on_parent:
+                    if self.parent == bottomButtons: self.parent.remove_widget(self)
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    Button:
+                        text: "No"
+                        size_hint_y: None
+                        height: self.texture_size[1]
+                        padding: 5, 5
+                        on_press:
+                            Window.close()
+                    Button:
+                        text: "Cancel"
+                        size_hint_y: None
+                        height: self.texture_size[1]
+                        padding: 5, 5
+                        on_press:
+                            root.quitPopupRef.dismiss()
+                    Button:
+                        text: "Yes"
+                        size_hint_y: None
+                        height: self.texture_size[1]
+                        padding: 5, 5
+                        on_press:
+                            root.SaveSummary( \
+                            theFileName=root.summary.summaryFileName, \
+                            theAutoCommitFlag=False, \
+                            theSaveUnmatchedFlag=True)
+                            Window.close()
+            Popup:
+                id: filterPopup_id
+                size_hint_x: 0.8
+                size_hint_y: 0.4
+                title: "Choose error filters"
+                auto_dismiss: False
+                size: self.size
+                title_font: "RobotoMono-Regular"
+                on_parent:
+                    if self.parent == bottomButtons: self.parent.remove_widget(self)
+                BoxLayout:
+                    orientation: 'vertical'
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        size_hint: 1, 1
+                        CheckBox:
+                            id: hideLogic_id
+                            size_hint_x: None
+                            width: 30
+                            disabled: True
+                        Label:
+                            size_hint: 1, 1
+                            text: "Hide overvoltage errors that are logically OK"
+                            size: self.texture_size
+                            text_size: self.size
+                            valign: 'middle'
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        size_hint: 1, 1
+                        CheckBox:
+                            id: hideVth_id
+                            size_hint_x: None
+                            width: 30
+                            disabled: True
+                        Label:
+                            size_hint: 1, 1
+                            text: "Hide gate-source errors at exactly Vth"
+                            size: self.texture_size
+                            text_size: self.size
+                            valign: 'middle'
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        size_hint: 1, 1
+                        CheckBox:
+                            id: hideReference_id
+                            size_hint_x: None
+                            width: 30
+                            disabled: True
+                        Label:
+                            size_hint: 1, 1
+                            text: "Hide gate-source errors with reference voltage"
+                            size: self.texture_size
+                            text_size: self.size
+                            valign: 'middle'
+                    Button:
+                        text: "Done"
+                        size_hint_y: None
+                        height: self.texture_size[1]
+                        padding: 5, 5
+                        halign: 'center'
+                        on_press:
+                            root.filterPopupRef.dismiss()
+            Popup:
+                id: workingPopup_id
+                size_hint_x: 0.3
+                size_hint_y: 0.1
+                title: "Working..."
+                auto_dismiss: False
+                size: self.size
+                title_font: "RobotoMono-Regular"
+                on_parent:
+                    if self.parent == bottomButtons: self.parent.remove_widget(self)
+
+#23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+
+
+
+
+
