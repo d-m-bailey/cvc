@@ -121,8 +121,7 @@ class ResultFile():
                 myMatch = self.modeRE.search(line_it)  # "^CVC_MODE = '(.*)'"
                 if myMatch:
                     self.modeName = myMatch.group(1)
-                    print("Reading mode " + self.modeName + " errors from \n\t" + theFile.name, 
-                          end="", flush=True)
+                    print("Reading mode " + self.modeName + " errors from \n\t" + theFile.name)
             if not self.topCell:
                 myMatch = self.topRE.search(line_it)  # "^CVC_TOP = '(.*)'"
                 if myMatch:
@@ -145,7 +144,7 @@ class ResultFile():
             and sorts the result on error priority and data
         """
         self.errorFileName = os.path.abspath(theFile.name)
-        print(" and \n\t" + theFile.name)
+        print(" and \t" + theFile.name)
         mySection = None
         myPriority = None
         for line_it in theFile:
@@ -191,7 +190,7 @@ class ResultFile():
         else:
             myDeviceRE = re.compile("^/.*" + re.escape(myMatch.group(2)) + myDeviceName + " ")
         myBlankRE = re.compile("^\s*$")
-        mySectionEndRE = re.compile("^!")
+        mySectionEndRE = re.compile("^! Finished")
         mySampleOnlyFlag = myMatch.group(4) == myMatch.group(5)  # error count == cell count
         mySaveLeadingFlag = True  # Save lines after blank lines before devices ("at Vth", etc.)
         myCorrectSectionFlag = False
@@ -200,7 +199,10 @@ class ResultFile():
         mySection = ""
         myLeadingLines = ""
         for line_it in myErrorFile:
-            if myCorrectSectionFlag:
+            if mySectionRE.search(line_it):  # Use lastest heading for short errors.
+                myCorrectSectionFlag = True
+                mySection = line_it
+            elif myCorrectSectionFlag:
                 if myDeviceRE.search(line_it):
                     myOutput += mySection
                     myOutput += myLeadingLines
@@ -209,18 +211,17 @@ class ResultFile():
                 if mySaveLineFlag:
                     myOutput += line_it
                 if myBlankRE.match(line_it):
-                    mySaveLeadingFlag = True
-                    myLeadingLines = ""
                     if myOutput and mySampleOnlyFlag:
                         break  # only output first error
+                    mySaveLeadingFlag = True
+                    myLeadingLines = ""
                     mySaveLineFlag = False
                 elif mySaveLeadingFlag:
-                    myLeadingLines += line_it
-            elif mySectionRE.search(line_it):
-                myCorrectSectionFlag = True
-                mySection = line_it
-            if myOutput and mySectionEndRE.search(line_it):
-                break  # relavent errors only exist in one section
+                    myLeadingLines += line_it if line_it != mySection else ""  # no double lines
+            if mySectionEndRE.search(line_it):
+                myCorrectSectionFlag = False
+                if myOutput:
+                    break  # relavent errors only exist in one section
         myErrorFile.close()
         return myOutput
                 

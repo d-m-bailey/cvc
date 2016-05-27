@@ -83,12 +83,10 @@ def main(argv):
         except IOError:  # skip files that can't be opened
             pass
     if myResultsList:
-        print("opening window")
         if "-i" in [option[0] for option in options]:
             SummaryApp(mySummaryList, myResultsList).run()
         else:  # batch mode: only print error summary
-            for report_it in theReportList:
-                report_it.CreateDisplayList(theSummaryList)            
+            SummaryApp(mySummaryList, myResultsList).BatchRun()
  
 if __name__ == '__main__':
     if len(sys.argv) == 1:

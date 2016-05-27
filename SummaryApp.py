@@ -23,6 +23,7 @@
 try:  # kivy installed
     from kivy.config import Config
     from kivy.app import App
+    from kivy.core.window import Window
     from kivy.properties import NumericProperty
     from summaryGUI import SummaryWidget
 
@@ -39,9 +40,9 @@ try:  # kivy installed
         Methods:
           __init__: Create instance with summary data and list of report data.
           build: Create top widget and start event loop.
-          EnableReferenceButtons: Stub to root method.
           SetCheckFilters: Stub to root method for display check box filters.
           SetCopyFilters: Stub to root method for copy check box filters.
+          BatchRun: Display error totals without GUI.
         """
         modeRows = NumericProperty(1)
         modeColumns = NumericProperty(10)
@@ -62,10 +63,6 @@ try:  # kivy installed
             """Create top widget and start event loop."""
             return SummaryWidget(self, self.summaryList, self.reportList)
 
-        def EnableReferenceButtons(self):
-            """Stub to root method."""
-            self.root.EnableReferenceButtons()
-
         def SetCheckFilters(self, theId):
             """Stub to root method for display check box filters."""
             self.root.SetFilters(theId, 'show_', self.root.checkValues)
@@ -73,10 +70,15 @@ try:  # kivy installed
         def SetCopyFilters(self, theId):
             """Stub to root method for copy check box filters."""
             self.root.SetFilters(theId, 'copy_', self.root.copyValues)
-   
 
-except ImportError:  # kivy not installed
-    print("Error loading kivy")
+        def BatchRun(self):
+            for report_it in self.reportList:
+                report_it.CreateDisplayList(self.summaryList)
+                report_it.PrintTotals()
+            Window.close()
+
+except ImportError as errorDetail:  # kivy not installed
+    print("Import error: " + str(errorDetail.args))
     
     class SummaryApp():       
         """Dummy App class for when kivy not installed.
@@ -84,7 +86,15 @@ except ImportError:  # kivy not installed
         Print check/error totals.
         """
         def __init__(self, theSummaryList, theReportList, **kwargs):
-            for report_it in theReportList:
-                report_it.CreateDisplayList(theSummaryList)
+            self.summaryList = theSummaryList
+            self.reportList = theReportList
+
+        def run(self):
+            self.BatchRun()
+
+        def BatchRun(self):
+            for report_it in self.reportList:
+                report_it.CreateDisplayList(self.summaryList)
+                report_it.PrintTotals()
     
 #23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789

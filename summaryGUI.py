@@ -298,6 +298,7 @@ class SummaryTabContent(BoxLayout):
         self.root.EnableButtons(theListView.adapter)
         theListView.selectMode = ""
         theTouch.ungrab(theListView)        
+
             
 class ReferenceModeButton(Button):
     """Button for selecting modes when copying references and comments.
@@ -307,6 +308,7 @@ class ReferenceModeButton(Button):
       r: Red component of text color.
       g: Green component of text color.
       b: Blue component of text color.
+      root: The root widget.
     Methods:
       __init__: Set button text and text color
       ToggleButton: Toggle mode selection and update popup buttons.
@@ -318,12 +320,13 @@ class ReferenceModeButton(Button):
         self.r = kwargs.pop('r')
         self.g = kwargs.pop('g')
         self.b = kwargs.pop('b')
+        self.root = kwargs.pop('root')
         super(ReferenceModeButton, self).__init__(**kwargs)
 
     def ToggleButton(self):
         """Toggle mode selection and update popup buttons."""
         self.is_selected = False if self.is_selected else True
-        app.EnableReferenceButtons()
+        self.root.EnableReferenceButtons()
 
 
 class HistoryTextInput(BoxLayout):
@@ -857,7 +860,7 @@ class SummaryWidget(Widget):
             # To get same order as main screen, reverse the order of the list.
             if mode_it.text == myCurrentMode:  # don't add the copy source.
                 continue
-            myButton = ReferenceModeButton(text=mode_it.text,
+            myButton = ReferenceModeButton(text=mode_it.text, root=self,
                                            r=mode_it.r, g=mode_it.g, b=mode_it.b)
             theLayout.add_widget(myButton)
         self.EnableReferenceButtons()
@@ -964,7 +967,7 @@ class SummaryWidget(Widget):
           theTime: unused.
         """
         if self.autosaveFlag:
-            mySelection = self.currentContent.listRef.adapter.selection.copy()
+            mySelection = self.currentContent.listRef.adapter.selection[:]
             self.SaveSummary(theFileName=self.summary.summaryFileName + ".autosave",
                              theAutoCommitFlag=False,
                              theSaveUnmatchedFlag=True,
