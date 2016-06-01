@@ -68,8 +68,8 @@
     b: 0
     size_hint: None, None
     color: self.r, self.g, self.b, 1
-    height: gStandardHeight * 2/3
-    width: Window.size[0] / app.modeColumns
+    height: 2/3. * gStandardHeight
+    width: Window.size[0] / (app.modeColumns*1.0)
         
 #:set gSelectedTextColor (0.9, 0.9, 0.2, 1)  # yellow
 #:set gDeselectedTextColor (0.6, 0.6, 0.6, 1)  # light grey
@@ -108,14 +108,14 @@
     text: ""
     Label:
         text: root.heading
-        font_size: self.height/2
+        font_size: self.height / 2.
         size_hint_x: None
         padding: 5, 0
         size: self.texture_size
     Label:
         text: root.text
         border: 0, 0, 10, 0
-        font_size: self.height/2
+        font_size: self.height / 2.
         size_hint_x: 1
         padding: 5, 0
         text_size: self.size
@@ -256,7 +256,7 @@
         text: '<'
         size_hint: None, 1
         size: self.texture_size
-        font_size: self.height / 2
+        font_size: self.height / 2.
         padding: 5, 5
         disabled: True if len(root.undoList) == 0 else False
         on_press:
@@ -265,7 +265,7 @@
         text: 'X'
         size_hint: None, 1
         size: self.texture_size
-        font_size: self.height / 2
+        font_size: self.height / 2.
         padding: 5, 5
         disabled: False if textInput_id.text else True
         on_press:
@@ -274,7 +274,7 @@
         text: '>'
         size_hint: None, 1
         size: self.texture_size
-        font_size: self.height / 2
+        font_size: self.height / 2.
         padding: 5, 5
         disabled: True if len(root.redoList) == 0 else False
         on_press:
@@ -304,7 +304,7 @@
                 orientation: 'horizontal'
                 Label:
                     text: "Filter"
-                    font_size: self.height/2
+                    font_size: self.height / 2.
                     size_hint_x: None
                     padding: 5, 5
                     size: self.texture_size
@@ -316,7 +316,7 @@
             Button:
                 text: "Options"
                 size: self.texture_size
-                font_size: self.height / 2
+                font_size: self.height / 2.
                 padding: 5, 5
                 on_press: root.filterPopupRef.open()
                 size_hint: None, None
@@ -343,7 +343,7 @@
             padding: 2, 2, 2, 2
             BoxLayout:
                 orientation: 'vertical'
-                size_hint: 1/15, 1
+                size_hint: 1 / 15., 1
                 Label:
                     id: countLabel_id
                     text: "Show"
@@ -407,7 +407,7 @@
             minimum_height: 100
             size_hint_x: 1
             tab_height: (21+2) * app.modeRows
-            tab_width: Window.size[0] / app.modeColumns
+            tab_width: Window.size[0] / (app.modeColumns*1.0)
             do_default_tab: False
             on_current_tab:
                 if self.current_tab.content: self.current_tab.content.RedisplayErrors()
@@ -417,7 +417,7 @@
             height: gStandardHeight
             Label:
                 text: "Reference"
-                font_size: self.height/2
+                font_size: self.height / 2.
                 size_hint_x: None
                 size: self.texture_size
                 padding: 5, 5
@@ -443,7 +443,7 @@
                 size_hint: 1, 1
             Label:
                 text: "Comment"
-                font_size: self.height/2
+                font_size: self.height / 2.
                 size_hint_x: None
                 padding: 5, 5
                 size: self.texture_size
@@ -652,7 +652,7 @@
                         id: referenceGrid_id
                         size_hint: 1, None
                         col_force_default: True
-                        col_default_width: self.parent.width / 8
+                        col_default_width: self.parent.width / 8.
                         cols: 8
                     BoxLayout:
                         orientation: 'horizontal'
