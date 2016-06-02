@@ -1,1 +1,3 @@
 *.pyc
+summary_cvc*
+check_internal
