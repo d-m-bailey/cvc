@@ -229,6 +229,12 @@ Sub WriteOnePowerFile(theRange As Range)
                 Print #1, ""; vbLf;
             ElseIf gNetType(myNetIndex) = "comment" Then
                 Print #1, "#"; gNetName(myNetIndex); vbLf;
+            ElseIf gNetType(myNetIndex) = "internal" Then
+                Print #1, gNetName(myNetIndex);  " " _
+                    & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
+            ElseIf gNetType(myNetIndex) = "macro" Then
+                Print #1, "#define "; gNetName(myNetIndex);  " " _
+                    & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
             Else
                 Print #1, gNetName(myNetIndex); " "; gNetType(myNetIndex); " " _
                     & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
@@ -361,7 +367,7 @@ Private Sub PrintDeviceDetails(theRange As Range, theRow As Integer, theParamete
                 Print #1, " condition=("; theRange.Offset(theRow, myParameterIndex + 1); ")";
             Else
                 Print #1, " "; theParameters(myParameterIndex); _
-                    "="; theRange.Offset(theRow, myParameterIndex + 1);
+                    "=" & theRange.Offset(theRow, myParameterIndex + 1);
             End If
         End If
     Next myParameterIndex
