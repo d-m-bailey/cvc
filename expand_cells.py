@@ -223,7 +223,7 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     if re.search("ICV_", theTopCell) or re.search("\$\$", theTopCell):
         mySmashFlag = True  # Smash circuits with ICV_ or $$ in cell name
     if not (myCircuit[instances] or myCircuit[mos_models]
-            or myCircuit['resistor_count'] or myCircuit['other_count'] = 0):
+            or myCircuit['resistor_count'] or myCircuit['other_count']):
         gBoxlist[theTopCell] = 0
     if theTopCell in theCellOverrideList and theCellOverrideList[theTopCell] == 'KEEP':
         mySmashFlag = False
