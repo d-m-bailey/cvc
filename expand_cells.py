@@ -69,9 +69,9 @@ def OpenFile(theFileName):
             myFile = gzip.open(theFileName, mode="rt")
         else:
             myFile = open(theFileName)
-    except IOError:
-        print("ERROR: Could not open " + theOverrideCellFileName)
-        raise
+    except IOError as myErrorDetail:
+        print("ERROR: Could not open " + theFileName + " " + str(myErrorDetail.args))
+        raise IOError
     return myFile
 
 gNetlist = {}
@@ -179,10 +179,11 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     unless override file forced KEEP and no parameters
     """
     myCircuit = gNetlist[theTopCell]
-    if myCircuit['checked'] == True: return  # Already processed
+#    if myCircuit['checked'] == True: return  # Already processed
     myCircuit['checked'] = True
     for instance_it in myCircuit['instances'].keys():
-        PrintSmallCells(theCellOverrideList, instance_it)  # Recursive call
+        if not gNetlist[instance_it]['checked']:
+            PrintSmallCells(theCellOverrideList, instance_it)  # Recursive call
         if instance_it in gBoxlist:
             gBoxlist[instance_it] += 1
         if 'small' in gNetlist[instance_it]:
