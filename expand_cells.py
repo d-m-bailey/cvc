@@ -75,8 +75,9 @@ def OpenFile(theFileName):
     return myFile
 
 gNetlist = {}
+gBoxlist = {}
 
-def ReadNetlist(theCDLFileName):
+def ReadNetlist(theCDLFileName, theCellOverrideList):
     """Read a CDL netlist and return as a list with continuation lines merged"""
     mySubcktStartRE = re.compile("^\.[sS][uU][bB][cC][kK][tT]\s+(\S+)")
     myCDLFile = OpenFile(theCDLFileName)
@@ -84,24 +85,29 @@ def ReadNetlist(theCDLFileName):
     myCommentRE = re.compile("^\*")
     myBlankRE = re.compile("^\s*$")
     myLine = ""
-    mySubcircuits = []
+    myLongLines = []
     for line_it in myCDLFile:
         if myCommentRE.search(line_it): continue  #ignore comments
         if myBlankRE.match(line_it): continue  #ignore blank lines
+        line_it.replace(" /", " ")  # remove optional subcircuit delimiter 
         if myContinuationRE.search(line_it):
             myLine += re.sub("^\+", " ", line_it)
         else:
             if myLine:
                 myMatch = mySubcktStartRE.search(myLine)
                 if myMatch:
-                    gNetlist[myMatch.group(1)] = {
-                        'instances': {}, 'mos_models': {}, 'resistor_count': 0, 'checked': False
+                    myName = myMatch.group(1)
+                    gNetlist[myName] = {
+                        'instances': {}, 'mos_models': {},
+                        'resistor_count': 0, 'other_count': 0, 'checked': False
                     }
-                mySubcircuits.append(myLine)
+                    if myName in theCellOverrideList and theCellOverrideList[myName] = 'IGNORE':
+                        gNetlist[mySubcircuitName]['small'] = True
+                myLongLines.append(myLine)
             myLine = line_it
-    if myLine != mySubcircuits[-1]:
-        mySubcircuits.append(myLine)
-    return mySubcircuits
+    if myLine != myLongLines[-1]:
+        myLongLines.append(myLine)
+    return myLongLines
 
 def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
     """Count instances, mos models, resistor in each subckt and return hierarchy dictionary."""
@@ -110,7 +116,7 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
     myInstanceRE = re.compile("^[xX]")
     myMosRE = re.compile("^[mM]\S*\s+(\S+)\s+\S+\s+(\S+)\s+\S+\s+(\S+)")
     myResistorRE = re.compile("^[rR]\S*\s+(\S+)\s+(\S+)")
-    myParameterRE = re.compile("([^=\s]+=\S+)|(\$\S+)")
+    myParameterRE = re.compile("([^=\s]+=[^=\s]+)|(\$\S+)")
     myCircuit = None
     for line_it in theSubcircuits:
         myMatch = mySubcktStartRE.search(line_it)
@@ -137,9 +143,7 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
                     break  # Stop at first parameter.
                 else:
                     myInstance = myWord  # Last word before first parameter
-            if myInstance in theCellOverrideList and theCellOverrideList[myInstance] == 'IGNORE':
-                gNetlist[myInstance]['small'] = True
-            else:
+            if not small in gNetlist[myInstance]:
                 if myInstance not in myCircuit['instances']:
                     myCircuit['instances'][myInstance] = 0
                 myCircuit['instances'][myInstance] += 1
@@ -160,6 +164,8 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
 
         if mySubcktEndRE.search(line_it): 
             myCircuit = None
+        else:
+            myCircuit['other_count'] += 1
 
 def PrintSmallCells(theCellOverrideList, theTopCell):
     """Print list of cells to expand into parent.
@@ -175,10 +181,10 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     myCircuit = gNetlist[theTopCell]
     if myCircuit['checked'] == True: return  # Already processed
     myCircuit['checked'] = True
-    if theTopCell in theCellOverrideList and theCellOverrideList[theTopCell] == 'KEEP':
-        return  # Algorithm override
     for instance_it in myCircuit['instances'].keys():
         PrintSmallCells(theCellOverrideList, instance_it)  # Recursive call
+        if instance_it in gBoxlist:
+            gBoxlist[instance_it] += 1
         if 'small' in gNetlist[instance_it]:
             # Smash the small cells into the parent cells
             for subinstance_it in gNetlist[instance_it]['instances']:
@@ -215,6 +221,11 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
         mySmashFlag = False  # Keep circuits with 1 instance and a mos or resistor
     if re.search("ICV_", theTopCell) or re.search("\$\$", theTopCell):
         mySmashFlag = True  # Smash circuits with ICV_ or $$ in cell name
+    if not (myCircuit[instances] or myCircuit[mos_models]
+            or myCircuit['resistor_count'] or myCircuit['other_count'] = 0):
+        gBoxlist[theTopCell] = 0
+    if theTopCell in theCellOverrideList and theCellOverrideList[theTopCell] == 'KEEP':
+        mySmashFlag = False
     if mySmashFlag or (theTopCell in theCellOverrideList 
                        and theCellOverrideList[theTopCell] == 'EXPAND'):
         myCircuit['small'] = True
@@ -230,6 +241,11 @@ def PrintIgnoreCells(theCellOverrideList):
             print('LVS BOX ' + cell_it)
             print('LVS FILTER ' + cell_it + " OPEN")
 
+def PrintBoxCellUsage():
+    """Print box cell usage as comment."""
+    for cell_it in sorted(gBoxlist):
+        print("// box " + cell_it + ": " + str(gBoxlist[cell_it]))
+
 def main(argv):
     """Print list of cells to expand during Calibre SVS
 
@@ -240,10 +256,11 @@ def main(argv):
         print("usage: expand_cells.py overrideCellFile topCell cdlFile[.gz]")
         raise "Usage Error"
     myCellOverrideList = ReadCellOverrides(argv[0])
-    mySubcircuits = ReadNetlist(argv[2])
+    mySubcircuits = ReadNetlist(argv[2], myCellOverrideList)
     AnalyzeNetlist(mySubcircuits, myCellOverrideList)
     PrintIgnoreCells(myCellOverrideList)
     PrintSmallCells(myCellOverrideList, argv[1])
+    PrintBoxCellUsage()
 
 if __name__ == '__main__':
     main(sys.argv[1:])
