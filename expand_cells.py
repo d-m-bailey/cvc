@@ -173,12 +173,13 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     unless override file forced KEEP and no parameters
     """
     myCircuit = gNetlist[theTopCell]
-    if myCircuit['checked'] == True: return  # Already processed
+#    if myCircuit['checked'] == True: return  # Already processed
     myCircuit['checked'] = True
     if theTopCell in theCellOverrideList and theCellOverrideList[theTopCell] == 'KEEP':
         return  # Algorithm override
     for instance_it in myCircuit['instances'].keys():
-        PrintSmallCells(theCellOverrideList, instance_it)  # Recursive call
+	if not gNetlist[instance_it]['checked']:
+            PrintSmallCells(theCellOverrideList, instance_it)  # Recursive call
         if 'small' in gNetlist[instance_it]:
             # Smash the small cells into the parent cells
             for subinstance_it in gNetlist[instance_it]['instances']:
