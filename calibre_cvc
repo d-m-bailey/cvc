@@ -19,7 +19,6 @@
 
 echo $0 $*
 
-timestamp=`date +%Y%m%d_%H%M`
 rulefile=cvc.svrf
 
 if [[ ${#*} -ne 3 ]]; then 
@@ -35,12 +34,10 @@ additionalRules="cvc.include"
 #   Additional rules include the following statements
 #   CASE
 #   GLOBAL
-#   TRACE
-#   LVS INITIALIZE
+#   VIRTUAL
 #   STRICT WL
-#   GLOBALS ARE PORTS
-#   LVS REDUCE
-#   LVS FILTER
+#   LVS (except LVS SOFTCHK[ignored], LVS REPORT/WRITE[fixed], and LVS INJECT LOGIC[always NO])
+#   TRACE
 
 cellOverrides="override.list"
 #   Cell overrides are
@@ -53,8 +50,6 @@ if [[ "${OUTPUT##*.}" == "gz" ]]; then
 	OUTPUT="${OUTPUT%%.gz}"
 fi
 
-SOURCE_DATA=$DATA
-
 log="cdl.log"
 echo "log file: $log"
 
@@ -62,10 +57,8 @@ cat > $rulefile <<-svs_rule
 	LAYOUT PRIMARY $PRIMARY
 	LAYOUT PATH "$DATA"
 	SOURCE PRIMARY $PRIMARY
-	SOURCE PATH "$SOURCE_DATA"
+	SOURCE PATH "$DATA"
 	LVS WRITE SOURCE NETLIST "$OUTPUT.0"
-	LVS SPICE CULL PRIMITIVE SUBCIRCUITS YES
-	LVS SPICE SLASH IS SPACE NO
 
 	LVS REPORT "lvs_cdl.rep"
 	LVS REPORT MAXIMUM 100
@@ -75,21 +68,31 @@ cat > $rulefile <<-svs_rule
 	SOURCE SYSTEM SPICE
 	LAYOUT SYSTEM SPICE
 
-	VIRTUAL CONNECT COLON YES
+	LVS INJECT LOGIC NO
 svs_rule
 
 if [[ -f $additionalRules ]]; then
+	echo "Adding $additionalRules to cvc.svrf"
 	cat $additionalRules >> $rulefile
+else
+	echo "Warning: missing $additionalRules"
 fi
+echo "Finding cells to expand using $cellOverrides ..."
 if [[ -f $cellOverrides ]]; then
-        echo "Finding cells to expand..."
         expand_cells.py $cellOverrides $PRIMARY $DATA >> $rulefile
+else
+	echo "Warning: missing $cellOverrides"
+	expand_cells.py /dev/null $PRIMARY $DATA >> $rulefile
 fi
 
 calibre -hier -automatch -lvs -64 $rulefile > $log
 tail -15 $log
 
 echo "Remove leading double characters and changing commented parameters ..."
+# ^RR -> R
+# $LDD deleted (functionality in cvc model file LDDN/LDDP)
+# $a -> a
+# $SUB= -> SUB= -> $SUB=  (no change)
 sed -e 's/^\(.\)\1/\1/' \
     -e 's/\$SUB=/^SUB=/' \
     -e 's/\$LDD//' \
@@ -97,7 +100,7 @@ sed -e 's/^\(.\)\1/\1/' \
     -e 's/\^SUB=/$SUB=/' $OUTPUT.0 > $OUTPUT
 
 if [[ ! -z "${compress+x}" ]]; then
-	gzip $OUTPUT
+	gzip -f $OUTPUT
 fi
 
 #23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
