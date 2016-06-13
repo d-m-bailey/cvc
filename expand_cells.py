@@ -75,7 +75,8 @@ def OpenFile(theFileName):
     return myFile
 
 gNetlist = {}
-gBoxlist = {}
+gBoxList = {}
+gParameterList = {}
 
 def ReadNetlist(theCDLFileName, theCellOverrideList):
     """Read a CDL netlist and return as a list with continuation lines merged"""
@@ -140,6 +141,9 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
                                 #'resistor_count': 0, 'checked': False
                             #}
                         gNetlist[myInstance]['small'] = True  # Expand instances with parameters.
+                        if not myInstance in gParameterList:
+                            gParameterList[myInstance] = 0
+                        gParameterList[myInstance] += 1
                     break  # Stop at first parameter.
                 else:
                     myInstance = myWord  # Last word before first parameter
@@ -163,6 +167,9 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
             continue
 
         if mySubcktEndRE.search(line_it): 
+            if not (myCircuit['instances'] or myCircuit['mos_models']
+                    or myCircuit['resistor_count'] or myCircuit['other_count']):
+                gBoxList[theTopCell] = 0
             myCircuit = None
         elif myCircuit:
             myCircuit['other_count'] += 1
@@ -184,8 +191,6 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     for instance_it in myCircuit['instances'].keys():
         if not gNetlist[instance_it]['checked']:
             PrintSmallCells(theCellOverrideList, instance_it)  # Recursive call
-        if instance_it in gBoxlist:
-            gBoxlist[instance_it] += 1
         if 'small' in gNetlist[instance_it]:
             # Smash the small cells into the parent cells
             for subinstance_it in gNetlist[instance_it]['instances']:
@@ -198,11 +203,12 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
             for mos_it in gNetlist[instance_it]['mos_models']:
                 if mos_it not in myCircuit['mos_models']:
                     myCircuit['mos_models'][mos_it] = 0
-                myCircuit['mos_models'][mos_it] += (
-                    gNetlist[instance_it]['mos_models'][mos_it] 
-                    * myCircuit['instances'][instance_it]
-                )
-            myCircuit['resistor_count'] += gNetlist[instance_it]['resistor_count']
+                myCircuit['mos_models'][mos_it] += (gNetlist[instance_it]['mos_models'][mos_it]
+                                                    * myCircuit['instances'][instance_it])
+            myCircuit['resistor_count'] += (gNetlist[instance_it]['resistor_count']
+                                            * myCircuit['instances']['instance_it'])
+            myCircuit['other_count'] += (gNetlist[instance_it]['other_count']
+                                            * myCircuit['instances']['instance_it'])
             del gNetlist[theTopCell]['instances'][instance_it]
 
     mySmashFlag = True
@@ -222,19 +228,16 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
         mySmashFlag = False  # Keep circuits with 1 instance and a mos or resistor
     if re.search("ICV_", theTopCell) or re.search("\$\$", theTopCell):
         mySmashFlag = True  # Smash circuits with ICV_ or $$ in cell name
-    if not (myCircuit['instances'] or myCircuit['mos_models']
-            or myCircuit['resistor_count'] or myCircuit['other_count']):
-        gBoxlist[theTopCell] = 0
     if theTopCell in theCellOverrideList and theCellOverrideList[theTopCell] == 'KEEP':
         mySmashFlag = False
     if mySmashFlag or (theTopCell in theCellOverrideList 
                        and theCellOverrideList[theTopCell] == 'EXPAND'):
         myCircuit['small'] = True
-        print('LVS EXCLUDE HCELL ' + theTopCell)
-#    print("cell %s, instance count %d, mos model count %d, total mos count %d, resistor count %d"
-#          %  (theTopCell, myInstanceCount, len(myCircuit['mos_models']), 
-#              myTotalMosCount, myCircuit['resistor_count']))
-
+        print("LVS EXCLUDE HCELL %s // X %d, MM %d, M %d, R %d, ? %d" % (
+            theTopCell, myInstanceCount, len(myCircuit['mos_models']),
+            myTotalMosCount, myCircuit['resistor_count'], myCircuit['other_count']
+        ))
+        
 def PrintIgnoreCells(theCellOverrideList):
     """Print cells that were ignored in override file."""
     for cell_it in theCellOverrideList:
@@ -244,8 +247,9 @@ def PrintIgnoreCells(theCellOverrideList):
 
 def PrintBoxCellUsage():
     """Print box cell usage as comment."""
-    for cell_it in sorted(gBoxlist):
-        print("// box " + cell_it + ": " + str(gBoxlist[cell_it]))
+    for cell_it in sorted(gBoxList):
+        if cell_it in gParameterList:
+            print("// box " + cell_it + ": " + str(gBoxList[cell_it]))
 
 def main(argv):
     """Print list of cells to expand during Calibre SVS
