@@ -89,7 +89,7 @@ def ReadNetlist(theCDLFileName, theCellOverrideList):
     for line_it in myCDLFile:
         if myCommentRE.search(line_it): continue  #ignore comments
         if myBlankRE.match(line_it): continue  #ignore blank lines
-        line_it.replace(" /", " ")  # remove optional subcircuit delimiter 
+        line_it = line_it.replace(" /", " ")  # remove optional subcircuit delimiter 
         if myContinuationRE.search(line_it):
             myLine += re.sub("^\+", " ", line_it)
         else:
@@ -101,7 +101,7 @@ def ReadNetlist(theCDLFileName, theCellOverrideList):
                         'instances': {}, 'mos_models': {},
                         'resistor_count': 0, 'other_count': 0, 'checked': False
                     }
-                    if myName in theCellOverrideList and theCellOverrideList[myName] = 'IGNORE':
+                    if myName in theCellOverrideList and theCellOverrideList[myName] == 'IGNORE':
                         gNetlist[mySubcircuitName]['small'] = True
                 myLongLines.append(myLine)
             myLine = line_it
@@ -143,7 +143,7 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
                     break  # Stop at first parameter.
                 else:
                     myInstance = myWord  # Last word before first parameter
-            if not small in gNetlist[myInstance]:
+            if not 'small' in gNetlist[myInstance]:
                 if myInstance not in myCircuit['instances']:
                     myCircuit['instances'][myInstance] = 0
                 myCircuit['instances'][myInstance] += 1
@@ -164,7 +164,7 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
 
         if mySubcktEndRE.search(line_it): 
             myCircuit = None
-        else:
+        elif myCircuit:
             myCircuit['other_count'] += 1
 
 def PrintSmallCells(theCellOverrideList, theTopCell):
@@ -222,7 +222,7 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
         mySmashFlag = False  # Keep circuits with 1 instance and a mos or resistor
     if re.search("ICV_", theTopCell) or re.search("\$\$", theTopCell):
         mySmashFlag = True  # Smash circuits with ICV_ or $$ in cell name
-    if not (myCircuit[instances] or myCircuit[mos_models]
+    if not (myCircuit['instances'] or myCircuit['mos_models']
             or myCircuit['resistor_count'] or myCircuit['other_count']):
         gBoxlist[theTopCell] = 0
     if theTopCell in theCellOverrideList and theCellOverrideList[theTopCell] == 'KEEP':
