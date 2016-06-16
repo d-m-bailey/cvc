@@ -103,7 +103,7 @@ def ReadNetlist(theCDLFileName, theCellOverrideList):
                         'resistor_count': 0, 'other_count': 0, 'checked': False
                     }
                     if myName in theCellOverrideList and theCellOverrideList[myName] == 'IGNORE':
-                        gNetlist[mySubcircuitName]['small'] = True
+                        gNetlist[myName]['small'] = True
                 myLongLines.append(myLine)
             myLine = line_it
     if myLine != myLongLines[-1]:
@@ -169,7 +169,7 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
         if mySubcktEndRE.search(line_it): 
             if not (myCircuit['instances'] or myCircuit['mos_models']
                     or myCircuit['resistor_count'] or myCircuit['other_count']):
-                gBoxList[theTopCell] = 0
+                gBoxList[mySubcircuitName] = 0
             myCircuit = None
         elif myCircuit:
             myCircuit['other_count'] += 1
@@ -206,9 +206,9 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
                 myCircuit['mos_models'][mos_it] += (gNetlist[instance_it]['mos_models'][mos_it]
                                                     * myCircuit['instances'][instance_it])
             myCircuit['resistor_count'] += (gNetlist[instance_it]['resistor_count']
-                                            * myCircuit['instances']['instance_it'])
+                                            * myCircuit['instances'][instance_it])
             myCircuit['other_count'] += (gNetlist[instance_it]['other_count']
-                                            * myCircuit['instances']['instance_it'])
+                                            * myCircuit['instances'][instance_it])
             del gNetlist[theTopCell]['instances'][instance_it]
 
     mySmashFlag = True
