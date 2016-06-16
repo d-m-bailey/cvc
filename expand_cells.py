@@ -147,10 +147,9 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
                     break  # Stop at first parameter.
                 else:
                     myInstance = myWord  # Last word before first parameter
-            if not 'small' in gNetlist[myInstance]:
-                if myInstance not in myCircuit['instances']:
-                    myCircuit['instances'][myInstance] = 0
-                myCircuit['instances'][myInstance] += 1
+            if myInstance not in myCircuit['instances']:
+                myCircuit['instances'][myInstance] = 0
+            myCircuit['instances'][myInstance] += 1
             continue
 
         myMatch = myMosRE.search(line_it)
