@@ -160,10 +160,11 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
             if myMatch:
                 mySubcircuitName = myMatch.group(1)
                 myCircuit = gNetlist[mySubcircuitName]
+                myDefinition = line_it
             elif mySubcktEndRE.search(line_it):
                 if not (myCircuit['instances'] or myCircuit['mos_models']
                         or myCircuit['resistor_count'] or myCircuit['other_count']):
-                    gBoxList[mySubcircuitName] = 0
+                    gBoxList[mySubcircuitName] = myDefinition.strip()
                 myCircuit = None
         elif myCircuit:
             myCircuit['other_count'] += 1
@@ -248,7 +249,8 @@ def PrintBoxCellUsage():
     """Print box cell usage as comment."""
     for cell_it in sorted(gBoxList):
         if cell_it in gParameterList:
-            print("// box " + cell_it + ": " + str(gBoxList[cell_it]))
+            print("// box " + cell_it + ": " + str(gParameterList[cell_it]))
+            print("//" + str(gBoxList[cell_it]))
 
 def main(argv):
     """Print list of cells to expand during Calibre SVS
