@@ -99,7 +99,8 @@ def ReadNetlist(theCDLFileName, theCellOverrideList):
                             'instances': {}, 'mos_models': {},
                             'resistor_count': 0, 'other_count': 0, 'checked': False
                         }
-                        if myName in theCellOverrideList and theCellOverrideList[myName] == 'IGNORE':
+                        if (myName in theCellOverrideList
+                                and theCellOverrideList[myName] == 'IGNORE'):
                             gNetlist[myName]['small'] = True
                 myLongLines.append(myLine)
             myLine = line_it
@@ -183,8 +184,9 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     for instance_it in myCircuit['instances'].keys():
         if not gNetlist[instance_it]['checked']:
             PrintSmallCells(theCellOverrideList, instance_it)  # Recursive call
-        if 'small' in gNetlist[instance_it]:
-            # Smash the small cells into the parent cells
+        if ('small' in gNetlist[instance_it]
+                and not (instance_it in gBoxList and instance_it in gParameterList)):
+            # Smash the small cells into the parent cells (keep parameterized boxes)
             for subinstance_it in gNetlist[instance_it]['instances']:
                 if subinstance_it not in myCircuit['instances']:
                     myCircuit['instances'][subinstance_it] = 0
@@ -221,6 +223,8 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     if re.search("ICV_", theTopCell) or re.search("\$\$", theTopCell):
         mySmashFlag = True  # Smash circuits with ICV_ or $$ in cell name
     if theTopCell in theCellOverrideList and theCellOverrideList[theTopCell] == 'KEEP':
+        mySmashFlag = False
+    if theTopCell in gBoxList and theTopCell in gParameterList:
         mySmashFlag = False
     if mySmashFlag or (theTopCell in theCellOverrideList 
                        and theCellOverrideList[theTopCell] == 'EXPAND'):
