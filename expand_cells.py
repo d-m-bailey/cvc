@@ -213,7 +213,8 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     mySmashFlag = True
     myInstanceCount = 0
     for instance_it in myCircuit['instances']:
-        myInstanceCount += myCircuit['instances'][instance_it]
+        if not 'small' in gNetlist[instance_it]:  # Don't count small instances
+            myInstanceCount += myCircuit['instances'][instance_it]
     if myInstanceCount > 1:
         mySmashFlag = False  # Keep circuits with >= 2 instance
     if len(myCircuit['mos_models']) > 1:
@@ -227,10 +228,12 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
         mySmashFlag = False  # Keep circuits with 1 instance and a mos or resistor
     if re.search("ICV_", theTopCell) or re.search("\$\$", theTopCell):
         mySmashFlag = True  # Smash circuits with ICV_ or $$ in cell name
-    if theTopCell in theCellOverrideList and theCellOverrideList[theTopCell] == 'KEEP':
-        mySmashFlag = False
-    if mySmashFlag or (theTopCell in theCellOverrideList 
-                       and theCellOverrideList[theTopCell] == 'EXPAND'):
+    if theTopCell in theCellOverrideList:  # Override calculation
+        if theCellOverrideList[theTopCell] == 'KEEP':
+            mySmashFlag = False
+        elif theCellOverrideList[theTopCell] == 'EXPAND':
+            mySmashFlag = True
+    if mySmashFlag:
         myCircuit['small'] = True
         print("LVS EXCLUDE HCELL %s // X %d, MM %d, M %d, R %d, ? %d" % (
             theTopCell, myInstanceCount, len(myCircuit['mos_models']),
