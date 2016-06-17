@@ -82,28 +82,26 @@ def ReadNetlist(theCDLFileName, theCellOverrideList):
     """Read a CDL netlist and return as a list with continuation lines merged"""
     mySubcktStartRE = re.compile("^\.[sS][uU][bB][cC][kK][tT]\s+(\S+)")
     myCDLFile = OpenFile(theCDLFileName)
-    myContinuationRE = re.compile("^\+")
-    myCommentRE = re.compile("^\*")
-    myBlankRE = re.compile("^\s*$")
     myLine = ""
     myLongLines = []
     for line_it in myCDLFile:
-        if myCommentRE.search(line_it): continue  #ignore comments
-        if myBlankRE.match(line_it): continue  #ignore blank lines
-        line_it = line_it.replace(" /", " ")  # remove optional subcircuit delimiter 
-        if myContinuationRE.search(line_it):
-            myLine += re.sub("^\+", " ", line_it)
+        if line_it.startswith("*"): continue  #ignore comments
+        if not line_it.strip(): continue  #ignore blank lines
+        if line_it.startswith("+"):
+            myLine += " " + line_it[1:]
         else:
             if myLine:
-                myMatch = mySubcktStartRE.search(myLine)
-                if myMatch:
-                    myName = myMatch.group(1)
-                    gNetlist[myName] = {
-                        'instances': {}, 'mos_models': {},
-                        'resistor_count': 0, 'other_count': 0, 'checked': False
-                    }
-                    if myName in theCellOverrideList and theCellOverrideList[myName] == 'IGNORE':
-                        gNetlist[myName]['small'] = True
+                if myLine.startswith("."):
+                    myMatch = mySubcktStartRE.search(myLine)
+                    if myMatch:
+                        myName = myMatch.group(1)
+                        gNetlist[myName] = {
+                            'instances': {}, 'mos_models': {},
+                            'resistor_count': 0, 'other_count': 0, 'checked': False
+                        }
+                        if (myName in theCellOverrideList
+                                and theCellOverrideList[myName] == 'IGNORE'):
+                            gNetlist[myName]['small'] = True
                 myLongLines.append(myLine)
             myLine = line_it
     if myLine != myLongLines[-1]:
@@ -114,62 +112,59 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
     """Count instances, mos models, resistor in each subckt and return hierarchy dictionary."""
     mySubcktStartRE = re.compile("^\.[sS][uU][bB][cC][kK][tT]\s+(\S+)")
     mySubcktEndRE = re.compile("^\.[eE][nN][dD][sS]")
-    myInstanceRE = re.compile("^[xX]")
+    myPinRE = re.compile("\$PINS")
     myMosRE = re.compile("^[mM]\S*\s+(\S+)\s+\S+\s+(\S+)\s+\S+\s+(\S+)")
     myResistorRE = re.compile("^[rR]\S*\s+(\S+)\s+(\S+)")
     myParameterRE = re.compile("([^=\s]+=[^=\s]+)|(\$\S+)")
     myCircuit = None
     for line_it in theSubcircuits:
-        myMatch = mySubcktStartRE.search(line_it)
-        if myMatch:
-            mySubcircuitName = myMatch.group(1)
-            #myNetlist[mySubcircuitName] = {
-                #'instances': {}, 'mos_models': {}, 'resistor_count': 0, 'checked': False
-            #}
-            myCircuit = gNetlist[mySubcircuitName]
-            continue
-
-        if myInstanceRE.search(line_it):
+        if line_it.startswith("X"):
             myInstance = ""
-            for word_it in line_it.split():
-                myWord = word_it.strip()
-                if myParameterRE.match(myWord): 
-                    if not re.match("\$PINS", myWord):
-                        #if myInstance not in myNetlist:
-                            #myNetlist[myInstance] = {
-                            	#'instances': {}, 'mos_models': {},
-                                #'resistor_count': 0, 'checked': False
-                            #}
-                        gNetlist[myInstance]['small'] = True  # Expand instances with parameters.
-                        if not myInstance in gParameterList:
-                            gParameterList[myInstance] = 0
-                        gParameterList[myInstance] += 1
-                    break  # Stop at first parameter.
-                else:
-                    myInstance = myWord  # Last word before first parameter
+            myWordList = line_it.split()
+            if myParameterRE.match(myWordList[-1]):
+                for word_it in myWordList:
+    #                myWord = word_it.strip()
+                    if myParameterRE.match(word_it):
+                        if not myPinRE.match(word_it):
+                            myInstance = myInstance.replace("/", "")
+                            gNetlist[myInstance]['small'] = True  # Expand parameterized instances.
+                            if not myInstance in gParameterList:
+                                gParameterList[myInstance] = 0
+                            gParameterList[myInstance] += 1
+                        break  # Stop at first parameter.
+                    else:
+                        myInstance = word_it  # Last word before first parameter
+            else:
+                myInstance = myWordList[-1]
+            myInstance = myInstance.replace("/", "")
             if myInstance not in myCircuit['instances']:
                 myCircuit['instances'][myInstance] = 0
             myCircuit['instances'][myInstance] += 1
-            continue
-
-        myMatch = myMosRE.search(line_it)
-        if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D MOS.
-            myMosModel = myMatch.group(3)
-            if myMosModel not in myCircuit['mos_models']:
-                myCircuit['mos_models'][myMosModel] = 0 
-            myCircuit['mos_models'][myMosModel] += 1 
-            continue
-
-        myMatch = myResistorRE.search(line_it)
-        if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D resistor.
-            myCircuit['resistor_count'] += 1
-            continue
-
-        if mySubcktEndRE.search(line_it): 
-            if not (myCircuit['instances'] or myCircuit['mos_models']
-                    or myCircuit['resistor_count'] or myCircuit['other_count']):
-                gBoxList[mySubcircuitName] = 0
-            myCircuit = None
+        elif line_it.startswith("M"):
+            myMatch = myMosRE.search(line_it)
+            if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D MOS.
+                myMosModel = myMatch.group(3)
+                if myMosModel not in myCircuit['mos_models']:
+                    myCircuit['mos_models'][myMosModel] = 0
+                myCircuit['mos_models'][myMosModel] += 1
+            else:
+                myCircuit['other_count'] += 1
+        elif line_it.startswith("R"):
+            myMatch = myResistorRE.search(line_it)
+            if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D resistor.
+                myCircuit['resistor_count'] += 1
+            else:
+                myCircuit['other_count'] += 1
+        elif line_it.startswith("."):
+            myMatch = mySubcktStartRE.search(line_it)
+            if myMatch:
+                mySubcircuitName = myMatch.group(1)
+                myCircuit = gNetlist[mySubcircuitName]
+            elif mySubcktEndRE.search(line_it):
+                if not (myCircuit['instances'] or myCircuit['mos_models']
+                        or myCircuit['resistor_count'] or myCircuit['other_count']):
+                    gBoxList[mySubcircuitName] = 0
+                myCircuit = None
         elif myCircuit:
             myCircuit['other_count'] += 1
 
@@ -185,13 +180,13 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     unless override file forced KEEP and no parameters
     """
     myCircuit = gNetlist[theTopCell]
-#    if myCircuit['checked'] == True: return  # Already processed
     myCircuit['checked'] = True
     for instance_it in myCircuit['instances'].keys():
         if not gNetlist[instance_it]['checked']:
             PrintSmallCells(theCellOverrideList, instance_it)  # Recursive call
-        if 'small' in gNetlist[instance_it]:
-            # Smash the small cells into the parent cells
+        if ('small' in gNetlist[instance_it]
+                and not (instance_it in gBoxList and instance_it in gParameterList)):
+            # Smash the small cells into the parent cells (keep parameterized boxes)
             for subinstance_it in gNetlist[instance_it]['instances']:
                 if subinstance_it not in myCircuit['instances']:
                     myCircuit['instances'][subinstance_it] = 0
@@ -228,6 +223,8 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
         mySmashFlag = False  # Keep circuits with 1 instance and a mos or resistor
     if re.search("ICV_", theTopCell) or re.search("\$\$", theTopCell):
         mySmashFlag = True  # Smash circuits with ICV_ or $$ in cell name
+    if theTopCell in gBoxList and theTopCell in gParameterList:
+        mySmashFlag = False
     if theTopCell in theCellOverrideList:  # Override calculation
         if theCellOverrideList[theTopCell] == 'KEEP':
             mySmashFlag = False
@@ -261,7 +258,7 @@ def main(argv):
     options, arguments = getopt.getopt(argv, "?")
     if len(argv) != 3:
         print("usage: expand_cells.py overrideCellFile topCell cdlFile[.gz]")
-        raise "Usage Error"
+        return
     myCellOverrideList = ReadCellOverrides(argv[0])
     mySubcircuits = ReadNetlist(argv[2], myCellOverrideList)
     AnalyzeNetlist(mySubcircuits, myCellOverrideList)
