@@ -76,7 +76,7 @@ Private Function CheckCVCPowerDirectory() As Boolean
         Else
             myAddress = foundRange.Address
             gPowerFileDirectory = StandardPath(foundRange.Offset(0, 1).Value)
-            Set foundNext = Cells.FindNext(After:=foundRange)
+            Set foundNext = ActiveSheet.Cells.FindNext(After:=foundRange)
             If Not myAddress = foundNext.Address Then
                 MsgBox "Multiple 'Power file directory' at " & myAddress _
                     & " and " & foundNext.Address
@@ -124,7 +124,7 @@ Private Function CheckCVCModelFile() As Boolean
         Else
             myAddress = foundRange.Address
             gModelFile = StandardPath(foundRange.Offset(0, 1).Value)
-            Set foundNext = Cells.FindNext(After:=foundRange)
+            Set foundNext = ActiveSheet.Cells.FindNext(After:=foundRange)
             If Not myAddress = foundNext.Address Then
                 MsgBox "Multiple 'Model file' at " & myAddress & " and " & foundNext.Address
                 CheckCVCModelFile = False
@@ -189,14 +189,14 @@ End Sub
 Sub GetNets(theRange As Range)
     'Set gNetName, gNetType
     'Format:  Net Type
-    'Read until 'History' or 10 blank nets
+    'Read until 'History' or 100 blank nets
     'Rows with blank types are comments
     Dim myNetCount As Integer
     Dim myBlankRowCount As Integer
     
     myBlankRowCount = 0
     myNetCount = 0
-    While (theRange.Offset(myNetCount + 1, 0) <> "History" And myBlankRowCount < 10)
+    While (theRange.Offset(myNetCount + 1, 0) <> "History" And myBlankRowCount < 100)
         myNetCount = myNetCount + 1
         ReDim Preserve gNetName(1 To myNetCount)
         ReDim Preserve gNetType(1 To myNetCount)
@@ -226,7 +226,7 @@ Sub WriteOnePowerFile(theRange As Range)
         Open myPowerFileName For Output As #1
         For myNetIndex = LBound(gNetName) To UBound(gNetName)
             If gNetType(myNetIndex) = "blank" Then
-                Print #1, ""; vbLf;
+'                Print #1, ""; vbLf;
             ElseIf gNetType(myNetIndex) = "comment" Then
                 Print #1, "#"; gNetName(myNetIndex); vbLf;
             ElseIf gNetType(myNetIndex) = "internal" Then
@@ -313,14 +313,13 @@ Private Sub WriteModelFile()
     Open gModelFile For Output As #1
     myBlankCount = 0
     myRowIndex = 0
-    While myBlankCount < 10 And Not myRange.Offset(myRowIndex, 0) = "History"
+    While myBlankCount < 100 And Not myRange.Offset(myRowIndex, 0) = "History"
         If myRange.Offset(myRowIndex, 0) = "Device" _
                 And myRange.Offset(myRowIndex, 1) = "Type" Then
             myParameters = GetParameters(myRange, myRowIndex)
             myBlankCount = 0
         ElseIf myRange.Offset(myRowIndex, 0) = "" Then
             myBlankCount = myBlankCount + 1
-            Print #1, ""; vbLf;
         ElseIf myRange.Offset(myRowIndex, 1) = "" Then
             myBlankCount = 0
             Print #1, "#" & myRange.Offset(myRowIndex, 0); vbLf;
@@ -378,7 +377,7 @@ End Sub
 
 Private Function FindFirst(theString As String) As Range
     'Return first cell in sheet that exactly matches theString
-    Set FindFirst = Cells.Find(What:=theString, LookIn:=xlFormulas, _
+    Set FindFirst = ActiveSheet.Cells.Find(What:=theString, LookIn:=xlFormulas, _
         LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, _
         MatchCase:=False, MatchByte:=False, SearchFormat:=False, _
         After:=Cells(1, 1))
