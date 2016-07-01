@@ -198,7 +198,7 @@ class ResultFile():
         Returns: list of lines from error file detailing the error matching theError.
           If the number of errors is equal to the number of subcircuits, only extract details 
           for 1 error (a sample). If the number of errors is not equal to the number of 
-          subcircuits, extract details for all errors.
+          subcircuits, extract details for up to 10 errors.
         """
         myMatch = re.search(
            "(?:.*:)?(.*) INFO.*SUBCKT ([^\)]*\))([^ ]*) error count ([0-9]+)/([0-9]+)", 
@@ -207,7 +207,6 @@ class ResultFile():
            # (1) section, (2) top cell name, (3) device name, (4) error count, (5) cell count
         if not myMatch:
             return theError['errorText']  # display the error text as is
-#        myErrorFile = OpenFile(self.errorFileName)
         myErrorRecord = cvc_globals.errorList[cvc_globals.priorityMap[myMatch.group(1)]]
         mySectionRE = re.compile(myErrorRecord['searchText'])
         myDeviceRE = None
@@ -252,7 +251,6 @@ class ResultFile():
                 myCorrectSectionFlag = False
                 if myOutput:
                     break  # relavent errors only exist in one section
-#        myErrorFile.close()
         return myOutput
                 
     def CountErrors(self):
