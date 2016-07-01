@@ -41,6 +41,7 @@ class ResultFile():
       modeRE: regular expression to get mode name
       TopRE: regular expression to get top cell name
       summaryRE: regular expression to identify error detail lines
+      logFileRE: regular expression to get base log file name
       errorFileRE: regular expression to get error file name
     Instance variables:
       topCell: Name of the top ciruit.
@@ -83,7 +84,7 @@ class ResultFile():
         self.topCell = ""
         self.errorList = []
         self.displayList = []
-        self.errorData = []
+        self._errorData = []
 
         try:
             myLogFile = OpenFile(theLogFileName)
@@ -93,12 +94,11 @@ class ResultFile():
         self.ExtractLogErrors(myLogFile)
         myLogFile.close()
 
-        myRelativePath = os.path.join(os.path.dirname(theLogFileName), 
-                                      os.path.basename(self.errorFileName))
+        myRelativePath = self._CalculateErrorPath(theLogFileName,
+                                                  self._baseLogFileName,
+                                                  os.path.basename(self.errorFileName))
         try:
-            myErrorFile = OpenFile(self._CalculateErrorPath(theLogFileName,
-                                                            self._baseLogFileName,
-                                                            os.path.basename(self.errorFileName)))
+            myErrorFile = OpenFile(myRelativePath)
         except:
             print ("ERROR: Could not open "  + myRelativePath)
             raise IOError    
@@ -109,11 +109,13 @@ class ResultFile():
         """Calculate error path name using difference between original and current file name."""
         myDirectory = os.path.dirname(theCurrentLogFileName)
         myCurrentBaseName = os.path.basename(theCurrentLogFileName)
+        print("current: " + myCurrentBaseName + ", base: " +  theBaseLogFileName)
         if myCurrentBaseName != theBaseLogFileName:
-            mySuffix = myCurrentBaseName.replace(theBaseLogFileName.replace(".gz", "") + mySuffix)
+            mySuffix = myCurrentBaseName.replace(theBaseLogFileName, "")
         else:
             mySuffix = ".gz"
-        return(os.path.join(myDirectory, theErrorFileName.replace(".gz", "") + mySuffix))
+        return(os.path.normpath(os.path.join(myDirectory,
+                                             theErrorFileName.replace(".gz", "") + mySuffix)))
 
     def ExtractLogErrors(self, theFile):
         """Extract errors from log file.
@@ -129,6 +131,10 @@ class ResultFile():
         self.logFileName = os.path.abspath(theFile.name)
         try:
             for line_it in theFile:
+                if not self._baseLogFileName:
+                    myMatch = self.logFileRE.search(line_it)  # "^CVC: Log output to (.*)"
+                    if myMatch:
+                        self._baseLogFileName = os.path.basename(myMatch.group(1))
                 if not self.errorFileName:
                     myMatch = self.errorFileRE.search(line_it)  # "^CVC: Error output to (.*)"
                     if myMatch:
@@ -169,6 +175,7 @@ class ResultFile():
         myPriority = None
         try:
             for line_it in theFile:
+                self._errorData.append(line_it)
                 for error_it in cvc_globals.errorList:
                     if error_it['source'] == 'report' and error_it['regex'].search(line_it):
                         mySection = error_it['section']
@@ -220,7 +227,7 @@ class ResultFile():
         mySection = ""
         myLeadingLines = ""
         myErrorCount = 0
-        for line_it in self.errorData:
+        for line_it in self._errorData:
             if mySectionRE.search(line_it):  # Use lastest heading for short errors.
                 myCorrectSectionFlag = True
                 mySection = line_it
