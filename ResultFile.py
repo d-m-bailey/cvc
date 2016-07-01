@@ -109,7 +109,6 @@ class ResultFile():
         """Calculate error path name using difference between original and current file name."""
         myDirectory = os.path.dirname(theCurrentLogFileName)
         myCurrentBaseName = os.path.basename(theCurrentLogFileName)
-        print("current: " + myCurrentBaseName + ", base: " +  theBaseLogFileName)
         if myCurrentBaseName != theBaseLogFileName:
             mySuffix = myCurrentBaseName.replace(theBaseLogFileName, "")
         else:
