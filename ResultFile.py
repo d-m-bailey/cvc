@@ -68,6 +68,7 @@ class ResultFile():
     modeRE = re.compile("^CVC_MODE = '(.*)'")
     topRE = re.compile("^CVC_TOP = '(.*)'")
     summaryRE = re.compile("^(INFO|WARNING)")
+    logFileRE = re.compile("^CVC: Log output to (.*)")
     errorFileRE = re.compile("^CVC: Error output to (.*)")
     
     def __init__(self, theLogFileName):
@@ -78,9 +79,11 @@ class ResultFile():
         """
         self.modeName = ""
         self.errorFileName = ""
+        self._baseLogFileName = ""
         self.topCell = ""
         self.errorList = []
         self.displayList = []
+        self.errorData = []
 
         try:
             myLogFile = OpenFile(theLogFileName)
@@ -93,12 +96,24 @@ class ResultFile():
         myRelativePath = os.path.join(os.path.dirname(theLogFileName), 
                                       os.path.basename(self.errorFileName))
         try:
-            myErrorFile = OpenFile(myRelativePath)
+            myErrorFile = OpenFile(self._CalculateErrorPath(theLogFileName,
+                                                            self._baseLogFileName,
+                                                            os.path.basename(self.errorFileName)))
         except:
             print ("ERROR: Could not open "  + myRelativePath)
             raise IOError    
         self.ExtractReportErrors(myErrorFile)
         myErrorFile.close()
+
+    def _CalculateErrorPath(self, theCurrentLogFileName, theBaseLogFileName, theErrorFileName):
+        """Calculate error path name using difference between original and current file name."""
+        myDirectory = os.path.dirname(theCurrentLogFileName)
+        myCurrentBaseName = os.path.basename(theCurrentLogFileName)
+        if myCurrentBaseName != theBaseLogFileName:
+            mySuffix = myCurrentBaseName.replace(theBaseLogFileName.replace(".gz", "") + mySuffix)
+        else:
+            mySuffix = ".gz"
+        return(os.path.join(myDirectory, theErrorFileName.replace(".gz", "") + mySuffix))
 
     def ExtractLogErrors(self, theFile):
         """Extract errors from log file.
@@ -112,26 +127,31 @@ class ResultFile():
           errorList: adds errors from lines matching log file error definitions in cvc_globals
         """
         self.logFileName = os.path.abspath(theFile.name)
-        for line_it in theFile:
-            if not self.errorFileName:
-                myMatch = self.errorFileRE.search(line_it)  # "^CVC: Error output to (.*)"
-                if myMatch:
-                    self.errorFileName = myMatch.group(1)
-            if not self.modeName:
-                myMatch = self.modeRE.search(line_it)  # "^CVC_MODE = '(.*)'"
-                if myMatch:
-                    self.modeName = myMatch.group(1)
-                    print("Reading mode " + self.modeName + " errors from \n\t" + theFile.name)
-            if not self.topCell:
-                myMatch = self.topRE.search(line_it)  # "^CVC_TOP = '(.*)'"
-                if myMatch:
-                    self.topCell = myMatch.group(1)
-            for error_it in cvc_globals.errorList:
-                if error_it['source'] == 'log' and error_it['regex'].search(line_it):
-                    self.errorList.append({'priority': error_it['priority'],
-                                           'section': error_it['section'],
-                                           'data': error_it['section'] + " " + line_it.strip()})
-                    break
+        try:
+            for line_it in theFile:
+                if not self.errorFileName:
+                    myMatch = self.errorFileRE.search(line_it)  # "^CVC: Error output to (.*)"
+                    if myMatch:
+                        self.errorFileName = myMatch.group(1)
+                if not self.modeName:
+                    myMatch = self.modeRE.search(line_it)  # "^CVC_MODE = '(.*)'"
+                    if myMatch:
+                        self.modeName = myMatch.group(1)
+                        print("Reading mode " + self.modeName + " errors from \n\t" + theFile.name)
+                if not self.topCell:
+                    myMatch = self.topRE.search(line_it)  # "^CVC_TOP = '(.*)'"
+                    if myMatch:
+                        self.topCell = myMatch.group(1)
+                for error_it in cvc_globals.errorList:
+                    if error_it['source'] == 'log' and error_it['regex'].search(line_it):
+                        self.errorList.append(
+                            {'priority': error_it['priority'],
+                             'section': error_it['section'],
+                             'data': error_it['section'] + " " + line_it.strip()})
+                        break
+        except IOError:
+            print("ERROR: Problem reading " + self.logFileName)
+            raise IOError
 
     def ExtractReportErrors(self, theFile):
         """Extract errors from error file and sort the result.
@@ -147,16 +167,20 @@ class ResultFile():
         print(" and \t" + theFile.name)
         mySection = None
         myPriority = None
-        for line_it in theFile:
-            for error_it in cvc_globals.errorList:
-                if error_it['source'] == 'report' and error_it['regex'].search(line_it):
-                    mySection = error_it['section']
-                    myPriority = cvc_globals.priorityMap[mySection]
-                    break
-            if self.summaryRE.search(line_it):  # "^(INFO|WARNING)"
-                self.errorList.append({'priority': myPriority,
-                                       'section': mySection,
-                                       'data': mySection + " " + line_it.strip()})
+        try:
+            for line_it in theFile:
+                for error_it in cvc_globals.errorList:
+                    if error_it['source'] == 'report' and error_it['regex'].search(line_it):
+                        mySection = error_it['section']
+                        myPriority = cvc_globals.priorityMap[mySection]
+                        break
+                if self.summaryRE.search(line_it):  # "^(INFO|WARNING)"
+                    self.errorList.append({'priority': myPriority,
+                                           'section': mySection,
+                                           'data': mySection + " " + line_it.strip()})
+        except IOError:
+            print("ERROR: Problem reading " + self.errorFileName)
+            raise IOError
         self.errorList = sorted(self.errorList, key=itemgetter('priority', 'data'))
                 
     def GetErrorDetails(self, theError):
@@ -168,9 +192,6 @@ class ResultFile():
           If the number of errors is equal to the number of subcircuits, only extract details 
           for 1 error (a sample). If the number of errors is not equal to the number of 
           subcircuits, extract details for all errors.
-
-        Opens the error file every time this routine is called unless only the error text is
-        returned.
         """
         myMatch = re.search(
            "(?:.*:)?(.*) INFO.*SUBCKT ([^\)]*\))([^ ]*) error count ([0-9]+)/([0-9]+)", 
@@ -179,7 +200,7 @@ class ResultFile():
            # (1) section, (2) top cell name, (3) device name, (4) error count, (5) cell count
         if not myMatch:
             return theError['errorText']  # display the error text as is
-        myErrorFile = OpenFile(self.errorFileName)
+#        myErrorFile = OpenFile(self.errorFileName)
         myErrorRecord = cvc_globals.errorList[cvc_globals.priorityMap[myMatch.group(1)]]
         mySectionRE = re.compile(myErrorRecord['searchText'])
         myDeviceRE = None
@@ -198,12 +219,14 @@ class ResultFile():
         myOutput = ""
         mySection = ""
         myLeadingLines = ""
-        for line_it in myErrorFile:
+        myErrorCount = 0
+        for line_it in self.errorData:
             if mySectionRE.search(line_it):  # Use lastest heading for short errors.
                 myCorrectSectionFlag = True
                 mySection = line_it
             elif myCorrectSectionFlag:
                 if myDeviceRE.search(line_it):
+                    myErrorCount += 1
                     myOutput += mySection
                     myOutput += myLeadingLines
                     mySaveLeadingFlag = False
@@ -211,7 +234,7 @@ class ResultFile():
                 if mySaveLineFlag:
                     myOutput += line_it
                 if myBlankRE.match(line_it):
-                    if myOutput and mySampleOnlyFlag:
+                    if myOutput and (mySampleOnlyFlag or myErrorCount > 9):
                         break  # only output first error
                     mySaveLeadingFlag = True
                     myLeadingLines = ""
@@ -222,7 +245,7 @@ class ResultFile():
                 myCorrectSectionFlag = False
                 if myOutput:
                     break  # relavent errors only exist in one section
-        myErrorFile.close()
+#        myErrorFile.close()
         return myOutput
                 
     def CountErrors(self):
