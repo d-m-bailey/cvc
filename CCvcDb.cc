@@ -232,24 +232,6 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 	// first MIN/MAX pass propagate to unknown open nets. SIM and second MIN/MAX cause error.
 	if ( ! leakVoltageSet && ( theConnections.sourceVoltage == UNKNOWN_VOLTAGE || theConnections.drainVoltage == UNKNOWN_VOLTAGE ) ) return false;
 	if ( theConnections.IsUnknownSourceVoltage() || theConnections.IsUnknownDrainVoltage() ) return false;
-/*
-	voltage_t myFirstVoltage, mySecondVoltage;
-	switch(theQueueType) {
-		case MAX_QUEUE: {
-			myFirstVoltage = theConnections.maximumSource;
-			mySecondVoltage = theConnections.maximumDrain;
-			break; }
-		case MIN_QUEUE: {
-			myFirstVoltage = theConnections.minimumSource;
-			mySecondVoltage = theConnections.minimumDrain;
-			break; }
-		case SIM_QUEUE: {
-			myFirstVoltage = netVoltagePtr_v[theConnections.masterSourceNet.nextNetId]->simulationVoltage;
-			mySecondVoltage = netVoltagePtr_v[theConnections.masterDrainNet.nextNetId]->simulationVoltage;
-			break; }
-		default: { throw EDatabaseError(); }
-	}
-*/
 	// check voltage family conflicts later
 	if ( theEventQueue.queueType == SIM_QUEUE && IsMos_(deviceType_v[theDeviceId]) && theConnections.gateVoltage == UNKNOWN_VOLTAGE ) return false;
 
@@ -295,7 +277,8 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 				voltage_t myGateVoltage = MaxVoltage(theConnections.gateId);
 				if ( myGateVoltage == UNKNOWN_VOLTAGE ) {
 					EnqueueAttachedDevices(maxEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
-				} else if ( myGateVoltage < myExpectedVoltage ) {
+				} else if ( (myGateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
+						|| (myGateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) {
 					reportFile << "WARNING: Max voltage already set for " << NetName(myTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
 					reportFile << " at " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON) << " expected/found " << myExpectedVoltage << "/" << myGateVoltage << endl;
 				}
@@ -340,9 +323,10 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 				voltage_t myGateVoltage = MinVoltage(theConnections.gateId);
 				if ( myGateVoltage == UNKNOWN_VOLTAGE ) {
 					EnqueueAttachedDevices(minEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
-				} else if ( myGateVoltage > myExpectedVoltage ) {
+				} else if ( (myGateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
+						|| (myGateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) {
 					reportFile << "WARNING: Min voltage already set for " << NetName(myTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
-					reportFile << " at " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON)  << " expected/found " << myExpectedVoltage << "/" << myGateVoltage << endl;
+					reportFile << " at " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON) << " expected/found " << myExpectedVoltage << "/" << myGateVoltage << endl;
 				}
 			}
 		}

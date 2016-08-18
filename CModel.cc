@@ -263,7 +263,7 @@ void CModelListMap::AddModel(string theParameterString) {
 		}
 	}
 	catch (EModelError & myError) {
-		cout << myError.what();
+		cout << myError.what() << endl;
 		cout << "Invalid model format: " << theParameterString << endl;
 		hasError = true;
 	}

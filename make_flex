@@ -1,13 +1,13 @@
 #! /bin/bash
 
-if [ src/cdlScanner.ll -nt src/cdlScanner.cc ] 
+if [ cdlScanner.ll -nt cdlScanner.cc ] 
 then
 	echo "Creating cdlScanner.cc..."
-	flex -o src/cdlScanner.cc src/cdlScanner.ll
+	flex -o cdlScanner.cc cdlScanner.ll
 fi
 
-if [ src/cdlParser.yy -nt src/cdlParser.cc ] 
+if [ cdlParser.yy -nt cdlParser.cc ] 
 then
 	echo "Creating cdlParser.cc..."
-	bison -d -v -Werror -Wall -Wno-yacc --report=all -o src/cdlParser.cc src/cdlParser.yy
+	bison -d -v -Werror -Wall -Wno-yacc --report=all -o cdlParser.cc cdlParser.yy
 fi
