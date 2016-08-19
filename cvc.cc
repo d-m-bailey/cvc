@@ -50,7 +50,8 @@ CCvcDb	* gCvcDb; //!< CVC global database
 
 /**
  * usage:
- * cvc [-v|`--version`] [-i|`--interactive`] [-p|`--prefix` prefix] <mode1.cvcrc> [<mode2.cvcrc>] ...\n
+ * cvc [-v|`--version`] [-i|`--interactive`] [-p|`--prefix` <I>prefix</I>]
+ * <I>mode1.cvcrc</I> [<I>mode2.cvcrc</I> ...]\n
  * -v : print cvc program version\n
  * -p "prefix" : add "prefix-" to all file names\n 
  * -i : interactive mode\n
@@ -69,12 +70,38 @@ try {
 	gCvcDb->VerifyCircuitForAllModes(argc, argv);
 }
 catch (EFatalError& e) {
+	// Handle known errors.
 	gCvcDb->RemoveLock();
 	cout << e.what() << endl;
 }
 catch (exception& e) {
+	// Handle unknown errors.
 	gCvcDb->RemoveLock();
 	cout << "unexpected error: " << e.what() << endl;
 }
 }
 
+/// \file Coding guidelines:
+/// Default: Python coding conventions: PEP8
+/// Max line length: 100 characters
+/// Naming conventions:
+///   Note: These conventions are intentionally different from library conventions.
+///     This helps to distinguish program functions and variables from those in libraries.
+///   Constants: ALL_CAPS
+///   Functions: CamelCase with leading upper case letter. Function names should begin with a verb.
+///   Macros used as functions: CamelCase with trailing '_'. e.g. SetParameters_
+///   Classes: CamelCase with leading upper case letter. Class names should begin with a noun.
+///   Variables: camelCase with leading lower case letter.
+///     globals: leading 'g'. e.g. gCount
+///     function parameters: leading 'the'. e.g. theCount
+///     local: leading 'my'. e.g. myCount (exception for iterators)
+///     iterators: trailing '_it'. e.g. element_it (or '_pit' for pointer iterators)
+///     everything else is class variable.
+///     pointers: trailing '_p'. e.g. cirtuit_p
+///     vectors: trailing '_v'. e.g. circuit_v
+/// Indents: one tab for each level
+///   try-catch not indented
+///   switch and case statements at same level.
+///
+
+//23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789

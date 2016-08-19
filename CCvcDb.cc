@@ -85,7 +85,7 @@ void CCvcDb::ReportShort(deviceId_t theDeviceId) {
 				(IsPmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage - myMaxVoltage == myConnections.device_p->model_p->Vth);
 		myLeakCurrent = myConnections.EstimatedCurrent(myVthFlag);
 	}
-	if ( rint((myLeakCurrent - cvcParameters.cvcLeakLimit) * 1e6) / 1e6 > 0 ||
+	if ( ExceedsLeakLimit_(myLeakCurrent) ||
 			! myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, true) ||
 			(IsExternalPower_(myConnections.simSourcePower_p) && IsExternalPower_(myConnections.simDrainPower_p) && myMaxVoltage != myMinVoltage && ! myVthFlag) ) {
 		errorCount[LEAK]++;
@@ -264,23 +264,28 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 		}
 		// for mos connected as diode with source/drain known. Add max voltage propagation/check
 		if ( IsMos_(deviceType_v[theDeviceId]) ) {
-			voltage_t myExpectedVoltage;
+			voltage_t mySourceVoltage;
 			netId_t myTargetNetId = UNKNOWN_NET;
 			if ( theConnections.sourceId == theConnections.gateId ) {
 				myTargetNetId = theConnections.sourceId;
-				myExpectedVoltage = theConnections.drainVoltage + theConnections.device_p->model_p->Vth;
+				mySourceVoltage = theConnections.drainVoltage;
 			} else if ( theConnections.drainId == theConnections.gateId ) {
 				myTargetNetId = theConnections.drainId;
-				myExpectedVoltage = theConnections.sourceVoltage + theConnections.device_p->model_p->Vth;
+				mySourceVoltage = theConnections.sourceVoltage;
 			}
 			if ( myTargetNetId != UNKNOWN_NET ) {
-				voltage_t myGateVoltage = MaxVoltage(theConnections.gateId);
-				if ( myGateVoltage == UNKNOWN_VOLTAGE ) {
+				voltage_t myExpectedVoltage = mySourceVoltage + theConnections.device_p->model_p->Vth;
+//				CVirtualNet myMaxNet(maxNet_v, theConnections.gateId);
+				CConnection myMaxConnections;
+				MapDeviceNets(theConnections.deviceId, maxEventQueue, myMaxConnections);
+				if ( myMaxConnections.gateVoltage == UNKNOWN_VOLTAGE ) {
 					EnqueueAttachedDevices(maxEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
-				} else if ( (myGateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
-						|| (myGateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) {
-					reportFile << "WARNING: Max voltage already set for " << NetName(myTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
-					reportFile << " at " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON) << " expected/found " << myExpectedVoltage << "/" << myGateVoltage << endl;
+				} else if ( (myMaxConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
+						|| (myMaxConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) {
+					if ( ExceedsLeakLimit_(myMaxConnections.EstimatedMosDiodeCurrent(mySourceVoltage, theConnections)) ) {
+						reportFile << "WARNING: Max voltage already set for " << NetName(myTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
+						reportFile << " at mos diode " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON) << " expected/found " << myExpectedVoltage << "/" << myMaxConnections.gateVoltage << endl;
+					}
 				}
 			}
 		}
@@ -310,23 +315,28 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 		}
 		// for mos connected as diode with source/drain known. Add min voltage propagation/check
 		if ( IsMos_(deviceType_v[theDeviceId]) ) {
-			voltage_t myExpectedVoltage;
+			voltage_t mySourceVoltage;
 			netId_t myTargetNetId = UNKNOWN_NET;
 			if ( theConnections.sourceId == theConnections.gateId ) {
 				myTargetNetId = theConnections.sourceId;
-				myExpectedVoltage = theConnections.drainVoltage + theConnections.device_p->model_p->Vth;
+				mySourceVoltage = theConnections.drainVoltage;
 			} else if ( theConnections.drainId == theConnections.gateId ) {
 				myTargetNetId = theConnections.drainId;
-				myExpectedVoltage = theConnections.sourceVoltage + theConnections.device_p->model_p->Vth;
+				mySourceVoltage = theConnections.sourceVoltage;
 			}
 			if ( myTargetNetId != UNKNOWN_NET ) {
-				voltage_t myGateVoltage = MinVoltage(theConnections.gateId);
-				if ( myGateVoltage == UNKNOWN_VOLTAGE ) {
+				voltage_t myExpectedVoltage = mySourceVoltage + theConnections.device_p->model_p->Vth;
+	//				CVirtualNet myMaxNet(maxNet_v, theConnections.gateId);
+				CConnection myMinConnections;
+				MapDeviceNets(theConnections.deviceId, minEventQueue, myMinConnections);
+				if ( myMinConnections.gateVoltage == UNKNOWN_VOLTAGE ) {
 					EnqueueAttachedDevices(minEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
-				} else if ( (myGateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
-						|| (myGateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) {
-					reportFile << "WARNING: Min voltage already set for " << NetName(myTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
-					reportFile << " at " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON) << " expected/found " << myExpectedVoltage << "/" << myGateVoltage << endl;
+				} else if ( (myMinConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
+						|| (myMinConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) {
+					if ( ExceedsLeakLimit_(theConnections.EstimatedMosDiodeCurrent(mySourceVoltage, theConnections)) ) {
+						reportFile << "WARNING: Min voltage already set for " << NetName(myTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
+						reportFile << " at mos diode " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON) << " expected/found " << myExpectedVoltage << "/" << myMinConnections.gateVoltage << endl;
+					}
 				}
 			}
 		}

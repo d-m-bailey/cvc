@@ -54,8 +54,8 @@ public:
 	inline bool IsUnknownSourceVoltage() { return ( sourceVoltage == UNKNOWN_VOLTAGE && ! (sourcePower_p && sourcePower_p->type[HIZ_BIT]) ); }
 	inline bool IsUnknownGateVoltage() { return ( gateVoltage == UNKNOWN_VOLTAGE && ! (gatePower_p && gatePower_p->type[HIZ_BIT]) ); }
 	inline bool IsUnknownDrainVoltage() { return ( drainVoltage == UNKNOWN_VOLTAGE && ! (drainPower_p && drainPower_p->type[HIZ_BIT]) ); }
+	float EstimatedMosDiodeCurrent(voltage_t theSourceVoltage, CConnection & theConnections);
 //	inline bool IsUnknownBulkVoltage() { return ( bulkVoltage == UNKNOWN_VOLTAGE && ! (bulkPower_p && bulkPower_p->type[HIZ_BIT]) ); }
-
 
 };
 

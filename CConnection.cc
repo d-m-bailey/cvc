@@ -61,6 +61,38 @@ float CFullConnection::EstimatedMinimumCurrent() {
 	return float(myMaxMinVoltage - myMinMaxVoltage) / (resistance + myMaxResistance + myMinResistance) / VOLTAGE_SCALE / ( (myVthFlag) ? 1000 : 1 ) ;
 }
 
+float CConnection::EstimatedMosDiodeCurrent(voltage_t theSourceVoltage, CConnection & theConnections) {
+/*	voltage_t mySourceVoltage, myDrainVoltage;
+//	float myCurrent;
+	mySourceVoltage = sourceVoltage;
+	myDrainVoltage = drainVoltage;
+
+	if ( IsNmos_(device_p->model_p->type) && gateVoltage != UNKNOWN_VOLTAGE ) {
+		mySourceVoltage = min(sourceVoltage, drainVoltage);
+		myDrainVoltage = min(gateVoltage, max(sourceVoltage, drainVoltage));
+	} else if ( IsPmos_(device_p->model_p->type) && simGateVoltage != UNKNOWN_VOLTAGE ) {
+		mySourceVoltage = max(simSourceVoltage, simDrainVoltage);
+		myDrainVoltage = max(simGateVoltage, min(simSourceVoltage, simDrainVoltage));
+	}
+*/
+	// mos diodes are inherently low current. multiply resistance by 100 to simulate.
+	if ( gateId == drainId ) {
+		if ( sourcePower_p->type[HIZ_BIT] ) return float(0);  // no error for hi-z power
+		if ( sourceVoltage != theConnections.sourceVoltage ) {
+			cout << "ERROR: unexpected voltage in EstimatedModeDiodeCurrent " << endl;
+			cout << "device " << deviceId << "; source voltage " << sourceVoltage << "!=" << theConnections.sourceVoltage << endl;
+		}
+	} else if ( gateId == sourceId ) {
+		if ( drainPower_p->type[HIZ_BIT] ) return float(0);  // no error for hi-z power
+		if ( drainVoltage != theConnections.drainVoltage ) {
+			cout << "ERROR: unexpected voltage in EstimatedModeDiodeCurrent " << endl;
+			cout << "device " << deviceId << "; drain voltage " << drainVoltage << "!=" << theConnections.drainVoltage << endl;
+		}
+	}
+//	cout << "estimated current " << float(abs(theSourceVoltage-gateVoltage)) / (resistance*100 + masterSourceNet.finalResistance + masterDrainNet.finalResistance) / VOLTAGE_SCALE << endl;
+	return float(abs(theSourceVoltage-gateVoltage)) / (resistance*100 + masterSourceNet.finalResistance + masterDrainNet.finalResistance) / VOLTAGE_SCALE ;
+}
+
 float CFullConnection::EstimatedCurrent(bool theVthFlag) {
 	voltage_t mySourceVoltage, myDrainVoltage;
 //	float myCurrent;

@@ -489,4 +489,6 @@ void CCvcDb::PrintAllVirtualNets(TVirtualNetVector& theMinNet_v, CVirtualNetVect
 		theConnections.bulkId = bulkNet_v[theDeviceId]\
 		)
 
+#define ExceedsLeakLimit_(theLeakCurrent) (rint(((theLeakCurrent) - cvcParameters.cvcLeakLimit) * 1e9) / 1e9 > 0)
+
 #endif /* CCVCDB_HH_ */
