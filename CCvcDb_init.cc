@@ -287,6 +287,8 @@ void CCvcDb::SetEquivalentNets() {
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
 		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
 			if ( model_pit->type == SWITCH_ON ) {
+				cout << " model " << model_pit->name << "..."; cout.flush();
+				deviceId_t myPrintCount = 10000;
 				deviceId_t myDeviceCount = 0;
 				CDevice * myDevice_p = model_pit->firstDevice_p;
 				while (myDevice_p) {
@@ -294,6 +296,10 @@ void CCvcDb::SetEquivalentNets() {
 					deviceId_t myLocalDeviceId = myParent_p->localDeviceIdMap[myDevice_p->name];
 					assert(myDevice_p->signalId_v.size() == 2);
 					for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
+						if ( --myPrintCount <= 0 ) {
+							cout << "."; cout.flush();
+							myPrintCount = 1000000;
+						}
 						CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
 						deviceId_t myDeviceId = myInstance_p->firstDeviceId + myLocalDeviceId;
 						try {
@@ -320,10 +326,11 @@ void CCvcDb::SetEquivalentNets() {
 							}
 						}
 						IgnoreDevice(myInstance_p->firstDeviceId + myLocalDeviceId);
+						myDeviceCount++;
 					}
 					myDevice_p = myDevice_p->nextDevice_p;
-					myDeviceCount++;
 				}
+				cout << endl;
 				reportFile << "	Shorted " << myDeviceCount << " " << model_pit->name << endl;
 			}
 		}
