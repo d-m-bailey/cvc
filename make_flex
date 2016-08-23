@@ -1,5 +1,9 @@
 #! /bin/bash
 
+# tested with
+# flex 2.5.39
+# bison (GNU Bison) 3.0.4
+
 if [ cdlScanner.ll -nt cdlScanner.cc ] 
 then
 	echo "Creating cdlScanner.cc..."

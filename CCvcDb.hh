@@ -42,6 +42,10 @@ class CShortVector : public vector<pair<netId_t, string> > {
 public:
 };
 
+class CNetMap : public unordered_map<netId_t, forward_list<netId_t>> {
+public:
+};
+
 class CCvcDb {
 public:
 	int	cvcArgIndex = 1;
@@ -174,7 +178,7 @@ public:
 	void ResetMinSimMaxAndQueues();
 	CPower * SetMasterPower(netId_t theFirstNet, netId_t theSecondNet, bool & theSamePowerFlag);
 	netId_t MasterPowerNet(netId_t theFirstNetId, netId_t theSecondNetId);
-	void MakeEquivalentNets(netId_t theFirstNetId, netId_t theSecondNetId, deviceId_t theDeviceId);
+	void MakeEquivalentNets(CNetMap & theNetMap, netId_t theFirstNetId, netId_t theSecondNetId, deviceId_t theDeviceId);
 	void SetEquivalentNets();
 	void LinkDevices();
 	returnCode_t SetDeviceModels();

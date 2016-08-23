@@ -220,6 +220,43 @@ netId_t CCvcDb::MasterPowerNet(netId_t theFirstNetId, netId_t theSecondNetId) {
 }
 
 // merges 2 equivalency lists
+void CCvcDb::MakeEquivalentNets(CNetMap & theNetMap, netId_t theFirstNetId, netId_t theSecondNetId, deviceId_t theDeviceId) {
+	netId_t myLesserNetId, myGreaterNetId;
+
+	theFirstNetId = equivalentNet_v[theFirstNetId];
+	theSecondNetId = equivalentNet_v[theSecondNetId];
+	if ( theFirstNetId > theSecondNetId ) {
+		myGreaterNetId = theFirstNetId;
+		myLesserNetId = theSecondNetId;
+	} else if ( theFirstNetId < theSecondNetId ) {
+		myLesserNetId = theFirstNetId;
+		myGreaterNetId = theSecondNetId;
+	} else {
+		return; // already equivalent
+	}
+	bool mySamePowerFlag;
+	CPower * myMasterPower_p = SetMasterPower(theFirstNetId, theSecondNetId, mySamePowerFlag);
+	if ( mySamePowerFlag ) { // skip to short same definition
+		reportFile << endl << "INFO: Short between same power definitions ignored at " << DeviceName(theDeviceId, PRINT_CIRCUIT_ON);
+		reportFile << " net " << NetName(GetEquivalentNet(theFirstNetId), PRINT_CIRCUIT_ON) << " <-> " << NetName(GetEquivalentNet(theSecondNetId), PRINT_CIRCUIT_ON) << endl;
+		return;
+	}
+	theNetMap[myLesserNetId].push_front(myGreaterNetId);
+	netVoltagePtr_v[myLesserNetId] = myMasterPower_p;
+	if ( theNetMap.count(myGreaterNetId) > 0 ) {
+		for ( auto net_pit = theNetMap[myGreaterNetId].begin(); net_pit != theNetMap[myGreaterNetId].end(); net_pit++ ) {
+			theNetMap[myLesserNetId].push_front(*net_pit);
+		}
+	}
+	netVoltagePtr_v[myLesserNetId] = myMasterPower_p;
+	for ( auto net_pit = theNetMap[myLesserNetId].begin(); net_pit != theNetMap[myLesserNetId].end(); net_pit++ ) {
+		equivalentNet_v[*net_pit] = myLesserNetId;
+		netVoltagePtr_v[*net_pit] = myMasterPower_p;
+	}
+}
+
+/*
+ * // merges 2 equivalency lists
 void CCvcDb::MakeEquivalentNets(netId_t theFirstNetId, netId_t theSecondNetId, deviceId_t theDeviceId) {
 	netId_t myLesserNetId, myGreaterNetId;
 
@@ -237,7 +274,7 @@ void CCvcDb::MakeEquivalentNets(netId_t theFirstNetId, netId_t theSecondNetId, d
 	bool mySamePowerFlag;
 	CPower * myMasterPower_p = SetMasterPower(theFirstNetId, theSecondNetId, mySamePowerFlag);
 	if ( mySamePowerFlag ) { // skip to short same definition
-		reportFile << "INFO: Short between same power definitions ignored at " << DeviceName(theDeviceId, PRINT_CIRCUIT_ON);
+		reportFile << endl << "INFO: Short between same power definitions ignored at " << DeviceName(theDeviceId, PRINT_CIRCUIT_ON);
 		reportFile << " net " << NetName(GetEquivalentNet(theFirstNetId), PRINT_CIRCUIT_ON) << " <-> " << NetName(GetEquivalentNet(theSecondNetId), PRINT_CIRCUIT_ON) << endl;
 		return;
 	}
@@ -276,6 +313,7 @@ void CCvcDb::MakeEquivalentNets(netId_t theFirstNetId, netId_t theSecondNetId, d
 //		netVoltagePtr_v[myOldMasterPowerNet] = NULL;
 //	}
 }
+*/
 
 void CCvcDb::SetEquivalentNets() {
 	reportFile << "CVC: Shorting switches..." << endl;
@@ -284,6 +322,7 @@ void CCvcDb::SetEquivalentNets() {
 	for (netId_t net_it = 0; net_it < netCount; net_it++) {
 		equivalentNet_v[net_it] = net_it;
 	}
+	CNetMap myEquivalentNetMap;
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
 		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
 			if ( model_pit->type == SWITCH_ON ) {
@@ -298,13 +337,16 @@ void CCvcDb::SetEquivalentNets() {
 					for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
 						if ( --myPrintCount <= 0 ) {
 							cout << "."; cout.flush();
-							myPrintCount = 1000000;
+							myPrintCount = 10000;
 						}
 						CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
 						deviceId_t myDeviceId = myInstance_p->firstDeviceId + myLocalDeviceId;
 						try {
 							// short source and drain
-							MakeEquivalentNets(myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[0]], myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[1]], myDeviceId);
+							MakeEquivalentNets(myEquivalentNetMap,
+									myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[0]],
+									myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[1]],
+									myDeviceId);
 						}
 						catch (const EEquivalenceError& myException) {
 							CFullConnection myConnections;
@@ -342,6 +384,7 @@ void CCvcDb::SetEquivalentNets() {
 		equivalentNet_v[net_it] = GetEquivalentNet(net_it);
 		if ( netVoltagePtr_v[net_it] && netId_t(net_it) != netVoltagePtr_v[net_it]->netId ) netVoltagePtr_v[net_it] = NULL;
 	}
+	myEquivalentNetMap.clear();
 	isFixedEquivalentNet = true;
 }
 
