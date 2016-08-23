@@ -241,18 +241,26 @@ void CCvcDb::MakeEquivalentNets(CNetMap & theNetMap, netId_t theFirstNetId, netI
 		reportFile << " net " << NetName(GetEquivalentNet(theFirstNetId), PRINT_CIRCUIT_ON) << " <-> " << NetName(GetEquivalentNet(theSecondNetId), PRINT_CIRCUIT_ON) << endl;
 		return;
 	}
-	theNetMap[myLesserNetId].push_front(myGreaterNetId);
-	netVoltagePtr_v[myLesserNetId] = myMasterPower_p;
-	if ( theNetMap.count(myGreaterNetId) > 0 ) {
-		for ( auto net_pit = theNetMap[myGreaterNetId].begin(); net_pit != theNetMap[myGreaterNetId].end(); net_pit++ ) {
-			theNetMap[myLesserNetId].push_front(*net_pit);
+	if ( myMasterPower_p ) {
+		netId_t myMinorNetId = ( netVoltagePtr_v[myGreaterNetId] == myMasterPower_p ) ? myLesserNetId : myGreaterNetId;
+		netVoltagePtr_v[myMinorNetId] = myMasterPower_p;
+		for ( auto net_pit = theNetMap[myMinorNetId].begin(); net_pit != theNetMap[myMinorNetId].end(); net_pit++ ) {
+			netVoltagePtr_v[*net_pit] = myMasterPower_p;
 		}
 	}
-	netVoltagePtr_v[myLesserNetId] = myMasterPower_p;
-	for ( auto net_pit = theNetMap[myLesserNetId].begin(); net_pit != theNetMap[myLesserNetId].end(); net_pit++ ) {
-		equivalentNet_v[*net_pit] = myLesserNetId;
-		netVoltagePtr_v[*net_pit] = myMasterPower_p;
+	theNetMap[myLesserNetId].push_front(myGreaterNetId);
+	if ( theNetMap.count(myGreaterNetId) > 0 ) {
+		theNetMap[myLesserNetId].splice_after(theNetMap[myLesserNetId].before_begin(), theNetMap[myGreaterNetId]);
+//		for ( auto net_pit = theNetMap[myGreaterNetId].begin(); net_pit != theNetMap[myGreaterNetId].end(); net_pit++ ) {
+//			theNetMap[myLesserNetId].push_front(*net_pit);
+//		}
 	}
+	equivalentNet_v[myGreaterNetId] = myLesserNetId;
+//	netVoltagePtr_v[myLesserNetId] = myMasterPower_p;
+//	for ( auto net_pit = theNetMap[myLesserNetId].begin(); net_pit != theNetMap[myLesserNetId].end(); net_pit++ ) {
+//		equivalentNet_v[*net_pit] = myLesserNetId;
+//		netVoltagePtr_v[*net_pit] = myMasterPower_p;
+//	}
 }
 
 /*
