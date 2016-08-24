@@ -223,8 +223,8 @@ netId_t CCvcDb::MasterPowerNet(netId_t theFirstNetId, netId_t theSecondNetId) {
 void CCvcDb::MakeEquivalentNets(CNetMap & theNetMap, netId_t theFirstNetId, netId_t theSecondNetId, deviceId_t theDeviceId) {
 	netId_t myLesserNetId, myGreaterNetId;
 
-	theFirstNetId = equivalentNet_v[theFirstNetId];
-	theSecondNetId = equivalentNet_v[theSecondNetId];
+	theFirstNetId = GetLeastEquivalentNet(theFirstNetId);
+	theSecondNetId = GetLeastEquivalentNet(theSecondNetId);
 	if ( theFirstNetId > theSecondNetId ) {
 		myGreaterNetId = theFirstNetId;
 		myLesserNetId = theSecondNetId;
