@@ -282,9 +282,12 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 					EnqueueAttachedDevices(maxEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
 				} else if ( (myMaxConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
 						|| (myMaxConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) {
-					if ( ExceedsLeakLimit_(myMaxConnections.EstimatedMosDiodeCurrent(mySourceVoltage, theConnections)) ) {
+					float myLeakCurrent = myMaxConnections.EstimatedMosDiodeCurrent(mySourceVoltage, theConnections);
+					if ( ExceedsLeakLimit_(myLeakCurrent) ) {
 						reportFile << "WARNING: Max voltage already set for " << NetName(myTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
-						reportFile << " at mos diode " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON) << " expected/found " << myExpectedVoltage << "/" << myMaxConnections.gateVoltage << endl;
+						reportFile << " at mos diode " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON);
+						reportFile << " expected/found " << myExpectedVoltage << "/" << myMaxConnections.gateVoltage;
+						reportFile << " estimated current " << AddSiSuffix(myLeakCurrent) << "A" << endl;
 					}
 				}
 			}
@@ -333,9 +336,12 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 					EnqueueAttachedDevices(minEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
 				} else if ( (myMinConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
 						|| (myMinConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) {
-					if ( ExceedsLeakLimit_(theConnections.EstimatedMosDiodeCurrent(mySourceVoltage, theConnections)) ) {
+					float myLeakCurrent = myMinConnections.EstimatedMosDiodeCurrent(mySourceVoltage, theConnections);
+					if ( ExceedsLeakLimit_(myLeakCurrent) ) {
 						reportFile << "WARNING: Min voltage already set for " << NetName(myTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
-						reportFile << " at mos diode " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON) << " expected/found " << myExpectedVoltage << "/" << myMinConnections.gateVoltage << endl;
+						reportFile << " at mos diode " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON);
+						reportFile << " expected/found " << myExpectedVoltage << "/" << myMinConnections.gateVoltage;
+						reportFile << " estimated current " << AddSiSuffix(myLeakCurrent) << "A" << endl;
 					}
 				}
 			}
