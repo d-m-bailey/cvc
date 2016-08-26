@@ -22,7 +22,8 @@ myTopBlock = ???
 procedure(probe_selection()
 	; Probe the clipboard text.
 	; Requires xclip
-	myClipboard = pcBeginProcess("xclip -o")
+	myClipboard = ipcBeginProcess("xclip -o")
+	ipcWait(myClipboard)
 	mySelection = ipcReadProcess(myClipboard)
 	println(list("probing " mySelection))
 	probe_device(mySelection)
