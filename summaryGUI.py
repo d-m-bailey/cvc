@@ -55,6 +55,7 @@ from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelHeader
 from kivy.adapters.listadapter import ListAdapter
 from kivy.graphics import Color
 from kivy.core.window import Window
+from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
 from kivy.properties import StringProperty, ListProperty, DictProperty, NumericProperty
@@ -692,13 +693,18 @@ class SummaryWidget(Widget):
           theErrorIndex: Index to filtered display list.
         Only works for lines containing SUBCKT (cellname).
         """
-        myData = self.currentContent.listRef.adapter.get_data_item(theErrorIndex)
+        myContent = self.currentContent
+        myData = myContent.listRef.adapter.get_data_item(theErrorIndex)
         myMatch = re.search("SUBCKT ([^\)]*\))", myData['errorText'])  # * INFO: SUBCKT (cellName)
         if myMatch and myMatch.group(1):
             if self.filterTextRef.textRef.text:
                 self.filterTextRef.undoList.append(self.filterTextRef.textRef.text)
             self.filterTextRef.textRef.text = myMatch.group(1)
-            self.currentContent.RedisplayErrors()
+            if myData['type'] in ['unmatched', 'comment']:
+                Clipboard.copy("")
+            else:
+                Clipboard.copy(myContent.report.GetFirstError(myData))
+            myContent.RedisplayErrors()
 
     def ViewDetails(self, theErrorIndex):
         """View details for selected filtered display line.

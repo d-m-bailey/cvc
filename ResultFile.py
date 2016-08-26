@@ -61,6 +61,7 @@ class ResultFile():
       __init__: Create ResultFile object from log and error file data.
       ExtractLogErrors: Extract errors from log file.
       ExtractReportErrors: Extract errors from error file and sort the result.
+      GetFirstError: Return the full hierarchy for the first error.
       GetErrorDetails: Return error details extracted from error file.
       CountErrors: Tally errors according to type.
       CreateDisplayList: Create a list of references and details to display.
@@ -190,6 +191,37 @@ class ResultFile():
             raise IOError
         self.errorList = sorted(self.errorList, key=itemgetter('priority', 'data'))
                 
+    def GetFirstError(self, theError):
+        """Return the full hierarchy for the first error.
+
+        Inputs:
+          theError: selected error record 
+        """
+        myMatch = re.search(
+           "(?:.*:)?(.*) INFO.*SUBCKT ([^\)]*\))([^ ]*) error count ([0-9]+)/([0-9]+)", 
+           theError['errorText']
+        )  # parse the error text string to get
+           # (1) section, (2) top cell name, (3) device name, (4) error count, (5) cell count
+        if not myMatch:
+            return ""
+        myErrorRecord = cvc_globals.errorList[cvc_globals.priorityMap[myMatch.group(1)]]
+        mySectionRE = re.compile(myErrorRecord['searchText'])
+        myDeviceName = myMatch.group(3).split("(")[0]  # (/name(model))
+        if "(" + self.topCell + ")" == myMatch.group(2):
+            # top cell errors do not have cell name in detailed error list
+            myDeviceRE = re.compile("^(" + myDeviceName + ") ")
+        else:
+            myDeviceRE = re.compile("^(/.*" + re.escape(myMatch.group(2)) + myDeviceName + ") ")
+        myCorrectSectionFlag = False
+        for line_it in self._errorData:
+            if mySectionRE.search(line_it):  # Use lastest heading for short errors.
+                myCorrectSectionFlag = True
+            elif myCorrectSectionFlag:
+                myDeviceMatch = myDeviceRE.search(line_it)
+                if myDeviceMatch:
+                    return myDeviceMatch.group(1)
+        return ""
+
     def GetErrorDetails(self, theError):
         """Return error details extracted from error file.
 
