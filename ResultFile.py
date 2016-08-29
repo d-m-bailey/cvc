@@ -126,8 +126,9 @@ class ResultFile():
           errorFileName: the error file listed in the log file
           modeName: the mode name listed in the log file
           topCell: the top circuit listed in the log file
-          errorList: adds errors from lines matching log file error definitions in cvc_globals
+          errorList: adds unique errors from lines matching log file error definitions in cvc_globals
         """
+        myErrorDict = {}
         self.logFileName = os.path.abspath(theFile.name)
         try:
             for line_it in theFile:
@@ -150,10 +151,13 @@ class ResultFile():
                         self.topCell = myMatch.group(1)
                 for error_it in cvc_globals.errorList:
                     if error_it['source'] == 'log' and error_it['regex'].search(line_it):
-                        self.errorList.append(
-                            {'priority': error_it['priority'],
-                             'section': error_it['section'],
-                             'data': error_it['section'] + " " + line_it.strip()})
+                        myErrorData = error_it['section'] + " " + line_it.strip()
+                        if not myErrorData in myErrorDict:
+                            myErrorDict[myErrorData] = True
+                            self.errorList.append(
+                                {'priority': error_it['priority'],
+                                 'section': error_it['section'],
+                                 'data': myErrorData})
                         break
         except IOError:
             print("ERROR: Problem reading " + self.logFileName)
@@ -166,13 +170,14 @@ class ResultFile():
           theFile: the error file
         Modifies:
           errorFileName: the absolute path of the error file actually opened
-          errorList: add errors from line matching report file error definitions in cvc_globals
-            and sorts the result on error priority and data
+          errorList: add unique errors from line matching report file error definitions
+            in cvc_globals and sorts the result on error priority and data
         """
         self.errorFileName = os.path.abspath(theFile.name)
         print(" and \t" + theFile.name)
         mySection = None
         myPriority = None
+        myErrorDict = {}
         try:
             for line_it in theFile:
                 self._errorData.append(line_it)
@@ -182,9 +187,12 @@ class ResultFile():
                         myPriority = cvc_globals.priorityMap[mySection]
                         break
                 if self.summaryRE.search(line_it):  # "^(INFO|WARNING)"
-                    self.errorList.append({'priority': myPriority,
-                                           'section': mySection,
-                                           'data': mySection + " " + line_it.strip()})
+                    myErrorData = mySection + " " + line_it.strip()
+                    if not myErrorData in myErrorDict:
+                        myErrorDict[myErrorData] = True
+                        self.errorList.append({'priority': myPriority,
+                                               'section': mySection,
+                                               'data': myErrorData})
         except IOError:
             print("ERROR: Problem reading " + self.errorFileName)
             raise IOError
