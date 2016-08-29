@@ -1671,6 +1671,7 @@ void CCvcDb::SetResistorVoltagesByPower() {
 //	minimumEventQueue.Print();
 //	maximumEventQueue.Print();
 	CalculateResistorVoltages();
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
 	if ( gDebug_cvc ) {
 		PrintVirtualNets(minNet_v, "(minimum r)");
 		PrintVirtualNets(maxNet_v, "(maximum r)");
@@ -2031,7 +2032,7 @@ void CCvcDb::SetInitialMinMaxPower() {
 	}
 	// Reset min/max voltage conflict errors
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-	errorFile << "! Finished" << endl << endl;
+//	errorFile << "! Finished" << endl << endl;
 //	if ( ! isFixedSimNet ) cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile); // Bad LDD connections (first pass)
 	CheckEstimateDependencies();
 	reportFile << "CVC: Ignoring invalid calculations..." << endl;

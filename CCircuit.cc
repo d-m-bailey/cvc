@@ -266,4 +266,5 @@ void CCircuitPtrList::PrintAndResetCircuitErrors(deviceId_t theErrorLimit, ogzst
 		theErrorFile << (*error_pit) << endl;
 	}
 	theErrorFile << endl;
+	theErrorFile << "! Finished" << endl << endl;
 }

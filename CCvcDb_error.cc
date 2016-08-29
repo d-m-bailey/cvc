@@ -218,7 +218,7 @@ void CCvcDb::FindOverVoltageErrors(string theCheck, int theErrorIndex) {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-	errorFile << "! Finished" << endl << endl;
+//	errorFile << "! Finished" << endl << endl;
 }
 
 //void CCvcDb::FindOverVoltageErrors() {
@@ -416,7 +416,7 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-	errorFile << "! Finished" << endl << endl;
+//	errorFile << "! Finished" << endl << endl;
 
 /*
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
@@ -500,7 +500,7 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-	errorFile << "! Finished" << endl << endl;
+//	errorFile << "! Finished" << endl << endl;
 
 /*
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
@@ -624,7 +624,7 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-	errorFile << "! Finished" << endl << endl;
+//	errorFile << "! Finished" << endl << endl;
 /*
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
 		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
@@ -803,7 +803,7 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-	errorFile << "! Finished" << endl << endl;
+//	errorFile << "! Finished" << endl << endl;
 /*
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
 		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
@@ -992,7 +992,7 @@ void CCvcDb::FindForwardBiasDiodes() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-	errorFile << "! Finished" << endl << endl;
+//	errorFile << "! Finished" << endl << endl;
 /*
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
 		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
@@ -1125,7 +1125,7 @@ void CCvcDb::FindNmosPossibleLeakErrors() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-	errorFile << "! Finished" << endl << endl;
+//	errorFile << "! Finished" << endl << endl;
 /*
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
 		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
@@ -1213,7 +1213,7 @@ void CCvcDb::FindPmosPossibleLeakErrors() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-	errorFile << "! Finished" << endl << endl;
+//	errorFile << "! Finished" << endl << endl;
 /*
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
 		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
@@ -1279,7 +1279,7 @@ void CCvcDb::FindFloatingInputErrors() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-	errorFile << "! Finished" << endl << endl;
+//	errorFile << "! Finished" << endl << endl;
 }
 
 void CCvcDb::CheckExpectedValues() {
@@ -1472,7 +1472,7 @@ void CCvcDb::FindLDDErrors() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-	errorFile << "! Finished" << endl << endl;
+//	errorFile << "! Finished" << endl << endl;
 }
 
 /*
