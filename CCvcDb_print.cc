@@ -1127,26 +1127,28 @@ void CCvcDb::PrintSimTerminalConnections(terminal_t theTerminal, CFullConnection
 
 void CCvcDb::PrintErrorTotals() {
 	reportFile << "CVC: Error Counts" << endl;
-	reportFile << "CVC: Leaks:               " << errorCount[LEAK] << endl;
-	reportFile << "CVC: LDD drain->source:   " << errorCount[LDD_SOURCE] << endl;
-	reportFile << "CVC: HI-Z Inputs:         " << errorCount[HIZ_INPUT] << endl;
-	reportFile << "CVC: Forward Bias Diodes: " << errorCount[FORWARD_DIODE] << endl;
-	if ( ! cvcParameters.cvcSOI ) reportFile << "CVC: NMOS Source vs Bulk: " << errorCount[NMOS_SOURCE_BULK] << endl;
-	reportFile << "CVC: NMOS Gate vs Source: " << errorCount[NMOS_GATE_SOURCE] << endl;
-	reportFile << "CVC: NMOS Possible Leaks: " << errorCount[NMOS_POSSIBLE_LEAK] << endl;
-	if ( ! cvcParameters.cvcSOI ) reportFile << "CVC: PMOS Source vs Bulk: " << errorCount[PMOS_SOURCE_BULK] << endl;
-	reportFile << "CVC: PMOS Gate vs Source: " << errorCount[PMOS_GATE_SOURCE] << endl;
-	reportFile << "CVC: PMOS Possible Leaks: " << errorCount[PMOS_POSSIBLE_LEAK] << endl;
-	reportFile << "CVC: Overvoltage-VBG:     " << errorCount[OVERVOLTAGE_VBG] << endl;
-	reportFile << "CVC: Overvoltage-VBS:     " << errorCount[OVERVOLTAGE_VBS] << endl;
-	reportFile << "CVC: Overvoltage-VDS:     " << errorCount[OVERVOLTAGE_VDS] << endl;
-	reportFile << "CVC: Overvoltage-VGS:     " << errorCount[OVERVOLTAGE_VGS] << endl;
-	reportFile << "CVC: Unexpected voltage : " << errorCount[EXPECTED_VOLTAGE] << endl;
+	reportFile << "CVC: Min Voltage Conflicts: " << errorCount[MIN_VOLTAGE_CONFLICT] << endl;
+	reportFile << "CVC: Max Voltage Conflicts: " << errorCount[MAX_VOLTAGE_CONFLICT] << endl;
+	reportFile << "CVC: Leaks:                 " << errorCount[LEAK] << endl;
+	reportFile << "CVC: LDD drain->source:     " << errorCount[LDD_SOURCE] << endl;
+	reportFile << "CVC: HI-Z Inputs:           " << errorCount[HIZ_INPUT] << endl;
+	reportFile << "CVC: Forward Bias Diodes:   " << errorCount[FORWARD_DIODE] << endl;
+	if ( ! cvcParameters.cvcSOI ) reportFile << "CVC: NMOS Source vs Bulk:   " << errorCount[NMOS_SOURCE_BULK] << endl;
+	reportFile << "CVC: NMOS Gate vs Source:   " << errorCount[NMOS_GATE_SOURCE] << endl;
+	reportFile << "CVC: NMOS Possible Leaks:   " << errorCount[NMOS_POSSIBLE_LEAK] << endl;
+	if ( ! cvcParameters.cvcSOI ) reportFile << "CVC: PMOS Source vs Bulk:   " << errorCount[PMOS_SOURCE_BULK] << endl;
+	reportFile << "CVC: PMOS Gate vs Source:   " << errorCount[PMOS_GATE_SOURCE] << endl;
+	reportFile << "CVC: PMOS Possible Leaks:   " << errorCount[PMOS_POSSIBLE_LEAK] << endl;
+	reportFile << "CVC: Overvoltage-VBG:       " << errorCount[OVERVOLTAGE_VBG] << endl;
+	reportFile << "CVC: Overvoltage-VBS:       " << errorCount[OVERVOLTAGE_VBS] << endl;
+	reportFile << "CVC: Overvoltage-VDS:       " << errorCount[OVERVOLTAGE_VDS] << endl;
+	reportFile << "CVC: Overvoltage-VGS:       " << errorCount[OVERVOLTAGE_VGS] << endl;
+	reportFile << "CVC: Unexpected voltage :   " << errorCount[EXPECTED_VOLTAGE] << endl;
 	size_t myErrorTotal = 0;
 	for ( auto myIndex = 0; myIndex < ERROR_TYPE_COUNT; myIndex++ ) {
 		myErrorTotal += errorCount[myIndex];
 	}
-	reportFile << "CVC: Total:               " << myErrorTotal << endl;
+	reportFile << "CVC: Total:                 " << myErrorTotal << endl;
 }
 
 //void CCvcDb::OpenErrorFile(string theErrorFileName) {

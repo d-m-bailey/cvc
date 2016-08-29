@@ -32,6 +32,38 @@
 #include "CEventQueue.hh"
 #include "CVirtualNet.hh"
 
+void CCvcDb::PrintMinVoltageConflict(netId_t theTargetNetId, CConnection & theMinConnections, voltage_t theExpectedVoltage, float theLeakCurrent) {
+	errorCount[MIN_VOLTAGE_CONFLICT]++;
+	if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theMinConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
+		CFullConnection myFullConnections;
+		CInstance * myInstance_p = instancePtr_v[deviceParent_v[theMinConnections.deviceId]];
+		CCircuit * myParent_p = myInstance_p->master_p;
+		CDevice * myDevice_p = myParent_p->devicePtr_v[theMinConnections.deviceId - myInstance_p->firstDeviceId];
+		MapDeviceNets(myInstance_p, myDevice_p, myFullConnections);
+		errorFile << "! Min voltage already set for " << NetName(theTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
+		errorFile << " at mos diode: expected/found " << theExpectedVoltage << "/" << theMinConnections.gateVoltage;
+		errorFile << " estimated current " << AddSiSuffix(theLeakCurrent) << "A" << endl;
+		PrintDeviceWithMinMaxConnections(deviceParent_v[theMinConnections.deviceId], myFullConnections, errorFile);
+		errorFile << endl;
+	}
+}
+
+void CCvcDb::PrintMaxVoltageConflict(netId_t theTargetNetId, CConnection & theMaxConnections, voltage_t theExpectedVoltage, float theLeakCurrent) {
+	errorCount[MAX_VOLTAGE_CONFLICT]++;
+	if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theMaxConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
+		CFullConnection myFullConnections;
+		CInstance * myInstance_p = instancePtr_v[deviceParent_v[theMaxConnections.deviceId]];
+		CCircuit * myParent_p = myInstance_p->master_p;
+		CDevice * myDevice_p = myParent_p->devicePtr_v[theMaxConnections.deviceId - myInstance_p->firstDeviceId];
+		MapDeviceNets(myInstance_p, myDevice_p, myFullConnections);
+		errorFile << "! Max voltage already set for " << NetName(theTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
+		errorFile << " at mos diode: expected/found " << theExpectedVoltage << "/" << theMaxConnections.gateVoltage;
+		errorFile << " estimated current " << AddSiSuffix(theLeakCurrent) << "A" << endl;
+		PrintDeviceWithMinMaxConnections(deviceParent_v[theMaxConnections.deviceId], myFullConnections, errorFile);
+		errorFile << endl;
+	}
+}
+
 string CCvcDb::FindVbgError(voltage_t theParameter, CFullConnection & theConnections) {
 	if ( ( theConnections.CheckTerminalMinMaxVoltages(GATE | BULK, false) &&
 				( abs(theConnections.maxGateVoltage - theConnections.minBulkVoltage) > theParameter ||

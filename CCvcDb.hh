@@ -200,6 +200,8 @@ public:
 	void RemoveLock();
 
 	// error
+	void PrintMinVoltageConflict(netId_t theTargetNetId, CConnection & theMinConnections, voltage_t theExpectedVoltage, float theLeakCurrent);
+	void PrintMaxVoltageConflict(netId_t theTargetNetId, CConnection & theMaxConnections, voltage_t theExpectedVoltage, float theLeakCurrent);
 	string FindVbgError(voltage_t theParameter, CFullConnection & theConnections);
 	string FindVbsError(voltage_t theParameter, CFullConnection & theConnections);
 	string FindVdsError(voltage_t theParameter, CFullConnection & theConnections);
