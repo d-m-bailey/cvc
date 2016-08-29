@@ -1,4 +1,4 @@
-; probe_selection, probe_device, probe_net: loads a hierarchy 
+; cvc_probe_selection, cvc_probe_device, cvc_probe_net: loads a hierarchy 
 
 ; Copyright 2016 D. Mitch Bailey, Shuhari System
 
@@ -19,28 +19,28 @@
 myTopLib = ???
 myTopBlock = ???
 
-procedure(probe_selection()
+procedure(cvc_probe_selection()
 	; Probe the clipboard text.
 	; Requires xclip
-	myClipboard = ipcBeginProcess("xclip -o")
+	myClipboard = ipcBeginProcess("xclip -o -selection clipboard")
 	ipcWait(myClipboard)
 	mySelection = ipcReadProcess(myClipboard)
 	println(list("probing " mySelection))
-	probe_device(mySelection)
+	cvc_probe_device(mySelection)
 )
 
-procedure(probe_device(theDevicePath)
+procedure(cvc_probe_device(theDevicePath)
 	; Probe the device starting from the top of the hierarchy.
 	; Sample: /XTOP(TOP)/XMAIN_0(MAIN)/M0
 	rexCompile("([^)]*)")
 	myDevicePath = rexReplace(theDevicePath "" 0)  ; Remove cell names '(*)'.
 	myDb = dbOpenCellViewByType(myTopLib myTopBlock "schematic")
 	myWindow = geOpen(
-		?window hiOpenWindow() 
+		?window hiOpenWindow()
 		?lib myTopLib
-		?cell myTopBlock 
-		?view "schematic" 
-		?viewType "schematic" 
+		?cell myTopBlock
+		?view "schematic"
+		?viewType "schematic"
 		?mode "r"
 	)
 ;	print(myDb~>instances->??)
@@ -58,16 +58,16 @@ procedure(probe_device(theDevicePath)
 	geSelectObject(find_cvc_instance(geGetWindowCellView() myDevice))
 )
 
-procedure(probe_net()
+procedure(cvc_probe_net()
 ;	myNetPath = clipboard
 	myNetPath = "/IO/I"
 	myDb = dbOpenCellViewByType("cvc_test" "test" "schematic")
 	myWindow = geOpen(
-		?window hiOpenWindow() 
-		?lib "cvc_test" 
-		?cell "test" 
-		?view "schematic" 
-		?viewType "schematic" 
+		?window hiOpenWindow()
+		?lib myTopLib
+		?cell myTopBlock
+		?view "schematic"
+		?viewType "schematic"
 		?mode "r"
 	)
 ;	print(myDb~>instances->??)
@@ -88,10 +88,16 @@ procedure(probe_net()
 procedure(find_cvc_instance(myDb instanceName)
 	prog((myInstances)
 		myInstances = myDb~>instances
-		while( car(myInstances) 
+		while( car(myInstances)
 			myInstance = car(myInstances)
 			; Skip the first letter. CDL adds 'X', 'M', 'R', etc. not in schematic.
 			if( myInstance~>name == substring(instanceName 2) then
+				println(strcat("found " instanceName))
+				return(myInstance)
+			)
+			; Skip the first two letters.
+			; Flattened cells may add 'MX' to schematic instance name.
+			if( myInstance~>name == substring(instanceName 3) then
 				println(strcat("found " instanceName))
 				return(myInstance)
 			)
