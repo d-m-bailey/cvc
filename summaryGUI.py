@@ -1159,20 +1159,13 @@ class SummaryWidget(Widget):
             self._trueLastOutputModes = theOutputModes
         theSummaryFile.write("%s\n" % theOutput)
 
-    def _ExportCSV(self, theOutput, theExportMatch, theOutputModes, theModeList, theExportFile):
+    def _ExportCSV(self, theExportMatch, theOutputModes, theModeList, theExportFile):
         """Export one CSV summary line."""
-        # \1 reference, \2 level, \3 type, \4 for non-subckt, \5 SUBCKT, \6 device, \7 count
-        if len(theExportMatch.groups()) < 4:
-            print("Could not create CSV data for: " + theOutput)
-            return
+        # \1 reference, \2 level, \3 type, \4 device, (\5 count)
         print(theExportMatch.groups()[0:3])
-        theExportFile.write("%s,%s,%s" % (theExportMatch.groups()[0:3]))
-        if len(theExportMatch.groups()) > 5:
-            theExportFile.write(",%s" % theExportMatch.group(6))
-        else:
-            theExportFile.write(",%s" % theExportMatch.group(4))
-        if len(theExportMatch.groups()) == 7:
-            myCount = theExportMatch.group(7)
+        theExportFile.write("%s,%s,%s,%s" % (theExportMatch.groups()[0:4]))
+        if len(theExportMatch.groups()) == 5:
+            myCount = theExportMatch.group(5)
         else:
             myCount = "*"
         for mode_it in theModeList:
@@ -1262,8 +1255,10 @@ class SummaryWidget(Widget):
         self._PrintCSVHeader(myExportFile, myModeList)
         myDisplayLists = self._GetDisplayLists(theAutoCommitFlag=False, theSaveUnmatchedFlag=False)
         myIndex = {mode_it: 0 for mode_it in myModeList}
-        myExportRE = re.compile("^(.*?\]) (.*?),(.*?) (.*?)( SUBCKT )(\S*) error count (\d*/\d*)")
-        # \1 reference, \2 level, \3 type, \4 for non-subckt, \5 SUBCKT, \6 device, \7 count
+        myLogRE = re.compile("^(\[.*?\]) (.*?),(.*?) .*(\(.*?\)/[^\s\(]*) ")
+        # \1 reference, \2 level, \3 type, \4 device
+        myErrorRE = re.compile("^(\[.*?\]) (.*?),(.*?) .*? SUBCKT (\S*) error count (\d*/\d*)")
+        # \1 reference, \2 level, \3 type, \4 device, \5 count
         while self._Unprinted(myIndex, myDisplayLists):
             myItems = {}
             for mode_it in myModeList:  # one item from each mode
@@ -1274,9 +1269,14 @@ class SummaryWidget(Widget):
                                                                     myItems, myModeList)
             myOutput = "%s,%s" % (myOutputItem['reference'], myOutputItem['data'])
 #            self._CheckDiscrepancies(myOutputItem, myOutput, myAppliedModes, theAutosaveFlag)
-            if myOutputModes:
-                myExportMatch = myExportRE.search(myOutput)
-                self._ExportCSV(myOutput, myExportMatch, myOutputModes, myModeList, myExportFile)
+            if myOutputModes and not myOutput.startswith("#"):
+                myExportMatch = myErrorRE.search(myOutput)
+                if not myExportMatch:
+                    myExportMatch = myLogRE.search(myOutput)
+                if myExportMatch:
+                    self._ExportCSV(myExportMatch, myOutputModes, myModeList, myExportFile)
+                else:
+                    print("Could not create CSV data for: " + myOutput)
         myExportFile.close()
         self.exportPopupRef.dismiss()
         self.confirmExportPopupRef.dismiss()
