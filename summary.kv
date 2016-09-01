@@ -285,7 +285,9 @@
     modePanelRef: modePanel_id
     copyPopupRef: copyPopup_id.__self__
     savePopupRef: savePopup_id.__self__
-    confirmPopupRef: confirmPopup_id.__self__
+    exportPopupRef: exportPopup_id.__self__
+    confirmSavePopupRef: confirmSavePopup_id.__self__
+    confirmExportPopupRef: confirmExportPopup_id.__self__
     detailPopupRef: detailPopup_id.__self__
     filterPopupRef: filterPopup_id.__self__
     quitPopupRef: quitPopup_id.__self__
@@ -592,6 +594,14 @@
                     root.savePopupRef.open()
             Button:
                 size_hint_y: None
+                id: exportButton
+                padding: 5, 5
+                size: self.texture_size
+                text: "Export CSV"
+                on_press:
+                    root.exportPopupRef.open()
+            Button:
+                size_hint_y: None
                 id: quitButton
                 padding: 5, 5
                 size: self.texture_size
@@ -746,7 +756,50 @@
                                 theAutoCommitFlag=autoCommit_id.checkRef.active, \
                                 theSaveUnmatchedFlag=saveUnmatched_id.checkRef.active)
             Popup:
-                id: confirmPopup_id
+                id: exportPopup_id
+                size_hint_x: 0.8
+                size_hint_y: 0.8
+                title: "Export summary file"
+                auto_dismiss: False
+                size: self.size
+                title_font: "RobotoMono-Regular"
+                on_parent:
+                    if self.parent == bottomButtons: self.parent.remove_widget(self)
+                on_open:
+                    csvFilechooser.path = os.path.dirname(root.summary.summaryFileName)
+                    csvNameInput_id.text = os.path.basename(root.summary.summaryFileName) + ".csv"
+                BoxLayout:
+                    orientation: 'vertical'
+                    FileChooserListView:
+                        id: csvFilechooser
+                        on_selection:
+                            csvNameInput_id.text = self.selection and self.selection[0] or ''
+                    TextInput:
+                        id: csvNameInput_id
+                        size_hint_y: None
+                        height: gStandardHeight
+                        multiline: False
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        size_hint_y: None
+                        height: gStandardHeight
+                        Button:
+                            text: "Cancel"
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            padding: 5, 5
+                            on_release:
+                                root.exportPopupRef.dismiss()
+                        Button:
+                            text: "Export"
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            padding: 5, 5
+                            on_press:
+                                root.ExportSummaryAs( \
+                                theFileName=os.path.join(csvFilechooser.path, csvNameInput_id.text))
+            Popup:
+                id: confirmSavePopup_id
                 size_hint_x: 0.90
                 size_hint_y: 0.2
                 title: ""
@@ -764,7 +817,7 @@
                         height: self.texture_size[1]
                         padding: 5, 5
                         on_press:
-                            root.confirmPopupRef.dismiss()
+                            root.confirmSavePopupRef.dismiss()
                     Button:
                         text: "Save"
                         size_hint_y: None
@@ -775,6 +828,34 @@
                             theFileName=os.path.join(filechooser.path, filenameInput_id.text), \
                             theAutoCommitFlag=autoCommit_id.checkRef.active, \
                             theSaveUnmatchedFlag=saveUnmatched_id.checkRef.active)
+            Popup:
+                id: confirmExportPopup_id
+                size_hint_x: 0.90
+                size_hint_y: 0.2
+                title: ""
+                auto_dismiss: False
+                size: self.size
+                title_font: "RobotoMono-Regular"
+                on_parent:
+                    if self.parent == bottomButtons: self.parent.remove_widget(self)
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    Button:
+                        text: "Cancel"
+                        size_hint_y: None
+                        height: self.texture_size[1]
+                        padding: 5, 5
+                        on_press:
+                            root.confirmExportPopupRef.dismiss()
+                    Button:
+                        text: "Save"
+                        size_hint_y: None
+                        height: self.texture_size[1]
+                        padding: 5, 5
+                        on_press:
+                            root.ExportSummary (\
+                            theFileName=os.path.join(csvFilechooser.path, csvNameInput_id.text))
             Popup:
                 id: detailPopup_id
                 size_hint_x: 0.9

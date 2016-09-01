@@ -103,7 +103,7 @@ class SummaryListItem(SelectableView, BoxLayout):
           parentView.selectMode: Current mode (select/unselect) for DragSelect.
           parentView.selectType: Current selection type.
         """
-        if 'button' in theTouch.profile and theTouch.button != 'left':  
+        if 'button' in theTouch.profile and theTouch.button != 'left':
             return  # ignore middle, right clicks
         if 'control' in theRoot.modifiers:
             theRoot.SetCellFilter(theIndex)
@@ -122,7 +122,7 @@ class SummaryListItem(SelectableView, BoxLayout):
                 if not myAdapter.selection:
                     self.parentView.selectType = self.type
             self.DragSelect()
-        
+
     def DragSelect(self):
         """Select/deselect list item.
 
@@ -136,7 +136,7 @@ class SummaryListItem(SelectableView, BoxLayout):
             myAdapter.handle_selection(self.errorRef)
         myAdapter.dispatch('on_selection_change')
 
-        
+
 class SummaryTabContent(BoxLayout):
     """Tabbed panel content for a single report.
 
@@ -169,7 +169,7 @@ class SummaryTabContent(BoxLayout):
         super(SummaryTabContent, self).__init__(**kwargs)
         self.ids.logFileName_id.text = theReport.logFileName
         self.ids.summaryFileName_id.text = theReport.summaryFileName
-    
+
     def _Format(self, theIndex):
         """Return error display line formatted according to type, reference.
 
@@ -209,7 +209,7 @@ class SummaryTabContent(BoxLayout):
                 if error_it.startswith(self.root.sectionFilter):
                     mySpinner.text = error_it
                     break
-                
+
     def SetTabColor(self, theTab):
         """Set tab color based on percentage complete.
 
@@ -245,7 +245,7 @@ class SummaryTabContent(BoxLayout):
         self.root.workingPopupRef.open()
         self.redisplayThread = threading.Thread(target=self._FilterErrors)
         self.redisplayThread.start()
-    
+
     def _FilterErrors(self):
         """Filter display list according to check box, section, and text filters.
 
@@ -258,7 +258,7 @@ class SummaryTabContent(BoxLayout):
             myFilterRegex = re.compile(myTextFilter) if myTextFilter else None
         except:
             print("Invalid regular expression '%s'. trying as literal" % (myTextFilter))
-            myFilterRegex = re.compile(re.escape(myTextFilter))            
+            myFilterRegex = re.compile(re.escape(myTextFilter))
         self._SetSpinner()
         myFilterPriority = cvc_globals.priorityMap[self.root.sectionFilter] \
             if self.root.sectionFilter in cvc_globals.priorityMap else None
@@ -298,9 +298,9 @@ class SummaryTabContent(BoxLayout):
         """Reset buttons after finishing selection."""
         self.root.EnableButtons(theListView.adapter)
         theListView.selectMode = ""
-        theTouch.ungrab(theListView)        
+        theTouch.ungrab(theListView)
 
-            
+
 class ReferenceModeButton(Button):
     """Button for selecting modes when copying references and comments.
 
@@ -378,7 +378,7 @@ class HistoryTextInput(BoxLayout):
             self.undoList.append(theTextRef.text)
         if not theHasFocusFlag and theRedisplayFlag:
             self.root.currentContent.RedisplayErrors()
-        
+
 
 class SummaryWidget(Widget):
     """Root widget handles filters, error totals, error displays and buttons.
@@ -416,11 +416,13 @@ class SummaryWidget(Widget):
       DeselectAll: Unselect all selected filtered display lines.
       AddReferenceModes: Add a selectable mode button for each mode, except for the current mode.
       CopyReferences: Copy references from the current mode to selected modes based
-        on copy filters. 
+        on copy filters.
       CommitReferences: Commit selected references copied from other modes.
       DeleteSummary: Delete selected filtered display lines.
       SaveSummaryAs: Save summary file as a new file, checking for overwrites.
       SaveSummary: Save the summary file.
+      ExportSummaryAs: Export summary file as a CSV file, checking for overwrites.
+      ExportSummary: Save the summary file as a CSV file.
     """
     sectionFilter = None
     checkValues = {}
@@ -466,7 +468,7 @@ class SummaryWidget(Widget):
         myKeyboard = Window.request_keyboard(None, self)
         myKeyboard.bind(on_key_down=self._OnKeyboardDown)
         myKeyboard.bind(on_key_up=self._OnKeyboardUp)
-        
+
     def _OnKeyboardDown(self, keyboard, keycode, text, modifiers):
         """Set modifiers for shift and control keys."""
         if keycode[1] in ['lctrl', 'rctrl']:
@@ -524,7 +526,7 @@ class SummaryWidget(Widget):
         for check_it in self.ids:
             if check_it.startswith(theType):
                 self.ids[check_it].checkRef.active = theValue
-        self.ids[theType + 'none'].checkRef.active = not theValue 
+        self.ids[theType + 'none'].checkRef.active = not theValue
 
     def SetFilters(self, theId, theType, theValues):
         """Set check box values and assign to theValues list.
@@ -554,7 +556,7 @@ class SummaryWidget(Widget):
             if check_it.startswith(theType):
                 theValues[check_it] = self.ids[check_it].checkRef.active
         if theId:
-            theValues[myId] = myNewState 
+            theValues[myId] = myNewState
         myAllCheck = True
         myNoneCheck = True
         for check_it in theValues:
@@ -571,7 +573,7 @@ class SummaryWidget(Widget):
             Clock.schedule_once(partial(self.ResetCheckboxes, self.checkValues))
         elif theType == 'copy_':
             Clock.schedule_once(partial(self.ResetCheckboxes, self.copyValues))
-        
+
     def ResetCheckboxes(self, theValues, *largs):
         """Set checkboxes to values in theValues."""
         for check_it in theValues:
@@ -593,11 +595,11 @@ class SummaryWidget(Widget):
         myContent = self.currentContent
         myContent.redoList.append(copy.deepcopy(myContent.report.displayList))
         myContent.report.displayList = myContent.undoList[-1]
-        del myContent.undoList[-1]            
+        del myContent.undoList[-1]
         myContent.report.CountErrors()
         myContent.RedisplayErrors()
         self.changedFlag = self.autosaveFlag = True
-        
+
     def RedoChanges(self):
         """Redo one set of changes for the current content.
 
@@ -606,11 +608,11 @@ class SummaryWidget(Widget):
         myContent = self.currentContent
         myContent.undoList.append(copy.deepcopy(myContent.report.displayList))
         myContent.report.displayList = myContent.redoList[-1]
-        del myContent.redoList[-1]            
+        del myContent.redoList[-1]
         myContent.report.CountErrors()
         myContent.RedisplayErrors()
         self.changedFlag = self.autosaveFlag = True
-        
+
     def AddReference(self, theLevel):
         """Add reference text and theLevel to displayList for selected unchecked lines.
 
@@ -718,8 +720,8 @@ class SummaryWidget(Widget):
         if myData['type'] in ['unmatched', 'comment']:
             return
         self.ids.errorDetails_id.text = myContent.report.GetErrorDetails(myData)
-        self.detailPopupRef.open()                
-            
+        self.detailPopupRef.open()
+
     def _CountLines(self, theAdapter, theType):
         """Count the number of lines of a given type in the current filtered display."""
         myCount = 0
@@ -727,7 +729,7 @@ class SummaryWidget(Widget):
             if data_it['type'] == theType:
                 myCount += 1
         return myCount
-    
+
     def EnableButtons(self, theAdapter):
         """Enable main screen buttons based on status.
 
@@ -749,11 +751,11 @@ class SummaryWidget(Widget):
         self.ids.checkButton.disabled = True
         self.ids.ignoreButton.disabled = True
         self.ids.commitButton.disabled = True
-        self.ids.clearButton.disabled = True     
-        self.ids.commentButton.disabled = True     
+        self.ids.clearButton.disabled = True
+        self.ids.commentButton.disabled = True
         self.ids.deleteButton.disabled = True
-        self.ids.undoButton.disabled = True     
-        self.ids.redoButton.disabled = True     
+        self.ids.undoButton.disabled = True
+        self.ids.redoButton.disabled = True
         self.ids.selectAllButton.disabled = True
         self.ids.selectAllButton.text = "Select All"
         self.ids.unselectAllButton.disabled = True
@@ -791,19 +793,19 @@ class SummaryWidget(Widget):
         myContent = self.currentContent
         if myContent.undoList:
             self.ids.undoButton.text = "Undo(" + str(len(myContent.undoList)) + ")"
-            self.ids.undoButton.disabled = False     
+            self.ids.undoButton.disabled = False
         else:
             self.ids.undoButton.text = "Undo"
         if myContent.redoList:
             self.ids.redoButton.text = "Redo(" + str(len(myContent.redoList)) + ")"
-            self.ids.redoButton.disabled = False     
+            self.ids.redoButton.disabled = False
         else:
             self.ids.redoButton.text = "Redo"
         if self.filterTextRef.textRef.text:
             self.ids.viewButton.disabled = False
         if len(self.modePanelRef.tab_list) > 1:
             self.ids.referenceButton.disabled = False
-            
+
     def SetAllReferences(self, theValue):
         """Set all references selected or unselected.
 
@@ -829,7 +831,7 @@ class SummaryWidget(Widget):
         if myHasSelection:
             self.ids.unselectAllModesButton.disabled = False
             self.ids.copyReferencesButton.disabled = False
-            
+
     def SelectAll(self):
         """Select all filtered display lines of the current type."""
         myType = self.currentContent.listRef.selectType
@@ -886,7 +888,7 @@ class SummaryWidget(Widget):
         for child_it in self.modePanelRef.tab_list:
             if child_it.content.report.modeName not in mySelection:
                 continue
-            
+
             myTargetDisplayList = child_it.content.report.displayList
             self._AddUndo(child_it.content, myTargetDisplayList)
             mySourceIndex = 0
@@ -899,11 +901,11 @@ class SummaryWidget(Widget):
                 if myOrder == "<":
                     mySourceIndex += 1
                     continue
-                
+
                 if myOrder == ">":
                     myTargetIndex += 1
                     continue
-                
+
                 if myTargetError['type'] == 'unchecked' and mySourceError['type'] == 'checked':
                     myUpdateOk = False
                     if mySourceError['level'] == 'ERROR' and self.copyValues['copy_ERROR']:
@@ -917,7 +919,7 @@ class SummaryWidget(Widget):
                     if myUpdateOk:
                         myTargetError['type'] = 'uncommitted'
                         myTargetError['level'] = mySourceError['level']
-                        myTargetError['reference'] = "? " + mySourceError['reference']                                    
+                        myTargetError['reference'] = "? " + mySourceError['reference']
                 elif (myTargetError['type'] == 'unmatched'
                       and mySourceError['type'] == 'comment'
                       and self.copyValues['copy_comment']):
@@ -988,13 +990,26 @@ class SummaryWidget(Widget):
           theFileName: The name of the summary file.
           theAutoCommitFlag: If true, automatically commit uncommited references.
             (references copied from other modes)
-          theSaveUnmatchedFlag: If true, save unmatched lines. Non comment lines only in summary file.
+          theSaveUnmatchedFlag: If true, save unmatched lines.
+            (Non comment lines only in summary file.)
         """
         if os.path.exists(theFileName):
-            self.confirmPopupRef.title = "Overwrite " + theFileName;
-            self.confirmPopupRef.open()
+            self.confirmSavePopupRef.title = "Overwrite " + theFileName;
+            self.confirmSavePopupRef.open()
         else:
-            SaveSummary(self, theFileName, theAutoCommitFlag, theSaveUnmatchedFlag)
+            self.SaveSummary(theFileName, theAutoCommitFlag, theSaveUnmatchedFlag)
+
+    def ExportSummaryAs(self, theFileName):
+        """Export summary file as a CSV file, checking for overwrites.
+
+        Inputs:
+          theFileName: The name of the CSV file.
+        """
+        if os.path.exists(theFileName):
+            self.confirmExportPopupRef.title = "Overwrite " + theFileName;
+            self.confirmExportPopupRef.open()
+        else:
+            self.ExportSummary(theFileName)
 
     def _UpdateDisplayList(self, theContent, theAutoCommitFlag, theSaveUnmatchedFlag):
         """Update display list according to flags.
@@ -1018,7 +1033,7 @@ class SummaryWidget(Widget):
                 myList[line_it]['reference'] = myList[line_it]['reference'][2:]  # remove "* "
             elif myList[line_it]['type'] == 'unmatched' and not theSaveUnmatchedFlag:
                 del myList[line_it]
-                
+
     def _InitializeSave(self):
         """Initialize variables for save function."""
         self._discrepancyFound = False
@@ -1034,9 +1049,16 @@ class SummaryWidget(Widget):
             if theAutoCommitFlag else ", ignoring uncommitted checks"
         mySaveUnmatchedText = ", saving unmatched checks " \
             if theSaveUnmatchedFlag else ", ignoring unmatched checks"
-        print("Saving " + os.path.basename(theFileName) + myAutoCommitText + mySaveUnmatchedText) 
+        print("Saving " + os.path.basename(theFileName) + myAutoCommitText + mySaveUnmatchedText)
         if not theAutosaveFlag:
             print("Checking for summary discrepancies between modes...")
+
+    def _PrintCSVHeader(self, theExportFile, theModeList):
+        """Print header for CSV file."""
+        theExportFile.write("Reference,Level,Type,Device")
+        for mode_it in theModeList:
+            theExportFile.write(",%s" % mode_it)
+        theExportFile.write("\n")
 
     def _GetModes(self, theHeaderList):
         """Returns a list of all modes displayed."""
@@ -1044,7 +1066,7 @@ class SummaryWidget(Widget):
         for header_it in theHeaderList:
             myList.append(header_it.content.report.modeName)
         return myList
-                
+
     def _GetDisplayLists(self, theAutoCommitFlag, theSaveUnmatchedFlag):
         """Return dict of all updated display lists. Pushes to undo stack, if necessary.
 
@@ -1107,7 +1129,7 @@ class SummaryWidget(Widget):
         for mode_it in theModeList:  # combine modes for matching references
             if (theItems[mode_it]
                     and theOutputItem['reference'] == theItems[mode_it]['reference']
-                    and theOutputItem['data'] == theItems[mode_it]['data']):  
+                    and theOutputItem['data'] == theItems[mode_it]['data']):
                 myAppliedModes.append(mode_it)
                 theIndex[mode_it] += 1
                 if theItems[mode_it]['type'] in ['checked', 'comment', 'unmatched']:
@@ -1137,6 +1159,29 @@ class SummaryWidget(Widget):
             self._trueLastOutputModes = theOutputModes
         theSummaryFile.write("%s\n" % theOutput)
 
+    def _ExportCSV(self, theOutput, theExportMatch, theOutputModes, theModeList, theExportFile):
+        """Export one CSV summary line."""
+        # \1 reference, \2 level, \3 type, \4 for non-subckt, \5 SUBCKT, \6 device, \7 count
+        if len(theExportMatch.groups()) < 4:
+            print("Could not create CSV data for: " + theOutput)
+            return
+        print(theExportMatch.groups()[0:3])
+        theExportFile.write("%s,%s,%s" % (theExportMatch.groups()[0:3]))
+        if len(theExportMatch.groups()) > 5:
+            theExportFile.write(",%s" % theExportMatch.group(6))
+        else:
+            theExportFile.write(",%s" % theExportMatch.group(4))
+        if len(theExportMatch.groups()) == 7:
+            myCount = theExportMatch.group(7)
+        else:
+            myCount = "*"
+        for mode_it in theModeList:
+            if mode_it in theOutputModes:
+                theExportFile.write(",'%s" % myCount)
+            else:
+                theExportFile.write(",")
+        theExportFile.write("\n")
+
     def _FinalizeSave(self, theFileName, theSaveUnmatchedFlag, theAutosaveFlag):
         """Finish save by recaculating totals and setting variables."""
         if not theAutosaveFlag:
@@ -1154,7 +1199,7 @@ class SummaryWidget(Widget):
                         display_it['reference'] = "* " + display_it['reference']
         self.autosaveFlag = False
         self.savePopupRef.dismiss()
-        self.confirmPopupRef.dismiss()
+        self.confirmSavePopupRef.dismiss()
 
     def SaveSummary(self, theFileName,
                     theAutoCommitFlag, theSaveUnmatchedFlag, theAutosaveFlag=False):
@@ -1164,7 +1209,8 @@ class SummaryWidget(Widget):
           theFileName: The name of the summary file.
           theAutoCommitFlag: If true, automatically commit uncommited references.
             (references copied from other modes)
-          theSaveUnmatchedFlag: If true, save unmatched lines. Non comment lines only in summary file.
+          theSaveUnmatchedFlag: If true, save unmatched lines.
+            (Non comment lines only in summary file.)
           theAutosaveFlag: If true, this is an autosave.
         Display lists from all modes are grouped before output.
         """
@@ -1180,7 +1226,7 @@ class SummaryWidget(Widget):
         self._InitializeSave()
         myModeList = sorted(self._GetModes(self.modePanelRef.tab_list))
         myDisplayLists = self._GetDisplayLists(theAutoCommitFlag, theSaveUnmatchedFlag)
-        myIndex = {mode_it: 0 for mode_it in myModeList}  
+        myIndex = {mode_it: 0 for mode_it in myModeList}
         while self._Unprinted(myIndex, myDisplayLists):
             myItems = {}
             for mode_it in myModeList:  # one item from each mode
@@ -1195,6 +1241,45 @@ class SummaryWidget(Widget):
                 self._OutputSummary(myOutput, myOutputModes, myModeList, mySummaryFile)
         mySummaryFile.close()
         self._FinalizeSave(theFileName, theSaveUnmatchedFlag, theAutosaveFlag)
+
+    def ExportSummary(self, theFileName):
+        """Export the summary file as CSV file.
+
+        Inputs:
+          theFileName: The name of the CSV file.
+        Display lists from all modes are grouped before output.
+        """
+        try:
+            myExportFile = open(theFileName, "w")
+        except Exception as inst:
+            print(type(inst), inst.args)     # the exception instance & arguments stored in .args
+            print('could not open ' + theFileName)
+            return
+
+        print("Exporting " + os.path.basename(theFileName))
+        self._InitializeSave()
+        myModeList = sorted(self._GetModes(self.modePanelRef.tab_list))
+        self._PrintCSVHeader(myExportFile, myModeList)
+        myDisplayLists = self._GetDisplayLists(theAutoCommitFlag=False, theSaveUnmatchedFlag=False)
+        myIndex = {mode_it: 0 for mode_it in myModeList}
+        myExportRE = re.compile("^(.*?\]) (.*?),(.*?) (.*?)( SUBCKT )(\S*) error count (\d*/\d*)")
+        # \1 reference, \2 level, \3 type, \4 for non-subckt, \5 SUBCKT, \6 device, \7 count
+        while self._Unprinted(myIndex, myDisplayLists):
+            myItems = {}
+            for mode_it in myModeList:  # one item from each mode
+                myItems[mode_it] = myDisplayLists[mode_it][myIndex[mode_it]] \
+                                   if myIndex[mode_it] < len(myDisplayLists[mode_it]) else {}
+            myOutputItem = self._GetLeastItem(myItems)
+            (myAppliedModes, myOutputModes) = self._FindOutputModes(myOutputItem, myIndex,
+                                                                    myItems, myModeList)
+            myOutput = "%s,%s" % (myOutputItem['reference'], myOutputItem['data'])
+#            self._CheckDiscrepancies(myOutputItem, myOutput, myAppliedModes, theAutosaveFlag)
+            if myOutputModes:
+                myExportMatch = myExportRE.search(myOutput)
+                self._ExportCSV(myOutput, myExportMatch, myOutputModes, myModeList, myExportFile)
+        myExportFile.close()
+        self.exportPopupRef.dismiss()
+        self.confirmExportPopupRef.dismiss()
 
     def Quit(self):
         if self.changedFlag:
