@@ -292,6 +292,7 @@
     filterPopupRef: filterPopup_id.__self__
     quitPopupRef: quitPopup_id.__self__
     workingPopupRef: workingPopup_id.__self__
+    replaceReferencePopupRef: replaceReferencePopup_id.__self__
     changedFlag: False
     BoxLayout:
         orientation: 'vertical'
@@ -464,28 +465,28 @@
                 padding: 5, 5
                 size: self.texture_size
                 on_press:
-                    root.AddReference('ERROR')
+                    root.AddReference('ERROR', root.referenceAction)
             Button:
                 id: warningButton
                 text: "Warning"
                 padding: 5, 5
                 size: self.texture_size
                 on_press:
-                    root.AddReference('Warning')
+                    root.AddReference('Warning', root.referenceAction)
             Button:
                 id: checkButton
                 text: "Check"
                 padding: 5, 5
                 size: self.texture_size
                 on_press:
-                    root.AddReference('Check')
+                    root.AddReference('Check', root.referenceAction)
             Button:
                 id: ignoreButton
                 text: "ignore"
                 padding: 5, 5
                 size: self.texture_size
                 on_press:
-                    root.AddReference('ignore')
+                    root.AddReference('ignore', root.referenceAction)
             Button:
                 id: commitButton
                 text: "commit"
@@ -992,6 +993,40 @@
                 title_font: "RobotoMono-Regular"
                 on_parent:
                     if self.parent == bottomButtons: self.parent.remove_widget(self)
+            Popup:
+                id: replaceReferencePopup_id
+                size_hint_x: 0.4
+                size_hint_y: 0.2
+                title: "Keep or Replace Reference?"
+                auto_dismiss: False
+                size: self.size
+                title_font: "RobotoMono-Regular"
+                on_parent:
+                    if self.parent == bottomButtons: self.parent.remove_widget(self)
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    Button:
+                        text: "Keep"
+                        size_hint_y: None
+                        height: self.texture_size[1]
+                        padding: 5, 5
+                        on_press:
+                            root.AddReference(root.errorLevel, 'keep')
+                    Button:
+                        text: "Replace"
+                        size_hint_y: None
+                        height: self.texture_size[1]
+                        padding: 5, 5
+                        on_press:
+                            root.AddReference(root.errorLevel, 'replace')
+                    Button:
+                        text: "Cancel"
+                        size_hint_y: None
+                        height: self.texture_size[1]
+                        padding: 5, 5
+                        on_press:
+                            root.replaceReferencePopupRef.dismiss()
 
 #23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
 

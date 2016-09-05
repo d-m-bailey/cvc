@@ -4,6 +4,7 @@
       SummaryListItem: Selectable error list item.
       SummaryTabContent: Tabbed panel content for a single report.
       ReferenceModeButton: Button for selecting modes when copying references and comments.
+      HistoryTextInput: Implements text input with history and clear.
       SummaryWidget: Root widget handles filters, error totals, error displays and buttons.
 
     Copyright 2106 D. Mitch Bailey  d.mitch.bailey at gmail dot com
@@ -392,6 +393,8 @@ class SummaryWidget(Widget):
       setSectionFlag: Flag to prevent recursion when setting sectionFilter.
       changedFlag: Summary data has changed.
       autosaveFlag: Summary data has changed and needs autosave.
+      referenceAction: How to handle reference data. 'replace' or 'ask' (-> 'replace' or 'keep').
+      errorLevel: Saved error level for reference action 'ask'.
     Instance variables:
       app: The parent app.
       summary: The data from the summary file.
@@ -403,7 +406,8 @@ class SummaryWidget(Widget):
       ResetCheckboxes: Set checkboxes to values in theValues.
       UndoChanges: Undo one set of changes for the current content.
       RedoChanges: Redo one set of changes for the current content.
-      AddReference: Add reference text and theLevel to displayList for selected unchecked lines.
+      AddReference: Add reference text and theLevel to displayList for selected unchecked lines,
+        or for checked lines, replace theLevel while keeping or replacing reference.
       AddComment: Add comment to displayList for selected unmatched lines.
       ClearReference: Remove reference from displayList for selected checked, comment,
         uncommitted and unmatched lines.
@@ -432,6 +436,8 @@ class SummaryWidget(Widget):
     setSectionFlag = False
 #    changedFlag = BooleanProperty(False)   # set in summary.kv
     autosaveFlag = False
+    referenceAction = None
+    errorLevel = None
 
     def __init__(self, theApp, theSummaryList, theReportList, **kwargs):
         """Initialize root widget with summary and report data.
@@ -613,17 +619,25 @@ class SummaryWidget(Widget):
         myContent.RedisplayErrors()
         self.changedFlag = self.autosaveFlag = True
 
-    def AddReference(self, theLevel):
-        """Add reference text and theLevel to displayList for selected unchecked lines.
+    def AddReference(self, theLevel, theReferenceAction):
+        """Add reference text and theLevel to displayList for selected unchecked lines,
+          or for checked lines, replace theLevel while keeping or replacing reference.
 
         Surrounding '[', ']' added if not present.
         'type' is changed to 'checked'
         """
+        if theReferenceAction == 'ask':
+            self.errorLevel = theLevel
+            self.replaceReferencePopupRef.open()
+            return
+
+        self.replaceReferencePopupRef.dismiss()
         myContent = self.currentContent
         myAdapter = myContent.listRef.adapter
         myDisplayList = myContent.report.displayList
         self._AddUndo(myContent, myDisplayList)
         myReference = self.ids.referenceText_id.textRef.text.strip()
+        myEndOfReferenceRE = re.compile(r"\] .*")
         if not myReference.startswith("["):
             myReference = "[" + myReference + "]"
         for record_it in myAdapter.selection:
@@ -631,7 +645,11 @@ class SummaryWidget(Widget):
             myIndex = myData['baseIndex']
             myDisplayList[myIndex]['level'] = theLevel
             myDisplayList[myIndex]['type'] = 'checked'
-            myDisplayList[myIndex]['reference'] = myReference + " " + theLevel
+            if theReferenceAction == 'replace':
+                myDisplayList[myIndex]['reference'] = myReference + " " + theLevel
+            else:  # 'keep'
+                myDisplayList[myIndex]['reference'] = \
+                    myEndOfReferenceRE.sub("] " + theLevel, myDisplayList[myIndex]['reference'])
         myContent.report.CountErrors()
         myContent.RedisplayErrors()
         self.changedFlag = self.autosaveFlag = True
@@ -736,7 +754,8 @@ class SummaryWidget(Widget):
         'Select All', 'Unselect All' enabled when something is selected.
           Select All shows the total displayed lines of the selected type.
           Unselect All shows the actual number of selected lines.
-        'ERROR', 'Warning', 'Check', 'ignore' buttons enabled when 'unchecked' type selected.
+        'ERROR', 'Warning', 'Check', 'ignore' buttons enabled when 'unchecked' type selected,
+          also enabled when 'checked' type selected.
         'Clear' button enabled for everything except, unchecked lines with comments.
         'Comment' button enabled form unmatched lines.
         'Delete' button enabled for unmatched and comment lines.
@@ -776,6 +795,7 @@ class SummaryWidget(Widget):
                 self.ids.warningButton.disabled = False
                 self.ids.checkButton.disabled = False
                 self.ids.ignoreButton.disabled = False
+                self.referenceActive = 'replace'
                 if myData['errorText'].startswith("!"):
                     self.ids.clearButton.disabled = False
             elif myType == 'unmatched':
@@ -786,6 +806,11 @@ class SummaryWidget(Widget):
                 self.ids.commitButton.disabled = False
                 self.ids.clearButton.disabled = False
             elif myType == 'checked':
+                self.ids.errorButton.disabled = False
+                self.ids.warningButton.disabled = False
+                self.ids.checkButton.disabled = False
+                self.ids.ignoreButton.disabled = False
+                self.referenceAction = 'ask'
                 self.ids.clearButton.disabled = False
             elif myType == 'comment':
                 self.ids.clearButton.disabled = False
@@ -1162,7 +1187,7 @@ class SummaryWidget(Widget):
     def _ExportCSV(self, theExportMatch, theOutputModes, theModeList, theExportFile):
         """Export one CSV summary line."""
         # \1 reference, \2 level, \3 type, \4 device, (\5 count)
-        print(theExportMatch.groups()[0:3])
+#        print(theExportMatch.groups()[0:3])
         theExportFile.write("%s,%s,%s,%s" % (theExportMatch.groups()[0:4]))
         if len(theExportMatch.groups()) == 5:
             myCount = theExportMatch.group(5)
