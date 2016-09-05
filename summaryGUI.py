@@ -795,7 +795,7 @@ class SummaryWidget(Widget):
                 self.ids.warningButton.disabled = False
                 self.ids.checkButton.disabled = False
                 self.ids.ignoreButton.disabled = False
-                self.referenceActive = 'replace'
+                self.referenceAction = 'replace'
                 if myData['errorText'].startswith("!"):
                     self.ids.clearButton.disabled = False
             elif myType == 'unmatched':
