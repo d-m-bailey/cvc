@@ -1445,12 +1445,12 @@ void CCvcDb::PropagateSimVoltages(CEventQueue& theEventQueue, propagation_t theP
 		mySimVoltage = myConnections.drainVoltage;
 		myNextNetId = myConnections.sourceId;
 		// TODO: Possibly not necessary. Only primed voltages are processed.
-		if ( thePropagationType == POWER_NETS_ONLY && ! IsExternalPower_(myConnections.drainPower_p) ) return;
+		if ( thePropagationType == POWER_NETS_ONLY && ! IsPriorityPower_(myConnections.drainPower_p) ) return;
 	} else {
 		mySimVoltage = myConnections.sourceVoltage;
 		myNextNetId = myConnections.drainId;
 		// TODO: Possibly not necessary. Only primed voltages are processed.
-		if ( thePropagationType == POWER_NETS_ONLY && ! IsExternalPower_(myConnections.sourcePower_p) ) return;
+		if ( thePropagationType == POWER_NETS_ONLY && ! IsPriorityPower_(myConnections.sourcePower_p) ) return;
 	}
 	if ( IsMos_(deviceType_v[myDeviceId]) ) {
 		if ( myConnections.gateVoltage == UNKNOWN_VOLTAGE ) {
@@ -1464,7 +1464,7 @@ void CCvcDb::PropagateSimVoltages(CEventQueue& theEventQueue, propagation_t theP
 			} else if ( thePropagationType == POWER_NETS_ONLY ||  // no mos-diode propagation for fixed-only
 					(myConnections.gateId != myConnections.sourceId && myConnections.gateId != myConnections.drainId)) return; // skip unknown non-diode mos gates
 		} else {
-			if ( thePropagationType == POWER_NETS_ONLY && ! IsExternalPower_(myConnections.gatePower_p) ) return;
+			if ( thePropagationType == POWER_NETS_ONLY && ! IsPriorityPower_(myConnections.gatePower_p) ) return;
 		}
 	}
 	if (deviceType_v[myDeviceId] == FUSE_ON	&& thePropagationType != ALL_NETS_AND_FUSE)	return;
@@ -2352,7 +2352,7 @@ void CCvcDb::SetSimPower(propagation_t thePropagationType) {
 		if ( netVoltagePtr_v[mySimMasterNet.finalNetId] == NULL ) continue;
 		CPower * myPower_p = netVoltagePtr_v[mySimMasterNet.finalNetId];
 		if ( myPower_p->simVoltage == UNKNOWN_VOLTAGE ) continue;
-		if ( thePropagationType == POWER_NETS_ONLY && ! IsExternalPower_(myPower_p) ) continue;
+		if ( thePropagationType == POWER_NETS_ONLY && ! IsPriorityPower_(myPower_p) ) continue;
 		EnqueueAttachedDevicesByTerminal(simEventQueue, net_it, firstSource_v, nextSource_v, myPower_p->simVoltage);
 		EnqueueAttachedDevicesByTerminal(simEventQueue, net_it, firstDrain_v, nextDrain_v, myPower_p->simVoltage);
 		EnqueueAttachedDevicesByTerminal(simEventQueue, net_it, firstGate_v, nextGate_v, myPower_p->simVoltage);

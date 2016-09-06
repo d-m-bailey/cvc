@@ -35,6 +35,7 @@ enum powerType_t { POWER_BIT=0, INPUT_BIT, HIZ_BIT, RESISTOR_BIT, REFERENCE_BIT,
 enum activeType_t { MIN_ACTIVE=0, MAX_ACTIVE };
 
 #define IsExternalPower_(power_p) ((power_p)->type[POWER_BIT] || (power_p)->type[INPUT_BIT])
+#define IsPriorityPower_(power_p) ((power_p)->type[POWER_BIT] || (power_p)->type[INPUT_BIT] || (power_p)->type[RESISTOR_BIT])
 
 class CPowerFamilyMap : public unordered_map<string, unordered_set<string>> {
 public:
