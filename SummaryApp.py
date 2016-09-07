@@ -71,6 +71,9 @@ try:  # kivy installed
             """Stub to root method for copy check box filters."""
             self.root.SetFilters(theId, 'copy_', self.root.copyValues)
 
+        def on_stop(self):
+            self.root.AutoSaveSummary(None)
+
         def BatchRun(self):
             for report_it in self.reportList:
                 report_it.CreateDisplayList(self.summaryList)

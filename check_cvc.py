@@ -54,7 +54,11 @@ from __future__ import division
 from __future__ import print_function
 
 import sys
+import os
 import getopt
+
+os.environ["KIVY_NO_ARGS"] = "1"
+os.environ["KIVY_NO_CONSOLELOG"] = "1"
 
 import cvc_globals
 

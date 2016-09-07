@@ -37,7 +37,7 @@ import inspect
 import copy
 from functools import partial
 import pdb
-from time import time, sleep
+import time
 import threading
 
 from utility import CompareErrors
@@ -392,12 +392,14 @@ class SummaryWidget(Widget):
       currentContent: Shortcut to content of the current tab of the mode panel.
       setSectionFlag: Flag to prevent recursion when setting sectionFilter.
       changedFlag: Summary data has changed.
-      autosaveFlag: Summary data has changed and needs autosave.
+      autoSaveFlag: Summary data has changed and needs auto-save.
       referenceAction: How to handle reference data. 'replace' or 'ask' (-> 'replace' or 'keep').
       errorLevel: Saved error level for reference action 'ask'.
     Instance variables:
       app: The parent app.
       summary: The data from the summary file.
+      timeStamp: Date of program start for auto-save file.
+      autoSaveFileName: Name of the auto-save file.
     Methods:
       __init__: Initialize root widget with summary and report data.
       SetSectionFilter: Set section filter and redisplay.
@@ -423,10 +425,14 @@ class SummaryWidget(Widget):
         on copy filters.
       CommitReferences: Commit selected references copied from other modes.
       DeleteSummary: Delete selected filtered display lines.
+      AutoSaveSummary: Auto-save the summary file to a temporary file name at regular intervals,
+        if necessary.
+      RemoveAutoSaveFile: Attempt to remove last auto-saved file.
       SaveSummaryAs: Save summary file as a new file, checking for overwrites.
       SaveSummary: Save the summary file.
       ExportSummaryAs: Export summary file as a CSV file, checking for overwrites.
       ExportSummary: Save the summary file as a CSV file.
+      Quit: Check for summary changes before ending.
     """
     sectionFilter = None
     checkValues = {}
@@ -435,7 +441,7 @@ class SummaryWidget(Widget):
     currentContent = None
     setSectionFlag = False
 #    changedFlag = BooleanProperty(False)   # set in summary.kv
-    autosaveFlag = False
+    autoSaveFlag = False
     referenceAction = None
     errorLevel = None
 
@@ -461,9 +467,10 @@ class SummaryWidget(Widget):
         self.SetFilters('all', "copy_", self.copyValues)
         self.modePanelRef.set_def_tab(self.modePanelRef.tab_list[-1])
         self.currentContent = self.modePanelRef.current_tab.content
-        Clock.schedule_interval(self._AutoSaveSummary, 300)
-        # hides kivy error messages on start-up. Remove for debugging.
-#        Config.set('kivy', 'log_level', 'critical')
+        Clock.schedule_interval(self.AutoSaveSummary, 300)
+        myLocalTime = time.localtime(time.time())
+        self.timeStamp = "%d%02d%02d_%02d%02d%02d" % (myLocalTime[0:6])
+        self.autoSaveFileName = self.summary.summaryFileName + "." + self.timeStamp
         Clock.create_trigger(partial(Config.set, 'kivy', 'log_level', 'info'))
 
     def _GetKeyboard(self):
@@ -604,7 +611,7 @@ class SummaryWidget(Widget):
         del myContent.undoList[-1]
         myContent.report.CountErrors()
         myContent.RedisplayErrors()
-        self.changedFlag = self.autosaveFlag = True
+        self.changedFlag = self.autoSaveFlag = True
 
     def RedoChanges(self):
         """Redo one set of changes for the current content.
@@ -617,7 +624,7 @@ class SummaryWidget(Widget):
         del myContent.redoList[-1]
         myContent.report.CountErrors()
         myContent.RedisplayErrors()
-        self.changedFlag = self.autosaveFlag = True
+        self.changedFlag = self.autoSaveFlag = True
 
     def AddReference(self, theLevel, theReferenceAction):
         """Add reference text and theLevel to displayList for selected unchecked lines,
@@ -652,7 +659,7 @@ class SummaryWidget(Widget):
                     myEndOfReferenceRE.sub("] " + theLevel, myDisplayList[myIndex]['reference'])
         myContent.report.CountErrors()
         myContent.RedisplayErrors()
-        self.changedFlag = self.autosaveFlag = True
+        self.changedFlag = self.autoSaveFlag = True
 
     def AddComment(self):
         """Add comment to displayList for selected unmatched lines.
@@ -678,7 +685,7 @@ class SummaryWidget(Widget):
             myDisplayList[myIndex]['reference'] = myComment + " " + myReference
         myContent.report.CountErrors()
         myContent.RedisplayErrors()
-        self.changedFlag = self.autosaveFlag = True
+        self.changedFlag = self.autoSaveFlag = True
 
     def ClearReference(self):
         """Remove reference from displayList for selected checked, comment, uncommitted
@@ -704,7 +711,7 @@ class SummaryWidget(Widget):
                 myDisplayList[myIndex]['reference'] = ""
         myContent.report.CountErrors()
         myContent.RedisplayErrors()
-        self.changedFlag = self.autosaveFlag = True
+        self.changedFlag = self.autoSaveFlag = True
 
     def SetCellFilter(self, theErrorIndex):
         """Set text filter to cell name in selected filtered display line.
@@ -955,6 +962,7 @@ class SummaryWidget(Widget):
                 myTargetIndex += 1
             child_it.content.report.CountErrors()
         self.copyPopupRef.dismiss()
+        self.changedFlag = self.autoSaveFlag = True
 
     def CommitReferences(self):
         """Commit selected references copied from other modes."""
@@ -970,7 +978,7 @@ class SummaryWidget(Widget):
             myDisplayList[myIndex]['reference'] = myDisplayList[myIndex]['reference'][2:]
         myContent.report.CountErrors()
         myContent.RedisplayErrors()
-        self.changedFlag = self.autosaveFlag = True
+        self.changedFlag = self.autoSaveFlag = True
 
     def DeleteSummary(self):
         """Delete selected filtered display lines.
@@ -990,23 +998,24 @@ class SummaryWidget(Widget):
             del myDisplayList[index_it]
         myContent.report.CountErrors()
         myContent.RedisplayErrors()
-        self.changedFlag = self.autosaveFlag = True
+        self.changedFlag = self.autoSaveFlag = True
 
-    def _AutoSaveSummary(self, theTime):
-        """Autosave the summary file to a temporary file name ar regular intervals, if necessary.
+    def AutoSaveSummary(self, theTime):
+        """Auto-save the summary file to a temporary file name at regular intervals, if necessary.
 
         Saves and restores current selection state.
         Inputs:
           theTime: unused.
         """
-        if self.autosaveFlag:
+        if self.autoSaveFlag:
             mySelection = self.currentContent.listRef.adapter.selection[:]
-            self.SaveSummary(theFileName=self.summary.summaryFileName + ".autosave",
+            self.autoSaveFileName = self.summary.summaryFileName + "." + self.timeStamp
+            self.SaveSummary(theFileName=self.autoSaveFileName,
                              theAutoCommitFlag=False,
                              theSaveUnmatchedFlag=True,
-                             theAutosaveFlag=True)
+                             theAutoSaveFlag=True)
             self.currentContent.listRef.adapter.selection = mySelection
-            self.autosaveFlag = False
+            self.autoSaveFlag = False
 
     def SaveSummaryAs(self, theFileName, theAutoCommitFlag, theSaveUnmatchedFlag):
         """Save summary file as a new file, checking for overwrites.
@@ -1068,14 +1077,14 @@ class SummaryWidget(Widget):
         self._lastOutput = ""
 
     def _PrintSaveBanner(self, theFileName,
-                             theAutoCommitFlag, theSaveUnmatchedFlag, theAutosaveFlag):
+                             theAutoCommitFlag, theSaveUnmatchedFlag, theAutoSaveFlag):
         """Print banner with save file parameters."""
         myAutoCommitText = ", saving uncommitted checks " \
             if theAutoCommitFlag else ", ignoring uncommitted checks"
         mySaveUnmatchedText = ", saving unmatched checks " \
             if theSaveUnmatchedFlag else ", ignoring unmatched checks"
         print("Saving " + os.path.basename(theFileName) + myAutoCommitText + mySaveUnmatchedText)
-        if not theAutosaveFlag:
+        if not theAutoSaveFlag:
             print("Checking for summary discrepancies between modes...")
 
     def _PrintCSVHeader(self, theExportFile, theModeList):
@@ -1162,9 +1171,9 @@ class SummaryWidget(Widget):
                     myOutputModes.append(mode_it)
         return (myAppliedModes, myOutputModes)
 
-    def _CheckDiscrepancies(self, theOutputItem, theOutput, theAppliedModes, theAutosaveFlag):
+    def _CheckDiscrepancies(self, theOutputItem, theOutput, theAppliedModes, theAutoSaveFlag):
         """Print discrepancies in summary between modes."""
-        if (not theAutosaveFlag
+        if (not theAutoSaveFlag
                 and theOutputItem['data'] == self._lastData
                 and theOutput != self._lastOutput):  # same error, but different summary
             self._discrepancyFound = True
@@ -1200,9 +1209,9 @@ class SummaryWidget(Widget):
                 theExportFile.write(",")
         theExportFile.write("\n")
 
-    def _FinalizeSave(self, theFileName, theSaveUnmatchedFlag, theAutosaveFlag):
+    def _FinalizeSave(self, theFileName, theSaveUnmatchedFlag, theAutoSaveFlag):
         """Finish save by recaculating totals and setting variables."""
-        if not theAutosaveFlag:
+        if not theAutoSaveFlag:
             if not self._discrepancyFound:
                 print("no discrepancies found.")
             self.summary.summaryFileName = theFileName
@@ -1215,12 +1224,22 @@ class SummaryWidget(Widget):
                 for display_it in header_it.content.report.displayList:
                     if display_it['type'] == 'unmatched':  # re-add leading "* " for unmatched
                         display_it['reference'] = "* " + display_it['reference']
-        self.autosaveFlag = False
+        self.autoSaveFlag = False
         self.savePopupRef.dismiss()
         self.confirmSavePopupRef.dismiss()
 
+    def RemoveAutoSaveFile(self):
+        """Attempt to remove last auto-saved file.
+
+        Ignore failed attempts.
+        """
+        try:
+            os.remove(self.autoSaveFileName)
+        except:
+            pass
+
     def SaveSummary(self, theFileName,
-                    theAutoCommitFlag, theSaveUnmatchedFlag, theAutosaveFlag=False):
+                    theAutoCommitFlag, theSaveUnmatchedFlag, theAutoSaveFlag=False):
         """Save the summary file.
 
         Inputs:
@@ -1229,9 +1248,10 @@ class SummaryWidget(Widget):
             (references copied from other modes)
           theSaveUnmatchedFlag: If true, save unmatched lines.
             (Non comment lines only in summary file.)
-          theAutosaveFlag: If true, this is an autosave.
+          theAutoSaveFlag: If true, this is an auto-save.
         Display lists from all modes are grouped before output.
         """
+        self.RemoveAutoSaveFile()
         try:
             mySummaryFile = open(theFileName, "w")
         except Exception as inst:
@@ -1240,7 +1260,7 @@ class SummaryWidget(Widget):
             return
 
         self._PrintSaveBanner(theFileName,
-                              theAutoCommitFlag, theSaveUnmatchedFlag, theAutosaveFlag)
+                              theAutoCommitFlag, theSaveUnmatchedFlag, theAutoSaveFlag)
         self._InitializeSave()
         myModeList = sorted(self._GetModes(self.modePanelRef.tab_list))
         myDisplayLists = self._GetDisplayLists(theAutoCommitFlag, theSaveUnmatchedFlag)
@@ -1254,11 +1274,11 @@ class SummaryWidget(Widget):
             (myAppliedModes, myOutputModes) = self._FindOutputModes(myOutputItem, myIndex,
                                                                     myItems, myModeList)
             myOutput = "%s:%s" % (myOutputItem['reference'], myOutputItem['data'])
-            self._CheckDiscrepancies(myOutputItem, myOutput, myAppliedModes, theAutosaveFlag)
+            self._CheckDiscrepancies(myOutputItem, myOutput, myAppliedModes, theAutoSaveFlag)
             if myOutputModes:
                 self._OutputSummary(myOutput, myOutputModes, myModeList, mySummaryFile)
         mySummaryFile.close()
-        self._FinalizeSave(theFileName, theSaveUnmatchedFlag, theAutosaveFlag)
+        self._FinalizeSave(theFileName, theSaveUnmatchedFlag, theAutoSaveFlag)
 
     def ExportSummary(self, theFileName):
         """Export the summary file as CSV file.
@@ -1293,7 +1313,6 @@ class SummaryWidget(Widget):
             (myAppliedModes, myOutputModes) = self._FindOutputModes(myOutputItem, myIndex,
                                                                     myItems, myModeList)
             myOutput = "%s,%s" % (myOutputItem['reference'], myOutputItem['data'])
-#            self._CheckDiscrepancies(myOutputItem, myOutput, myAppliedModes, theAutosaveFlag)
             if myOutputModes and not myOutput.startswith("#"):
                 myExportMatch = myErrorRE.search(myOutput)
                 if not myExportMatch:
@@ -1307,6 +1326,7 @@ class SummaryWidget(Widget):
         self.confirmExportPopupRef.dismiss()
 
     def Quit(self):
+        """Check for summary changes before ending."""
         if self.changedFlag:
             self.quitPopupRef.open()
         else:

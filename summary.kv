@@ -867,22 +867,30 @@
                 title_font: "RobotoMono-Regular"
                 on_parent:
                     if self.parent == bottomButtons: self.parent.remove_widget(self)
-                TextInput:
-                    id: errorDetails_id
-                    scroll_type: ['bars', 'content']
-                    bar_width: 15
-                    padding: 5, 5
-                    text_size: errorDetails_id.width, None
-                    size_hint: 1, 1
-                    valign: 'top'
-                    halign: 'left'
-                    readonly: True
-                    background_color: 0.2, 0.2, 0.2, 1
-                    foreground_color: 1, 1, 1, 1
-                    on_focus:
-                        self.cursor = (0, 0)
-                    on_selection_text:
-                        self.copy()
+                BoxLayout:
+                    orientation: 'vertical'
+                    TextInput:
+                        id: errorDetails_id
+                        scroll_type: ['bars', 'content']
+                        bar_width: 15
+                        padding: 5, 5
+                        text_size: errorDetails_id.width, None
+                        size_hint: 1, 1
+                        valign: 'top'
+                        halign: 'left'
+                        readonly: True
+                        background_color: 0.2, 0.2, 0.2, 1
+                        foreground_color: 1, 1, 1, 1
+                        on_focus:
+                            self.cursor = (0, 0)
+                        on_selection_text:
+                            self.copy()
+                    Button:
+                        text: "Close"
+                        size_hint_y: None
+                        height: self.texture_size[1]
+                        on_press:
+                            root.detailPopupRef.dismiss()
             Popup:
                 id: quitPopup_id
                 size_hint_x: 0.3
@@ -902,6 +910,8 @@
                         height: self.texture_size[1]
                         padding: 5, 5
                         on_press:
+                            root.autoSaveFlag = False
+                            root.RemoveAutoSaveFile()
                             Window.close()
                     Button:
                         text: "Cancel"
