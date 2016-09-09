@@ -438,6 +438,7 @@ deviceId_t CCvcDb::FindDevice(instanceId_t theCurrentInstanceId, string theDevic
 returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 	string	myInputLine;
 	char *	myInput;
+	char myInputBuffer[1024];
 	istringstream myInputStream;
 	string	myCommand;
 	string 	myOption;
@@ -448,6 +449,9 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 	string	myName;
 	string	myNumberString;
 	string	myCommandMode = "";
+	list<streambuf *> mySavedBufferStack;
+	ifstream *myBatchFile;
+	bool myIsBatchInput = false;
 	int mySearchLimit;
 	static instanceId_t myCurrentInstanceId = 0;
 	bool	myPrintSubcircuitNameFlag = false;
@@ -481,11 +485,28 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 			myPrompt << "** Stage " << theCurrentStage << "/" << STAGE_COMPLETE << ": Enter command ?> ";
 		}
 //		cin >> myCommand;
-		myInput = rl_gets(myPrompt.str());
+		if ( myIsBatchInput ) {
+			cin.getline(myInputBuffer, 1024);
+			if ( cin.eof() ) {
+				myInput = NULL;
+			} else {
+				myInput = myInputBuffer;
+			}
+		} else {
+			myInput = rl_gets(myPrompt.str());
+		}
 //		cout << myInput << endl;
 		if ( myInput == NULL ) { // eof
 //				myCurrentInstanceId = 0; // reset saved hierarchy
-			if ( myCommandMode == "" ) {
+			if ( myIsBatchInput ) {
+				reportFile << "finished source. Depth " << mySavedBufferStack.size() << endl;
+				cin.rdbuf(mySavedBufferStack.front());
+				mySavedBufferStack.pop_front();
+				myCommandMode = "";
+				if ( mySavedBufferStack.empty() ) {
+					myIsBatchInput = false;
+				}
+			} else if ( myCommandMode == "" ){
 				gInteractive_cvc = false;
 				cin.clear();
 				myReturnCode = OK;
@@ -495,6 +516,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 			reportFile << endl;
 			continue;
 		}
+		reportFile << endl << "> " << myInput << endl;
 		try {
 //			if ( cin.eof() ) {
 			myInputLine = myInput;
@@ -535,17 +557,30 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				cout << "printcdl<pc> subcircuit: print subcircuit as subcircuit.cdl" << endl;
 				cout << "printenvironment<pe>: print simulation environment" << endl;
 				cout << "togglename<n>: toggle subcircuit names" << endl;
-				cout << "shortfile<s> file: use file as shorts" << endl;
+//				cout << "shortfile<s> file: use file as shorts" << endl;
 				cout << "setpower<sp> file: use file as power" << endl;
 				cout << "setmodel<sm> file: use file as model" << endl;
 				cout << "setfuse<sf> file: use file as fuse overrides" << endl;
 				cout << "printpower<pp>: print power settings" << endl;
 				cout << "printmodel<pm>: print model statistics" << endl;
+				cout << "source file: read commands from file" << endl;
 				cout << "skip: skip this cvcrc and use next one" << endl;
 				cout << "rerun: rerun this cvcrc" << endl;
 				cout << "continue<c>: continue" << endl;
 				cout << "help<h>: help" << endl;
 				cout << "quit<q>: quit" << endl;
+			} else if ( myCommand == "source" ) {
+				myFileName = "";
+				myInputStream >> myFileName;
+				myBatchFile = new ifstream(myFileName);
+				if ( myBatchFile && myBatchFile->good() ) {
+					myIsBatchInput = true;
+					mySavedBufferStack.push_front(cin.rdbuf());
+					cout << "sourcing from " << myFileName << ". Depth " << mySavedBufferStack.size() << endl;
+					cin.rdbuf(myBatchFile->rdbuf());
+				} else {
+					reportFile << "Could not open " << myFileName << endl;
+				}
 			} else if ( myCommand == "setmodel" || myCommand == "sm" ) {
 				if ( theCurrentStage != 1 ) {
 					reportFile << "ERROR: Can only change model file at stage 1." << endl;
@@ -724,10 +759,10 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				logFile.close();
 				errorFile.close();
 				myReturnCode = SKIP;
-			} else if ( myCommand == "shortfile" || myCommand == "s" ) {
-				myFileName = "";
-				myInputStream >> myFileName;
-				ReadShorts(myFileName);
+//			} else if ( myCommand == "shortfile" || myCommand == "s" ) {
+//				myFileName = "";
+//				myInputStream >> myFileName;
+//				ReadShorts(myFileName);
 			} else if ( myCommand == "c" || myCommand == "continue" ) {
 				if ( theCurrentStage == STAGE_COMPLETE && cvcArgIndex + 1 >= cvcArgCount ) { // attempt to continue past last cvcrc
 					reportFile << "This is the last cvcrc file. Use 'rerun' or 'quit'." << endl;

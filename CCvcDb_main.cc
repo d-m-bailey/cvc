@@ -201,7 +201,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		FindFloatingInputErrors();
 		CheckExpectedValues();
 		PrintErrorTotals();
-		PrintShortedNets(cvcParameters.cvcReportBaseFilename + ".shorts.gz");
+//		PrintShortedNets(cvcParameters.cvcReportBaseFilename + ".shorts.gz");
 		reportFile << PrintProgress(&lastSnapshot, "Total ") << endl;
 		if ( gDebug_cvc ) {
 			PrintAllVirtualNets<CVirtualNetVector>(minNet_v, simNet_v, maxNet_v, "(3)");
