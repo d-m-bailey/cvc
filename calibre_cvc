@@ -32,11 +32,10 @@ OUTPUT="$3"
 
 additionalRules="cvc.include"
 #   Additional rules include the following statements
-#   CASE
-#   GLOBAL
-#   VIRTUAL
-#   STRICT WL
-#   LVS (except LVS SOFTCHK[ignored], LVS REPORT/WRITE[fixed], and LVS INJECT LOGIC[always NO])
+#   CASE (except LVS CASE[included later])
+#   VIRTUAL CONNECT COLON YES (if used)
+#   LVS (except LVS SOFTCHK[ignored], LVS REPORT/WRITE[fixed], LVS INJECT LOGIC[always NO], and
+#     LVS CULL PRIMITIVE CELLS[should be no for box instances])
 #   TRACE
 
 cellOverrides="override.list"
@@ -44,6 +43,12 @@ cellOverrides="override.list"
 #   EXPAND cell  <- force flattening
 #   KEEP cell    <- prevent explicit flattening (parameterized cells always flattened)
 #   IGNORE cell  <- ignore
+
+if [[ -f box.awk ]]; then
+	BOX_FILTER='awk -f box.awk'
+else
+	BOX_FILTER=cat
+fi
 
 if [[ "${OUTPUT##*.}" == "gz" ]]; then
 	compress=
@@ -53,42 +58,47 @@ fi
 log="cdl.log"
 echo "log file: $log"
 
-cat > $rulefile <<-svs_rule
-	LAYOUT PRIMARY $PRIMARY
-	LAYOUT PATH "$DATA"
-	SOURCE PRIMARY $PRIMARY
-	SOURCE PATH "$DATA"
-	LVS WRITE SOURCE NETLIST "$OUTPUT.0"
+if [[ ( $additionalRules -nt $rulefile ) || ( $cellOverrides -nt $rulefile ) ]]; then
+	cat > $rulefile <<-svs_rule
+		LAYOUT PRIMARY $PRIMARY
+		LAYOUT PATH "$DATA"
+		SOURCE PRIMARY $PRIMARY
+		SOURCE PATH "$DATA"
+		LVS WRITE SOURCE NETLIST "$OUTPUT.0"
 
-	LVS REPORT "lvs_cdl.rep"
-	LVS REPORT MAXIMUM 100
-	LVS REPORT OPTION F R S V
-	MASK RESULTS DATABASE none
+		LVS REPORT "lvs_cdl.rep"
+		LVS REPORT MAXIMUM 100
+		LVS REPORT OPTION F R S V
+		MASK RESULTS DATABASE none
 
-	SOURCE SYSTEM SPICE
-	LAYOUT SYSTEM SPICE
+		SOURCE SYSTEM SPICE
+		LAYOUT SYSTEM SPICE
 
-	LVS INJECT LOGIC NO
-svs_rule
+		LVS INJECT LOGIC NO
+	svs_rule
 
-if [[ -f $additionalRules ]]; then
-	echo "Adding $additionalRules to cvc.svrf"
-	cat $additionalRules >> $rulefile
+	if [[ -f $additionalRules ]]; then
+		echo "Adding $additionalRules to cvc.svrf"
+		cat $additionalRules >> $rulefile
+	else
+		echo "Warning: missing $additionalRules"
+	fi
+	echo "Finding cells to expand using $cellOverrides ..."
+	if [[ -f $cellOverrides ]]; then
+		expand_cells.py $cellOverrides $PRIMARY $DATA >> $rulefile
+	else
+		echo "Warning: missing $cellOverrides"
+		expand_cells.py /dev/null $PRIMARY $DATA >> $rulefile
+	fi
 else
-	echo "Warning: missing $additionalRules"
-fi
-echo "Finding cells to expand using $cellOverrides ..."
-if [[ -f $cellOverrides ]]; then
-        expand_cells.py $cellOverrides $PRIMARY $DATA >> $rulefile
-else
-	echo "Warning: missing $cellOverrides"
-	expand_cells.py /dev/null $PRIMARY $DATA >> $rulefile
+	echo "Reusing cvc.svrf. Remove cvc.svrf to remake."
 fi
 
+echo "Performing SVS..."
 calibre -hier -automatch -lvs -64 $rulefile > $log
 tail -15 $log
 
-echo "Remove leading double characters and changing commented parameters ..."
+echo "Removing leading double characters and changing commented parameters ..."
 # ^RR -> R
 # $LDD deleted (functionality in cvc model file LDDN/LDDP)
 # $a -> a
@@ -97,7 +107,8 @@ sed -e 's/^\(.\)\1/\1/' \
     -e 's/\$SUB=/^SUB=/' \
     -e 's/\$LDD//' \
     -e 's/\$//g' \
-    -e 's/\^SUB=/$SUB=/' $OUTPUT.0 > $OUTPUT
+    -e 's/\^SUB=/$SUB=/' $OUTPUT.0 | \
+$BOX_FILTER > $OUTPUT
 
 if [[ ! -z "${compress+x}" ]]; then
 	gzip -f $OUTPUT
