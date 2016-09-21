@@ -216,9 +216,9 @@ class ResultFile():
         myDeviceName = myMatch.group(3).split("(")[0]  # (/name(model))
         if "(" + self.topCell + ")" == myMatch.group(2):
             # top cell errors do not have cell name in detailed error list
-            myDeviceRE = re.compile("^(" + myDeviceName + ") ")
+            myDeviceRE = re.compile("^(" + re.escape(myDeviceName) + ") ")
         else:
-            myDeviceRE = re.compile("^(/.*" + re.escape(myMatch.group(2)) + myDeviceName + ") ")
+            myDeviceRE = re.compile("^(/.*" + re.escape(myMatch.group(2) + myDeviceName) + ") ")
         myCorrectSectionFlag = False
         for line_it in self._errorData:
             if mySectionRE.search(line_it):  # Use lastest heading for short errors.
@@ -252,9 +252,9 @@ class ResultFile():
         myDeviceName = myMatch.group(3).split("(")[0]  # (/name(model))
         if "(" + self.topCell + ")" == myMatch.group(2):
             # top cell errors do not have cell name in detailed error list
-            myDeviceRE = re.compile("^" + myDeviceName + " ")
+            myDeviceRE = re.compile("^" + re.escape(myDeviceName) + " ")
         else:
-            myDeviceRE = re.compile("^/.*" + re.escape(myMatch.group(2)) + myDeviceName + " ")
+            myDeviceRE = re.compile("^/.*" + re.escape(myMatch.group(2) + myDeviceName) + " ")
         myBlankRE = re.compile("^\s*$")
         mySectionEndRE = re.compile("^! Finished")
         mySampleOnlyFlag = myMatch.group(4) == myMatch.group(5)  # error count == cell count
