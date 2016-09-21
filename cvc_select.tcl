@@ -18,6 +18,8 @@ proc load_selection {} {
         regsub -all {\([^\)]*\)/} $mySelection " " mySelection
         regsub {^/} $mySelection "" mySelection
         regsub -all {/} $mySelection "-" mySelection
+        regsub -all {\[} $mySelection "<" mySelection
+        regsub -all {\]} $mySelection ">" mySelection
         #Gui:Print $mySelection
         lappend oidList "inst $topcell $mySelection"
         Gui:AppendCone $visu $oidList
