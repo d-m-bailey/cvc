@@ -426,4 +426,95 @@ Private Function FolderFromPath(strFullPath As String) As String
     Next
 End Function
 
+Sub Reformat()
+    'Reformat the csv file output of check_cvc
+
+    'Fix scrolling header
+    Range("E2").Select
+    ActiveWindow.FreezePanes = True
+
+    'Reformat header
+    Range("1:1").Select
+    With Selection
+        .HorizontalAlignment = xlGeneral
+        .VerticalAlignment = xlBottom
+        .WrapText = False
+        .AddIndent = False
+        .IndentLevel = 0
+        .ShrinkToFit = False
+        .ReadingOrder = xlContext
+        .MergeCells = False
+        .Font.Bold = True
+    End With
+    Range(Range("E1"), Range("E1").End(xlToRight)).Select
+    With Selection
+        .HorizontalAlignment = xlCenter
+        .Orientation = 45
+    End With
+    Cells.EntireColumn.AutoFit
+    
+    'Sort data
+    ActiveWorkbook.Worksheets(ActiveSheet.Name).Sort.SortFields.Clear
+    ActiveWorkbook.Worksheets(ActiveSheet.Name).Sort.SortFields.Add Key _
+        :=Range(Range("A2"), Range("A2").End(xlDown)), SortOn:=xlSortOnValues, Order:=xlAscending, _
+        DataOption:=xlSortNormal  ' reference
+    ActiveWorkbook.Worksheets(ActiveSheet.Name).Sort.SortFields.Add Key _
+        :=Range(Range("C2"), Range("C2").End(xlDown)), SortOn:=xlSortOnValues, Order:=xlAscending, _
+        DataOption:=xlSortNormal  ' type
+    ActiveWorkbook.Worksheets(ActiveSheet.Name).Sort.SortFields.Add Key _
+        :=Range(Range("D2"), Range("D2").End(xlDown)), SortOn:=xlSortOnValues, Order:=xlAscending, _
+        DataOption:=xlSortNormal  ' device
+    With ActiveWorkbook.Worksheets(ActiveSheet.Name).Sort
+        .SetRange Range(Range("A1"), _
+            Range("A1").Offset(Range("A1").End(xlDown).Row, Range("A1").End(xlToRight).Column))
+        .Header = xlYes
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+
+    'Color error types
+    Columns("B:B").Select
+    Selection.FormatConditions.Add Type:=xlCellValue, Operator:=xlEqual, _
+        Formula1:="=""ignore"""  ' grey
+    With Selection.FormatConditions(Selection.FormatConditions.Count).Interior
+        .PatternColorIndex = xlAutomatic
+        .ThemeColor = xlThemeColorDark1
+        .TintAndShade = -0.249946592608417
+    End With
+    Selection.FormatConditions.Add Type:=xlCellValue, Operator:=xlEqual, _
+        Formula1:="=""Check"""  ' yellow
+    With Selection.FormatConditions(Selection.FormatConditions.Count).Interior
+        .PatternColorIndex = xlAutomatic
+        .Color = 65535
+        .TintAndShade = 0
+    End With
+    Selection.FormatConditions.Add Type:=xlCellValue, Operator:=xlEqual, _
+        Formula1:="=""Warning"""  ' orange
+    With Selection.FormatConditions(Selection.FormatConditions.Count).Interior
+        .PatternColorIndex = xlAutomatic
+        .Color = 49407
+        .TintAndShade = 0
+    End With
+    Selection.FormatConditions.Add Type:=xlCellValue, Operator:=xlEqual, _
+        Formula1:="=""ERROR"""  ' red
+    With Selection.FormatConditions(Selection.FormatConditions.Count).Interior
+        .PatternColorIndex = xlAutomatic
+        .Color = 255
+        .TintAndShade = 0
+    End With
+    
+    'Re-enter data with leading ' (on initial open, ' displays before data. e.g. '2/2.
+    'Re-entering data hides the initial '.)
+    Dim myDataRow As Integer, myDataColumn As Integer
+    For myDataRow = Range("E2").Row To Range("A1").End(xlDown).Row
+        For myDataColumn = Range("e2").Column To Range("A1").End(xlToRight).Column
+            ActiveSheet.Cells(myDataRow, myDataColumn).Value = _
+                ActiveSheet.Cells(myDataRow, myDataColumn).Value
+        Next
+    Next
+
+End Sub
+
 '234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
