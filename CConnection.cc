@@ -96,6 +96,11 @@ float CConnection::EstimatedMosDiodeCurrent(voltage_t theSourceVoltage, CConnect
 float CFullConnection::EstimatedCurrent(bool theVthFlag) {
 	voltage_t mySourceVoltage, myDrainVoltage;
 //	float myCurrent;
+	// ignore leaks through mos devices where gate is connected to power and difference between source and drain is exactly Vth
+	// and at least one of the source or drain is a calculated net
+	// this prevents false short errors in transfer gates and complex logic gates
+	if ( simGatePower_p && ! simGatePower_p->type[SIM_CALCULATED_BIT] && theVthFlag \
+			&& (simDrainPower_p->type[SIM_CALCULATED_BIT] || simSourcePower_p->type[SIM_CALCULATED_BIT]) ) return 0;
 	mySourceVoltage = simSourceVoltage;
 	myDrainVoltage = simDrainVoltage;
 	if ( IsNmos_(device_p->model_p->type) && simGateVoltage != UNKNOWN_VOLTAGE ) {
