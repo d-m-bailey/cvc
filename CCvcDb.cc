@@ -641,13 +641,15 @@ string CCvcDb::AdjustKey(CEventQueue& theEventQueue, deviceId_t theDeviceId, CCo
 //	if ( leakVoltageSet && myIsHiZPower && theEventQueue.queueType != SIM_QUEUE ) return; //
 	if ( theEventQueue.queueType == MAX_QUEUE ) {
 		if ( IsPmos_(deviceType_v[theDeviceId]) ) {
-			if ( leakVoltageSet && myIsHiZPower ) { // no voltage change for HiZ nets in second min/max, high priority
+//			if ( leakVoltageSet && myIsHiZPower ) { // no voltage change for HiZ nets in second min/max, high priority
+			if ( myIsHiZPower ) { // no voltage change for HiZ nets in min/max, high priority
 				theQueuePosition = QUEUE_HIZ;
 			} else {
 				myAdjustedVoltage = AdjustMaxPmosKey(theConnections, myLinkNetId, myLinkVoltage, theEventKey, theQueuePosition);
 			}
 		} else { // NMOS
-			if ( leakVoltageSet && myIsHiZPower ) { // no voltage change for HiZ nets in second min/max
+//			if ( leakVoltageSet && myIsHiZPower ) { // no voltage change for HiZ nets in second min/max
+			if ( myIsHiZPower ) { // no voltage change for HiZ nets in  min/max
 				theQueuePosition = DELAY_BACK;
 			} else {
 				myAdjustedVoltage = AdjustMaxNmosKey(theConnections, SimVoltage(theConnections.gateId), myLinkVoltage, theEventKey, theQueuePosition, theWarningFlag);
@@ -660,13 +662,15 @@ string CCvcDb::AdjustKey(CEventQueue& theEventQueue, deviceId_t theDeviceId, CCo
 		}
 	} else if ( theEventQueue.queueType == MIN_QUEUE ) {
 		if ( IsNmos_(deviceType_v[theDeviceId]) ) {
-			if ( leakVoltageSet && myIsHiZPower ) { // no voltage change for HiZ nets in second min/max, high priority
+//			if ( leakVoltageSet && myIsHiZPower ) { // no voltage change for HiZ nets in second min/max, high priority
+			if ( myIsHiZPower ) { // no voltage change for HiZ nets in  min/max, high priority
 				theQueuePosition = QUEUE_HIZ;
 			} else {
 				myAdjustedVoltage = AdjustMinNmosKey(theConnections, myLinkNetId, myLinkVoltage, theEventKey, theQueuePosition);
 			}
 		} else { // PMOS
-			if ( leakVoltageSet && myIsHiZPower ) { // no voltage change for HiZ nets in second min/max
+//			if ( leakVoltageSet && myIsHiZPower ) { // no voltage change for HiZ nets in second min/max
+			if ( myIsHiZPower ) { // no voltage change for HiZ nets in  min/max
 				theQueuePosition = DELAY_BACK;
 			} else {
 				myAdjustedVoltage = AdjustMinPmosKey(theConnections, SimVoltage(theConnections.gateId), myLinkVoltage, theEventKey, theQueuePosition, theWarningFlag);
