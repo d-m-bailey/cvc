@@ -25,6 +25,7 @@
 #define CPOWER_HH_
 
 #include "Cvc.hh"
+#include "CSet.hh"
 
 class CCvcDb;
 class CEventQueue;
@@ -76,7 +77,7 @@ public:
 	string	family = "";
 	string	definition = "";
 	bool relativeFriendly = true;
-	unordered_set<string>	relativeSet;
+	CSet	relativeSet;
 	bool	printed = false;
 
 	CPower();
