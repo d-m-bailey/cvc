@@ -345,21 +345,27 @@ bool CPower::IsRelative(CPower * theTestPower_p, bool theDefault) {
 	bool myHasFriends = false, myHasEnemies = false, myTestHasFriends = false, myTestHasEnemies = false;
 
 	if ( family != "" ) {
+		bool myRelation = ( relativeSet.count(theTestPower_p->powerSignal)
+				|| relativeSet.count(theTestPower_p->powerAlias)
+				|| relativeSet.Intersects(theTestPower_p->relativeSet) );
 		if ( relativeFriendly ) {
 			myHasFriends = true;
-			myFriend = ( relativeSet.count(theTestPower_p->powerSignal) + relativeSet.count(theTestPower_p->powerAlias) > 0 );
+			myFriend = myRelation;
 		} else {
 			myHasEnemies = true;
-			myEnemy = ( relativeSet.count(theTestPower_p->powerSignal) + relativeSet.count(theTestPower_p->powerAlias) > 0 );
+			myEnemy = myRelation;
 		}
 	}
 	if ( theTestPower_p->family != "" ) {
+		bool myRelation = ( theTestPower_p->relativeSet.count(powerSignal)
+				|| theTestPower_p->relativeSet.count(powerAlias)
+				|| theTestPower_p->relativeSet.Intersects(relativeSet) );
 		if ( theTestPower_p->relativeFriendly ) {
 			myTestHasFriends = true;
-			myTestFriend = ( theTestPower_p->relativeSet.count(powerSignal) + theTestPower_p->relativeSet.count(powerAlias) > 0 );
+			myTestFriend = myRelation;
 		} else {
 			myTestHasEnemies = true;
-			myTestEnemy = ( theTestPower_p->relativeSet.count(powerSignal) + theTestPower_p->relativeSet.count(powerAlias) > 0 );
+			myTestEnemy = myRelation;
 		}
 	}
 	if ( myHasFriends && myTestHasFriends ) return ( myFriend || myTestFriend );
