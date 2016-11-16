@@ -38,6 +38,7 @@ CPower::CPower(CPower * thePower_p, netId_t theNetId) {
 	// use before family expansion
 	powerId = powerCount++;
 	powerSignal = thePower_p->powerSignal;
+	powerAlias = thePower_p->powerAlias;
 	minVoltage = thePower_p->minVoltage;
 	maxVoltage = thePower_p->maxVoltage;
 	simVoltage = thePower_p->simVoltage;
@@ -46,6 +47,7 @@ CPower::CPower(CPower * thePower_p, netId_t theNetId) {
 	expectedMax = thePower_p->expectedMax;
 	family = thePower_p->family;
 	relativeFriendly = thePower_p->relativeFriendly;
+	relativeSet = thePower_p->relativeSet;
 	type = thePower_p->type;
 	definition = thePower_p->definition;
 	active = thePower_p->active;
@@ -143,7 +145,7 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap) {
 				expectedMin = thePowerMacroPtrMap[myParameterName]->expectedMin;
 				expectedMax = thePowerMacroPtrMap[myParameterName]->expectedMax;
 				expectedSim = thePowerMacroPtrMap[myParameterName]->expectedSim;
-				family = thePowerMacroPtrMap[myParameterName]->family;
+//				family = thePowerMacroPtrMap[myParameterName]->family;
 				relativeFriendly = thePowerMacroPtrMap[myParameterName]->relativeFriendly;
 				type[HIZ_BIT] = thePowerMacroPtrMap[myParameterName]->type[HIZ_BIT];
 				powerAlias = myParameterName;
@@ -391,7 +393,9 @@ bool CPower::IsRelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVol
 	CPower * myTestPower_p = theTestPower_p->GetBasePower(theNetVoltagePtr_v, theTestNet_v);
 	assert( myPower_p && myTestPower_p );
 	if ( myPower_p == myTestPower_p ) return true;
-	if ( myPower_p->powerAlias != "" && myPower_p->powerAlias == myTestPower_p->powerAlias ) return true;
+	if ( myPower_p->powerAlias != ""
+			&& (myPower_p->powerAlias == myTestPower_p->powerAlias || myPower_p->powerAlias == myTestPower_p->powerSignal) ) return true;
+	if ( myTestPower_p->powerAlias != "" && myTestPower_p->powerAlias == myPower_p->powerSignal) return true;
 	return myPower_p->IsRelative(myTestPower_p, theDefault);
 }
 

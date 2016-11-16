@@ -818,28 +818,28 @@ bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
 	 if ( theConnections.minSourcePower_p ) {
 		 if ( ! theConnections.minSourcePower_p->active[MIN_ACTIVE] ) return false;
 		 if ( theConnections.maxDrainPower_p && theConnections.minSourcePower_p->type[HIZ_BIT] ) {
-			 if ( theConnections.maxDrainPower_p->type[HIZ_BIT] ) return false;
+//			 if ( theConnections.maxDrainPower_p->type[HIZ_BIT] ) return false;
 			 return ! theConnections.minSourcePower_p->IsRelatedPower(theConnections.maxDrainPower_p, netVoltagePtr_v, minNet_v, maxNet_v, false);
 		 }
 	 }
 	 if ( theConnections.minDrainPower_p ) {
 		 if ( ! theConnections.minDrainPower_p->active[MIN_ACTIVE] ) return false;
 		 if ( theConnections.maxSourcePower_p && theConnections.minDrainPower_p->type[HIZ_BIT] ) {
-			 if ( theConnections.maxSourcePower_p->type[HIZ_BIT] ) return false;
+//			 if ( theConnections.maxSourcePower_p->type[HIZ_BIT] ) return false;
 			 return ! theConnections.minDrainPower_p->IsRelatedPower(theConnections.maxSourcePower_p, netVoltagePtr_v, minNet_v, maxNet_v, false);
 		 }
 	 }
 	 if ( theConnections.maxSourcePower_p ) {
 		 if ( ! theConnections.maxSourcePower_p->active[MAX_ACTIVE] ) return false;
 		 if ( theConnections.minDrainPower_p && theConnections.maxSourcePower_p->type[HIZ_BIT] ) {
-			 if ( theConnections.minDrainPower_p->type[HIZ_BIT] ) return false;
+//			 if ( theConnections.minDrainPower_p->type[HIZ_BIT] ) return false;
 			 return ! theConnections.maxSourcePower_p->IsRelatedPower(theConnections.minDrainPower_p, netVoltagePtr_v, maxNet_v, minNet_v, false);
 		 }
 	 }
 	 if ( theConnections.maxDrainPower_p ) {
 		 if ( ! theConnections.maxDrainPower_p->active[MAX_ACTIVE] ) return false;
 		 if ( theConnections.minSourcePower_p && theConnections.maxDrainPower_p->type[HIZ_BIT] ) {
-			 if ( theConnections.minSourcePower_p->type[HIZ_BIT] ) return false;
+//			 if ( theConnections.minSourcePower_p->type[HIZ_BIT] ) return false;
 			 return ! theConnections.maxDrainPower_p->IsRelatedPower(theConnections.minSourcePower_p, netVoltagePtr_v, maxNet_v, minNet_v, false);
 		 }
 	 }
