@@ -280,8 +280,9 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 				MapDeviceNets(theConnections.deviceId, maxEventQueue, myMaxConnections);
 				if ( myMaxConnections.gateVoltage == UNKNOWN_VOLTAGE ) {
 					EnqueueAttachedDevices(maxEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
-				} else if ( (myMaxConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
-						|| (myMaxConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) {
+				} else if ( ! myMaxConnections.gatePower_p->type[HIZ_BIT]
+				        && ((myMaxConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
+				        		|| (myMaxConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) ) {
 					float myLeakCurrent = myMaxConnections.EstimatedMosDiodeCurrent(mySourceVoltage, theConnections);
 					if ( ExceedsLeakLimit_(myLeakCurrent) ) {
 						PrintMaxVoltageConflict(myTargetNetId, myMaxConnections, myExpectedVoltage, myLeakCurrent);
@@ -335,8 +336,9 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 				MapDeviceNets(theConnections.deviceId, minEventQueue, myMinConnections);
 				if ( myMinConnections.gateVoltage == UNKNOWN_VOLTAGE ) {
 					EnqueueAttachedDevices(minEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
-				} else if ( (myMinConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
-						|| (myMinConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) {
+				} else if ( ! myMinConnections.gatePower_p->type[HIZ_BIT]
+				        && ((myMinConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
+				        		|| (myMinConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) ) {
 					float myLeakCurrent = myMinConnections.EstimatedMosDiodeCurrent(mySourceVoltage, theConnections);
 					if ( ExceedsLeakLimit_(myLeakCurrent) ) {
 						PrintMinVoltageConflict(myTargetNetId, myMinConnections, myExpectedVoltage, myLeakCurrent);
@@ -884,7 +886,8 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 				}
 				theEventQueue.AddEvent(myEventKey, device_it, myQueuePosition);
 				deviceStatus_v[device_it][theEventQueue.pendingBit] = true;
-				if ( myQueuePosition == MOS_DIODE && theEventQueue.queueType != SIM_QUEUE ) { // mos diode connections in min/max queues
+				if ( myQueuePosition == MOS_DIODE && theEventQueue.queueType != SIM_QUEUE
+						&& ! (myConnections.gatePower_p && myConnections.gatePower_p->type[HIZ_BIT]) ) { // mos diode connections in min/max queues
 					netId_t myDrainNetId, mySourceNetId;
 					voltage_t myMinSourceVoltage, myMaxSourceVoltage;
 					voltage_t myMinDrainVoltage, myMaxDrainVoltage;
