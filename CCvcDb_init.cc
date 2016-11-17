@@ -567,7 +567,7 @@ void CCvcDb::ResetMosFuse() {
 
 
 void CCvcDb::OverrideFuses() {
-	if ( cvcParameters.cvcFuseFilename == "" ) return;
+	if ( cvcParameters.cvcFuseFilename.empty() ) return;
 	ifstream myFuseFile(cvcParameters.cvcFuseFilename);
 	if ( myFuseFile.fail() ) {
 //		cout << "ABORT: Could not open fuse file: " << cvcParameters.cvcFuseFilename << endl;
@@ -787,10 +787,10 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal) {
 //	instanceId_t mySearchInstanceId = UNKNOWN_SUBCIRCUIT;
 	try {
 		for ( auto hierarchy_pit = myHierarchyList_p->begin(); *hierarchy_pit != myHierarchyList_p->back(); hierarchy_pit++ ) { // last hierarchy is net name - don't process
-			if ( *hierarchy_pit == "" ) {
+			if ( (*hierarchy_pit).empty() ) {
 				mySearchInstanceIdList.push_front(0);
 			} else if ( hierarchy_pit->substr(0,2) == "*(" && hierarchy_pit->substr(hierarchy_pit->size() - 1, 1) == ")" ) { // circuit search
-				if ( myUnmatchedInstance != "" ) throw out_of_range("invalid hierarchy: " + myUnmatchedInstance + HIERARCHY_DELIMITER + *hierarchy_pit ); // no circuit searches with pending hierarchy
+				if ( ! myUnmatchedInstance.empty() ) throw out_of_range("invalid hierarchy: " + myUnmatchedInstance + HIERARCHY_DELIMITER + *hierarchy_pit ); // no circuit searches with pending hierarchy
 				string myCellName = thePowerSignal.substr(2, hierarchy_pit->size() - 3);
 				regex mySearchPattern(FuzzyFilter(myCellName));
 				bool myFoundMatch = false;
@@ -840,7 +840,7 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal) {
 				if ( ! myFoundMatch ) throw out_of_range("invalid signal: missing circuit " + myCellName);
 			} else { // instance search
 				if ( mySearchInstanceIdList.empty() ) throw out_of_range("invalid hierarchy: " + *hierarchy_pit); // no relative path searches
-				if ( myUnmatchedInstance != "" ) {
+				if ( ! myUnmatchedInstance.empty() ) {
 					myInstanceName = myUnmatchedInstance + HIERARCHY_DELIMITER + *hierarchy_pit;
 				} else {
 					myInstanceName = *hierarchy_pit;
@@ -885,7 +885,7 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal) {
 		bool myFoundNetMatch = false;
 		for ( auto myNetName_pit = myNetNameList_p->begin(); myNetName_pit != myNetNameList_p->end(); myNetName_pit++ ) {
 			string myNetName = *myNetName_pit;
-			if ( myUnmatchedInstance != "" ) {
+			if ( ! myUnmatchedInstance.empty() ) {
 				myNetName = myUnmatchedInstance + HIERARCHY_DELIMITER + myNetName;
 			}
 			regex mySearchPattern(FuzzyFilter(myNetName));
@@ -1043,7 +1043,7 @@ bool CCvcDb::LockReport(bool theInteractiveFlag) {
 }
 
 void CCvcDb::RemoveLock() {
-	if (lockFile != "") {
+	if ( ! lockFile.empty() ) {
 		int myStatus;
 //		string myCommand = "rmdir " + lockFile;
 //		cout << myCommand << endl;

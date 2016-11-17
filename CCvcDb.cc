@@ -2239,7 +2239,7 @@ void CCvcDb::ResetMinMaxPower() {
 					netVoltagePtr_v[net_it]->maxVoltage = UNKNOWN_VOLTAGE;
 //					myCalculatedVoltageFlag = true;
 				}
-				if ( netVoltagePtr_v[net_it]->type == NO_TYPE && netVoltagePtr_v[net_it]->powerSignal == "" ) {
+				if ( netVoltagePtr_v[net_it]->type == NO_TYPE && netVoltagePtr_v[net_it]->powerSignal.empty() ) {
 					if ( gDebug_cvc ) {
 						cout << "DEBUG: Deleting net: " << net_it;
 						netVoltagePtr_v[net_it]->Print(cout);
@@ -2328,7 +2328,7 @@ void CCvcDb::ResetMinMaxPower() {
 				if ( netVoltagePtr_v[net_it]->maxVoltage == UNKNOWN_VOLTAGE ) netVoltagePtr_v[net_it]->maxVoltage = netVoltagePtr_v[net_it]->simVoltage;
 			}
 */
-		} else if ( SimVoltage(net_it) == UNKNOWN_VOLTAGE && myVoltage_p->powerSignal == "" && IsCalculatedVoltage_(myVoltage_p) ) {
+		} else if ( SimVoltage(net_it) == UNKNOWN_VOLTAGE && myVoltage_p->powerSignal.empty() && IsCalculatedVoltage_(myVoltage_p) ) {
 			if ( gDebug_cvc ) {
 				cout << "DEBUG: Deleting net: " << net_it;
 				myVoltage_p->Print(cout);

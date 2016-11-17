@@ -198,7 +198,7 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 			cvcSOI = strcasecmp(myBuffer, "true") == 0;
 		}
 	}
-	if ( theReportPrefix != "" ) {
+	if ( ! theReportPrefix.empty() ) {
 		cvcReportName = theReportPrefix + "-" + cvcReportName;
 	}
 /*
@@ -341,7 +341,7 @@ returnCode_t CCvcParameters::LoadPower() {
 				}
 			} else {
 				CPower * myPowerPtr = new CPower(myInput, cvcPowerMacroPtrMap);
-				if (myPowerPtr->expectedMin != "" || myPowerPtr->expectedSim != "" || myPowerPtr->expectedMax != "") {
+				if ( ! (myPowerPtr->expectedMin.empty() && myPowerPtr->expectedSim.empty() && myPowerPtr->expectedMax.empty()) ) {
 					cvcExpectedLevelPtrList.push_back(myPowerPtr);
 				}
 				if (myPowerPtr->type != NO_TYPE || myPowerPtr->minVoltage != UNKNOWN_VOLTAGE || myPowerPtr->simVoltage != UNKNOWN_VOLTAGE || myPowerPtr->maxVoltage != UNKNOWN_VOLTAGE) {

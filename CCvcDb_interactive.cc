@@ -169,7 +169,7 @@ instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string the
 			}
 			catch (...) {
 			}
-			if ( myUnmatchedHierarchy != "" ) {
+			if ( ! myUnmatchedHierarchy.empty() ) {
 				myInstanceName = myUnmatchedHierarchy + HIERARCHY_DELIMITER + myInstanceName;
 			}
 //			cerr << "searching for " << myInstanceName << endl;
@@ -191,7 +191,7 @@ instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string the
 		}
 		myStringBegin = theHierarchy.find_first_not_of(HIERARCHY_DELIMITER, myStringEnd);
 	}
-	if ( myUnmatchedHierarchy != "" && thePrintUnmatchFlag ) {
+	if ( ! myUnmatchedHierarchy.empty() && thePrintUnmatchFlag ) {
 		reportFile << "Could not find instance " << myInstanceName << endl;
 	}
 	return ( theCurrentInstanceId );
@@ -252,7 +252,7 @@ void CCvcDb::PrintNets(instanceId_t theCurrentInstanceId, string theFilter, bool
 			}
 			myNetString.str("");
 			myNetString << mySignal_v[net_it] << myGlobalNet << ((theIsValidPowerFlag) ? ShortString(myGlobalNetId, thePrintSubcircuitNameFlag) : "");
-			if ( theFilter == "" || regex_match(mySignal_v[net_it], mySearchPattern) ) {
+			if ( theFilter.empty() || regex_match(mySignal_v[net_it], mySearchPattern) ) {
 				if ( myMatchCount++ < cvcParameters.cvcSearchLimit ) {
 					mySearchList.push_back(myNetString.str());
 				}
@@ -289,7 +289,7 @@ void CCvcDb::PrintDevices(instanceId_t theCurrentInstanceId, string theFilter, b
 			}
 			myDeviceString.str("");
 			myDeviceString << (*device_ppit)->name << myParameters << " " << ((theIsValidModelFlag) ? (*device_ppit)->model_p->definition : "" );
-			if ( theFilter == "" || regex_match((*device_ppit)->name, mySearchPattern) ) {
+			if ( theFilter.empty() || regex_match((*device_ppit)->name, mySearchPattern) ) {
 				if ( myMatchCount++ < cvcParameters.cvcSearchLimit ) {
 					mySearchList.push_back(myDeviceString.str());
 				}
@@ -324,7 +324,7 @@ void CCvcDb::PrintInstances(instanceId_t theCurrentInstanceId, string theFilter,
 			}
 			myInstanceString.str("");
 			myInstanceString << (*subcircuit_ppit)->name << myMasterName;
-			if ( theFilter == "" || regex_match((*subcircuit_ppit)->name, mySearchPattern) ) {
+			if ( theFilter.empty() || regex_match((*subcircuit_ppit)->name, mySearchPattern) ) {
 				if ( myMatchCount++ < cvcParameters.cvcSearchLimit ) {
 					mySearchList.push_back(myInstanceString.str());
 				}
@@ -506,7 +506,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				if ( mySavedBufferStack.empty() ) {
 					myIsBatchInput = false;
 				}
-			} else if ( myCommandMode == "" ){
+			} else if ( myCommandMode.empty() ){
 				gInteractive_cvc = false;
 				cin.clear();
 				myReturnCode = OK;
@@ -523,7 +523,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 			myInputStream.str(myInputLine);
 			myInputStream.clear();
 //			cout << "stream = " << myInputStream.str() << endl;
-			if ( myCommandMode == "" ) {
+			if ( myCommandMode.empty() ) {
 				if ( ! (myInputStream >> myCommand) ) continue;
 			} else {
 				myCommand = myCommandMode;
@@ -594,7 +594,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				}
 				if ( modelFileStatus == OK ) {
 					fuseFileStatus = CheckFuses();
-				} else if ( cvcParameters.cvcFuseFilename != "" ){
+				} else if ( ! cvcParameters.cvcFuseFilename.empty() ){
 					reportFile << "WARNING: fuse file not checked due to invalid model file" << endl;
 					fuseFileStatus = SKIP;
 				}
@@ -619,7 +619,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				cvcParameters.cvcFuseFilename = myFileName;
 				if ( modelFileStatus == OK ) {
 					fuseFileStatus = CheckFuses();
-				} else if ( cvcParameters.cvcFuseFilename != "" ){
+				} else if ( ! cvcParameters.cvcFuseFilename.empty() ){
 					reportFile << "WARNING: fuse file not checked due to invalid model file" << endl;
 					fuseFileStatus = SKIP;
 				}
@@ -815,7 +815,7 @@ void CCvcDb::DumpFuses(string theFileName) {
 }
 
 returnCode_t CCvcDb::CheckFuses() {
-	if ( cvcParameters.cvcFuseFilename == "" ) return (OK);
+	if ( cvcParameters.cvcFuseFilename.empty() ) return (OK);
 	ifstream myFuseFile(cvcParameters.cvcFuseFilename);
 	if ( myFuseFile.fail() ) {
 		reportFile << "ERROR: Could not open fuse file: " << cvcParameters.cvcFuseFilename << endl;

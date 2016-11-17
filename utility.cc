@@ -153,7 +153,7 @@ std::list<string> * postfix(std::string theEquation) {
 		if ( myOperators.find(*string_pit) > myOperators.length() ) { // not an operator
 			myPostfixList_p->push_back(*string_pit);
 		} else if ( myOperatorStack.empty() || myOperatorStack.back() == "(" || *string_pit == "(" ) {
-			if ( *string_pit == "-" && ( myLastToken == "" || myLastToken == "(" ) ) {
+			if ( *string_pit == "-" && ( myLastToken.empty() || myLastToken == "(" ) ) {
 				myPostfixList_p->push_back("0"); // for unary '-'
 			}
 			myOperatorStack.push_back(*string_pit);

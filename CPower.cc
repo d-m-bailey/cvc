@@ -121,7 +121,7 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap) {
 				type[INPUT_BIT] = true;
 			} else if ( myParameterName == "power" ) {
 				type[POWER_BIT] = true;
-				if ( powerAlias == "" ) {
+				if ( powerAlias.empty() ) {
 					SetPowerAlias(thePowerString, myAliasBegin);
 				}
 			} else if ( myParameterName == "resistor" ) {
@@ -163,7 +163,7 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap) {
 //		type[EXPECTED_ONLY_BIT] = true;
 //	}
 	if ( type[HIZ_BIT] ) {
-		if ( family == "" ) family = "cvc-none";
+		if ( family.empty() ) family = "cvc-none";
 	}
 }
 
@@ -342,14 +342,15 @@ CPower * CPower::GetMaxBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualN
 
 */
 bool CPower::IsRelative(CPower * theTestPower_p, bool theDefault) {
-	if ( family == "" && theTestPower_p->family == "" ) return theDefault;
+	if ( relativeSet.empty() && theTestPower_p->relativeSet.empty() ) return theDefault;
 	bool myFriend = false, myEnemy = false, myTestFriend = false, myTestEnemy = false;
 	bool myHasFriends = false, myHasEnemies = false, myTestHasFriends = false, myTestHasEnemies = false;
 
-	if ( family != "" ) {
+	if ( ! relativeSet.empty() ) {
 		bool myRelation = ( relativeSet.count(theTestPower_p->powerSignal)
 				|| relativeSet.count(theTestPower_p->powerAlias)
-				|| relativeSet.Intersects(theTestPower_p->relativeSet) );
+				|| ( ! theTestPower_p->relativeSet.empty()
+						&& relativeSet.Intersects(theTestPower_p->relativeSet) ) );
 		if ( relativeFriendly ) {
 			myHasFriends = true;
 			myFriend = myRelation;
@@ -358,10 +359,11 @@ bool CPower::IsRelative(CPower * theTestPower_p, bool theDefault) {
 			myEnemy = myRelation;
 		}
 	}
-	if ( theTestPower_p->family != "" ) {
+	if ( ! theTestPower_p->relativeSet.empty() ) {
 		bool myRelation = ( theTestPower_p->relativeSet.count(powerSignal)
 				|| theTestPower_p->relativeSet.count(powerAlias)
-				|| theTestPower_p->relativeSet.Intersects(relativeSet) );
+				|| ( ! relativeSet.empty()
+						&& theTestPower_p->relativeSet.Intersects(relativeSet) ) );
 		if ( theTestPower_p->relativeFriendly ) {
 			myTestHasFriends = true;
 			myTestFriend = myRelation;
@@ -393,9 +395,9 @@ bool CPower::IsRelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVol
 	CPower * myTestPower_p = theTestPower_p->GetBasePower(theNetVoltagePtr_v, theTestNet_v);
 	assert( myPower_p && myTestPower_p );
 	if ( myPower_p == myTestPower_p ) return true;
-	if ( myPower_p->powerAlias != ""
+	if ( ! myPower_p->powerAlias.empty()
 			&& (myPower_p->powerAlias == myTestPower_p->powerAlias || myPower_p->powerAlias == myTestPower_p->powerSignal) ) return true;
-	if ( myTestPower_p->powerAlias != "" && myTestPower_p->powerAlias == myPower_p->powerSignal) return true;
+	if ( ! myTestPower_p->powerAlias.empty() && myTestPower_p->powerAlias == myPower_p->powerSignal) return true;
 	return myPower_p->IsRelative(myTestPower_p, theDefault);
 }
 
@@ -515,8 +517,8 @@ bool CPower::RelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVolta
 */
 
 void CPower::Print(ostream & theLogFile, string theIndentation, string theRealPowerName) {
-	if ( theRealPowerName == "" || theRealPowerName == powerSignal ) {
-		string myAlias = ( powerAlias == "" || powerSignal == powerAlias ) ? "" : ALIAS_DELIMITER + powerAlias;
+	if ( theRealPowerName.empty() || theRealPowerName == powerSignal ) {
+		string myAlias = ( powerAlias.empty() || powerSignal == powerAlias ) ? "" : ALIAS_DELIMITER + powerAlias;
 		theLogFile << theIndentation << powerSignal << myAlias;
 	} else { // expanded net names
 		theLogFile << theIndentation << "->" << theRealPowerName;
@@ -539,10 +541,10 @@ void CPower::Print(ostream & theLogFile, string theIndentation, string theRealPo
 //	if ( family != "" ) myDefinition << " Family:" << family << "(" << relativeSet.size() << " relatives)";
 	if ( family != "" ) myDefinition << (relativeFriendly ? " permit@" : " prohibit@") << family;
 */
-	if ( definition != "" ) {
+	if ( ! definition.empty() ) {
 		theLogFile << definition; // for defined voltages
 	}
-	if ( myDefinition != "" && myDefinition != definition ) {
+	if ( ! myDefinition.empty() && myDefinition != definition ) {
 		theLogFile << (IsCalculatedVoltage_(this) ? " =>" : " ->") << myDefinition;
 	}
 	theLogFile << endl;
@@ -557,15 +559,15 @@ string CPower::StandardDefinition() {
 		if ( simVoltage != UNKNOWN_VOLTAGE ) myDefinition << " sim" << (type[SIM_CALCULATED_BIT] ? "=" : "@") << PrintParameter(simVoltage, VOLTAGE_SCALE);
 		if ( maxVoltage != UNKNOWN_VOLTAGE ) myDefinition << " max" << (type[MAX_CALCULATED_BIT] ? "=" : "@") << PrintParameter(maxVoltage, VOLTAGE_SCALE);
 	}
-	if ( expectedMin != "" ) myDefinition << " expectMin@" << expectedMin;
-	if ( expectedSim != "" ) myDefinition << " expectSim@" << expectedSim;
-	if ( expectedMax != "" ) myDefinition << " expectMax@" << expectedMax;
+	if ( ! expectedMin.empty() ) myDefinition << " expectMin@" << expectedMin;
+	if ( ! expectedSim.empty() ) myDefinition << " expectSim@" << expectedSim;
+	if ( ! expectedMax.empty() ) myDefinition << " expectMax@" << expectedMax;
 	if ( type[HIZ_BIT] ) myDefinition << " open";
 	if ( type[INPUT_BIT] ) myDefinition << " input";
 	if ( type[POWER_BIT] ) myDefinition << " power";
 	if ( type[RESISTOR_BIT] ) myDefinition << " resistor";
 //	if ( family != "" ) myDefinition << " Family:" << family << "(" << relativeSet.size() << " relatives)";
-	if ( family != "" ) myDefinition << (relativeFriendly ? " permit@" : " prohibit@") << family;
+	if ( ! family.empty() ) myDefinition << (relativeFriendly ? " permit@" : " prohibit@") << family;
 	return(myDefinition.str());
 }
 
@@ -799,7 +801,7 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 	if (myPower_p->maxVoltage != UNKNOWN_VOLTAGE && myPower_p->simVoltage != UNKNOWN_VOLTAGE && myPower_p->maxVoltage < myPower_p->simVoltage) {
 		cout << "WARNING: MAX < SIM " << myPower_p->maxVoltage << " < " << myPower_p->simVoltage << " for " << theCvdDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
 	}
-	if ( myPower_p->definition == "" ) {
+	if ( myPower_p->definition.empty() ) {
 		myPower_p->definition = theCalculation;
 	}
 	if (gDebug_cvc) cout << "INFO: Calculated voltage at net " << myPower_p->netId << " default Min/Sim/Max: " << myPower_p->defaultMinNet << "/"
@@ -843,7 +845,7 @@ void CPowerPtrList::SetFamilies(CPowerFamilyMap & thePowerFamilyMap) {
 	size_t	myStringEnd;
 	for ( CPowerPtrList::iterator powerPtr_ppit = begin(); powerPtr_ppit != end(); powerPtr_ppit++ ) {
 		myFamilyList = (*powerPtr_ppit)->family;
-		if ( myFamilyList != "" ) {
+		if ( ! myFamilyList.empty() ) {
 			myStringBegin = myFamilyList.find_first_not_of(",", 0);
 			myStringEnd = myFamilyList.find_first_of(",", myStringBegin);
 			while (myStringBegin < myFamilyList.length()) {
@@ -865,14 +867,14 @@ string CPower::PowerDefinition() {
 	if ( minVoltage != UNKNOWN_VOLTAGE ) myPowerDefinition += " min" + ( ((type[MIN_CALCULATED_BIT]) ? "=" : "@") + to_string<voltage_t>(minVoltage));
 	if ( simVoltage != UNKNOWN_VOLTAGE ) myPowerDefinition += " sim" + ( ((type[SIM_CALCULATED_BIT]) ? "=" : "@") + to_string<voltage_t>(simVoltage));
 	if ( maxVoltage != UNKNOWN_VOLTAGE ) myPowerDefinition += " max" + ( ((type[MAX_CALCULATED_BIT]) ? "=" : "@") + to_string<voltage_t>(maxVoltage));
-	if ( expectedMin != "" ) myPowerDefinition += " min?" + expectedMin;
-	if ( expectedSim != "" ) myPowerDefinition += " sim?" + expectedSim;
-	if ( expectedMax != "" ) myPowerDefinition += " max?" + expectedMax;
+	if ( ! expectedMin.empty() ) myPowerDefinition += " min?" + expectedMin;
+	if ( ! expectedSim.empty() ) myPowerDefinition += " sim?" + expectedSim;
+	if ( ! expectedMax.empty() ) myPowerDefinition += " max?" + expectedMax;
 	if ( type[HIZ_BIT] ) myPowerDefinition += " open";
 	if ( type[INPUT_BIT] ) myPowerDefinition += " input";
 	if ( type[RESISTOR_BIT] ) myPowerDefinition += " resistor";
 //	if ( definition != "" ) myPowerDefinition += " '" + definition + "'";
-	if ( family != "" ) myPowerDefinition += " '" + family + ((relativeFriendly) ? " allowed'" : " prohibited'");
+	if ( ! family.empty() ) myPowerDefinition += " '" + family + ((relativeFriendly) ? " allowed'" : " prohibited'");
 	return myPowerDefinition;
 }
 

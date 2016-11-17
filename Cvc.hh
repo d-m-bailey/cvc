@@ -24,7 +24,7 @@
 #ifndef CVC_H_
 #define CVC_H_
 
-#define CVC_VERSION "0.8.0-161116_1254"
+#define CVC_VERSION "0.8.0-161117_1005"
 
 extern bool gDebug_cvc;
 extern bool gInteractive_cvc;

@@ -203,7 +203,7 @@ void CCvcDb::FindOverVoltageErrors(string theCheck, int theErrorIndex) {
 					}
 					if ( model_pit->maxVbg != UNKNOWN_VOLTAGE ) {
 					}
-					if ( myErrorExplanation != "" ) {
+					if ( ! myErrorExplanation.empty() ) {
 						errorCount[theErrorIndex]++;
 						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
 							errorFile << myErrorExplanation;
@@ -1293,7 +1293,7 @@ void CCvcDb::CheckExpectedValues() {
 	for (auto power_ppit = cvcParameters.cvcExpectedLevelPtrList.begin(); power_ppit != cvcParameters.cvcExpectedLevelPtrList.end(); power_ppit++) {
 		size_t myLastErrorCount = errorCount[EXPECTED_VOLTAGE];
 		myNetId = GetEquivalentNet((*power_ppit)->netId);
-		if ( (*power_ppit)->expectedSim != "" ) {
+		if ( ! (*power_ppit)->expectedSim.empty() ) {
 			mySimNet(simNet_v, myNetId);
 //			CheckResistorOverflow_(simNet_v[myNetId].finalResistance, myNetId, logFile);
 //			mySimNet = CVirtualNet(simNet_v, myNetId);
@@ -1346,7 +1346,7 @@ void CCvcDb::CheckExpectedValues() {
 				}
 			}
 		}
-		if ( (*power_ppit)->expectedMin != "" ) {
+		if ( ! (*power_ppit)->expectedMin.empty() ) {
 			myMinNet(minNet_v, myNetId);
 //			CheckResistorOverflow_(minNet_v[myNetId].finalResistance, myNetId, logFile);
 //			myMinNet = CVirtualNet(minNet_v, myNetId);
@@ -1374,7 +1374,7 @@ void CCvcDb::CheckExpectedValues() {
 				}
 			}
 		}
-		if ( (*power_ppit)->expectedMax != "" ) {
+		if ( ! (*power_ppit)->expectedMax.empty() ) {
 			myMaxNet(maxNet_v, myNetId);
 //			CheckResistorOverflow_(myMaxNet[myNetId].finalResistance, myNetId, logFile);
 //			myMaxNet = CVirtualNet(maxNet_v, myNetId);

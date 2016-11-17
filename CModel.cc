@@ -187,23 +187,23 @@ void CModel::Print(ostream & theLogFile, bool thePrintDeviceListFlag, string the
 	switch (type) {
 		case NMOS: case PMOS: case LDDN: case LDDP: {
 			theLogFile << " Vth=" << PrintParameter(Vth, VOLTAGE_SCALE);
-			if ( maxVdsDefinition != "" ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
-			if ( maxVgsDefinition != "" ) theLogFile << " Vgs=" << PrintToleranceParameter(maxVgsDefinition, maxVgs, VOLTAGE_SCALE);
-			if ( maxVbgDefinition != "" ) theLogFile << " Vbg=" << PrintToleranceParameter(maxVbgDefinition, maxVbg, VOLTAGE_SCALE);
-			if ( maxVbsDefinition != "" ) theLogFile << " Vbs=" << PrintToleranceParameter(maxVbsDefinition, maxVbs, VOLTAGE_SCALE);
+			if ( ! maxVdsDefinition.empty() ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
+			if ( ! maxVgsDefinition.empty() ) theLogFile << " Vgs=" << PrintToleranceParameter(maxVgsDefinition, maxVgs, VOLTAGE_SCALE);
+			if ( ! maxVbgDefinition.empty() ) theLogFile << " Vbg=" << PrintToleranceParameter(maxVbgDefinition, maxVbg, VOLTAGE_SCALE);
+			if ( ! maxVbsDefinition.empty() ) theLogFile << " Vbs=" << PrintToleranceParameter(maxVbsDefinition, maxVbs, VOLTAGE_SCALE);
 //			theLogFile << " R=" << PrintParameter(R, 1) << endl;
 			theLogFile << " R=" << resistanceDefinition;
 			break; }
 		case RESISTOR: {
-			if ( maxVdsDefinition != "" ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
+			if ( ! maxVdsDefinition.empty() ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
 //			theLogFile << " R=" << PrintParameter(R, 1) << endl;
-			if ( resistanceDefinition != "" ) theLogFile << " R=" << resistanceDefinition;
+			if ( ! resistanceDefinition.empty() ) theLogFile << " R=" << resistanceDefinition;
 			break; }
 		case FUSE_ON:
 		case FUSE_OFF:
 		case CAPACITOR:
 		case DIODE: {
-			if ( maxVdsDefinition != "" ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
+			if ( ! maxVdsDefinition.empty() ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
 //			theLogFile << endl;
 			break; }
 		case BIPOLAR:
@@ -349,10 +349,10 @@ returnCode_t CModelListMap::SetVoltageTolerances(teestream & theReportFile, CPow
 	for (CModelListMap::iterator modelList_pit = begin(); modelList_pit != end(); modelList_pit++) {
 		for (CModelList::iterator model_pit = modelList_pit->second.begin(); model_pit != modelList_pit->second.end(); model_pit++) {
 			try {
-				if ( model_pit->maxVbgDefinition != "" ) model_pit->maxVbg = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbgDefinition, SIM_POWER);
-				if ( model_pit->maxVbsDefinition != "" ) model_pit->maxVbs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbsDefinition, SIM_POWER);
-				if ( model_pit->maxVdsDefinition != "" ) model_pit->maxVds = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVdsDefinition, SIM_POWER);
-				if ( model_pit->maxVgsDefinition != "" ) model_pit->maxVgs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVgsDefinition, SIM_POWER);
+				if ( ! model_pit->maxVbgDefinition.empty() ) model_pit->maxVbg = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbgDefinition, SIM_POWER);
+				if ( ! model_pit->maxVbsDefinition.empty() ) model_pit->maxVbs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbsDefinition, SIM_POWER);
+				if ( ! model_pit->maxVdsDefinition.empty() ) model_pit->maxVds = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVdsDefinition, SIM_POWER);
+				if ( ! model_pit->maxVgsDefinition.empty() ) model_pit->maxVgs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVgsDefinition, SIM_POWER);
 			}
 			catch (EPowerError & myException) {
 				theReportFile << "ERROR: Model tolerance " << myException.what() << endl;
