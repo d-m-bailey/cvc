@@ -461,6 +461,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 
 	while ( myReturnCode == UNKNOWN_RETURN_CODE ) {
 //		cout << "** Stage " << theCurrentStage << "/" << STAGE_COMPLETE << ": Enter command ?> ";
+		reportFile.flush();
 		myPrompt.clear();
 		myPrompt.str("");
 		if ( myCommandMode == "fs" ) {
@@ -639,7 +640,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				myInputStream >> mySubcircuit;
 				PrintSubcircuitCdl(mySubcircuit);
 			} else if ( myCommand == "printenvironment" || myCommand == "pe" ) {
-				cvcParameters.PrintEnvironment();
+				cvcParameters.PrintEnvironment(reportFile);
 			} else if ( myCommand == "listnet" || myCommand == "ln" ) {
 				if ( myInputStream >> myFilter ) {
 					PrintNets(myCurrentInstanceId, myFilter, myPrintSubcircuitNameFlag, powerFileStatus == OK);

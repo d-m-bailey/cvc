@@ -145,7 +145,7 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap) {
 				expectedMin = thePowerMacroPtrMap[myParameterName]->expectedMin;
 				expectedMax = thePowerMacroPtrMap[myParameterName]->expectedMax;
 				expectedSim = thePowerMacroPtrMap[myParameterName]->expectedSim;
-//				family = thePowerMacroPtrMap[myParameterName]->family;
+				family = thePowerMacroPtrMap[myParameterName]->family;
 				relativeFriendly = thePowerMacroPtrMap[myParameterName]->relativeFriendly;
 				type[HIZ_BIT] = thePowerMacroPtrMap[myParameterName]->type[HIZ_BIT];
 				powerAlias = myParameterName;

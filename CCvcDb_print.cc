@@ -126,7 +126,7 @@ void CCvcDb::SetOutputFiles(string theReportFilename) {
 
 	reportFile << "CVC: Log output to " << theReportFilename << endl;
 	reportFile << "CVC: Error output to " << cvcParameters.cvcReportBaseFilename << ".error.gz" << endl;
-	reportFile << "CVC: Short output to " << cvcParameters.cvcReportBaseFilename << ".shorts.gz" << endl;
+//	reportFile << "CVC: Short output to " << cvcParameters.cvcReportBaseFilename << ".shorts.gz" << endl;
 }
 
 string CCvcDb::NetAlias(netId_t theNetId, bool thePrintCircuitFlag) {

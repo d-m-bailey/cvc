@@ -416,7 +416,7 @@ void CCvcDb::LinkDevices() {
 	ResetVector<CConnectionCountVector>(connectionCount_v, netCount);
 	deviceId_t myDeviceCount = 0;
 	instanceId_t myInstanceCount = 0;
-	deviceId_t myPrintCount = 1000000;
+	deviceId_t myPrintCount = 0;
 	register netId_t mySourceNet, myDrainNet, myGateNet, myBulkNet;
 	for (CCircuitPtrList::iterator circuit_ppit = cvcCircuitList.begin(); circuit_ppit != cvcCircuitList.end(); circuit_ppit++) {
 		CCircuit * myCircuit_p = *circuit_ppit;
@@ -431,9 +431,9 @@ void CCvcDb::LinkDevices() {
 					deviceType_v[myDeviceId] = myDevice_p->model_p->type;
 //					cout << "linking device #" << myDeviceId << "from instance " << aInstanceId_v[instance_i] << endl;
 					SetDeviceNets(myInstance_p, myDevice_p, sourceNet_v[myDeviceId], gateNet_v[myDeviceId], drainNet_v[myDeviceId], bulkNet_v[myDeviceId]);
-					if ( --myPrintCount <= 0 ) {
-						cout << "	Average device/instance: " << myDeviceCount << "/" << myInstanceCount << "=" << myDeviceCount / myInstanceCount << endl;
-						myPrintCount = 1000000;
+					if ( ++myPrintCount >= 1000000 ) {
+						cout << "\r" << "	Average device/instance: " << myDeviceCount << "/" << myInstanceCount << "=" << myDeviceCount / myInstanceCount << std::flush;
+						myPrintCount = 0;
 					}
 					if ( sourceNet_v[myDeviceId] == drainNet_v[myDeviceId] ) {
 						IgnoreDevice(myDeviceId);
@@ -486,6 +486,7 @@ void CCvcDb::LinkDevices() {
 			}
 		}
 	}
+	cout << endl;
 }
 
 returnCode_t CCvcDb::SetDeviceModels() {

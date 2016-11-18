@@ -212,6 +212,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		}
 		reportFile << "Virtual net update/access " << gVirtualNetUpdateCount << "/"
 				<< gVirtualNetAccessCount << endl;
+		reportFile << "CVC: Log output to " << cvcParameters.cvcReportFilename << endl;
 		reportFile << "CVC: End: " << CurrentTime() << endl;
 		errorFile.close();
 		if ( gInteractive_cvc ) InteractiveCvc(STAGE_COMPLETE);

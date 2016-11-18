@@ -928,11 +928,15 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 							// calculated power only
 //							assert(netVoltagePtr_v[myDrainNetId]->type[CALCULATED_BIT]);
 						} else {
+/*
 							if ( myMinDrainVoltage != myEventKey ) {
 								reportFile << "WARNING: Min voltage already set for " << NetName(myDrainNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
 								reportFile << " at " << DeviceName(myConnections.deviceId, PRINT_CIRCUIT_ON)  << " expected/found " << myEventKey << "/" << myMinDrainVoltage << endl;
 							}
+*/
 							if ( myMinDrainVoltage < myEventKey ) {
+								reportFile << "WARNING: Min voltage already set for " << NetName(myDrainNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
+								reportFile << " at " << DeviceName(myConnections.deviceId, PRINT_CIRCUIT_ON)  << " expected/found " << myEventKey << "/" << myMinDrainVoltage << endl;
 								netStatus_v[myDrainNetId][NEEDS_MIN_CONNECTION] = false;
 								netStatus_v[mySourceNetId][NEEDS_MIN_CONNECTION] = false; // reset parent also
 							}
@@ -959,11 +963,15 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 							// calculated power only
 //							assert(netVoltagePtr_v[myDrainNetId]->type[CALCULATED_BIT]);
 						} else {
+/*
 							if ( myMaxDrainVoltage != myEventKey ) {
 								reportFile << "WARNING: Max voltage already set for " << NetName(myDrainNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
 								reportFile << " at " << DeviceName(myConnections.deviceId, PRINT_CIRCUIT_ON)  << " expected/found " << myEventKey << "/" << myMaxDrainVoltage << endl;
 							}
+*/
 							if ( myMaxDrainVoltage > myEventKey ) {
+								reportFile << "WARNING: Max voltage already set for " << NetName(myDrainNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
+								reportFile << " at " << DeviceName(myConnections.deviceId, PRINT_CIRCUIT_ON)  << " expected/found " << myEventKey << "/" << myMaxDrainVoltage << endl;
 								netStatus_v[myDrainNetId][NEEDS_MAX_CONNECTION] = false;
 								netStatus_v[mySourceNetId][NEEDS_MAX_CONNECTION] = false; // reset parent also
 							}
@@ -1969,12 +1977,15 @@ void CCvcDb::SetInitialMinMaxPower() {
 	SetTrivialMinMaxPower();
 //	for (CPowerPtrList::iterator power_ppit = cvcParameters.cvcPowerPtrList.begin(); power_ppit != cvcParameters.cvcPowerPtrList.end(); power_ppit++) {
 	CVirtualNet myMinMasterNet, myMaxMasterNet;
-	int myPrintCounter = 1000001;
+//	int myPrintCounter = 0;
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
-		if ( --myPrintCounter <= 0 ) {
-			cout << "	Net " << net_it << endl;
-			myPrintCounter = 1000000;
+/*
+		if ( ++myPrintCounter >= 2  1000000  ) {
+			cout << "\r" << "	Net " << net_it << std::flush;
+			myPrintCounter = 0;
+			usleep(1e6);
 		}
+*/
 		if ( net_it != GetEquivalentNet(net_it) ) continue; // skip subordinate nets
 		myMinMasterNet(minNet_v, net_it);
 //		myMinMasterNet = CVirtualNet(minNet_v, net_it);
@@ -2003,7 +2014,7 @@ void CCvcDb::SetInitialMinMaxPower() {
 			}
 		}
 	}
-	myPrintCounter = 0;
+//	myPrintCounter = 0;
 /*
 	if ( minEventQueue.savedDelayQueue.size() == 0 || minEventQueue.savedMainQueue.size() == 0 ) {
 		minEventQueue.BackupQueue();

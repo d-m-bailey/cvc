@@ -57,6 +57,7 @@ int CCdlParserDriver::parse(const string &theCdlFilename, CCircuitPtrList& theCi
 	} else {
 		yyset_in(myCdlFile);
 		yy::CCdlParser parser(*this, theCircuitPtrList, theCvcSOI);
+		cout << endl;  // Clear progress output
 		parser.set_debug_level(trace_parsing);
 		myParser_result = parser.parse();
 //	scan_end();
