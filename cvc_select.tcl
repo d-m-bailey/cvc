@@ -1,5 +1,9 @@
 proc load_selection {} {
-        set myClipboard [open "|xclip -o -selection clipboard" r]
+        global gClipboardSource
+        if { ! [info exists gClipboardSource] } {
+                set gClipboardSource clipboard
+        }
+        set myClipboard [open "|xclip -o -selection $gClipboardSource" r]
         gets $myClipboard mySelection
         Gui:Print $mySelection
 
@@ -15,7 +19,9 @@ proc load_selection {} {
         set topcell [$db oid root $topoid]
 
         set     oidList {}
+        regsub {\([^\)]*\)[     ]*$} $mySelection "" mySelection
         regsub -all {\([^\)]*\)/} $mySelection " " mySelection
+        regsub -all {==} $mySelection "--" mySelection
         regsub {^/} $mySelection "" mySelection
         regsub -all {/} $mySelection "-" mySelection
         regsub -all {\[} $mySelection "<" mySelection
@@ -40,5 +46,16 @@ proc load_selection {} {
 
         Gui:ActivateTab $visu Cone
 }
+proc toggle_selection {} {
+        global gClipboardSource
+        if { [info exists gClipboardSource] && "$gClipboardSource" eq "clipboard" } {
+                set gClipboardSource primary
+                Gui:Print "Clipboard selection set to X"
+        } else {
+                set gClipboardSource clipboard
+                Gui:Print "Clipboard selection set to Windows"
+        }
+}
 
 bind . <Control-k> {load_selection}
+bind . <Control-K> {toggle_selection}
