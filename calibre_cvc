@@ -102,11 +102,13 @@ echo "Removing leading double characters and changing commented parameters ..."
 # ^RR -> R
 # $LDD deleted (functionality in cvc model file LDDN/LDDP)
 # $a -> a
+# X*==3 -> X*
 # $SUB= -> SUB= -> $SUB=  (no change)
 sed -e 's/^\(.\)\1/\1/' \
     -e 's/\$SUB=/^SUB=/' \
     -e 's/\$LDD//' \
     -e 's/\$//g' \
+    -e 's/^\([^ ]*\)==[0-9]* /\1 /' \
     -e 's/\^SUB=/$SUB=/' $OUTPUT.0 | \
 $BOX_FILTER > $OUTPUT
 
