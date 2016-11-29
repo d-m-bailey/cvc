@@ -58,7 +58,9 @@ fi
 log="cdl.log"
 echo "log file: $log"
 
-if [[ ( $additionalRules -nt $rulefile ) || ( $cellOverrides -nt $rulefile ) ]]; then
+if [[ ( $additionalRules -nt $rulefile ) \
+		|| ( $cellOverrides -nt $rulefile ) \
+		|| ( $DATA -nt $rulefile ) ]]; then
 	cat > $rulefile <<-svs_rule
 		LAYOUT PRIMARY $PRIMARY
 		LAYOUT PATH "$DATA"
