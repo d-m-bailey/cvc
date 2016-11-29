@@ -218,8 +218,8 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     myTotalMosCount = 0
     for mos_it in myCircuit['mos_models']:
         myTotalMosCount += myCircuit['mos_models'][mos_it]
-    if myTotalMosCount > 4:
-        mySmashFlag = False  # Keep circuits with >= 5 mos devices
+#    if myTotalMosCount > 4:
+#        mySmashFlag = False  # Keep circuits with >= 5 mos devices
     if myInstanceCount == 1 and (myCircuit['resistor_count'] + myTotalMosCount) > 0:
         mySmashFlag = False  # Keep circuits with 1 instance and a mos or resistor
     if re.search("ICV_", theTopCell) or re.search("\$\$", theTopCell):
