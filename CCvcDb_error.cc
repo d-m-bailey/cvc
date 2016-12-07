@@ -388,16 +388,30 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 //					bool myErrorFlag = false;
 		if ( ( myConnections.CheckTerminalMinVoltages(GATE | SOURCE) &&
-					myConnections.CheckTerminalMaxVoltages(DRAIN) &&
+//					myConnections.CheckTerminalMaxVoltages(DRAIN) &&
 					myConnections.minGateVoltage > min(myConnections.minSourceVoltage, myConnections.minSourceVoltage + myDevice_p->model_p->Vth) &&
-					myConnections.minGateVoltage < myConnections.maxDrainVoltage && myConnections.gateId != myConnections.drainId ) ||
+					myConnections.gateId != myConnections.drainId ) ||
+//					myConnections.minGateVoltage < myConnections.maxDrainVoltage && myConnections.gateId != myConnections.drainId ) ||
 //					myConnections.minGateVoltage - myConnections.minSourceVoltage != myDevice_p->model_p->Vth) ||
 				( myConnections.CheckTerminalMinVoltages(GATE | DRAIN) &&
-					myConnections.CheckTerminalMaxVoltages(SOURCE) &&
+//					myConnections.CheckTerminalMaxVoltages(SOURCE) &&
 					myConnections.minGateVoltage > min(myConnections.minDrainVoltage, myConnections.minDrainVoltage + myDevice_p->model_p->Vth) &&
-					myConnections.minGateVoltage < myConnections.maxSourceVoltage && myConnections.gateId != myConnections.sourceId ) ) {
+					myConnections.gateId != myConnections.sourceId ) ) {
+//					myConnections.minGateVoltage < myConnections.maxSourceVoltage && myConnections.gateId != myConnections.sourceId ) ) {
 //					myConnections.minGateVoltage - myConnections.minDrainVoltage != myDevice_p->model_p->Vth) ) {
 //						cout << "Overvoltage Error:Gate vs Bulk:" << endl;
+			// Skip gates that are always fully on
+			if ( myConnections.CheckTerminalMaxVoltages(SOURCE) ) {
+				if ( myConnections.CheckTerminalMaxVoltages(DRAIN) ) {
+					if ( myConnections.minGateVoltage >= max(myConnections.maxSourceVoltage, myConnections.maxDrainVoltage) ) continue;
+				} else {
+					if ( myConnections.minGateVoltage >= myConnections.maxSourceVoltage ) continue;
+				}
+			} else if ( myConnections.CheckTerminalMaxVoltages(DRAIN) ) {
+				if ( myConnections.minGateVoltage >= myConnections.maxDrainVoltage ) continue;
+			} else {
+				continue;
+			}
 			// ignore capacitors connected to non-power nets
 			if ( myConnections.sourceId == myConnections.drainId &&
 					! ( netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId]->type[POWER_BIT] &&
@@ -472,16 +486,30 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 //					bool myErrorFlag = false;
 		if ( ( myConnections.CheckTerminalMaxVoltages(GATE | SOURCE) &&
-					myConnections.CheckTerminalMinVoltages(DRAIN) &&
+//					myConnections.CheckTerminalMinVoltages(DRAIN) &&
 					myConnections.maxGateVoltage < max(myConnections.maxSourceVoltage, myConnections.maxSourceVoltage + myDevice_p->model_p->Vth) &&
-					myConnections.maxGateVoltage > myConnections.minDrainVoltage && myConnections.gateId != myConnections.drainId ) ||
+					myConnections.gateId != myConnections.drainId ) ||
+//					myConnections.maxGateVoltage > myConnections.minDrainVoltage && myConnections.gateId != myConnections.drainId ) ||
 //					myConnections.maxGateVoltage - myConnections.maxSourceVoltage != myDevice_p->model_p->Vth) ||
 				( myConnections.CheckTerminalMaxVoltages(GATE | DRAIN) &&
-					myConnections.CheckTerminalMinVoltages(SOURCE) &&
+//					myConnections.CheckTerminalMinVoltages(SOURCE) &&
 					myConnections.maxGateVoltage < max(myConnections.maxDrainVoltage, myConnections.maxDrainVoltage + myDevice_p->model_p->Vth) &&
-					myConnections.maxGateVoltage > myConnections.minSourceVoltage && myConnections.gateId != myConnections.sourceId ) ) {
+					myConnections.gateId != myConnections.sourceId ) ) {
+//					myConnections.maxGateVoltage > myConnections.minSourceVoltage && myConnections.gateId != myConnections.sourceId ) ) {
 //					myConnections.maxGateVoltage - myConnections.maxDrainVoltage != myDevice_p->model_p->Vth) ) {
 //						errorFile errorFileOvervoltage Error:Gate vs Bulk:" << endl;
+			// Skip gates that are always fully on
+			if ( myConnections.CheckTerminalMinVoltages(SOURCE) ) {
+				if ( myConnections.CheckTerminalMinVoltages(DRAIN) ) {
+					if ( myConnections.maxGateVoltage <= min(myConnections.minSourceVoltage, myConnections.minDrainVoltage) ) continue;
+				} else {
+					if ( myConnections.maxGateVoltage <= myConnections.minSourceVoltage ) continue;
+				}
+			} else if ( myConnections.CheckTerminalMinVoltages(DRAIN) ) {
+				if ( myConnections.maxGateVoltage <= myConnections.minDrainVoltage ) continue;
+			} else {
+				continue;
+			}
 			// ignore capacitors connected to non-power nets
 			if ( myConnections.sourceId == myConnections.drainId &&
 					! ( netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId]->type[POWER_BIT] &&
