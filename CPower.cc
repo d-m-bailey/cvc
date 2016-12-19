@@ -291,7 +291,13 @@ CPower * CPower::GetBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetV
 		case MAX_CALCULATED_BIT: { myDefaultNet = myPower_p->defaultMaxNet; break; }
 		default: break;
 		}
-		if ( myPower_p->type[theNet_v.calculatedBit] && myDefaultNet != UNKNOWN_NET ) myNetId = myDefaultNet;
+		if ( myPower_p->type[theNet_v.calculatedBit] ) {
+			if ( myDefaultNet != UNKNOWN_NET ) {
+				myNetId = myDefaultNet;
+			} else if ( myNetId == theNet_v[myNetId].nextNetId ) {  // no default net at master net
+				break;
+			}
+		}
 		while ( myNetId != theNet_v[myNetId].nextNetId ) {
 			myNetId = theNet_v[myNetId].nextNetId;
 		}

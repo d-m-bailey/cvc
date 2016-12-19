@@ -63,7 +63,7 @@ void CCircuit::LoadDevices(CDevicePtrList * theDevicePtrList_p) {
 	subcircuitPtr_v.reserve(theDevicePtrList_p->SubcircuitCount());
 	myCircuitCount++;
 	if ( ++myPrintCount >= 100000 ) {
-			cout << '\r' << "Read " << myCircuitCount << " circuits, " << myInstanceCount << " instances, " << myDeviceCount << " devices" << std::flush;
+			cout << "Read " << myCircuitCount << " circuits, " << myInstanceCount << " instances, " << myDeviceCount << " devices\r" << std::flush;
 			myPrintCount = 0;
 	}
 	for (CDevicePtrList::iterator device_ppit = theDevicePtrList_p->begin(); device_ppit != theDevicePtrList_p->end(); device_ppit++) {

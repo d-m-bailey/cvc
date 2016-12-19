@@ -231,7 +231,7 @@ void CLeakMap::Print(string theIndentation) {
 }
 
 void CEventQueue::PrintStatus(int theNextPrintCount) {
-	cout << "\r	" << gEventQueueTypeMap[queueType] << " Counts (size/enqueue/requeue) " << enqueueCount - dequeueCount<< "/" <<  enqueueCount << "/" << requeueCount << std::flush;
+	cout << gEventQueueTypeMap[queueType] << " Counts (size/enqueue/requeue) " << enqueueCount - dequeueCount<< "/" <<  enqueueCount << "/" << requeueCount << "\r" << std::flush;
 	printCounter = theNextPrintCount;
 }
 

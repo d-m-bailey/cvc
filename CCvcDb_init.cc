@@ -432,7 +432,7 @@ void CCvcDb::LinkDevices() {
 //					cout << "linking device #" << myDeviceId << "from instance " << aInstanceId_v[instance_i] << endl;
 					SetDeviceNets(myInstance_p, myDevice_p, sourceNet_v[myDeviceId], gateNet_v[myDeviceId], drainNet_v[myDeviceId], bulkNet_v[myDeviceId]);
 					if ( ++myPrintCount >= 1000000 ) {
-						cout << "\r" << "	Average device/instance: " << myDeviceCount << "/" << myInstanceCount << "=" << myDeviceCount / myInstanceCount << std::flush;
+						cout << "	Average device/instance: " << myDeviceCount << "/" << myInstanceCount << "=" << myDeviceCount / myInstanceCount << "\r" << std::flush;
 						myPrintCount = 0;
 					}
 					if ( sourceNet_v[myDeviceId] == drainNet_v[myDeviceId] ) {
