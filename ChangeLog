@@ -1,0 +1,56 @@
+160614_1505	"Add box handling
+		 Add parasitic diodes (just the setting)"
+160721_1627	"When reporting shorts to limited voltages, include the reason
+		Include calculated bit flags when reporting calculated biases
+		Added path contains check
+		Fixed bulk check to ignore errors to same levels that are actually open
+		Changed lock file removal
+		Ignore empty instances
+		Changed default for open nets in calculated power (all queues -> only current queue)"
+160816_1822	"Split model error lines
+		Already set voltage errors between defined power fix. (wasn't printing all errors)"
+160819_2315	"Added ExceedsLeakLimit macro for leak limit checks.
+		Change current limit granularity uA -> nA.
+		Filter 'mos diode min/max voltage already set' errors by current."
+160820_0954	"Print progress when processing switches.
+		Shorted device count bug fix (was counting switches/cell. Now counts switches/instance.)"
+160823_1132	"New lines when printing shorted switches.
+		Don't adjust mos diode resistance when calculating leak current.
+		Fixed progress count for switch shorts.
+		Make sure power exists before checking for HI-Z.
+		Changed equivalent net processing."
+160823_1344	Improved equivalent net processing.
+160824_1750	Fixed fast equivalent net processing.
+160825_1209	Print estimated current in already set min/max (+bug fix in min)
+160829_1200	Move min/max voltage conflict to error processing.
+160830_0001	Added summary line after resistor propagation.
+160906_1035	Include resistor calculation in initial simulation propagation.
+160909_1219	"Print interactive commands to log file.
+		Read commands from batch file (source).
+		Removed shortfile."
+161013_1022	Ignore shorts at vth when gate is not calculated(ie. power. If actual leaks exist, they should be detected elsewhere).
+161021_1301	"No voltage calculations for Hi-Z nets in any min/max queues.
+		No leaks between Hi-Z nets."
+161110_1402	When checking power families, check family intersect.
+161116_1112	"Leak path between 2 Hi-Z nets should not be automatically ignored (only if related).
+		When coping power, copy powerAliases and relativeSets
+		Don't copy family when using macros (powerAlias should be sufficient)
+		When checking relatives, check powerAliases too"
+161116_1254	Don't do mos diode calculations for HI-Z voltages
+161117_1005	"Reduce relative check time
+		Standardize empty string checks"
+161118_1233	"Copy family when using macros. (see 161116_1112)
+		Only print unexpected power for possible problems (lower min voltage, higher max voltage)
+		Display log file name at job end
+		Remove short file message (unused)
+		PrintEnvironment interactive command output to log file.
+		Remove net progress on min/max queues
+		Overwrite progress displays
+		Changed progess print count logic(except event queue)
+		Flush interactive output before new command"
+161208_0148	Fixed bug that missed gate errors on tied output.
+161219_2241	"Fixed loop with no default voltage for calculated voltages
+		Switched line reset to print after instead of before"
+161221_1201	"Changed unexpected mos diode errors to debug mode
+		Don't calculate resistance for Hi-Z nets
+		Display mismatched net error in detail"
