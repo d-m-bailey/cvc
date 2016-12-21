@@ -1514,15 +1514,19 @@ void CCvcDb::PropagateSimVoltages(CEventQueue& theEventQueue, propagation_t theP
 void CCvcDb::CalculateResistorVoltage(netId_t theNetId, voltage_t theMinVoltage, resistance_t theMinResistance,
 			voltage_t theMaxVoltage, resistance_t theMaxResistance ) {
 //	bool myExplicitResistanceFlag = ( netVoltagePtr_v[theNetId] && netVoltagePtr_v[theNetId]->type[RESISTOR_BIT] );
+//	bool myExplicitResistanceFlag = ( netVoltagePtr_v[theNetId] && netVoltagePtr_v[theNetId]->type[RESISTOR_BIT] );
+//	bool myIgnoreResistorFlag = false;
+	if ( theMinVoltage == UNKNOWN_VOLTAGE || theMaxVoltage == UNKNOWN_VOLTAGE ) return; // myIgnoreResistorFlag = true; // can't propagate unknown voltage
+	if ( theMinResistance == 0 || theMaxResistance == 0 ) return; //myIgnoreResistorFlag = true; // don't recalculate 0 resistance
+	netId_t myMinNet = minNet_v[theNetId].finalNetId;
+	netId_t myMaxNet = maxNet_v[theNetId].finalNetId;
+	if ( ! netVoltagePtr_v[myMinNet] || netVoltagePtr_v[myMinNet]->type[HIZ_BIT] ) return;  // don't calculate non-power or open
+	if ( ! netVoltagePtr_v[myMaxNet] || netVoltagePtr_v[myMaxNet]->type[HIZ_BIT] ) return;  // don't calculate non-power or open
 	if ( ! netVoltagePtr_v[theNetId] ) {
 		cvcParameters.cvcPowerPtrList.push_back(new CPower(theNetId));
 		netVoltagePtr_v[theNetId] = cvcParameters.cvcPowerPtrList.back();
 	}
 	CPower * myPower_p = netVoltagePtr_v[theNetId];
-//	bool myExplicitResistanceFlag = ( netVoltagePtr_v[theNetId] && netVoltagePtr_v[theNetId]->type[RESISTOR_BIT] );
-//	bool myIgnoreResistorFlag = false;
-	if ( theMinVoltage == UNKNOWN_VOLTAGE || theMaxVoltage == UNKNOWN_VOLTAGE ) return; // myIgnoreResistorFlag = true; // can't propagate unknown voltage
-	if ( theMinResistance == 0 || theMaxResistance == 0 ) return; //myIgnoreResistorFlag = true; // don't recalculate 0 resistance
 	if (  // myIgnoreResistorFlag == false &&
 			minNet_v[theNetId].nextNetId != maxNet_v[theNetId].nextNetId && // different paths to min/max
 			( minNet_v.IsTerminal(minNet_v[theNetId].nextNetId) || theNetId == maxNet_v[minNet_v[theNetId].nextNetId].nextNetId ) &&

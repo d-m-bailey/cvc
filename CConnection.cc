@@ -79,14 +79,14 @@ float CConnection::EstimatedMosDiodeCurrent(voltage_t theSourceVoltage, CConnect
 	if ( gateId == drainId ) {
 		if ( sourcePower_p && sourcePower_p->type[HIZ_BIT] ) return float(0);  // no error for hi-z power
 		if ( sourceVoltage != theConnections.sourceVoltage ) {
-			cout << "ERROR: unexpected voltage in EstimatedModeDiodeCurrent " << endl;
-			cout << "device " << deviceId << "; source voltage " << sourceVoltage << "!=" << theConnections.sourceVoltage << endl;
+			if (gDebug_cvc) cout << "ERROR: unexpected voltage in EstimatedMosDiodeCurrent " << endl;
+			if (gDebug_cvc) cout << "device " << deviceId << "; source voltage " << sourceVoltage << "!=" << theConnections.sourceVoltage << endl;
 		}
 	} else if ( gateId == sourceId ) {
 		if ( drainPower_p && drainPower_p->type[HIZ_BIT] ) return float(0);  // no error for hi-z power
 		if ( drainVoltage != theConnections.drainVoltage ) {
-			cout << "ERROR: unexpected voltage in EstimatedModeDiodeCurrent " << endl;
-			cout << "device " << deviceId << "; drain voltage " << drainVoltage << "!=" << theConnections.drainVoltage << endl;
+			if (gDebug_cvc) cout << "ERROR: unexpected voltage in EstimatedMosDiodeCurrent " << endl;
+			if (gDebug_cvc) cout << "device " << deviceId << "; drain voltage " << drainVoltage << "!=" << theConnections.drainVoltage << endl;
 		}
 	}
 //	cout << "estimated current " << float(abs(theSourceVoltage-gateVoltage)) / (resistance*100 + masterSourceNet.finalResistance + masterDrainNet.finalResistance) / VOLTAGE_SCALE << endl;

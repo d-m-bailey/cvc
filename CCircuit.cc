@@ -131,7 +131,12 @@ void CCircuit::CountObjectsAndLinkSubcircuits(unordered_map<text_t, CCircuit *> 
 			} else {
 				myChild_p->CountObjectsAndLinkSubcircuits(theCircuitNameMap);
 			}
-			assert((*subcircuit_ppit)->signalId_v.size() == myChild_p->portCount);
+//			assert((*subcircuit_ppit)->signalId_v.size() == myChild_p->portCount);
+			if ( (*subcircuit_ppit)->signalId_v.size() != myChild_p->portCount ) {
+				stringstream myErrorMessage;
+				myErrorMessage << "port mismatch in " << (*subcircuit_ppit)->name << " " << (*subcircuit_ppit)->signalId_v.size() << ":" << myChild_p->portCount << endl;
+				throw EFatalError(myErrorMessage.str());
+			}
 			myChild_p->instanceCount++;
 			deviceCount += myChild_p->deviceCount;
 			netCount += myChild_p->netCount;
