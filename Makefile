@@ -49,22 +49,35 @@ $(CVCRCFILES) :: $$(patsubst cvcrc.%,makefile.%,$$@)
 makefile.% :
 # Create makefile for each mode based on corresponding cvcrc file.
 	@echo export date = $(DATE) > $@
+# Convert cvcrc shell variables to make variables.
 	@sed -e 's/$$\([A-Za-z0-9_][A-Za-z0-9_]*\)/$$(\1)/g' \
 		-e 's/{/(/g' -e 's/}/)/g' $(@:makefile.%=cvcrc.%) >> $@
+# Create report file target.
 	@echo '$$(CVC_REPORT_FILE) :: $$(CVC_NETLIST) $$(CVC_MODEL_FILE) $$(CVC_POWER_FILE)' >> $@
 	@echo "	cvc $(@:makefile.%=cvcrc.%)" >> $@
-# Display makefile result without executing.
-	@$(MAKE) --no-print-directory -n -f $@ 
-# If update needed, add to batch job.
-	@$(MAKE) --no-print-directory -q -f $@ && \
-		echo "make --no-print-directory -f $@" >> batchecv
+	@echo "" >> $@
+# Check that report file ended correctly. If not, touch cvcrc file to rebuild.
+	@echo "check ::" >> $@
+	@echo '	@grep -q "CVC: End:" $$(CVC_REPORT_FILE) \
+		&& true || touch $(@:makefile.%=cvcrc.%)' >> $@
+	@$(MAKE) --no-print-directory -f $@ check
+# Create batchecv file with commands for all modes that need updating.
+	@$(MAKE) --no-print-directory -q -f $@ \
+			&& echo "mode $(@:makefile.%=%) is up to date" \
+			|| $(MAKE) --no-print-directory -n -f $@ | \
+		uniq >> batchecv
 
 # Run batchecv after last target, if batchecv file exists.
 $(LAST_GOAL) ::
-ifneq ($(wildcard batchecv),)
-	@read -r -p "Press enter to continue: "
+# In case batchecv does not exist, create empty file.
+	@touch batchecv
+	@echo ""
+	@cat batchecv
+# Pause for comfirmation if there are updates.
+	@[ -s batchecv ] \
+		&& read -r -n 1 -p "Press any key to continue, ctrl-C to quit: ==>" \
+		|| echo no update necessary
 	@chmod u+x batchecv
-	./batchecv
-endif
+	@export date=$(date); ./batchecv
 
 #23456789*123456789*123456789*123456789*123456789*123456789*123456789*123456789*123456789*123456789*
