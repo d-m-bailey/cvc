@@ -1,0 +1,60 @@
+#! /bin/bash
+
+#clean_cvc_log: removes old CVC log files
+# Version 1.0
+
+#   Copyright 2106 D. Mitch Bailey
+
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+if [[ ${#*} -ne 1 ]] || [[ $1 != [[:digit:]]* ]] ; then
+	echo "usage: clean_cvc_log keep_log_count"
+	exit 1
+fi
+
+backupCount=$1
+
+logList=`ls *log.[1-9]*.gz | sed 's/log.*/log/' | sort -u`
+
+rm -f rm_log_list
+for baseLog in $logList; do
+	logCount=0
+	zgrep -q 'CVC: End:' $baseLog
+	baseLogOk=$?
+	for logFile in $( ls -t $baseLog.*.gz ); do
+		if zgrep -q 'CVC: End:' $logFile; then
+			((logCount++))
+			baseLogOk=1
+			#echo $logFile complete $logCount
+		elif [[ $baseLogOk ]] && [[ $logCount -le $backupCount ]]; then
+			# incomplete log files removed if older than the most recent complete log
+			echo rm -f $logFile ${logFile/log/error} >> rm_log_list
+			#echo $logFile incomplete
+		fi
+		if [[ $logCount -gt $backupCount ]]; then
+			# remove log files older than the last log file saved
+			echo rm -f $logFile ${logFile/log/error} >> rm_log_list
+		fi
+	done
+done
+
+if [[ -s rm_log_list ]]; then
+	cat rm_log_list
+	echo
+	echo \'source rm_log_list\' to remove files
+else
+	echo no files to remove
+fi
+
+#23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789

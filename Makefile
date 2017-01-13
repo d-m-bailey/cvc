@@ -1,5 +1,22 @@
 # Makefile for creating a batch job to run CVC on cvcrc files in the current directory 
 # based on corresponding netlist, power, and model files.
+# Version 0.7
+
+#   Copyright 2107 D. Mitch Bailey
+
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 
 # usage:
 # make  <- default
@@ -34,9 +51,9 @@ all ::
 
 # Remove files before first target.
 $(FIRST_GOAL) ::
-	@echo cleaning files
 	@rm -f batchecv
 	@rm -f $(MAKEFILES)
+	@echo Checking modes
 
 # Real default rule.
 all :: $(MAKEFILES)
@@ -53,14 +70,14 @@ makefile.% :
 	@sed -e 's/$$\([A-Za-z0-9_][A-Za-z0-9_]*\)/$$(\1)/g' \
 		-e 's/{/(/g' -e 's/}/)/g' $(@:makefile.%=cvcrc.%) >> $@
 # Create report file target.
-	@echo '$$(CVC_REPORT_FILE) :: $$(CVC_NETLIST) $$(CVC_MODEL_FILE) $$(CVC_POWER_FILE)' >> $@
-	@echo "	cvc $(@:makefile.%=cvcrc.%)" >> $@
+	@echo '$$(CVC_REPORT_FILE) :: \
+		$$(CVC_NETLIST) $$(CVC_MODEL_FILE) $$(CVC_POWER_FILE) $(@:makefile.%=cvcrc.%)' >> $@
+	@echo "	@cvc $(@:makefile.%=cvcrc.%)" >> $@
 	@echo "" >> $@
 # Check that report file ended correctly. If not, touch cvcrc file to rebuild.
-	@echo "check ::" >> $@
-	@echo '	@grep -q "CVC: End:" $$(CVC_REPORT_FILE) \
-		&& true || touch $(@:makefile.%=cvcrc.%)' >> $@
-	@$(MAKE) --no-print-directory -f $@ check
+	@echo "check-$(@:makefile.%=%) ::" >> $@
+	@echo '	@grep -q "CVC: End:" $$(CVC_REPORT_FILE) || touch $(@:makefile.%=cvcrc.%)' >> $@
+	@$(MAKE) --no-print-directory -f $@ check-$(@:makefile.%=%)
 # Create batchecv file with commands for all modes that need updating.
 	@$(MAKE) --no-print-directory -q -f $@ \
 			&& echo "mode $(@:makefile.%=%) is up to date" \
@@ -72,12 +89,14 @@ $(LAST_GOAL) ::
 # In case batchecv does not exist, create empty file.
 	@touch batchecv
 	@echo ""
+	@rm -f $(MAKEFILES)
 	@cat batchecv
 # Pause for comfirmation if there are updates.
 	@[ -s batchecv ] \
 		&& read -r -n 1 -p "Press any key to continue, ctrl-C to quit: ==>" \
 		|| echo no update necessary
 	@chmod u+x batchecv
-	@export date=$(date); ./batchecv
+	@export date=$(DATE); ./batchecv
+	@rm -f batchecv
 
 #23456789*123456789*123456789*123456789*123456789*123456789*123456789*123456789*123456789*123456789*
