@@ -727,6 +727,16 @@ class SummaryWidget(Widget):
         """
         myContent = self.currentContent
         myData = myContent.listRef.adapter.get_data_item(theErrorIndex)
+        myMatch = re.search("[^:\[]*\[([^\]]*)", myData['errorText'])  #*[reference] *
+        if myMatch and myMatch.group(1):
+            if self.referenceTextRef.textRef.text:
+                self.referenceTextRef.undoList.append(self.referenceTextRef.textRef.text)
+            self.referenceTextRef.textRef.text = myMatch.group(1)
+        myMatch = re.search("^#([^\[:]*) *", myData['errorText'])  ##comment *
+        if myMatch and myMatch.group(1):
+            if self.commentTextRef.textRef.text:
+                self.commentTextRef.undoList.append(self.commentTextRef.textRef.text)
+            self.commentTextRef.textRef.text = myMatch.group(1)
         myMatch = re.search("SUBCKT ([^\)]*\))", myData['errorText'])  # * INFO: SUBCKT (cellName)
         if myMatch and myMatch.group(1):
             if self.filterTextRef.textRef.text:

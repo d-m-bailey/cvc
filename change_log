@@ -9,4 +9,6 @@ Version 1.0.4
 Version 1.0.5
   Ignore changes related to comments when saving.
 Version 1.0.6
-  Select first error with Ctrl-Right-Click.
+  Select first error with Shift-Right-Click.
+Version 1.0.7
+  Ctrl-Right-Click also sets reference and comment.
