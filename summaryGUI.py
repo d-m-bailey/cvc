@@ -7,7 +7,7 @@
       HistoryTextInput: Implements text input with history and clear.
       SummaryWidget: Root widget handles filters, error totals, error displays and buttons.
 
-    Copyright 2106 D. Mitch Bailey  d.mitch.bailey at gmail dot com
+    Copyright 2106, 2017 D. Mitch Bailey  d.mitch.bailey at gmail dot com
 
     This file is part of check_cvc.
 
@@ -263,9 +263,12 @@ class SummaryTabContent(BoxLayout):
         self._SetSpinner()
         myFilterPriority = cvc_globals.priorityMap[self.root.sectionFilter] \
             if self.root.sectionFilter in cvc_globals.priorityMap else None
-        self.filteredList = []
-        for index_it in range(len(self.report.displayList)):
-            myRecord = self.report.displayList[index_it]
+        myFilteredList = []
+        myDisplayList = self.report.displayList
+        myInitialCheck = False if self.root.checkValues else True
+        myCheckValues = self.root.checkValues
+        for index_it in range(len(myDisplayList)):
+            myRecord = myDisplayList[index_it]
             if not myFilterPriority or myFilterPriority == myRecord['priority']:
                 myDisplayText = self._Format(index_it)
                 if not myTextFilter or myFilterRegex.search(myDisplayText):
@@ -273,25 +276,27 @@ class SummaryTabContent(BoxLayout):
                         myLevelFilter = "show_" + myRecord['level']
                     else:
                         myLevelFilter = "show_" + myRecord['type']
-                    if not self.root.checkValues or self.root.checkValues[myLevelFilter]:
+                    if myInitialCheck or myCheckValues[myLevelFilter]:
                         myNewRecord = myRecord.copy()
                         myNewRecord['baseIndex'] = index_it
                         myNewRecord['display_text'] = myDisplayText
-                        self.filteredList.append(myNewRecord)
+                        myFilteredList.append(myNewRecord)
+        self.filteredList = myFilteredList
         Clock.schedule_once(self._FinishRedisplay)
 
     def _FinishRedisplay(self, dt):
         """Redisplay counts and errors, and release screen."""
+        myFilteredList = self.filteredList
         self.listRef.adapter.data = [
-            {'errorText': self.filteredList[index]['display_text'],
+            {'errorText': myFilteredList[index]['display_text'],
              'is_selected': False,
-             'type': self.filteredList[index]['type'],
-             'baseIndex': self.filteredList[index]['baseIndex']}
-            for index in range(len(self.filteredList))]
+             'type': myFilteredList[index]['type'],
+             'baseIndex': myFilteredList[index]['baseIndex']}
+            for index in range(len(myFilteredList))]
         self.SetTabColor(self.root.modePanelRef.current_tab)
         self.root.currentContent.report.CountErrors()
         self._SetTypeFilterCounts(self.root.currentContent.report.errorCount)
-        self.root.ids.displayCount_id.text = str(len(self.filteredList))
+        self.root.ids.displayCount_id.text = str(len(myFilteredList))
         self.root.DeselectAll()  # resets button status
         self.root.workingPopupRef.dismiss()
 
@@ -1059,13 +1064,14 @@ class SummaryWidget(Widget):
         myList = theContent.report.displayList
         for line_it in range(len(myList))[::-1]:
             # reversed because of possible delete
-            if myList[line_it]['type'] == 'uncommitted' and theAutoCommitFlag:
-                myList[line_it]['reference'] = myList[line_it]['reference'][2:]  # remove "? "
-                myList[line_it]['type'] = 'checked'
-            elif myList[line_it]['type'] == 'unmatched' and theSaveUnmatchedFlag:
+            myLine = myList[line_it]
+            if myLine['type'] == 'uncommitted' and theAutoCommitFlag:
+                myLine['reference'] = myLine['reference'][2:]  # remove "? "
+                myLine['type'] = 'checked'
+            elif myLine['type'] == 'unmatched' and theSaveUnmatchedFlag:
                 # This is temporary. Must restore after save.
-                myList[line_it]['reference'] = myList[line_it]['reference'][2:]  # remove "* "
-            elif myList[line_it]['type'] == 'unmatched' and not theSaveUnmatchedFlag:
+                myLine['reference'] = myLine['reference'][2:]  # remove "* "
+            elif myLine['type'] == 'unmatched' and not theSaveUnmatchedFlag:
                 del myList[line_it]
 
     def _InitializeSave(self):
@@ -1331,6 +1337,5 @@ class SummaryWidget(Widget):
             self.quitPopupRef.open()
         else:
             Window.close()
-
 
 #23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789

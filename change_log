@@ -4,3 +4,5 @@ Version 1.0.2
   Handle unexpected level errors.
 Version 1.0.3
   Added GPLv3 display.
+Version 1.0.4
+  Speed up by reducing dereferences.
