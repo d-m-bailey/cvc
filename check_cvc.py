@@ -30,7 +30,7 @@
       ResultFile: Read and process error file data.
       SummaryApp: Kivy GUI App.
 
-    Copyright 2106 D. Mitch Bailey  d.mitch.bailey at gmail dot com
+    Copyright 2106, 2017 D. Mitch Bailey  d.mitch.bailey at gmail dot com
 
     This file is part of check_cvc.
 
@@ -86,6 +86,7 @@ def main(argv):
             myResultsList.append(ResultFile(logFileName_it))
         except IOError:  # skip files that can't be opened
             pass
+    print("")
     if myResultsList:
         if "-i" in [option[0] for option in options]:
             SummaryApp(mySummaryList, myResultsList).run()

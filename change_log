@@ -1,0 +1,2 @@
+Version 1.0.1
+  Moved log display to immediately after module load.

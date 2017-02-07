@@ -21,8 +21,9 @@
 """
 
 try:  # kivy installed
-    from kivy.config import Config
     from kivy.logger import Logger, FileHandler
+    print("\nLog file: %s\n" % (FileHandler.filename))
+    from kivy.config import Config
     from kivy.app import App
     from kivy.core.window import Window
     from kivy.properties import NumericProperty
@@ -56,7 +57,6 @@ try:  # kivy installed
               theReportList: list of reports: one for each log/error file combination
             """
 #            Config.set('kivy', 'log_level', 'critical')
-            print("\nLog file: %s\n" % (FileHandler.filename))
             self.summaryList = theSummaryList
             self.reportList = theReportList
             super(SummaryApp, self).__init__(**kwargs)
