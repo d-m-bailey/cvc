@@ -6,3 +6,5 @@ Version 1.0.3
   Added GPLv3 display.
 Version 1.0.4
   Speed up by reducing dereferences.
+Version 1.0.5
+  Ignore changes related to comments when saving.

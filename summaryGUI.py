@@ -1179,6 +1179,8 @@ class SummaryWidget(Widget):
 
     def _CheckDiscrepancies(self, theOutputItem, theOutput, theAppliedModes, theAutoSaveFlag):
         """Print discrepancies in summary between modes."""
+        if theOutput.startswith("#"):  # ignore differences in comments
+            return
         if (not theAutoSaveFlag
                 and theOutputItem['data'] == self._lastData
                 and theOutput != self._lastOutput):  # same error, but different summary
