@@ -12,3 +12,5 @@ Version 1.0.6
   Select first error with Shift-Right-Click.
 Version 1.0.7
   Ctrl-Right-Click also sets reference and comment.
+Version 1.0.8
+  Summaries are saved every node except those that they don't apply to. This allows subsets of modes without losing all references for missing nodes. (Still loses references for only modes that are missing).
