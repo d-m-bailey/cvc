@@ -8,3 +8,5 @@ Version 1.0.4
   Speed up by reducing dereferences.
 Version 1.0.5
   Ignore changes related to comments when saving.
+Version 1.0.6
+  Select first error with Ctrl-Right-Click.

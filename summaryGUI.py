@@ -749,6 +749,7 @@ class SummaryWidget(Widget):
         myData = myContent.listRef.adapter.get_data_item(theErrorIndex)
         if myData['type'] in ['unmatched', 'comment']:
             return
+        Clipboard.copy(myContent.report.GetFirstError(myData))
         self.ids.errorDetails_id.text = myContent.report.GetErrorDetails(myData)
         self.detailPopupRef.open()
 
