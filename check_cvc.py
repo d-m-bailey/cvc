@@ -66,6 +66,14 @@ from SummaryFile import SummaryFile
 from ResultFile import ResultFile
 from SummaryApp import SummaryApp
 
+def DisplayLicense():
+    """Display GPLv3 reference."""
+    print("check_cvc  Copyright (C) 2016, 2017  D. Mitch Bailey")
+    print("This program comes with ABSOLUTELY NO WARRANTY.")
+    print("This is free software licensed under GPLv3,")
+    print("and you are welcome to redistribute it under certain conditions.")
+    print("See http://www.gnu.org/licenses/ for details.\n")
+
 def main(argv):
     """Manage the analysis of CVC error results of multiple modes.
 
@@ -74,6 +82,7 @@ def main(argv):
       summaryFileName: name of file containing analysis results (initially empty)
       logFile*: name of CVC result file (multiple modes possible)
     """
+    DisplayLicense()
     options, arguments = getopt.getopt(argv, "i")
     if len(argv) < 2:
         print ("usage check_cvc [-i] summary_file log_file1 [log_file2} ...")
