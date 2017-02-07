@@ -1,6 +1,6 @@
 """ ResultFile.py: Read and process error file data class
 
-    Copyright 2106 D. Mitch Bailey  d.mitch.bailey at gmail dot com
+    Copyright 2106, 2017 D. Mitch Bailey  d.mitch.bailey at gmail dot com
 
     This file is part of check_cvc.
 
@@ -69,7 +69,7 @@ class ResultFile():
     """
     modeRE = re.compile("^CVC_MODE = '(.*)'")
     topRE = re.compile("^CVC_TOP = '(.*)'")
-    summaryRE = re.compile("^(INFO|WARNING)")
+    summaryRE = re.compile("^(INFO|WARNING|Expected)")
     logFileRE = re.compile("^CVC: Log output to (.*)")
     errorFileRE = re.compile("^CVC: Error output to (.*)")
     
