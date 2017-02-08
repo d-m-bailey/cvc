@@ -18,3 +18,5 @@ Version 1.0.9
   Summary files no longer use total cell count or error limit to match.
 Version 1.0.10
   Print modes in sorted order in summary file.
+Version 1.0.11
+  Bug fix for version 1.0.10

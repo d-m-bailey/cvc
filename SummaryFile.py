@@ -52,7 +52,7 @@ class SummaryFile():
       ExtractSummary: Return a sorted summary list for a specific mode.
         See ResultFile.CreateDisplayList for list record details
     """
-    countRE = re.compile("^(.*INFO: .*)([0-9]+)/([0-9]+)")
+    countRE = re.compile("^(.*INFO: .* error count )([0-9]+)/([0-9]+)")
     
     def __init__(self, theFileName):
         """Create SummaryFile object from summaryFile

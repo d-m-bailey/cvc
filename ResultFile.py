@@ -73,7 +73,7 @@ class ResultFile():
     summaryRE = re.compile("^(INFO|WARNING|Expected)")
     logFileRE = re.compile("^CVC: Log output to (.*)")
     errorFileRE = re.compile("^CVC: Error output to (.*)")
-    countRE = re.compile("^(.*INFO: .*)([0-9]+)/([0-9]+)")
+    countRE = re.compile("^(.*INFO: .* error count )([0-9]+)/([0-9]+)")
     
     def __init__(self, theLogFileName):
         """Create ResultFile object from log file and error file.
@@ -388,7 +388,7 @@ class ResultFile():
             if myOrder == "<":  # only in summary list
                 myRecord['priority'] = mySummaryItem['priority']
                 myRecord['reference'] = mySummaryItem['reference']
-                myRecord['keyData'] = myErrorItem['keyData']
+                myRecord['keyData'] = mySummaryItem['keyData']
                 myRecord['data'] = mySummaryItem['data']
                 myRecord['type'] = 'comment'
                 # For comments and unmatched, level data from summary item is ignored
