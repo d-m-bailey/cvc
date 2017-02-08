@@ -1208,8 +1208,8 @@ class SummaryWidget(Widget):
             if len(theOutputModes) == len(theModeList):
                 theSummaryFile.write("\n#ALWAYS\n")
             else:
-                theSummaryFile.write(
-                    "\n#IFNOT %s\n" % " ".join(set(theModeList).difference(theOutputModes)))
+                theSummaryFile.write("\n#IFNOT %s\n" % " ".join(
+                    sorted(set(theModeList).difference(theOutputModes))))
             self._trueLastOutputModes = theOutputModes
         theSummaryFile.write("%s\n" % theOutput)
 

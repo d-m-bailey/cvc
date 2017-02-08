@@ -16,3 +16,5 @@ Version 1.0.8
   Summaries are saved every node except those that they don't apply to. This allows subsets of modes without losing all references for missing nodes. (Still loses references for only modes that are missing).
 Version 1.0.9
   Summary files no longer use total cell count or error limit to match.
+Version 1.0.10
+  Print modes in sorted order in summary file.
