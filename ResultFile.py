@@ -189,7 +189,7 @@ class ResultFile():
                         mySection = error_it['section']
                         myPriority = cvc_globals.priorityMap[mySection]
                         break
-                if self.summaryRE.search(line_it):  # "^(INFO|WARNING)"
+                if self.summaryRE.search(line_it):  # "^(INFO|WARNING|Expected)"
                     myErrorData = mySection + " " + line_it.strip()
                     if not myErrorData in myErrorDict:
                         myErrorDict[myErrorData] = True
