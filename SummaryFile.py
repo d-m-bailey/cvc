@@ -1,6 +1,6 @@
 """ SummaryFile.py: Read and hold summary file data class.
 
-    Copyright 2106 D. Mitch Bailey  d.mitch.bailey at gmail dot com
+    Copyright 2106, 2017 D. Mitch Bailey  d.mitch.bailey at gmail dot com
 
     This file is part of check_cvc.
 
@@ -23,8 +23,9 @@
 from __future__ import division
 from __future__ import print_function
 
-from operator import itemgetter
+import re
 import os
+from operator import itemgetter
 
 import cvc_globals
 
@@ -41,6 +42,8 @@ class SummaryFile():
       [reference] level:section *:details 
         where level is one of ERROR, Warning, Check, ignore and section is from cvc_globals
     
+    Class variables:
+      countRE: regular expression to get error counts
     Instance variables:
       summaryFileName: Name of the summary file.
       summaryLine: List of non-blank lines in the summary file.
@@ -49,6 +52,8 @@ class SummaryFile():
       ExtractSummary: Return a sorted summary list for a specific mode.
         See ResultFile.CreateDisplayList for list record details
     """
+    countRE = re.compile("^(.*INFO: .*)([0-9]+)/([0-9]+)")
+    
     def __init__(self, theFileName):
         """Create SummaryFile object from summaryFile
 
@@ -114,13 +119,23 @@ class SummaryFile():
             else:
                 mySection = 'summary_error'
             if mySection in cvc_globals.priorityMap:
+                myData = myData.strip()
+                myMatch = self.countRE.match(myData)
+                if myMatch:
+                    if myMatch.group(2) == myMatch.group(3):  # all instance have errors
+                        myKeyData = myMatch.group(1) + "all"
+                    else:
+                        myKeyData = myMatch.group(1) + myMatch.group(2)
+                else:
+                    myKeyData = myData
                 mySummaryList.append( 
                     {'priority': cvc_globals.priorityMap[mySection], 
                      'reference': myReference, 
-                     'level': myLevel, 
-                     'data': myData.strip()})
+                     'level': myLevel,
+                     'keyData': myKeyData,
+                     'data': myData})
             else:
                 print("Unknown format ignored:", summary_it)
-        return sorted(mySummaryList, key=itemgetter('priority', 'data'))
+        return sorted(mySummaryList, key=itemgetter('priority', 'keyData'))
 
 #23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789

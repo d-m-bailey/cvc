@@ -43,6 +43,7 @@ class ResultFile():
       summaryRE: regular expression to identify error detail lines
       logFileRE: regular expression to get base log file name
       errorFileRE: regular expression to get error file name
+      countRE: regular expression to get error counts
     Instance variables:
       topCell: Name of the top ciruit.
       modeName: Name of the CVC mode.
@@ -72,6 +73,7 @@ class ResultFile():
     summaryRE = re.compile("^(INFO|WARNING|Expected)")
     logFileRE = re.compile("^CVC: Log output to (.*)")
     errorFileRE = re.compile("^CVC: Error output to (.*)")
+    countRE = re.compile("^(.*INFO: .*)([0-9]+)/([0-9]+)")
     
     def __init__(self, theLogFileName):
         """Create ResultFile object from log file and error file.
@@ -157,6 +159,7 @@ class ResultFile():
                             self.errorList.append(
                                 {'priority': error_it['priority'],
                                  'section': error_it['section'],
+                                 'keyData': myErrorData,
                                  'data': myErrorData})
                         break
         except IOError:
@@ -190,13 +193,22 @@ class ResultFile():
                     myErrorData = mySection + " " + line_it.strip()
                     if not myErrorData in myErrorDict:
                         myErrorDict[myErrorData] = True
+                        myMatch = self.countRE.match(myErrorData)
+                        if myMatch:
+                            if myMatch.group(2) == myMatch.group(3):  # all instance have errors
+                                myKeyData = myMatch.group(1) + "all"
+                            else:
+                                myKeyData = myMatch.group(1) + myMatch.group(2)
+                        else:
+                            myKeyData = myErrorData
                         self.errorList.append({'priority': myPriority,
                                                'section': mySection,
+                                               'keyData': myKeyData,
                                                'data': myErrorData})
         except IOError:
             print("ERROR: Problem reading " + self.errorFileName)
             raise IOError
-        self.errorList = sorted(self.errorList, key=itemgetter('priority', 'data'))
+        self.errorList = sorted(self.errorList, key=itemgetter('priority', 'keyData'))
                 
     def GetFirstError(self, theError):
         """Return the full hierarchy for the first error.
@@ -376,6 +388,7 @@ class ResultFile():
             if myOrder == "<":  # only in summary list
                 myRecord['priority'] = mySummaryItem['priority']
                 myRecord['reference'] = mySummaryItem['reference']
+                myRecord['keyData'] = myErrorItem['keyData']
                 myRecord['data'] = mySummaryItem['data']
                 myRecord['type'] = 'comment'
                 # For comments and unmatched, level data from summary item is ignored
@@ -386,12 +399,14 @@ class ResultFile():
             elif myOrder == ">":  # only in error list
                 myRecord['priority'] = myErrorItem['priority']
                 myRecord['reference'] = ''
+                myRecord['keyData'] = myErrorItem['keyData']
                 myRecord['data'] = myErrorItem['data']
                 myRecord['type'] = 'unchecked'
                 myErrorIndex += 1
             else:  # summary list and error list match
                 myRecord['priority'] = myErrorItem['priority']
                 myRecord['reference'] = mySummaryItem['reference']
+                myRecord['keyData'] = myErrorItem['keyData']
                 myRecord['data'] = myErrorItem['data']
                 myRecord['level'] = mySummaryItem['level']
                 myRecord['type'] = 'checked'
