@@ -29,9 +29,9 @@
 # Finally, upon confirmation, run batch job.
 
 # Define modes.
-MODES := mode1 mode2 mode3
+CVCRCFILES := $(wildcard cvcrc.*)
+MODES := $(CVCRCFILES:cvcrc.%=%)
 MAKEFILES := $(MODES:%=makefile.%)
-CVCRCFILES := $(MODES:%=cvcrc.%)
 
 # Set first and last goal.
 ifneq ($(MAKECMDGOALS),)
@@ -61,6 +61,7 @@ all :: $(MAKEFILES)
 .SECONDEXPANSION:
 $(MODES) :: makefile.$$@
 
+.PRECIOUS: $(CVCRCFILES)
 $(CVCRCFILES) :: $$(patsubst cvcrc.%,makefile.%,$$@)
 
 makefile.% :
@@ -73,6 +74,10 @@ makefile.% :
 	@echo '$$(CVC_REPORT_FILE) :: \
 		$$(CVC_NETLIST) $$(CVC_MODEL_FILE) $$(CVC_POWER_FILE) $(@:makefile.%=cvcrc.%)' >> $@
 	@echo "	@cvc $(@:makefile.%=cvcrc.%)" >> $@
+	@echo "" >> $@
+# Create cdl if necessary
+	@echo '$$(CVC_NETLIST) :: cdl' >> $@
+	@echo '	calibre_cvc $$(CVC_TOP) $(realpath cdl) $$(@)' >> $@
 	@echo "" >> $@
 # Check that report file ended correctly. If not, touch cvcrc file to rebuild.
 	@echo "check-$(@:makefile.%=%) ::" >> $@
