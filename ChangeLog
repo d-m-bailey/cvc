@@ -54,3 +54,4 @@
 161221_1201	"Changed unexpected mos diode errors to debug mode
 		Don't calculate resistance for Hi-Z nets
 		Display mismatched net error in detail"
+170216_1137	Changed cvcrc.default -> default.cvcrc

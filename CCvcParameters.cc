@@ -111,7 +111,7 @@ void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
 }
 
 void CCvcParameters::PrintDefaultEnvironment() {
-	string myDefaultCvcrcFilename = "cvcrc.default";
+	string myDefaultCvcrcFilename = "default.cvcrc";
 	ifstream myTemporaryCvcrc(myDefaultCvcrcFilename);
 	if ( myTemporaryCvcrc.good() ) return; // file exists, do nothing
 	ofstream myDefaultCvcrc(myDefaultCvcrcFilename);
