@@ -58,42 +58,46 @@ fi
 log="cdl.log"
 echo "log file: $log"
 
-if [[ ( $additionalRules -nt $rulefile ) \
-		|| ( $cellOverrides -nt $rulefile ) \
-		|| ( $DATA -nt $rulefile ) ]]; then
-	cat > $rulefile <<-svs_rule
-		LAYOUT PRIMARY $PRIMARY
-		LAYOUT PATH "$DATA"
-		SOURCE PRIMARY $PRIMARY
-		SOURCE PATH "$DATA"
-		LVS WRITE SOURCE NETLIST "$OUTPUT.0"
+cat > $rulefile <<-svs_rule
+	LAYOUT PRIMARY $PRIMARY
+	LAYOUT PATH "$DATA"
+	SOURCE PRIMARY $PRIMARY
+	SOURCE PATH "$DATA"
+	LVS WRITE SOURCE NETLIST "$OUTPUT.0"
 
-		LVS REPORT "lvs_cdl.rep"
-		LVS REPORT MAXIMUM 100
-		LVS REPORT OPTION F R S V
-		MASK RESULTS DATABASE none
+	LVS REPORT "lvs_cdl.rep"
+	LVS REPORT MAXIMUM 100
+	LVS REPORT OPTION F R S V
+	MASK RESULTS DATABASE none
 
-		SOURCE SYSTEM SPICE
-		LAYOUT SYSTEM SPICE
+	SOURCE SYSTEM SPICE
+	LAYOUT SYSTEM SPICE
 
-		LVS INJECT LOGIC NO
-	svs_rule
+	LVS INJECT LOGIC NO
+svs_rule
 
-	if [[ -f $additionalRules ]]; then
-		echo "Adding $additionalRules to cvc.svrf"
-		cat $additionalRules >> $rulefile
-	else
-		echo "Warning: missing $additionalRules"
-	fi
+if [[ -f $additionalRules ]]; then
+	echo "Adding $additionalRules to cvc.svrf"
+	cat $additionalRules >> $rulefile
+else
+	echo "Warning: missing $additionalRules"
+fi
+
+if [[ ( $DATA -nt expand.list ) || ( $cellOverrides -nt expand.list ) ]]; then
 	echo "Finding cells to expand using $cellOverrides ..."
 	if [[ -f $cellOverrides ]]; then
-		expand_cells.py $cellOverrides $PRIMARY $DATA >> $rulefile
+		expand_cells.py $cellOverrides $PRIMARY $DATA > expand.list
 	else
 		echo "Warning: missing $cellOverrides"
-		expand_cells.py /dev/null $PRIMARY $DATA >> $rulefile
+		expand_cells.py /dev/null $PRIMARY $DATA > expand.list
 	fi
 else
-	echo "Reusing cvc.svrf. Remove cvc.svrf to remake."
+	echo "Reusing expand.list"
+fi
+cat expand.list >> $rulefile
+
+if [[ -f $OUTPUT.0 ]]; then
+	mv $OUTPUT.0 $OUTPUT.0.bak
 fi
 
 echo "Performing SVS..."
