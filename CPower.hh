@@ -26,6 +26,7 @@
 
 #include "Cvc.hh"
 #include "CSet.hh"
+#include "CModel.hh"
 
 class CCvcDb;
 class CEventQueue;
@@ -81,7 +82,7 @@ public:
 	bool	printed = false;
 
 	CPower();
-	CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap);
+	CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModelListMap & theModelListMap);
 	CPower(CPower * thePower_p, netId_t theNetId);
 	CPower(netId_t theNetId);
 	CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, netId_t theMinNet, netId_t theMaxNet, string theCalculation);
@@ -121,8 +122,8 @@ public:
 
 class CPowerPtrMap : public unordered_map<string, CPower *> {
 public:
-	string CalculateExpectedValue(string theEquation, netStatus_t theType);
-	voltage_t CalculateVoltage(string theEquation, netStatus_t theType);
+	string CalculateExpectedValue(string theEquation, netStatus_t theType, CModelListMap & theModelListMap);
+	voltage_t CalculateVoltage(string theEquation, netStatus_t theType, CModelListMap & theModelListMap);
 };
 
 class CPowerPtrList : public list<CPower *> {

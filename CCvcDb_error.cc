@@ -1323,17 +1323,11 @@ void CCvcDb::CheckExpectedValues() {
 		myNetId = GetEquivalentNet((*power_ppit)->netId);
 		if ( ! (*power_ppit)->expectedSim.empty() ) {
 			mySimNet(simNet_v, myNetId);
-//			CheckResistorOverflow_(simNet_v[myNetId].finalResistance, myNetId, logFile);
-//			mySimNet = CVirtualNet(simNet_v, myNetId);
 			mySimNetId = mySimNet.finalNetId;
 			myExpectedValueFound = false;
 			myMinNet(minNet_v, myNetId);
-//				CheckResistorOverflow_(myMinNet[myNetId].finalResistance, myNetId, logFile);
-//				myMinNet = CVirtualNet(minNet_v, myNetId);
 			myMinNetId = myMinNet.finalNetId;
 			myMaxNet(maxNet_v, myNetId);
-//				CheckResistorOverflow_(myMaxNet[myNetId].finalResistance, myNetId, logFile);
-//				myMaxNet = CVirtualNet(maxNet_v, myNetId);
 			myMaxNetId = myMaxNet.finalNetId;
 			if ( (*power_ppit)->expectedSim == "open" ) {
 				if ( ( mySimNetId == UNKNOWN_NET || ! netVoltagePtr_v[mySimNetId] || netVoltagePtr_v[mySimNetId]->simVoltage == UNKNOWN_VOLTAGE ) &&
@@ -1342,10 +1336,11 @@ void CCvcDb::CheckExpectedValues() {
 					myExpectedValueFound = true;
 				}
 			} else if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId] && netVoltagePtr_v[mySimNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
-//				if ( IsValidVoltage_((*power_ppit)->expectedVoltage) && String_to_Voltage((*power_ppit)->expectedVoltage) == netVoltagePtr_v[mySimNetId]->simVoltage ) {} // voltage match
 				if ( String_to_Voltage((*power_ppit)->expectedSim) == netVoltagePtr_v[mySimNetId]->simVoltage ) { // voltage match
 					myExpectedValueFound = true;
-				} else if ( (*power_ppit)->expectedSim == netVoltagePtr_v[mySimNetId]->powerAlias ) { // name match
+				} else if ( (*power_ppit)->expectedSim == NetName(mySimNetId) ) { // name match
+					myExpectedValueFound = true;
+				} else if ( (*power_ppit)->expectedSim == netVoltagePtr_v[mySimNetId]->powerAlias ) { // alias match
 					myExpectedValueFound = true;
 				}
 			}
@@ -1361,7 +1356,7 @@ void CCvcDb::CheckExpectedValues() {
 						myPrintedReason = true;
 					}
 					if ( myMaxNetId != UNKNOWN_NET && netVoltagePtr_v[myMaxNetId] && netVoltagePtr_v[myMaxNetId]->maxVoltage != UNKNOWN_VOLTAGE ) {
-						errorFile << "(max)" << NetName(myMaxNetId) << "@" << PrintVoltage(netVoltagePtr_v[myMaxNetId]->minVoltage);
+						errorFile << "(max)" << NetName(myMaxNetId) << "@" << PrintVoltage(netVoltagePtr_v[myMaxNetId]->maxVoltage);
 						myPrintedReason = true;
 					}
 					if ( myPrintedReason ) {
@@ -1376,19 +1371,20 @@ void CCvcDb::CheckExpectedValues() {
 		}
 		if ( ! (*power_ppit)->expectedMin.empty() ) {
 			myMinNet(minNet_v, myNetId);
-//			CheckResistorOverflow_(minNet_v[myNetId].finalResistance, myNetId, logFile);
-//			myMinNet = CVirtualNet(minNet_v, myNetId);
 			myMinNetId = myMinNet.finalNetId;
 			myExpectedValueFound = false;
 			if ( (*power_ppit)->expectedMin == "open" ) {
+				// simVoltage in the following condition is correct. open voltages can have min/max voltages.
 				if ( myMinNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMinNetId] || netVoltagePtr_v[myMinNetId]->simVoltage == UNKNOWN_VOLTAGE ) { // open match
 					myExpectedValueFound = true;
 				}
+			// simVoltage in the following condition is correct. open voltages can have min/max voltages.
 			} else if ( myMinNetId != UNKNOWN_NET && netVoltagePtr_v[myMinNetId] && netVoltagePtr_v[myMinNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
-//				if ( IsValidVoltage_((*power_ppit)->expectedMin) && String_to_Voltage((*power_ppit)->expectedMin) == netVoltagePtr_v[myMinNetId]->minVoltage ) {} // voltage match
 				if ( String_to_Voltage((*power_ppit)->expectedMin) == netVoltagePtr_v[myMinNetId]->minVoltage ) { // voltage match
 					myExpectedValueFound = true;
-				} else if ( (*power_ppit)->expectedMin == netVoltagePtr_v[myMinNetId]->powerAlias ) { // name match
+				} else if ( (*power_ppit)->expectedMin == NetName(myMinNetId) ) { // name match
+					myExpectedValueFound = true;
+				} else if ( (*power_ppit)->expectedMin == netVoltagePtr_v[myMinNetId]->powerAlias ) { // alias match
 					myExpectedValueFound = true;
 				}
 			}
@@ -1404,19 +1400,20 @@ void CCvcDb::CheckExpectedValues() {
 		}
 		if ( ! (*power_ppit)->expectedMax.empty() ) {
 			myMaxNet(maxNet_v, myNetId);
-//			CheckResistorOverflow_(myMaxNet[myNetId].finalResistance, myNetId, logFile);
-//			myMaxNet = CVirtualNet(maxNet_v, myNetId);
 			myMaxNetId = myMaxNet.finalNetId;
 			myExpectedValueFound = false;
 			if ( (*power_ppit)->expectedMax == "open" ) {
+				// simVoltage in the following condition is correct. open voltages can have min/max voltages.
 				if ( myMaxNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMaxNetId] || netVoltagePtr_v[myMaxNetId]->simVoltage == UNKNOWN_VOLTAGE ) { // open match
 					myExpectedValueFound = true;
 				}
+			// simVoltage in the following condition is correct. open voltages can have min/max voltages.
 			} else if ( myMaxNetId != UNKNOWN_NET && netVoltagePtr_v[myMaxNetId] && netVoltagePtr_v[myMaxNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
-//				if ( IsValidVoltage_((*power_ppit)->expectedMax) && String_to_Voltage((*power_ppit)->expectedMax) == netVoltagePtr_v[myMaxNetId]->maxVoltage ) { }// voltage match
 				if ( String_to_Voltage((*power_ppit)->expectedMax) == netVoltagePtr_v[myMaxNetId]->maxVoltage ) { // voltage match
 					myExpectedValueFound = true;
-				} else if ( (*power_ppit)->expectedMax == netVoltagePtr_v[myMaxNetId]->powerAlias ) { // name match
+				} else if ( (*power_ppit)->expectedMax == NetName(myMaxNetId) ) { // name match
+					myExpectedValueFound = true;
+				} else if ( (*power_ppit)->expectedMax == netVoltagePtr_v[myMaxNetId]->powerAlias ) { // alias match
 					myExpectedValueFound = true;
 				}
 			}

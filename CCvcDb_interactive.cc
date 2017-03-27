@@ -591,6 +591,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				myInputStream >> myFileName;
 				cvcParameters.cvcModelFilename = myFileName;
 				if ( ( modelFileStatus = cvcParameters.LoadModels() ) == OK ) {
+					powerFileStatus = SetModePower();
 					modelFileStatus = SetDeviceModels();
 				}
 				if ( modelFileStatus == OK ) {
@@ -609,6 +610,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				cvcParameters.cvcPowerFilename = myFileName;
 				if ( ( powerFileStatus = cvcParameters.LoadPower() ) == OK ) {
 					powerFileStatus = SetModePower();
+					modelFileStatus = SetDeviceModels();
 				}
 			} else if ( myCommand == "setfuse" || myCommand == "sf" ) {
 				if ( theCurrentStage != 1 ) {
@@ -720,6 +722,12 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 					netId_t myNetId = FindNet(myCurrentInstanceId, RemoveCellNames(myName));
 					if ( myNetId != UNKNOWN_NET ) {
 						reportFile << "Net " << NetName(myNetId, myPrintSubcircuitNameFlag) << ": " << myNetId << endl;
+						if ( theCurrentStage >= STAGE_LINK ) {
+							reportFile << " connections: gate " << connectionCount_v[myNetId].gateCount;
+							reportFile << " source " << connectionCount_v[myNetId].sourceCount;
+							reportFile << " drain " << connectionCount_v[myNetId].drainCount;
+							reportFile << " bulk " << connectionCount_v[myNetId].bulkCount;
+						}
 						netId_t myEquivalentNetId = (isFixedEquivalentNet) ? GetEquivalentNet(myNetId) : myNetId;
 						string mySimpleName = NetName(myEquivalentNetId, PRINT_CIRCUIT_OFF);
 						if ( powerFileStatus == OK && netVoltagePtr_v[myEquivalentNetId] ) {

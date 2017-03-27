@@ -340,7 +340,7 @@ returnCode_t CCvcParameters::LoadPower() {
 					myMacroName = myMacroDefinition.substr(0, myMacroDefinition.find_first_of(" \t", 0));
 				}
 			} else {
-				CPower * myPowerPtr = new CPower(myInput, cvcPowerMacroPtrMap);
+				CPower * myPowerPtr = new CPower(myInput, cvcPowerMacroPtrMap, cvcModelListMap);
 				if ( ! (myPowerPtr->expectedMin.empty() && myPowerPtr->expectedSim.empty() && myPowerPtr->expectedMax.empty()) ) {
 					cvcExpectedLevelPtrList.push_back(myPowerPtr);
 				}
@@ -348,11 +348,14 @@ returnCode_t CCvcParameters::LoadPower() {
 					cvcPowerPtrList.push_back(myPowerPtr);
 				}
 				myMacroName = myPowerPtr->powerSignal;
+				if ( myMacroName[0] == '/' ) { // macros for top level nets that are not ports
+					myMacroName = myMacroName.substr(1);
+				}
 				myMacroDefinition = myInput;
 			}
 			if ( myMacroName.find_first_of("(<[}/*@+-") > myMacroName.length() && isalpha(myMacroName[0]) ) { // no special characters in macro names
 				if ( cvcPowerMacroPtrMap.count(myMacroName) > 0 ) throw EPowerError("duplicate macro name: " + myMacroName);
-				cvcPowerMacroPtrMap[myMacroName] = new CPower(myMacroDefinition, cvcPowerMacroPtrMap);
+				cvcPowerMacroPtrMap[myMacroName] = new CPower(myMacroDefinition, cvcPowerMacroPtrMap, cvcModelListMap);
 			}
 		}
 		catch (const EPowerError& myException) {

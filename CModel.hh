@@ -78,6 +78,7 @@ public:
 
 class CModelList : public list<CModel> {
 public:
+	int	Vth;
 };
 
 class CTextModelPtrMap : public unordered_map<text_t, CModel *> {

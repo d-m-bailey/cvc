@@ -54,7 +54,7 @@ CPower::CPower(CPower * thePower_p, netId_t theNetId) {
 	netId = theNetId;
 }
 
-CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap) {
+CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModelListMap & theModelListMap) {
 	// for power definitions
 	// Valid power definitions
 	// # ...	<- comment
@@ -102,12 +102,12 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap) {
 			myParameterName = thePowerString.substr(myStringBegin, myAtIndex - myStringBegin);
 			myParameterValue = thePowerString.substr(myAtIndex + 1, myStringEnd - (myAtIndex + 1));
 //			cout << "parameter '" << myParameterName << "' = '" << myParameterValue << "'" << endl;
-			if ( myParameterName == "min" ) minVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, MIN_POWER);
-			if ( myParameterName == "max" ) maxVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, MAX_POWER);
-			if ( myParameterName == "sim" ) simVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, SIM_POWER);
-			if ( myParameterName == "expectMin" ) expectedMin = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, MIN_POWER);
-			if ( myParameterName == "expectMax" ) expectedMax = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, MAX_POWER);
-			if ( myParameterName == "expectSim" ) expectedSim = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, SIM_POWER);
+			if ( myParameterName == "min" ) minVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, MIN_POWER, theModelListMap);
+			if ( myParameterName == "max" ) maxVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, MAX_POWER, theModelListMap);
+			if ( myParameterName == "sim" ) simVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, SIM_POWER, theModelListMap);
+			if ( myParameterName == "expectMin" ) expectedMin = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, MIN_POWER, theModelListMap);
+			if ( myParameterName == "expectMax" ) expectedMax = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, MAX_POWER, theModelListMap);
+			if ( myParameterName == "expectSim" ) expectedSim = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, SIM_POWER, theModelListMap);
 			if ( myParameterName == "permit" || myParameterName == "prohibit" ) {
 				family = myParameterValue;
 				relativeFriendly = ( myParameterName == "permit" ) ? true : false;
@@ -151,9 +151,9 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap) {
 				powerAlias = myParameterName;
 			} else { // formula
 //				type[FIXED_BIT] = true;
-				simVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterName, SIM_POWER);
-				maxVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterName, MAX_POWER);
-				minVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterName, MIN_POWER);
+				simVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterName, SIM_POWER, theModelListMap);
+				maxVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterName, MAX_POWER, theModelListMap);
+				minVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterName, MIN_POWER, theModelListMap);
 			}
 		}
 	}
@@ -884,16 +884,16 @@ string CPower::PowerDefinition() {
 	return myPowerDefinition;
 }
 
-string CPowerPtrMap::CalculateExpectedValue(string theEquation, netStatus_t theType) {
+string CPowerPtrMap::CalculateExpectedValue(string theEquation, netStatus_t theType, CModelListMap & theModelListMap) {
 	if ( theEquation == "open" ) return theEquation;
 	if ( this->count(theEquation) > 0 ) return theEquation;
 	if ( IsValidVoltage_(theEquation) ) return theEquation;
-	voltage_t myVoltage = CalculateVoltage(theEquation, theType);
+	voltage_t myVoltage = CalculateVoltage(theEquation, theType, theModelListMap);
 	return(to_string<float>(float(myVoltage) / VOLTAGE_SCALE));
 }
 
 
-voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType) {
+voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType, CModelListMap & theModelListMap) {
 	list<string> * myTokenList_p;
 	// exceptions cause memory leaks
 //	cout << "calculating " << theEquation << endl;
@@ -926,9 +926,16 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 			} else throw EPowerError("invalid operator: " + *token_pit);
 		} else if ( isalpha((*token_pit)[0]) ) { // power name
 			if ( this->count(*token_pit) > 0 ) { // power definition exists
-				if ( theType == MIN_POWER) myVoltageStack.push_back(float((*this)[*token_pit]->minVoltage) / VOLTAGE_SCALE);
-				if ( theType == SIM_POWER) myVoltageStack.push_back(float((*this)[*token_pit]->simVoltage) / VOLTAGE_SCALE);
-				if ( theType == MAX_POWER) myVoltageStack.push_back(float((*this)[*token_pit]->maxVoltage) / VOLTAGE_SCALE);
+				if ( theType == MIN_POWER ) myVoltageStack.push_back(float((*this)[*token_pit]->minVoltage) / VOLTAGE_SCALE);
+				if ( theType == SIM_POWER ) myVoltageStack.push_back(float((*this)[*token_pit]->simVoltage) / VOLTAGE_SCALE);
+				if ( theType == MAX_POWER ) myVoltageStack.push_back(float((*this)[*token_pit]->maxVoltage) / VOLTAGE_SCALE);
+			} else if ( (*token_pit).substr(0,4) == "Vth[" && (*token_pit).back() == ']' ){
+				string myModelName = "M " + (*token_pit).substr(4, (*token_pit).length() - 5);
+				if ( theModelListMap.count(myModelName) > 0 ) {
+					myVoltageStack.push_back(float(theModelListMap[myModelName].Vth) / VOLTAGE_SCALE);
+				} else {
+					throw EModelError("power definition error: " + theEquation + " unknown Vth for " + myModelName.substr(2));
+				}
 			} else {
 				throw EPowerError("undefined macro: " + *token_pit);
 			}

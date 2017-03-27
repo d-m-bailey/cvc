@@ -55,3 +55,9 @@
 		Don't calculate resistance for Hi-Z nets
 		Display mismatched net error in detail"
 170216_1137	Changed cvcrc.default -> default.cvcrc
+170327_2128	More info in interactive net displays #45
+		Fixed max voltage bug in expected open error display
+		Added Vth macro for power calculations #2, #34
+		Moved initial model/power file load to before netlist load #2, #34
+		Fixed expected value check to include actual net in addition to alias #56
+		Auto create macros for top level nets that aren't ports

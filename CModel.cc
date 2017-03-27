@@ -256,10 +256,15 @@ void CModelListMap::AddModel(string theParameterString) {
 		string myModelKey = myNewModel.baseType + " " + myNewModel.name;
 		try {
 			this->at(myModelKey).push_back(myNewModel);
+			if ( (*this)[myModelKey].Vth != myNewModel.Vth ) {
+				cout << "Vth mismatch for " << myNewModel.name << " ignored. ";
+				cout << (*this)[myModelKey].Vth << "!=" << myNewModel.Vth << endl;
+			}
 		}
 		catch (const out_of_range& oor_exception) {
 			(*this)[myModelKey] = *(new CModelList);
 			(*this)[myModelKey].push_back(myNewModel);
+			(*this)[myModelKey].Vth = myNewModel.Vth;
 		}
 	}
 	catch (EModelError & myError) {
@@ -349,10 +354,10 @@ returnCode_t CModelListMap::SetVoltageTolerances(teestream & theReportFile, CPow
 	for (CModelListMap::iterator modelList_pit = begin(); modelList_pit != end(); modelList_pit++) {
 		for (CModelList::iterator model_pit = modelList_pit->second.begin(); model_pit != modelList_pit->second.end(); model_pit++) {
 			try {
-				if ( ! model_pit->maxVbgDefinition.empty() ) model_pit->maxVbg = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbgDefinition, SIM_POWER);
-				if ( ! model_pit->maxVbsDefinition.empty() ) model_pit->maxVbs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbsDefinition, SIM_POWER);
-				if ( ! model_pit->maxVdsDefinition.empty() ) model_pit->maxVds = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVdsDefinition, SIM_POWER);
-				if ( ! model_pit->maxVgsDefinition.empty() ) model_pit->maxVgs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVgsDefinition, SIM_POWER);
+				if ( ! model_pit->maxVbgDefinition.empty() ) model_pit->maxVbg = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbgDefinition, SIM_POWER, (*this));
+				if ( ! model_pit->maxVbsDefinition.empty() ) model_pit->maxVbs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbsDefinition, SIM_POWER, (*this));
+				if ( ! model_pit->maxVdsDefinition.empty() ) model_pit->maxVds = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVdsDefinition, SIM_POWER, (*this));
+				if ( ! model_pit->maxVgsDefinition.empty() ) model_pit->maxVgs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVgsDefinition, SIM_POWER, (*this));
 			}
 			catch (EPowerError & myException) {
 				theReportFile << "ERROR: Model tolerance " << myException.what() << endl;

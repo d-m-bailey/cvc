@@ -67,6 +67,15 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		reportFile << "CVC: Start: " << CurrentTime() << endl;
 		TakeSnapshot(&lastSnapshot);
 		cvcParameters.PrintEnvironment(reportFile);
+///	Read model and power settings.
+		modelFileStatus = cvcParameters.LoadModels();
+		powerFileStatus = cvcParameters.LoadPower();
+		if ( modelFileStatus != OK || powerFileStatus != OK ) { // Catch syntax problems before reading netlist
+			if ( ! gInteractive_cvc ) {
+				reportFile << "ERROR: skipped due to problems in model/power files" << endl;
+				continue;
+			}
+		}
 
 /// Read netlist
 		if ( cvcParameters.IsSameDatabase() ) {
@@ -96,12 +105,11 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 				<< topCircuit_p->netCount << " nets, " << topCircuit_p->deviceCount
 				<< " devices." << endl;
 
-/// Stage 1) Read power and model settings
-		if ( ( powerFileStatus = cvcParameters.LoadPower() ) == OK ) {
+/// Stage 1) Set power and model
+		if ( powerFileStatus == OK ) {
 			powerFileStatus = SetModePower();
 		}
-		// read power file first because model file accesses power macros
-		if ( ( modelFileStatus = cvcParameters.LoadModels() ) == OK ) {
+		if ( modelFileStatus == OK ) {
 			modelFileStatus = SetDeviceModels();
 		}
 		if ( modelFileStatus == OK ) {
