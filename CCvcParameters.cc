@@ -91,6 +91,9 @@ void CCvcParameters::ResetEnvironment() {
 	cvcSOI = defaultSOI;
 	//! cvcSOI (Silicon-On-Insolator) is false for 4 terminal (D-G-S-B) mos.
 	//! To ignore the bulk connection and corresponding errors, set cvcSOI = true;
+	cvcSCRC = defaultSCRC;
+	//! cvcSCRC (Sub-threshhold Current Reduction Circuit)
+	//! When set, calculates expected SCRC levels after first propagation.
 }
 
 void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
@@ -107,6 +110,7 @@ void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
 	theOutputFile << "CVC_SEARCH_LIMIT = '" << cvcSearchLimit << "'" << endl;
 	theOutputFile << "CVC_LEAK_LIMIT = '" << cvcLeakLimit << "'" << endl;
 	theOutputFile << "CVC_SOI = '" << (( cvcSOI ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_SCRC = '" << (( cvcSCRC ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "End of parameters" << endl << endl;
 }
 
@@ -130,6 +134,7 @@ void CCvcParameters::PrintDefaultEnvironment() {
 	myDefaultCvcrc << "CVC_CIRCUIT_SEARCH_LIMIT = '" << cvcSearchLimit << "'" << endl;
 	myDefaultCvcrc << "CVC_LEAK_LIMIT = '" << cvcLeakLimit << "'" << endl;
 	myDefaultCvcrc << "CVC_SOI = '" << (( cvcSOI ) ? "true" : "false") << "'" << endl;
+	myDefaultCvcrc << "CVC_SCRC = '" << (( cvcSCRC ) ? "true" : "false") << "'" << endl;
 	myDefaultCvcrc.close();
 }
 
@@ -196,6 +201,8 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 			cvcSearchLimit = from_string<int>(myBuffer);
 		} else if ( myVariable == "CVC_SOI" ) {
 			cvcSOI = strcasecmp(myBuffer, "true") == 0;
+		} else if ( myVariable == "CVC_SCRC" ) {
+			cvcSCRC = strcasecmp(myBuffer, "true") == 0;
 		}
 	}
 	if ( ! theReportPrefix.empty() ) {

@@ -37,9 +37,9 @@
 		Don't copy family when using macros (powerAlias should be sufficient)
 		When checking relatives, check powerAliases too"
 161116_1254	Don't do mos diode calculations for HI-Z voltages
-161117_1005	"Reduce relative check time
-		Standardize empty string checks"
-161118_1233	"Copy family when using macros. (see 161116_1112)
+161117_1005	Reduce relative check time
+		Standardize empty string checks
+161118_1233	Copy family when using macros. (see 161116_1112)
 		Only print unexpected power for possible problems (lower min voltage, higher max voltage)
 		Display log file name at job end
 		Remove short file message (unused)
@@ -47,13 +47,13 @@
 		Remove net progress on min/max queues
 		Overwrite progress displays
 		Changed progess print count logic(except event queue)
-		Flush interactive output before new command"
+		Flush interactive output before new command
 161208_0148	Fixed bug that missed gate errors on tied output.
-161219_2241	"Fixed loop with no default voltage for calculated voltages
-		Switched line reset to print after instead of before"
-161221_1201	"Changed unexpected mos diode errors to debug mode
+161219_2241	Fixed loop with no default voltage for calculated voltages
+		Switched line reset to print after instead of before
+161221_1201	Changed unexpected mos diode errors to debug mode
 		Don't calculate resistance for Hi-Z nets
-		Display mismatched net error in detail"
+		Display mismatched net error in detail
 170216_1137	Changed cvcrc.default -> default.cvcrc
 170327_2128	More info in interactive net displays #45
 		Fixed max voltage bug in expected open error display
@@ -61,3 +61,8 @@
 		Moved initial model/power file load to before netlist load #2, #34
 		Fixed expected value check to include actual net in addition to alias #56
 		Auto create macros for top level nets that aren't ports
+170405_1431	Added SCRC handling
+		Added traceinverter command to interactive
+		Added findnet command to search for net matches to interactive 
+		Initialize instance pointers to NULL (for empty instances)
+		Print connection stats for equivalent nets

@@ -141,7 +141,7 @@ void CCvcDb::AssignGlobalIDs() {
 
 	instancePtr_v.clear();
 	instancePtr_v.reserve(topCircuit_p->subcircuitCount);
-	instancePtr_v.resize(topCircuit_p->subcircuitCount);
+	instancePtr_v.resize(topCircuit_p->subcircuitCount, NULL);
 	instancePtr_v[0] = new CInstance;
 	instancePtr_v[0]->AssignTopGlobalIDs(this, topCircuit_p);
 }
@@ -1057,4 +1057,42 @@ void CCvcDb::RemoveLock() {
 	lockFile = "";
 }
 
+void CCvcDb::SetSCRCPower() {
+	reportFile << "Setting SCRC power..." << endl;
+	size_t mySCRCSignalCount = 0;
+	for ( size_t net_it = 0; net_it < inverterNet_v.size(); net_it++ ) {
+		if ( inverterNet_v[net_it] != UNKNOWN_NET ) {
+			if ( IsSCRCNet(net_it) ) {
+				bool myExpectHighInput = ( netVoltagePtr_v[maxNet_v[net_it].finalNetId]->type[HIZ_BIT] );
+				netId_t myParentNet = inverterNet_v[net_it];
+				while ( inverterNet_v[myParentNet] != UNKNOWN_NET ) {
+					myParentNet = inverterNet_v[myParentNet];
+					myExpectHighInput = ! myExpectHighInput;
+				}
+				voltage_t myHighVoltage = netVoltagePtr_v[maxNet_v[myParentNet].finalNetId]->maxVoltage;
+				voltage_t myLowVoltage = netVoltagePtr_v[minNet_v[myParentNet].finalNetId]->minVoltage;
+				voltage_t myExpectedVoltage = myExpectHighInput ? myHighVoltage : myLowVoltage;
+				if ( IsSCRCNet(myParentNet) ) {
+					logFile << "Parent net is SCRC net -> ignored " << NetName(myParentNet) << endl;
+				} else if ( netVoltagePtr_v[myParentNet] == NULL ) {
+					logFile << "Setting net " << NetName(myParentNet) << " to " << PrintVoltage(myExpectedVoltage) << endl;
+					cvcParameters.cvcPowerPtrList.push_back(new CPower(myParentNet, (myExpectHighInput ? myHighVoltage : myLowVoltage)));
+					mySCRCSignalCount++;
+				} else if ( netVoltagePtr_v[myParentNet]->simVoltage != myExpectedVoltage ) {
+					logFile << NetName(net_it) << ": voltage not set for " << NetName(myParentNet) << " expected " << PrintVoltage(myExpectedVoltage);
+					logFile << " found " << PrintVoltage(netVoltagePtr_v[myParentNet]->simVoltage) << endl;
+				}
+			}
+		}
+	}
+	reportFile << "Set " << mySCRCSignalCount << " signals." << endl;
+}
+
+bool CCvcDb::IsSCRCNet(netId_t theNetId) {
+	CPower * myMinPower = netVoltagePtr_v[minNet_v[theNetId].finalNetId];
+	CPower * myMaxPower = netVoltagePtr_v[maxNet_v[theNetId].finalNetId];
+	if ( ! myMinPower || ! myMaxPower ) return false;
+	if ( myMinPower->type[HIZ_BIT] == myMaxPower->type[HIZ_BIT] ) return false;
+	return true;
+}
 

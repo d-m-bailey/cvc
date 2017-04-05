@@ -181,6 +181,20 @@ CPower::CPower(netId_t theNetId) {
 //	type[MAX_CALCULATED_BIT] = true;
 }
 
+CPower::CPower(netId_t theNetId, voltage_t theSimVoltage) {
+	// for set sim level to thePowerNetId
+	powerId = powerCount++;
+//	powerSignal = "theNetName"; // TODO: Check literal
+	simVoltage = theSimVoltage;
+//	maxVoltage = theNewVoltage;
+//	minVoltage = theNewVoltage;
+	netId = theNetId;
+//	type[RESISTOR_BIT] = true;
+//	type[MIN_CALCULATED_BIT] = true;
+	type[SIM_CALCULATED_BIT] = true;
+//	type[MAX_CALCULATED_BIT] = true;
+}
+
 CPower::CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, netId_t theMinNet, netId_t theMaxNet, string theCalculation) {
 	// for resistance calculations
 	powerId = powerCount++;

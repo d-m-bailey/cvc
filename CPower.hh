@@ -85,6 +85,7 @@ public:
 	CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModelListMap & theModelListMap);
 	CPower(CPower * thePower_p, netId_t theNetId);
 	CPower(netId_t theNetId);
+	CPower(netId_t theNetId, voltage_t theSimVoltage);
 	CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, netId_t theMinNet, netId_t theMaxNet, string theCalculation);
 //	CPower(voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage);
 	CPower(netId_t theNetId, voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage, netId_t theDefaultMinNet, netId_t theDefaultSimNet, netId_t theDefaultMaxNet);

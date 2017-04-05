@@ -1791,7 +1791,9 @@ void CCvcDb::SetTrivialMinMaxPower() {
 //				if ( netVoltagePtr_v[myGateNet] && netVoltagePtr_v[myGateNet]->simVoltage != UNKNOWN_VOLTAGE ) continue; // ignore fixed input
 //				if ( simNet_v[myGateNet].nextNetId != myGateNet) continue; // ignore logic input
 				if ( netVoltagePtr_v[myGroundNet] && netVoltagePtr_v[myPowerNet] && netVoltagePtr_v[myGroundNet]->type[POWER_BIT] && netVoltagePtr_v[myPowerNet]->type[POWER_BIT] ) {
-					if ( netVoltagePtr_v[myGroundNet]->type[HIZ_BIT] || netVoltagePtr_v[myPowerNet]->type[HIZ_BIT] ) continue; // ignore open power
+					if ( netVoltagePtr_v[myGroundNet]->minVoltage != netVoltagePtr_v[myGroundNet]->maxVoltage ) continue; // ignore variable power
+					if ( netVoltagePtr_v[myPowerNet]->minVoltage != netVoltagePtr_v[myPowerNet]->maxVoltage ) continue; // ignore variable power
+					// if ( netVoltagePtr_v[myGroundNet]->type[HIZ_BIT] || netVoltagePtr_v[myPowerNet]->type[HIZ_BIT] ) continue; // ignore open power
 					myMinPower = netVoltagePtr_v[myGroundNet]->minVoltage;
 					myMaxPower = netVoltagePtr_v[myPowerNet]->maxVoltage;
 					if ( myMaxPower != UNKNOWN_VOLTAGE && myMinPower < myMaxPower ) { // implies myMinPower != UNKNOWN_VOLTAGE

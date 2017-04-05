@@ -198,6 +198,8 @@ public:
 	returnCode_t SetModePower();
 	bool LockReport(bool theInteractiveFlag);
 	void RemoveLock();
+	void SetSCRCPower();
+	bool IsSCRCNet(netId_t theNetId);
 
 	// error
 	void PrintMinVoltageConflict(netId_t theTargetNetId, CConnection & theMinConnections, voltage_t theExpectedVoltage, float theLeakCurrent);
@@ -371,6 +373,8 @@ public:
 
 	// CCvcDb-interactive
 	void FindInstances(string theSubcircuit, bool thePrintCircuitFlag);
+	void FindNets(string theName, instanceId_t theInstanceId, bool thePrintCircuitFlag);
+	void ShowNets(size_t & theNetCount, regex & theSearchPattern, instanceId_t theInstanceId, bool thePrintCircuitFlag);
 	CCircuit * FindSubcircuit(string theSubcircuit);
 	void PrintSubcircuitCdl(string theSubcircuit);
 	instanceId_t FindHierarchy(instanceId_t theCurrentInstanceId, string theHierarchy, bool thePrintUnmatchFlag = true);

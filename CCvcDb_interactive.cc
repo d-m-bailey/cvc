@@ -121,6 +121,41 @@ void CCvcDb::FindInstances(string theSubcircuit, bool thePrintCircuitFlag) {
 	}
 }
 
+void CCvcDb::FindNets(string theName, instanceId_t theInstanceId, bool thePrintCircuitFlag) {
+      size_t myNetCount = 0;
+      cout << "Searching..." << endl;
+      regex mySearchPattern(FuzzyFilter(theName));
+      ShowNets(myNetCount, mySearchPattern, theInstanceId, thePrintCircuitFlag);
+      reportFile << "Displayed " << ((myNetCount < cvcParameters.cvcSearchLimit) ? myNetCount : cvcParameters.cvcSearchLimit);
+      reportFile << "/" << myNetCount << " matches." << endl;
+}
+
+void CCvcDb::ShowNets(size_t & theNetCount, regex & theSearchPattern, instanceId_t theInstanceId, bool thePrintCircuitFlag) {
+      // updates theNetCount
+      CInstance * myInstance_p = instancePtr_v[theInstanceId];
+      if ( instancePtr_v[theInstanceId] == NULL ) return;
+      if ( myInstance_p->master_p->subcircuitPtr_v.size() == 0 && myInstance_p->master_p->devicePtr_v.size() == 0 ) return;
+      // cout << myInstance_p->master_p->name << " count " << myInstance_p->master_p->localSignalIdMap.size() << endl; cout.flush();
+      for( auto signalMap_pit = myInstance_p->master_p->localSignalIdMap.begin(); signalMap_pit != myInstance_p->master_p->localSignalIdMap.end(); signalMap_pit++ ) {
+              if ( regex_match(signalMap_pit->first, theSearchPattern) ) {
+                      if ( theNetCount++ < cvcParameters.cvcSearchLimit ) {
+                              string myLowerNet = HierarchyName(theInstanceId, thePrintCircuitFlag) + "/" + signalMap_pit->first;
+                              netId_t myNetId = myInstance_p->localToGlobalNetId_v[signalMap_pit->second];
+                              netId_t myEquivalentNetId = (isFixedEquivalentNet) ? GetEquivalentNet(myNetId) : myNetId;
+                              string myTopNet = NetName(myEquivalentNetId, thePrintCircuitFlag);
+                              reportFile << myLowerNet;
+                              if ( myLowerNet != myTopNet ) {
+                                      reportFile << " -> " << myTopNet;
+                              }
+                              reportFile << endl;
+                      }
+              }
+      }
+      for( size_t instance_it = 0; instance_it != myInstance_p->master_p->subcircuitPtr_v.size(); instance_it++ ) {
+              ShowNets(theNetCount, theSearchPattern, myInstance_p->firstSubcircuitId + instance_it, thePrintCircuitFlag);
+      }
+}
+
 CCircuit * CCvcDb::FindSubcircuit(string theSubcircuit) {
 	try {
 		return(cvcCircuitList.FindCircuit(theSubcircuit));
@@ -466,6 +501,8 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 		myPrompt.str("");
 		if ( myCommandMode == "fs" ) {
 			myPrompt << "--> find subcircuit (^D to exit) ?> ";
+		} else if ( myCommandMode == "fn" ) {
+				myPrompt << "--> find net (^D to exit) ?> ";
 		} else if ( myCommandMode == "pd" ) {
 			myPrompt << "--> print device (^D to exit) ?> ";
 		} else if ( myCommandMode == "ph" ) {
@@ -536,6 +573,12 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				} else {
 					myCommandMode = "fs";
 				}
+			} else if ( myCommand == "findnet" || myCommand == "fn"  ) {
+				if ( myInputStream >> myName ) {
+				    FindNets(myName, myCurrentInstanceId, myPrintSubcircuitNameFlag);
+				} else {
+					myCommandMode = "fn";
+				}
 			} else if ( myCommand == "goto" || myCommand == "g" || myCommand == "cd" ) {
 				myHierarchy = "/"; // default returns to top
 				myInputStream >> myHierarchy;
@@ -554,7 +597,9 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				cout << "listnet|listdevice|listinstance<ln|ld|li> filter: list net|device|instances in current subcircuit filtered by filter" << endl;
 				cout << "getnet|getdevice|getinstance<gn|gd|gi> name: get net|device|instance number for name" << endl;
 				cout << "dumpfuse<df> filname: dump fuse to filename" << endl;
-				cout << "findsubcircuit<fs> subcircuit: list all instances of subcircuit" << endl;
+				cout << "traceinverter<ti> name: trace signal as inverter output for name" << endl;
+				cout << "findsubcircuit<fs> subcircuit: list all instances of subcircuit or if regex, subcircuits that match" << endl;
+				cout << "findnet<fn> net: list all nets that match in lower subcircuits." << endl;
 				cout << "printcdl<pc> subcircuit: print subcircuit as subcircuit.cdl" << endl;
 				cout << "printenvironment<pe>: print simulation environment" << endl;
 				cout << "togglename<n>: toggle subcircuit names" << endl;
@@ -716,19 +761,43 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				} else {
 					myCommandMode = "gd";
 				}
+			} else if ( myCommand == "traceinverter" || myCommand == "ti" ) {
+				myName = "";
+				myInputStream >> myName;
+				netId_t myNetId = FindNet(myCurrentInstanceId, RemoveCellNames(myName));
+				if ( myNetId != UNKNOWN_NET ) {
+					netId_t myEquivalentNetId = (isFixedEquivalentNet) ? GetEquivalentNet(myNetId) : myNetId;
+					if ( theCurrentStage >= STAGE_FIRST_MINMAX ) {
+						reportFile << NetName(myNetId, myPrintSubcircuitNameFlag) << endl;
+						if ( myNetId != myEquivalentNetId ) {
+							reportFile << " = " << NetName(myEquivalentNetId, myPrintSubcircuitNameFlag) << endl;
+						}
+						if ( inverterNet_v[myEquivalentNetId] != UNKNOWN_NET ) {
+							string myInversion = " - ";
+							for( netId_t net_it = inverterNet_v[myEquivalentNetId]; net_it != UNKNOWN_NET; net_it = inverterNet_v[net_it] ) {
+								reportFile << myInversion << NetName(net_it, myPrintSubcircuitNameFlag) << endl;
+								myInversion = ( myInversion == " - " ? " + " : " - " );
+							}
+						} else {
+							reportFile << " not an inverter output." << endl;
+						}
+					} else {
+						reportFile << " Inverters have not been processed. Try later stage." << endl;
+					}
+				}
 			} else if ( myCommand == "getnet" || myCommand == "gn" ) {
 				myName = "";
 				if ( myInputStream >> myName ) {
 					netId_t myNetId = FindNet(myCurrentInstanceId, RemoveCellNames(myName));
 					if ( myNetId != UNKNOWN_NET ) {
 						reportFile << "Net " << NetName(myNetId, myPrintSubcircuitNameFlag) << ": " << myNetId << endl;
-						if ( theCurrentStage >= STAGE_LINK ) {
-							reportFile << " connections: gate " << connectionCount_v[myNetId].gateCount;
-							reportFile << " source " << connectionCount_v[myNetId].sourceCount;
-							reportFile << " drain " << connectionCount_v[myNetId].drainCount;
-							reportFile << " bulk " << connectionCount_v[myNetId].bulkCount;
-						}
 						netId_t myEquivalentNetId = (isFixedEquivalentNet) ? GetEquivalentNet(myNetId) : myNetId;
+						if ( theCurrentStage >= STAGE_LINK ) {
+							reportFile << " connections: gate " << connectionCount_v[myEquivalentNetId].gateCount;
+							reportFile << " source " << connectionCount_v[myEquivalentNetId].sourceCount;
+							reportFile << " drain " << connectionCount_v[myEquivalentNetId].drainCount;
+							reportFile << " bulk " << connectionCount_v[myEquivalentNetId].bulkCount << endl;
+						}
 						string mySimpleName = NetName(myEquivalentNetId, PRINT_CIRCUIT_OFF);
 						if ( powerFileStatus == OK && netVoltagePtr_v[myEquivalentNetId] ) {
 							if ( netVoltagePtr_v[myEquivalentNetId]->powerSignal != mySimpleName ) {

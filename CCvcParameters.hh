@@ -41,6 +41,7 @@ public:
 	const float	defaultLeakLimit = 200e-6;
 	const int defaultSearchLimit = 100;
 	const bool defaultSOI = false;
+	const bool defaultSCRC = false;
 
 	string	cvcReportTitle;
 
@@ -65,6 +66,7 @@ public:
 	float	cvcLeakLimit = defaultLeakLimit;
 	size_t		cvcSearchLimit = defaultSearchLimit;
 	bool	cvcSOI = defaultSOI;
+	bool	cvcSCRC = defaultSCRC;
 
 	string	cvcLastTopBlock;
 	string	cvcLastNetlistFilename;

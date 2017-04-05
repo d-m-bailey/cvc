@@ -186,6 +186,9 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 
 /// Stage 6) Second sim propagation\n
 /// - LDD connection errors
+		if ( cvcParameters.cvcSCRC ) {
+			SetSCRCPower();
+		}
 		SetSimPower(ALL_NETS_AND_FUSE);
 		FindLDDErrors();
 		if ( gInteractive_cvc && --gContinueCount < 1
