@@ -28,6 +28,7 @@
 #include "CDevice.hh"
 #include "CCircuit.hh"
 #include "CPower.hh"
+#include <regex>
 
 CModel::CModel(string theParameterString) {
 // parameter string example
@@ -97,7 +98,7 @@ CModel::CModel(string theParameterString) {
 	}
 }
 
-bool CModel::ParameterMatch(CParameterMap& theParameterMap) {
+bool CModel::ParameterMatch(CParameterMap& theParameterMap, text_t theCellName) {
 	CNormalValue myCheckValue;
 
 	for (CConditionPtrList::iterator condition_ppit = conditionPtrList.begin(); condition_ppit != conditionPtrList.end(); condition_ppit++) {
@@ -110,6 +111,9 @@ bool CModel::ParameterMatch(CParameterMap& theParameterMap) {
 			throw EFatalError("missing parameter " + (*condition_ppit)->parameter + " in " + name);
 	//		exit(1);
 		}
+	}
+	if ( cellFilterRegex_p ) {
+		if ( ! regex_match(theCellName, *cellFilterRegex_p) ) return false;
 	}
 	return (true);
 }
@@ -135,8 +139,13 @@ void CModel::CreateConditions (string theConditionString) {
 		toupper_(myConditionName);
 //		trim_(myConditionRelation);
 //		trim_(myConditionValue);
-		conditionPtrList.push_back(new CCondition(myConditionName, myConditionRelation, myConditionValue));
-		myStringBegin = theConditionString.find_first_not_of(") \t", myStringEnd);
+		if ( myConditionName == "CELL" && myConditionRelation == "=" ) {
+			cellFilter = myConditionValue;
+			cellFilterRegex_p = new regex(FuzzyFilter(myConditionValue));
+		} else {
+			conditionPtrList.push_back(new CCondition(myConditionName, myConditionRelation, myConditionValue));
+		}
+		myStringBegin = theConditionString.find_first_not_of("), \t", myStringEnd);
 		myStringEnd = theConditionString.find_first_of(", )", myStringBegin);
 	}
 }
@@ -220,6 +229,9 @@ void CModel::Print(ostream & theLogFile, bool thePrintDeviceListFlag, string the
 		for (CConditionPtrList::iterator condition_ppit = conditionPtrList.begin(); condition_ppit != conditionPtrList.end(); condition_ppit++) {
 			(*condition_ppit)->Print(theLogFile, "same-line");
 		}
+		if ( cellFilter != "" ) {
+			theLogFile << " Cell filter>" << cellFilter;
+		}
 //		theLogFile << endl;
 	}
 	if ( ! diodeList.empty() ) {
@@ -278,7 +290,7 @@ void CModelListMap::AddModel(string theParameterString) {
 	}
 }
 
-CModel * CModelListMap::FindModel(text_t theParameterText, CTextResistanceMap& theParameterResistanceMap, ostream& theLogFile) {
+CModel * CModelListMap::FindModel(text_t theCellName, text_t theParameterText, CTextResistanceMap& theParameterResistanceMap, ostream& theLogFile) {
 	string	myParameterString = trim_(string(theParameterText));
 //	trim_(myParameterString);
 	string	myModelKey = myParameterString.substr(0, myParameterString.find(" ", 2));
@@ -292,7 +304,7 @@ CModel * CModelListMap::FindModel(text_t theParameterText, CTextResistanceMap& t
 		}
 		CModelList::iterator myLastModel = this->at(myModelKey).end();
 		for (CModelList::iterator model_pit = this->at(myModelKey).begin(); model_pit != myLastModel; model_pit++) {
-			if ( model_pit->ParameterMatch(myParameterMap) ) {
+			if ( model_pit->ParameterMatch(myParameterMap, theCellName) ) {
 //				myParameterMap.Print("");
 				switch (model_pit->type) {
 					case NMOS: case PMOS: case LDDN: case LDDP: {

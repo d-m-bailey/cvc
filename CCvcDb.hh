@@ -199,7 +199,9 @@ public:
 	bool LockReport(bool theInteractiveFlag);
 	void RemoveLock();
 	void SetSCRCPower();
+	void SetSCRCParentPower(netId_t theNetId, bool theExpectedHighInput, size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount);
 	bool IsSCRCNet(netId_t theNetId);
+	bool IsSCRCPower(CPower * thePower_p);
 
 	// error
 	void PrintMinVoltageConflict(netId_t theTargetNetId, CConnection & theMinConnections, voltage_t theExpectedVoltage, float theLeakCurrent);

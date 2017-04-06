@@ -66,3 +66,5 @@
 		Added findnet command to search for net matches to interactive 
 		Initialize instance pointers to NULL (for empty instances)
 		Print connection stats for equivalent nets
+170406_1251	SCRC fixes and power mos settings
+		Cell name filters for models

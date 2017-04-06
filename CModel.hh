@@ -32,6 +32,7 @@ class CPowerPtrMap;
 #include "CNormalValue.hh"
 #include "CCondition.hh"
 #include "CParameterMap.hh"
+#include <regex>
 
 class CModel {
 public:
@@ -59,6 +60,8 @@ public:
 	modelType_t type = UNKNOWN;
 
 	CConditionPtrList	conditionPtrList;
+	string cellFilter = "";
+	regex * cellFilterRegex_p = NULL;
 	list <pair<int, int>>	diodeList;
 
 	CDevice *	firstDevice_p = NULL;
@@ -68,7 +71,7 @@ public:
 	CModel(string theParameterString);
 	void Clear();
 	size_t ModelCount();
-	bool ParameterMatch(CParameterMap& theParameterMap);
+	bool ParameterMatch(CParameterMap& theParameterMap,text_t theCellName);
 	void CreateConditions(string theConditionString);
 	void SetDiodes (string theDiodeString);
 
@@ -92,7 +95,7 @@ public:
 
 	void Clear();
 	void AddModel(string theParameterString);
-	CModel * FindModel(text_t theParameterText, CTextResistanceMap & theParameterResistanceMap, ostream& theLogFile);
+	CModel * FindModel(text_t theCellName, text_t theParameterText, CTextResistanceMap & theParameterResistanceMap, ostream& theLogFile);
 	void Print(ostream & theLogFile, string theIndentation = "");
 	void DebugPrint(string theIndentation = "");
 	returnCode_t SetVoltageTolerances(teestream & theReportFile, CPowerPtrMap & thePowerMacroPtrMap);
