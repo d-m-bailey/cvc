@@ -133,7 +133,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		LinkDevices();
 		OverrideFuses();
 		reportFile << PrintProgress(&lastSnapshot) << endl;
-		DumpStatistics(parameterModelPtrMap, "parameter->model map", logFile);
+//		DumpStatistics(parameterModelPtrMap, "parameter->model map", logFile);
 		DumpStatistics(parameterResistanceMap, "parameter->resistance map", logFile);
 		DumpStatistics(cvcCircuitList.circuitNameMap, "text->circuit map", logFile);
 		DumpStatistics(cvcCircuitList.cdlText.fixedTextToAddressMap, "string->text map", logFile);

@@ -68,3 +68,11 @@
 		Print connection stats for equivalent nets
 170406_1251	SCRC fixes and power mos settings
 		Cell name filters for models
+170412_0102	Save calculated leak voltage (bug fix)
+		Print leak voltages in interactive
+		Print cell filters even when there are no conditions (bug fix)
+		Remove model lookup based on parameters (not possible with cell name filter)
+		Print overvoltage limit formula and calculation, along with model conditions for overvoltage errors
+		SCRC net calculation for power mos gate (bug fix)
+		Standardized and simplified power calculation printing
+

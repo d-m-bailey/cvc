@@ -146,7 +146,7 @@ public:
 
 	unsigned int	lineLength = 0;
 
-	CTextModelPtrMap parameterModelPtrMap;
+//	CTextModelPtrMap parameterModelPtrMap;
 	CTextResistanceMap	parameterResistanceMap;
 
 	voltage_t	minPower = MAX_VOLTAGE;
@@ -381,6 +381,7 @@ public:
 	void PrintSubcircuitCdl(string theSubcircuit);
 	instanceId_t FindHierarchy(instanceId_t theCurrentInstanceId, string theHierarchy, bool thePrintUnmatchFlag = true);
 	string ShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag);
+	string LeakShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag);
 	void PrintNets(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag, bool theIsValidPowerFlag);
 	void PrintDevices(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag, bool theIsValidModelFlag);
 	void PrintInstances(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag);

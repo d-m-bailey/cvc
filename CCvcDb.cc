@@ -2245,12 +2245,20 @@ void CCvcDb::ResetMinMaxPower() {
 			if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->simVoltage == UNKNOWN_VOLTAGE ) {
 				// remove min/max calculations if not equal to sim
 				if ( netVoltagePtr_v[net_it]->type[MIN_CALCULATED_BIT] ) {
+					if ( netVoltagePtr_v[net_it] == leakVoltagePtr_v[net_it] ) {  // Save old copy before erasing.
+						leakVoltagePtr_v[net_it] = new CPower();
+						*(leakVoltagePtr_v[net_it]) = *(netVoltagePtr_v[net_it]);
+					}
 					netVoltagePtr_v[net_it]->type[MIN_CALCULATED_BIT] = false;
 					netVoltagePtr_v[net_it]->defaultMinNet = UNKNOWN_NET;
 					netVoltagePtr_v[net_it]->minVoltage = UNKNOWN_VOLTAGE;
 //					myCalculatedVoltageFlag = true;
 				}
 				if ( netVoltagePtr_v[net_it]->type[MAX_CALCULATED_BIT] ) {
+					if ( netVoltagePtr_v[net_it] == leakVoltagePtr_v[net_it] ) {  // Save old copy before erasing.
+						leakVoltagePtr_v[net_it] = new CPower();
+						*(leakVoltagePtr_v[net_it]) = *(netVoltagePtr_v[net_it]);
+					}
 					netVoltagePtr_v[net_it]->type[MAX_CALCULATED_BIT] = false;
 					netVoltagePtr_v[net_it]->defaultMaxNet = UNKNOWN_NET;
 					netVoltagePtr_v[net_it]->maxVoltage = UNKNOWN_VOLTAGE;

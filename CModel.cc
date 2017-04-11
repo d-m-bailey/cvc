@@ -229,10 +229,10 @@ void CModel::Print(ostream & theLogFile, bool thePrintDeviceListFlag, string the
 		for (CConditionPtrList::iterator condition_ppit = conditionPtrList.begin(); condition_ppit != conditionPtrList.end(); condition_ppit++) {
 			(*condition_ppit)->Print(theLogFile, "same-line");
 		}
-		if ( cellFilter != "" ) {
-			theLogFile << " Cell filter>" << cellFilter;
-		}
 //		theLogFile << endl;
+	}
+	if ( cellFilter != "" ) {
+		theLogFile << " Cell filter>" << cellFilter;
 	}
 	if ( ! diodeList.empty() ) {
 		theLogFile << " Diodes>";
@@ -249,6 +249,20 @@ void CModel::Print(ostream & theLogFile, bool thePrintDeviceListFlag, string the
 		theLogFile << myIndentation << "DeviceList> end" << endl;
 	}
 //	cout << theIndentation << "Model> end" << endl;
+}
+
+string CModel::ConditionString() {
+	stringstream myConditionString;
+	if ( ! conditionPtrList.empty() ) {
+		myConditionString << " Conditions>";
+		for (CConditionPtrList::iterator condition_ppit = conditionPtrList.begin(); condition_ppit != conditionPtrList.end(); condition_ppit++) {
+			(*condition_ppit)->Print(myConditionString, "same-line");
+		}
+	}
+	if ( cellFilter != "" ) {
+		myConditionString << " Cell filter>" << cellFilter;
+	}
+	return(myConditionString.str());
 }
 
 void CModelListMap::Clear() {

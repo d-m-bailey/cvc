@@ -244,14 +244,36 @@ string CCvcDb::ShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag) {
 			myShortString += " calculated as";
 		} else {
 			myShortString += " defined as ";
-			if ( netVoltagePtr_v[theNetId]->definition != myStandardDefinition ) {
-				myShortString += netVoltagePtr_v[theNetId]->definition + " => ";
-			}
 		}
-		myShortString += netVoltagePtr_v[theNetId]->StandardDefinition();
+		if ( netVoltagePtr_v[theNetId]->definition != myStandardDefinition ) {
+			myShortString += netVoltagePtr_v[theNetId]->definition + " => ";
+		}
+		myShortString += myStandardDefinition;
 	}
 	return myShortString;
 }
+
+string CCvcDb::LeakShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag) {
+	string myShortString = "";
+	if ( isValidShortData && short_v[theNetId].first != UNKNOWN_NET && short_v[theNetId].first != theNetId ) {
+		myShortString += " shorted to " + NetName(short_v[theNetId].first, thePrintSubcircuitNameFlag) + short_v[theNetId].second;
+	}
+	if ( leakVoltagePtr_v[theNetId] ) {
+//      myShortString = netVoltagePtr_v[myNetId]->PowerDefinition();
+		string myStandardDefinition = leakVoltagePtr_v[theNetId]->StandardDefinition();
+		if ( IsCalculatedVoltage_(leakVoltagePtr_v[theNetId]) ) {
+				myShortString += " calculated as";
+		} else {
+				myShortString += " defined as ";
+		}
+		if ( leakVoltagePtr_v[theNetId]->definition != myStandardDefinition ) {
+				myShortString += leakVoltagePtr_v[theNetId]->definition + " => ";
+		}
+		myShortString += myStandardDefinition;
+	}
+return myShortString;
+}
+
 
 void CCvcDb::PrintNets(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag, bool theIsValidPowerFlag) {
 	CCircuit * myMasterCircuit_p = instancePtr_v[theCurrentInstanceId]->master_p;
@@ -799,6 +821,9 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 							reportFile << " bulk " << connectionCount_v[myEquivalentNetId].bulkCount << endl;
 						}
 						string mySimpleName = NetName(myEquivalentNetId, PRINT_CIRCUIT_OFF);
+						if ( leakVoltageSet && leakVoltagePtr_v[myEquivalentNetId] && leakVoltagePtr_v[myEquivalentNetId] != netVoltagePtr_v[myEquivalentNetId] ) {
+							reportFile << " leak definition " << leakVoltagePtr_v[myEquivalentNetId]->powerSignal << LeakShortString(myEquivalentNetId, myPrintSubcircuitNameFlag) << endl;
+						}
 						if ( powerFileStatus == OK && netVoltagePtr_v[myEquivalentNetId] ) {
 							if ( netVoltagePtr_v[myEquivalentNetId]->powerSignal != mySimpleName ) {
 								reportFile << " base definition " << netVoltagePtr_v[myEquivalentNetId]->powerSignal;

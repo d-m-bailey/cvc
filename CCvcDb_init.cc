@@ -492,8 +492,8 @@ void CCvcDb::LinkDevices() {
 returnCode_t CCvcDb::SetDeviceModels() {
 	set<string> myErrorModelSet;
 	reportFile << "CVC: Setting models ..." << endl;
-	parameterModelPtrMap.clear();
-	parameterModelPtrMap.reserve(cvcCircuitList.parameterText.Entries());
+//	parameterModelPtrMap.clear();
+//	parameterModelPtrMap.reserve(cvcCircuitList.parameterText.Entries());
 	parameterResistanceMap.clear();
 	parameterResistanceMap.reserve(cvcCircuitList.parameterText.Entries());
 	bool myModelError = false;
@@ -502,13 +502,13 @@ returnCode_t CCvcDb::SetDeviceModels() {
 		if ( myCircuit_p->linked ) {
 			for (deviceId_t device_it = 0; device_it < myCircuit_p->devicePtr_v.size(); device_it++) {
 				CDevice * myDevice_p = myCircuit_p->devicePtr_v[device_it];
-				try {
-					myDevice_p->model_p = parameterModelPtrMap.at(myDevice_p->parameters);
-				}
-				catch (const out_of_range& oor_exception) {
+//				try {
+//					myDevice_p->model_p = parameterModelPtrMap.at(myDevice_p->parameters);
+//				}
+//				catch (const out_of_range& oor_exception) {
 					myDevice_p->model_p = cvcParameters.cvcModelListMap.FindModel(myCircuit_p->name, myDevice_p->parameters, parameterResistanceMap, logFile);
-					parameterModelPtrMap[myDevice_p->parameters] = myDevice_p->model_p;
-				}
+//					parameterModelPtrMap[myDevice_p->parameters] = myDevice_p->model_p;
+//				}
 				if ( myDevice_p->model_p == NULL ) {
 					reportFile << "ERROR: No model match " << (*circuit_ppit)->name << "/" << myDevice_p->name;
 					reportFile << " " << myDevice_p->parameters << endl;
@@ -1076,7 +1076,7 @@ void CCvcDb::SetSCRCPower() {
 //					} else if ( IsPmos_(deviceType_v[device_it]) ) {
 //						myExpectHighInput = true;
 //					}
-					SetSCRCParentPower(myNetId, IsPmos_(deviceType_v[device_it]), mySCRCSignalCount, mySCRCIgnoreCount);
+					SetSCRCParentPower(gateNet_v[device_it], IsPmos_(deviceType_v[device_it]), mySCRCSignalCount, mySCRCIgnoreCount);
 
 //					netId_t myTargetNet = myNetId;
 //					while ( inverterNet_v[myTargetNet] != UNKNOWN_NET ) {
@@ -1089,7 +1089,7 @@ void CCvcDb::SetSCRCPower() {
 				if ( ! IsMos_(deviceType_v[device_it]) ) continue;  // Only process mosfets.
 				CPower * myDrainPower_p = netVoltagePtr_v[drainNet_v[device_it]];
 				if ( myDrainPower_p && myDrainPower_p->type[POWER_BIT] ) {  // Mosfet bridges power nets.
-					SetSCRCParentPower(myNetId, IsPmos_(deviceType_v[device_it]), mySCRCSignalCount, mySCRCIgnoreCount);
+					SetSCRCParentPower(gateNet_v[device_it], IsPmos_(deviceType_v[device_it]), mySCRCSignalCount, mySCRCIgnoreCount);
 				}
 			}
 		}

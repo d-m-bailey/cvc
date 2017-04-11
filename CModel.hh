@@ -76,7 +76,7 @@ public:
 	void SetDiodes (string theDiodeString);
 
 	void Print(ostream & theLogFile = cout, bool thePrintDeviceListFlag = false, string theIndentation = "");
-
+	string ConditionString();
 };
 
 class CModelList : public list<CModel> {
