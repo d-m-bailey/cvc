@@ -1,0 +1,32 @@
+AL: Analog leak. Always has leak current. Check
+AC: Analog circuit. Leak when operational. No leak when disabled. Max/min voltages may not be calculated correctly.
+OS: Output short. Short or possible short to defined output.
+RC: Resistor chain. Has leak current when active.
+LS: Level shifter
+PG: Power generation. Error has to do with power generation. normally ignore.
+PP: Propagation problem. Usually represents program problem.
+BV: Bias voltage override.
+AV: Analog Vth leak
+CP: Compare circuit. Analog circuit for comparing voltage.
+DT: Detect circuit.
+VT: Gate vs source error at Vth.
+PO: Pulse On. Only on during pulse
+NH: Never high
+NL: Never low
+RI: Reference input.
+L0: No leak
+FS: Forced short
+CV: Capacitor voltage mismatch
+VL: Check voltage level
+ON: Always on.
+AD: Forward biased analog diode
+DD: Double forward biased diode
+GV: Gate vs source error less than Vth
+GS: Gate vs source
+VC: Voltage clamp mos input
+LG: Overvoltage error based on Lg
+MO: Monitor circuit
+NE: Never exceed voltage limit. logic level ok.
+VS: Check overvoltage setting.
+FU: Fuse related.
+DC: Different capacitance in series capacitors
