@@ -75,4 +75,8 @@
 		Print overvoltage limit formula and calculation, along with model conditions for overvoltage errors
 		SCRC net calculation for power mos gate (bug fix)
 		Standardized and simplified power calculation printing
-
+170421_1414	Changed Vth flag in current calculation to reduce false leak errors(cludge)
+		Don't report shorts to open power if permitted relative
+		Changed SCRC processing to work with all logic nets, not just inverters
+		Errors generated when can't set SCRC net
+		SCRC nets should not be flagged as calculated

@@ -199,7 +199,9 @@ public:
 	bool LockReport(bool theInteractiveFlag);
 	void RemoveLock();
 	void SetSCRCPower();
-	void SetSCRCParentPower(netId_t theNetId, bool theExpectedHighInput, size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount);
+	void SetSCRCGatePower(netId_t theNetId, CDeviceIdVector & theFirstSource_v, CDeviceIdVector & theNextSource_v, CNetIdVector & theDrain_v,
+			size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount, bool theNoCheckFlag);
+	void SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool theExpectedHighInput, size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount);
 	bool IsSCRCNet(netId_t theNetId);
 	bool IsSCRCPower(CPower * thePower_p);
 

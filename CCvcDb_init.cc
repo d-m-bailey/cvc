@@ -1066,72 +1066,88 @@ void CCvcDb::SetSCRCPower() {
 		if ( IsSCRCPower(*power_ppit) ) {
 			// Check for power switches.
 			netId_t myNetId = (*power_ppit)->netId;
-			for ( auto device_it = firstDrain_v[myNetId]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
-				if ( ! IsMos_(deviceType_v[device_it]) ) continue;  // Only process mosfets.
-				CPower * mySourcePower_p = netVoltagePtr_v[sourceNet_v[device_it]];
-				if ( mySourcePower_p && mySourcePower_p->type[POWER_BIT] ) {  // Mosfet bridges power nets.
-//					bool myExpectHighInput;
-//					if ( IsNmos_(deviceType_v[device_it]) ) {
-//						myExpectHighInput = false;
-//					} else if ( IsPmos_(deviceType_v[device_it]) ) {
-//						myExpectHighInput = true;
-//					}
-					SetSCRCParentPower(gateNet_v[device_it], IsPmos_(deviceType_v[device_it]), mySCRCSignalCount, mySCRCIgnoreCount);
-
-//					netId_t myTargetNet = myNetId;
-//					while ( inverterNet_v[myTargetNet] != UNKNOWN_NET ) {
-//						myTargetNet = inverterNet_v[myTargetNet];
-//						myExpectHighInput = ! myExpectHighInput;
-//					}
-				}
-			}
-			for ( auto device_it = firstSource_v[myNetId]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {
-				if ( ! IsMos_(deviceType_v[device_it]) ) continue;  // Only process mosfets.
-				CPower * myDrainPower_p = netVoltagePtr_v[drainNet_v[device_it]];
-				if ( myDrainPower_p && myDrainPower_p->type[POWER_BIT] ) {  // Mosfet bridges power nets.
-					SetSCRCParentPower(gateNet_v[device_it], IsPmos_(deviceType_v[device_it]), mySCRCSignalCount, mySCRCIgnoreCount);
-				}
-			}
+			SetSCRCGatePower(myNetId, firstDrain_v, nextDrain_v, sourceNet_v, mySCRCSignalCount, mySCRCIgnoreCount, true);
+			SetSCRCGatePower(myNetId, firstSource_v, nextSource_v, drainNet_v, mySCRCSignalCount, mySCRCIgnoreCount, true);
+//			for ( auto device_it = firstDrain_v[myNetId]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
+//				if ( ! IsMos_(deviceType_v[device_it]) ) continue;  // Only process mosfets.
+//				CPower * mySourcePower_p = netVoltagePtr_v[sourceNet_v[device_it]];
+//				if ( mySourcePower_p && mySourcePower_p->type[POWER_BIT] ) {  // Mosfet bridges power nets.
+////					bool myExpectHighInput;
+////					if ( IsNmos_(deviceType_v[device_it]) ) {
+////						myExpectHighInput = false;
+////					} else if ( IsPmos_(deviceType_v[device_it]) ) {
+////						myExpectHighInput = true;
+////					}
+//					SetSCRCParentPower(gateNet_v[device_it], IsPmos_(deviceType_v[device_it]), mySCRCSignalCount, mySCRCIgnoreCount);
+//
+////					netId_t myTargetNet = myNetId;
+////					while ( inverterNet_v[myTargetNet] != UNKNOWN_NET ) {
+////						myTargetNet = inverterNet_v[myTargetNet];
+////						myExpectHighInput = ! myExpectHighInput;
+////					}
+//				}
+//			}
+//			for ( auto device_it = firstSource_v[myNetId]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {
+//				if ( ! IsMos_(deviceType_v[device_it]) ) continue;  // Only process mosfets.
+//				CPower * myDrainPower_p = netVoltagePtr_v[drainNet_v[device_it]];
+//				if ( myDrainPower_p && myDrainPower_p->type[POWER_BIT] ) {  // Mosfet bridges power nets.
+//					SetSCRCParentPower(gateNet_v[device_it], IsPmos_(deviceType_v[device_it]), mySCRCSignalCount, mySCRCIgnoreCount);
+//				}
+//			}
 		}
 	}
 	reportFile << "Set " << mySCRCSignalCount << " power mos signals." << " Ignored " << mySCRCIgnoreCount << " signals." << endl;
 	mySCRCSignalCount = 0;
 	mySCRCIgnoreCount = 0;
 	reportFile << "Setting SCRC internal nets..." << endl;
-	// Set expected levels for SCRC inverters.
-	for ( size_t net_it = 0; net_it < inverterNet_v.size(); net_it++ ) {
-		if ( inverterNet_v[net_it] != UNKNOWN_NET ) {
-			if ( IsSCRCNet(net_it) ) {
-				bool myExpectHighLevel = ( netVoltagePtr_v[minNet_v[net_it].finalNetId]->type[HIZ_BIT] );
-				SetSCRCParentPower(net_it, myExpectHighLevel, mySCRCSignalCount, mySCRCIgnoreCount);
-//				netId_t myParentNet = inverterNet_v[net_it];
-//				while ( inverterNet_v[myParentNet] != UNKNOWN_NET ) {
-//					myParentNet = inverterNet_v[myParentNet];
-//					myExpectHighInput = ! myExpectHighInput;
-//				}
-//				voltage_t myHighVoltage = netVoltagePtr_v[maxNet_v[myParentNet].finalNetId]->simVoltage;
-//				voltage_t myLowVoltage = netVoltagePtr_v[minNet_v[myParentNet].finalNetId]->simVoltage;
-//				voltage_t myExpectedVoltage = myExpectHighInput ? myHighVoltage : myLowVoltage;
-//				if ( myExpectedVoltage == UNKNOWN_VOLTAGE ) {
-//					logFile << NetName(myParentNet) << " not set to SCRC voltage." << endl;
-//					mySCRCIgnoreCount++;
-//				} else if ( netVoltagePtr_v[myParentNet] == NULL ) {
-//					logFile << "Setting net " << NetName(myParentNet) << " to " << PrintVoltage(myExpectedVoltage) << endl;
-//					netVoltagePtr_v[myParentNet] = new CPower(myParentNet, (myExpectHighInput ? myHighVoltage : myLowVoltage));
-//					cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[myParentNet]);
-//					mySCRCSignalCount++;
-//				} else if ( netVoltagePtr_v[myParentNet]->simVoltage != myExpectedVoltage ) {
-//					logFile << NetName(net_it) << ": voltage not set for " << NetName(myParentNet) << " expected " << PrintVoltage(myExpectedVoltage);
-//					logFile << " found " << PrintVoltage(netVoltagePtr_v[myParentNet]->simVoltage) << endl;
-//				}
-			}
+	// Set expected levels for SCRC logic.
+	for ( size_t net_it = 0; net_it < netCount; net_it++ ) {
+		if ( IsSCRCNet(net_it) ) {
+			SetSCRCGatePower(net_it, firstDrain_v, nextDrain_v, sourceNet_v, mySCRCSignalCount, mySCRCIgnoreCount, false);
+			SetSCRCGatePower(net_it, firstSource_v, nextSource_v, drainNet_v, mySCRCSignalCount, mySCRCIgnoreCount, false);
+//			if ( inverterNet_v[net_it] != UNKNOWN_NET ) {
+//
+//				bool myExpectHighLevel = ( netVoltagePtr_v[minNet_v[net_it].finalNetId]->type[HIZ_BIT] );
+//				SetSCRCParentPower(net_it, myExpectHighLevel, mySCRCSignalCount, mySCRCIgnoreCount);
+////				netId_t myParentNet = inverterNet_v[net_it];
+////				while ( inverterNet_v[myParentNet] != UNKNOWN_NET ) {
+////					myParentNet = inverterNet_v[myParentNet];
+////					myExpectHighInput = ! myExpectHighInput;
+////				}
+////				voltage_t myHighVoltage = netVoltagePtr_v[maxNet_v[myParentNet].finalNetId]->simVoltage;
+////				voltage_t myLowVoltage = netVoltagePtr_v[minNet_v[myParentNet].finalNetId]->simVoltage;
+////				voltage_t myExpectedVoltage = myExpectHighInput ? myHighVoltage : myLowVoltage;
+////				if ( myExpectedVoltage == UNKNOWN_VOLTAGE ) {
+////					logFile << NetName(myParentNet) << " not set to SCRC voltage." << endl;
+////					mySCRCIgnoreCount++;
+////				} else if ( netVoltagePtr_v[myParentNet] == NULL ) {
+////					logFile << "Setting net " << NetName(myParentNet) << " to " << PrintVoltage(myExpectedVoltage) << endl;
+////					netVoltagePtr_v[myParentNet] = new CPower(myParentNet, (myExpectHighInput ? myHighVoltage : myLowVoltage));
+////					cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[myParentNet]);
+////					mySCRCSignalCount++;
+////				} else if ( netVoltagePtr_v[myParentNet]->simVoltage != myExpectedVoltage ) {
+////					logFile << NetName(net_it) << ": voltage not set for " << NetName(myParentNet) << " expected " << PrintVoltage(myExpectedVoltage);
+////					logFile << " found " << PrintVoltage(netVoltagePtr_v[myParentNet]->simVoltage) << endl;
+////				}
+//			}
 		}
 	}
 	reportFile << "Set " << mySCRCSignalCount << " inverter signals." << " Ignored " << mySCRCIgnoreCount << " signals." << endl;
 }
 
-void CCvcDb::SetSCRCParentPower(netId_t theNetId, bool theExpectedHighInput, size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount) {
-	netId_t myParentNet = theNetId;
+void CCvcDb::SetSCRCGatePower(netId_t theNetId, CDeviceIdVector & theFirstSource_v, CDeviceIdVector & theNextSource_v, CNetIdVector & theDrain_v,
+		size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount, bool theNoCheckFlag) {
+	for ( auto device_it = theFirstSource_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theNextSource_v[device_it] ) {
+		if ( ! IsMos_(deviceType_v[device_it]) ) continue;  // Only process mosfets.
+		CPower * myDrainPower_p = netVoltagePtr_v[theDrain_v[device_it]];
+		if ( myDrainPower_p && myDrainPower_p->type[POWER_BIT] && (theNoCheckFlag || IsSCRCPower(myDrainPower_p)) ) {  // Mosfet bridges power nets.
+			SetSCRCParentPower(theNetId, device_it, IsPmos_(deviceType_v[device_it]), theSCRCSignalCount, theSCRCIgnoreCount);
+		}
+	}
+}
+
+void CCvcDb::SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool theExpectedHighInput, size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount) {
+	netId_t myParentNet = gateNet_v[theDeviceId];
 	while ( inverterNet_v[myParentNet] != UNKNOWN_NET ) {
 		myParentNet = inverterNet_v[myParentNet];
 		theExpectedHighInput = ! theExpectedHighInput;
@@ -1150,7 +1166,7 @@ void CCvcDb::SetSCRCParentPower(netId_t theNetId, bool theExpectedHighInput, siz
 		cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[myParentNet]);
 		theSCRCSignalCount++;
 	} else if ( netVoltagePtr_v[myParentNet]->simVoltage != myExpectedVoltage ) {
-		logFile << NetName(theNetId) << ": voltage not set for " << NetName(myParentNet) << " expected " << PrintVoltage(myExpectedVoltage);
+		logFile << "ERROR: " << NetName(theNetId) << ": voltage not set for " << NetName(myParentNet) << " expected " << PrintVoltage(myExpectedVoltage);
 		logFile << " found " << PrintVoltage(netVoltagePtr_v[myParentNet]->simVoltage) << endl;
 		theSCRCIgnoreCount++;
 	}
@@ -1162,6 +1178,8 @@ bool CCvcDb::IsSCRCNet(netId_t theNetId) {
 	CPower * myMaxPower = netVoltagePtr_v[maxNet_v[theNetId].finalNetId];
 	if ( ! myMinPower || ! myMaxPower ) return false;
 	if ( myMinPower->type[HIZ_BIT] == myMaxPower->type[HIZ_BIT] ) return false;
+	if ( myMinPower->type[MIN_CALCULATED_BIT] || myMaxPower->type[MAX_CALCULATED_BIT] ) return false;
+	if ( connectionCount_v[theNetId].sourceDrainType != NMOS_PMOS ) return false;
 	return true;
 }
 

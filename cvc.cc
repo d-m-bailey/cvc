@@ -43,7 +43,7 @@ HIST_ENTRY **gHistoryList; //!< readline history
 
 /// \name global status constants
 ///@{
-CStatus PMOS_ONLY, NMOS_ONLY, NO_TYPE;
+CStatus PMOS_ONLY, NMOS_ONLY, NMOS_PMOS, NO_TYPE;
 ///@}
 
 CCvcDb	* gCvcDb; //!< CVC global database
@@ -62,6 +62,8 @@ int main(int argc, const char * argv[]) {
 	// Set global status constants
 	PMOS_ONLY[PMOS] = true;
 	NMOS_ONLY[NMOS] = true;
+	NMOS_PMOS[NMOS] = true;
+	NMOS_PMOS[PMOS] = true;
 	NO_TYPE = 0;
 
 try {

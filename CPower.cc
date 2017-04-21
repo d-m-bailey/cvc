@@ -191,7 +191,7 @@ CPower::CPower(netId_t theNetId, voltage_t theSimVoltage) {
 	netId = theNetId;
 //	type[RESISTOR_BIT] = true;
 //	type[MIN_CALCULATED_BIT] = true;
-	type[SIM_CALCULATED_BIT] = true;
+//	type[SIM_CALCULATED_BIT] = true;
 //	type[MAX_CALCULATED_BIT] = true;
 }
 

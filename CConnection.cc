@@ -51,8 +51,12 @@ float CFullConnection::EstimatedMinimumCurrent() {
 		myMinResistance = masterMaxDrainNet.finalResistance;
 	}
 	if ( myMaxMinVoltage <= myMinMaxVoltage ) return (0);
-	bool myVthFlag = ((IsNmos_(device_p->model_p->type) && maxGateVoltage - myMinMaxVoltage == device_p->model_p->Vth) ||
-			(IsPmos_(device_p->model_p->type) && minGateVoltage - myMaxMinVoltage == device_p->model_p->Vth));
+	bool myVthFlag = ( ( IsNmos_(device_p->model_p->type) &&
+				( maxGateVoltage - myMinMaxVoltage == device_p->model_p->Vth ||
+						myMinMaxVoltage - myMaxMinVoltage <= device_p->model_p->Vth ) ) ||
+			( IsPmos_(device_p->model_p->type) &&
+				( minGateVoltage - myMaxMinVoltage == device_p->model_p->Vth ||
+						myMaxMinVoltage - myMinMaxVoltage >= device_p->model_p->Vth ) ) );
 	if ( IsNmos_(device_p->model_p->type) && maxGateVoltage != UNKNOWN_VOLTAGE ) {
 		myMaxMinVoltage = max(myMinMaxVoltage, min(maxGateVoltage, myMaxMinVoltage));
 	} else if ( IsPmos_(device_p->model_p->type) && minGateVoltage != UNKNOWN_VOLTAGE ) {
