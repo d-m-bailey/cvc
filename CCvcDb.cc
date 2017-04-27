@@ -52,6 +52,7 @@ void CCvcDb::ReportSimShort(deviceId_t theDeviceId, voltage_t theMainVoltage, vo
 //	if ( rint((myLeakCurrent - cvcParameters.cvcLeakLimit) * 1e6) / 1e6 > 0 ||
 //			! myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, true) ||
 //			(myConnections.simSourcePower_p->type[POWER_BIT] && myConnections.simDrainPower_p->type[POWER_BIT] && myMaxVoltage != myMinVoltage && ! myVthFlag) ) {
+	if ( abs(theMainVoltage - theShortVoltage) != abs(myConnections.device_p->model_p->Vth) ) {
 		errorCount[LEAK]++;
 		if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theDeviceId) < cvcParameters.cvcCircuitErrorLimit ) {
 			errorFile << "! Short Detected: " << PrintVoltage(myMaxVoltage) << " to " << PrintVoltage(myMinVoltage) << theCalculation << endl;
@@ -66,6 +67,7 @@ void CCvcDb::ReportSimShort(deviceId_t theDeviceId, voltage_t theMainVoltage, vo
 //			}
 			errorFile << endl;
 		}
+	}
 //	}
 }
 
@@ -757,12 +759,16 @@ string CCvcDb::AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDevice
 				}
 */
 			} else if ( IsNmos_(deviceType_v[theDeviceId]) ) {
-				if ( theConnections.gateVoltage - theConnections.device_p->model_p->Vth < theVoltage ) {
+				if ( myPower_p && myPower_p->type[HIZ_BIT] ) {
+					;  // Don't adjust open voltages
+				} else if ( theConnections.gateVoltage - theConnections.device_p->model_p->Vth < theVoltage ) {
 					myCalculation = " NMOS sim Vth drop " + PrintParameter(theConnections.gateVoltage, VOLTAGE_SCALE) + "-" + PrintParameter(theConnections.device_p->model_p->Vth, VOLTAGE_SCALE);
 					theVoltage = theConnections.gateVoltage - theConnections.device_p->model_p->Vth;
 				}
 			} else if ( IsPmos_(deviceType_v[theDeviceId]) ) {
-				if ( theConnections.gateVoltage - theConnections.device_p->model_p->Vth > theVoltage ) {
+				if ( myPower_p && myPower_p->type[HIZ_BIT] ) {
+					;  // Don't adjust open voltages
+				} else if ( theConnections.gateVoltage - theConnections.device_p->model_p->Vth > theVoltage ) {
 					myCalculation = " PMOS sim Vth drop " + PrintParameter(theConnections.gateVoltage, VOLTAGE_SCALE) + "+" + PrintParameter(-theConnections.device_p->model_p->Vth, VOLTAGE_SCALE);
 					theVoltage = theConnections.gateVoltage - theConnections.device_p->model_p->Vth;
 				}

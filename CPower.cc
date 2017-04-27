@@ -628,7 +628,7 @@ void CPowerPtrList::SetPowerLimits(voltage_t& theMaxPower, voltage_t& theMinPowe
 }
 
 /*
-CPower * CPowerPtrList::FindCalculatedPower(CEventQueue& theEventQueue, CPower * theCurrentPower_p, voltage_t theShortVoltage, netId_t theNetId, netId_t theDefaultNetId, CCvcDb * theCvdDb_p) {
+CPower * CPowerPtrList::FindCalculatedPower(CEventQueue& theEventQueue, CPower * theCurrentPower_p, voltage_t theShortVoltage, netId_t theNetId, netId_t theDefaultNetId, CCvcDb * theCvcDb_p) {
 	voltage_t myMinVoltage = UNKNOWN_VOLTAGE, mySimVoltage = UNKNOWN_VOLTAGE, myMaxVoltage = UNKNOWN_VOLTAGE;
 	netId_t myDefaultMinNet = UNKNOWN_NET, myDefaultSimNet = UNKNOWN_NET, myDefaultMaxNet = UNKNOWN_NET;
 	CPower * myPower_p;
@@ -660,10 +660,10 @@ CPower * CPowerPtrList::FindCalculatedPower(CEventQueue& theEventQueue, CPower *
 	string myKeyString = int_to_hex<voltage_t>(myMinVoltage) + int_to_hex<voltage_t>(mySimVoltage) + int_to_hex<voltage_t>(myMaxVoltage);
 	try {
 		if (myMinVoltage != UNKNOWN_VOLTAGE && mySimVoltage != UNKNOWN_VOLTAGE && myMinVoltage > mySimVoltage) {
-			cout << "WARNING: MIN > SIM " << myMinVoltage << " > " << mySimVoltage << " for " << theCvdDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
+			cout << "WARNING: MIN > SIM " << myMinVoltage << " > " << mySimVoltage << " for " << theCvcDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
 		}
 		if (myMaxVoltage != UNKNOWN_VOLTAGE && mySimVoltage != UNKNOWN_VOLTAGE && myMaxVoltage < mySimVoltage) {
-			cout << "WARNING: MAX < SIM " << myMaxVoltage << " < " << mySimVoltage << " for " << theCvdDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
+			cout << "WARNING: MAX < SIM " << myMaxVoltage << " < " << mySimVoltage << " for " << theCvcDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
 		}
 		myPower_p = calculatedPowerPtrMap.at(myKeyString);
 	}
@@ -676,15 +676,15 @@ CPower * CPowerPtrList::FindCalculatedPower(CEventQueue& theEventQueue, CPower *
 	return(myPower_p);
 }
 
-CPower * CPowerPtrList::FindCalculatedPower(voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage, netId_t theNetId, CCvcDb * theCvdDb_p) {
+CPower * CPowerPtrList::FindCalculatedPower(voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage, netId_t theNetId, CCvcDb * theCvcDb_p) {
 	CPower * myPower_p;
 	string myKeyString = int_to_hex<voltage_t>(theMinVoltage) + int_to_hex<voltage_t>(theSimVoltage) + int_to_hex<voltage_t>(theMaxVoltage);
 	try {
 		if (theMinVoltage != UNKNOWN_VOLTAGE && theSimVoltage != UNKNOWN_VOLTAGE && theMinVoltage > theSimVoltage) {
-			cout << "WARNING: MIN > SIM " << theMinVoltage << " > " << theSimVoltage << " for " << theCvdDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
+			cout << "WARNING: MIN > SIM " << theMinVoltage << " > " << theSimVoltage << " for " << theCvcDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
 		}
 		if (theMaxVoltage != UNKNOWN_VOLTAGE && theSimVoltage != UNKNOWN_VOLTAGE && theMaxVoltage < theSimVoltage) {
-			cout << "WARNING: MAX < SIM " << theMaxVoltage << " < " << theSimVoltage << " for " << theCvdDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
+			cout << "WARNING: MAX < SIM " << theMaxVoltage << " < " << theSimVoltage << " for " << theCvcDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
 		}
 		myPower_p = calculatedPowerPtrMap.at(myKeyString);
 	}
@@ -702,7 +702,7 @@ CPower * CPowerPtrList::FindCalculatedPower(voltage_t theMinVoltage, voltage_t t
 
 /*
 // Changed 2014/7/23 to always create new Power node
-CPower * CPowerPtrList::FindCalculatedPower(CEventQueue& theEventQueue, CPower * theCurrentPower_p, voltage_t theShortVoltage, netId_t theNetId, netId_t theDefaultNetId, CCvcDb * theCvdDb_p) {
+CPower * CPowerPtrList::FindCalculatedPower(CEventQueue& theEventQueue, CPower * theCurrentPower_p, voltage_t theShortVoltage, netId_t theNetId, netId_t theDefaultNetId, CCvcDb * theCvcDb_p) {
 	voltage_t myMinVoltage = UNKNOWN_VOLTAGE, mySimVoltage = UNKNOWN_VOLTAGE, myMaxVoltage = UNKNOWN_VOLTAGE;
 	netId_t myDefaultMinNet = UNKNOWN_NET, myDefaultSimNet = UNKNOWN_NET, myDefaultMaxNet = UNKNOWN_NET;
 	CPower * myPower_p;
@@ -719,7 +719,7 @@ CPower * CPowerPtrList::FindCalculatedPower(CEventQueue& theEventQueue, CPower *
 	} else {
 		myStatus[CALCULATED_BIT] = true;
 	}
-	if ( theCvdDb_p->netVoltagePtr_v[theDefaultNetId] && theCvdDb_p->netVoltagePtr_v[theDefaultNetId]->type[HIZ_BIT] ) {
+	if ( theCvcDb_p->netVoltagePtr_v[theDefaultNetId] && theCvcDb_p->netVoltagePtr_v[theDefaultNetId]->type[HIZ_BIT] ) {
 		myStatus[HIZ_BIT] = true;
 	}
 	if ( theEventQueue.queueType == MIN_QUEUE ) {
@@ -745,10 +745,10 @@ CPower * CPowerPtrList::FindCalculatedPower(CEventQueue& theEventQueue, CPower *
 //	string myKeyString = int_to_hex<voltage_t>(myMinVoltage) + int_to_hex<voltage_t>(mySimVoltage) + int_to_hex<voltage_t>(myMaxVoltage);
 //	try {
 		if (myMinVoltage != UNKNOWN_VOLTAGE && mySimVoltage != UNKNOWN_VOLTAGE && myMinVoltage > mySimVoltage) {
-			cout << "WARNING: MIN > SIM " << myMinVoltage << " > " << mySimVoltage << " for " << theCvdDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
+			cout << "WARNING: MIN > SIM " << myMinVoltage << " > " << mySimVoltage << " for " << theCvcDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
 		}
 		if (myMaxVoltage != UNKNOWN_VOLTAGE && mySimVoltage != UNKNOWN_VOLTAGE && myMaxVoltage < mySimVoltage) {
-			cout << "WARNING: MAX < SIM " << myMaxVoltage << " < " << mySimVoltage << " for " << theCvdDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
+			cout << "WARNING: MAX < SIM " << myMaxVoltage << " < " << mySimVoltage << " for " << theCvcDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
 		}
 //		myPower_p = calculatedPowerPtrMap.at(myKeyString);
 //	}
@@ -763,7 +763,7 @@ CPower * CPowerPtrList::FindCalculatedPower(CEventQueue& theEventQueue, CPower *
 }
 */
 
-void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theShortVoltage, netId_t theNetId, netId_t theDefaultNetId, CCvcDb * theCvdDb_p, string theCalculation) {
+void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theShortVoltage, netId_t theNetId, netId_t theDefaultNetId, CCvcDb * theCvcDb_p, string theCalculation) {
 	if ( (*this)[theNetId] == NULL ) {
 		(*this)[theNetId] = new CPower(theNetId);
 //		(*this)[theNetId]->type[CALCULATED_BIT] = true;
@@ -801,6 +801,13 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 		myPower_p->defaultMinNet = theDefaultNetId;
 		myPower_p->type[MIN_CALCULATED_BIT] = true;
 		myPower_p->active[MIN_ACTIVE] = true;
+//		if ( myPower_p->powerAlias == "" ) {
+//			CPower * myDefaultPower_p = myPower_p->GetBasePower(theCvcDb_p->netVoltagePtr_v, theCvcDb_p->minNet_v);
+//			if ( myDefaultPower_p ) {
+//				if (gDebug_cvc) cout << "Setting alias for " << theCvcDb_p->NetName(theNetId) << " = " << myDefaultPower_p->powerAlias << endl;
+//				myPower_p->powerAlias = myDefaultPower_p->powerAlias;
+//			}
+//		}
 	}
 	if ( theEventQueue.queueType == MAX_QUEUE ) {
 		if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) throw EDatabaseError("FindCalculatedPower: Max " + to_string<voltage_t>(myPower_p->maxVoltage));
@@ -808,18 +815,39 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 		myPower_p->defaultMaxNet = theDefaultNetId;
 		myPower_p->type[MAX_CALCULATED_BIT] = true;
 		myPower_p->active[MAX_ACTIVE] = true;
+//		if ( myPower_p->powerAlias == "" ) {
+//			CPower * myDefaultPower_p = myPower_p->GetBasePower(theCvcDb_p->netVoltagePtr_v, theCvcDb_p->maxNet_v);
+//			if ( myDefaultPower_p ) {
+//				if (gDebug_cvc) cout << "Setting alias for " << theCvcDb_p->NetName(theNetId) << " = " << myDefaultPower_p->powerAlias << endl;
+//				myPower_p->powerAlias = myDefaultPower_p->powerAlias;
+//			}
+//		}
 	}
 	if ( theEventQueue.queueType == SIM_QUEUE ) {
 		if ( myPower_p->simVoltage != UNKNOWN_VOLTAGE ) throw EDatabaseError("FindCalculatedPower: Sim " + to_string<voltage_t>(myPower_p->simVoltage));
 		myPower_p->simVoltage = theShortVoltage;
 		myPower_p->defaultSimNet = theDefaultNetId;
 		myPower_p->type[SIM_CALCULATED_BIT] = true;
+		if ( myPower_p->powerAlias == "" ) {
+			CPower * myDefaultPower_p;
+			if ( myPower_p->minVoltage == myPower_p->simVoltage ) {
+				myDefaultPower_p = myPower_p->GetBasePower(theCvcDb_p->netVoltagePtr_v, theCvcDb_p->minNet_v);
+			} else if ( myPower_p->maxVoltage == myPower_p->simVoltage ) {
+				myDefaultPower_p = myPower_p->GetBasePower(theCvcDb_p->netVoltagePtr_v, theCvcDb_p->maxNet_v);
+			} else {
+				myDefaultPower_p = myPower_p->GetBasePower(theCvcDb_p->netVoltagePtr_v, theCvcDb_p->simNet_v);
+			}
+			if ( myDefaultPower_p ) {
+				if (gDebug_cvc) cout << "Setting alias for " << theCvcDb_p->NetName(theNetId) << " = " << myDefaultPower_p->powerAlias << endl;
+				myPower_p->powerAlias = myDefaultPower_p->powerAlias;
+			}
+		}
 	}
 	if (myPower_p->minVoltage != UNKNOWN_VOLTAGE && myPower_p->simVoltage != UNKNOWN_VOLTAGE && myPower_p->minVoltage > myPower_p->simVoltage) {
-		cout << "WARNING: MIN > SIM " << myPower_p->minVoltage << " > " << myPower_p->simVoltage << " for " << theCvdDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
+		cout << "WARNING: MIN > SIM " << myPower_p->minVoltage << " > " << myPower_p->simVoltage << " for " << theCvcDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
 	}
 	if (myPower_p->maxVoltage != UNKNOWN_VOLTAGE && myPower_p->simVoltage != UNKNOWN_VOLTAGE && myPower_p->maxVoltage < myPower_p->simVoltage) {
-		cout << "WARNING: MAX < SIM " << myPower_p->maxVoltage << " < " << myPower_p->simVoltage << " for " << theCvdDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
+		cout << "WARNING: MAX < SIM " << myPower_p->maxVoltage << " < " << myPower_p->simVoltage << " for " << theCvcDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
 	}
 	if ( myPower_p->definition.empty() ) {
 		myPower_p->definition = theCalculation;
@@ -833,15 +861,15 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 }
 
 /*
-CPower * CPowerPtrList::FindCalculatedPower(voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage, netId_t theNetId, CCvcDb * theCvdDb_p) {
+CPower * CPowerPtrList::FindCalculatedPower(voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage, netId_t theNetId, CCvcDb * theCvcDb_p) {
 	CPower * myPower_p;
 //	string myKeyString = int_to_hex<voltage_t>(theMinVoltage) + int_to_hex<voltage_t>(theSimVoltage) + int_to_hex<voltage_t>(theMaxVoltage);
 //	try {
 		if (theMinVoltage != UNKNOWN_VOLTAGE && theSimVoltage != UNKNOWN_VOLTAGE && theMinVoltage > theSimVoltage) {
-			cout << "WARNING: MIN > SIM " << theMinVoltage << " > " << theSimVoltage << " for " << theCvdDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
+			cout << "WARNING: MIN > SIM " << theMinVoltage << " > " << theSimVoltage << " for " << theCvcDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
 		}
 		if (theMaxVoltage != UNKNOWN_VOLTAGE && theSimVoltage != UNKNOWN_VOLTAGE && theMaxVoltage < theSimVoltage) {
-			cout << "WARNING: MAX < SIM " << theMaxVoltage << " < " << theSimVoltage << " for " << theCvdDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
+			cout << "WARNING: MAX < SIM " << theMaxVoltage << " < " << theSimVoltage << " for " << theCvcDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
 		}
 //		myPower_p = calculatedPowerPtrMap.at(myKeyString);
 //	}

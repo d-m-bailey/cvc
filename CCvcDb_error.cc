@@ -1304,6 +1304,7 @@ void CCvcDb::FindFloatingInputErrors() {
 				for ( deviceId_t device_it = firstGate_v[net_it]; device_it != UNKNOWN_DEVICE; device_it = nextGate_v[device_it] ) {
 					MapDeviceNets(device_it, myConnections);
 					bool myHasLeakPath = HasLeakPath(myConnections);
+					deviceStatus_v[device_it][SIM_INACTIVE] = true;  // ignore all floating input gates
 					if ( myHasLeakPath || connectionCount_v[net_it].SourceDrainCount() == 0 ) { // physically floating gates too
 //						CCircuit * myParent_p = instancePtr_v[deviceParent_v[device_it]]->master_p;
 						errorCount[HIZ_INPUT]++;
@@ -1312,6 +1313,28 @@ void CCvcDb::FindFloatingInputErrors() {
 							PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
 							errorFile << endl;
 						}
+					}
+				}
+			}
+		}
+	}
+	for (netId_t net_it = 0; net_it < netCount; net_it++) {  // second pass to catch floating nets caused by floating nets
+		if ( connectionCount_v[net_it].gateCount > 0 ) { // skips subordinate nets. only equivalent master nets have counts
+			if ( firstGate_v[net_it] == UNKNOWN_DEVICE ) continue;
+			if ( SimVoltage(net_it) != UNKNOWN_VOLTAGE || (netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->type[INPUT_BIT]) ) continue;
+			if ( HasActiveConnections(net_it) ) continue;
+			MapDeviceNets(firstGate_v[net_it], myConnections);
+			if ( IsFloatingGate(myConnections) ) continue;  // Already processed previously
+			for ( deviceId_t device_it = firstGate_v[net_it]; device_it != UNKNOWN_DEVICE; device_it = nextGate_v[device_it] ) {
+				MapDeviceNets(device_it, myConnections);
+				bool myHasLeakPath = HasLeakPath(myConnections);
+				if ( myHasLeakPath ) {
+	//						CCircuit * myParent_p = instancePtr_v[deviceParent_v[device_it]]->master_p;
+					errorCount[HIZ_INPUT]++;
+					if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
+						errorFile << "* Secondary HI-Z error" << endl;
+						PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
+						errorFile << endl;
 					}
 				}
 			}

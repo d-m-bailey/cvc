@@ -843,6 +843,26 @@ bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
 			 return ! theConnections.maxDrainPower_p->IsRelatedPower(theConnections.minSourcePower_p, netVoltagePtr_v, maxNet_v, minNet_v, false);
 		 }
 	 }
+	 if ( theConnections.simSourcePower_p && theConnections.simSourcePower_p->defaultSimNet == theConnections.drainId ) return false;  // ignore leaks to own calculated voltage
+	 if ( theConnections.simDrainPower_p && theConnections.simDrainPower_p->defaultSimNet == theConnections.sourceId ) return false;  // ignore leaks to own calculated voltage
+	 netId_t myMinSourceNet = minNet_v[theConnections.sourceId].nextNetId;
+	 netId_t myMaxSourceNet = maxNet_v[theConnections.sourceId].nextNetId;
+	 netId_t myMinDrainNet = minNet_v[theConnections.drainId].nextNetId;
+	 netId_t myMaxDrainNet = maxNet_v[theConnections.drainId].nextNetId;
+	 CPower * myPower_p = netVoltagePtr_v[theConnections.sourceId];
+	 if ( myPower_p ) {
+		 if ( myPower_p->type[MIN_CALCULATED_BIT] && myPower_p->defaultMinNet != UNKNOWN_NET ) myMinSourceNet = myPower_p->defaultMinNet;
+		 if ( myPower_p->type[MAX_CALCULATED_BIT] && myPower_p->defaultMaxNet != UNKNOWN_NET ) myMaxSourceNet = myPower_p->defaultMaxNet;
+	 }
+	 myPower_p = netVoltagePtr_v[theConnections.drainId];
+	 if ( myPower_p ) {
+		 if ( myPower_p->type[MIN_CALCULATED_BIT] && myPower_p->defaultMinNet != UNKNOWN_NET ) myMinDrainNet = myPower_p->defaultMinNet;
+		 if ( myPower_p->type[MAX_CALCULATED_BIT] && myPower_p->defaultMaxNet != UNKNOWN_NET ) myMaxDrainNet = myPower_p->defaultMaxNet;
+	 }
+	 if ( myMinSourceNet == theConnections.drainId && myMaxSourceNet == theConnections.drainId) return false;  // min/max path same with no gate connections
+//			 && connectionCount_v[theConnections.sourceId].gateCount == 0) return false;  // min/max path same with no gate connections
+	 if ( myMinDrainNet == theConnections.sourceId && myMaxDrainNet == theConnections.sourceId) return false;  // min/max path same with no gate connections
+//			 && connectionCount_v[theConnections.drainId].gateCount == 0) return false;  // min/max path same with no gate connections
 	 if ( theConnections.minSourceVoltage != UNKNOWN_VOLTAGE && theConnections.maxDrainVoltage != UNKNOWN_VOLTAGE && theConnections.minSourceVoltage < theConnections.maxDrainVoltage ) return true;
 	 if ( theConnections.maxSourceVoltage != UNKNOWN_VOLTAGE && theConnections.minDrainVoltage != UNKNOWN_VOLTAGE && theConnections.maxSourceVoltage > theConnections.minDrainVoltage ) return true;
 	 return false;
@@ -959,4 +979,14 @@ bool CCvcDb::IsDerivedFromFloating(CVirtualNetVector& theVirtualNet_v, netId_t t
 	assert(theNetId == GetEquivalentNet(theNetId));
 	myVirtualNet(theVirtualNet_v, theNetId);
 	return( netVoltagePtr_v[myVirtualNet.finalNetId] && netVoltagePtr_v[myVirtualNet.finalNetId]->type[HIZ_BIT] );
+}
+
+bool CCvcDb::HasActiveConnections(netId_t theNetId) {
+	for ( deviceId_t device_it = firstSource_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {
+		if ( ! deviceStatus_v[device_it][SIM_INACTIVE] ) return true;
+	}
+	for ( deviceId_t device_it = firstDrain_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
+		if ( ! deviceStatus_v[device_it][SIM_INACTIVE] ) return true;
+	}
+	return false;
 }

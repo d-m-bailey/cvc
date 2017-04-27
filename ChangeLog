@@ -80,3 +80,16 @@
 		Changed SCRC processing to work with all logic nets, not just inverters
 		Errors generated when can't set SCRC net
 		SCRC nets should not be flagged as calculated
+170427_1824	Don't show shorts at vth difference with clamped nets
+		Don't adjust open voltages in simulation propagation
+		Count attempts and not actual changes for SCRC nodes
+		Renamed IsSCRCNet -> IsSCRCLogicNet
+		Added function to count active connections
+		Added secondary Hi-Z gate check to detect floating nets due to floating gate input
+		In SCRC mode, set input for all open power mos (not just SCRC power mos)
+		In SCRC mode, if can not set gate net, set the current net
+		When setting power for power mos gates, ignore relatives
+		When checking for SCRC logic, make sure one of the power nets is SCRC
+		When checking for leak paths, ignore paths to calculated voltages caused by the device
+		Corrected spelling CvdDb_p -> CvcDb_p
+		When setting calculated sim voltage, grab alias from min/max default

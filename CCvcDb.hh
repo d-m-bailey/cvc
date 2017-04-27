@@ -199,10 +199,10 @@ public:
 	bool LockReport(bool theInteractiveFlag);
 	void RemoveLock();
 	void SetSCRCPower();
-	void SetSCRCGatePower(netId_t theNetId, CDeviceIdVector & theFirstSource_v, CDeviceIdVector & theNextSource_v, CNetIdVector & theDrain_v,
+	size_t SetSCRCGatePower(netId_t theNetId, CDeviceIdVector & theFirstSource_v, CDeviceIdVector & theNextSource_v, CNetIdVector & theDrain_v,
 			size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount, bool theNoCheckFlag);
 	void SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool theExpectedHighInput, size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount);
-	bool IsSCRCNet(netId_t theNetId);
+	bool IsSCRCLogicNet(netId_t theNetId);
 	bool IsSCRCPower(CPower * thePower_p);
 
 	// error
@@ -321,6 +321,8 @@ public:
 	size_t IncrementDeviceError(deviceId_t theDeviceId);
 	eventKey_t SimKey(eventKey_t theCurrentKey, resistance_t theIncrement);
 	bool IsDerivedFromFloating(CVirtualNetVector& theVirtualNet_v, netId_t theNetId);
+	bool HasActiveConnections(netId_t theNetId);
+
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);
