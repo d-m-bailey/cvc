@@ -30,3 +30,16 @@ NE: Never exceed voltage limit. logic level ok.
 VS: Check overvoltage setting.
 FU: Fuse related.
 DC: Different capacitance in series capacitors
+OL: Leak when off
+PR: Program problem
+CM: Cascode mos
+MD: Mos diode unexpected voltage ok
+NP: Not Possible. The error conditions will never occur.
+SC: SCRC error
+SP: SCRC power error
+AO: Alway off
+PL: Possible leak
+PU: Pull up
+PD: Pull down
+LC: Logic conflict
+CS: Check control signals
