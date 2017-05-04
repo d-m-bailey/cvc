@@ -30,6 +30,7 @@
 #include <cstring>
 #include <stdexcept>
 #include <malloc.h>
+#include <unordered_map>
 
 #ifndef INT64_MAX
 #define INT64_MAX INT32_MAX
@@ -84,7 +85,26 @@ typedef int32_t eventKey_t;
 template <typename T> T from_string(std::string const & s) {
     std::stringstream ss(s);
     T result;
+    static const std::unordered_map<std::string, float> SISuffix = {
+       {"a", 1e-18},
+       {"f", 1e-15},
+       {"p", 1e-12},
+       {"n", 1e-9},
+       {"u", 1e-6},
+       {"m", 1e-3},
+       {"K", 1e3},
+       {"M", 1e6},
+       {"G", 1e9},
+       {"T", 1e12},
+       {"P", 1e15},
+       {"E", 1e18}
+    };
+    std::string mySuffix = "";
     ss >> result;    // TODO handle errors
+    ss >> mySuffix;
+    if ( mySuffix != "" ) {
+    	result = result * SISuffix.at(mySuffix);
+    }
     return result;
 }
 

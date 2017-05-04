@@ -93,3 +93,7 @@
 		When checking for leak paths, ignore paths to calculated voltages caused by the device
 		Corrected spelling CvdDb_p -> CvcDb_p
 		When setting calculated sim voltage, grab alias from min/max default
+170504_1251	Print resistor calculations to log only
+		Equations allow SI notation
+		Fixed calculated bias printing
+

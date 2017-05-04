@@ -34,7 +34,7 @@
 ///@{
 char vv_sign;
 int vv_integer, vv_fraction;
-char vv_trailer[2];
+char vv_suffix[2], vv_trailer[2];
 ///@}
 
 bool gDebug_cvc = false;

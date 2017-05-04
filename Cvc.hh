@@ -24,7 +24,7 @@
 #ifndef CVC_H_
 #define CVC_H_
 
-#define CVC_VERSION "0.8.0-170427_1824"
+#define CVC_VERSION "0.8.0-170504_1251"
 
 extern bool gDebug_cvc;
 extern bool gInteractive_cvc;
@@ -32,7 +32,7 @@ extern bool gInteractive_cvc;
 // valid voltage globals
 extern char vv_sign;
 extern int vv_integer, vv_fraction;
-extern char vv_trailer[];
+extern char vv_suffix[], vv_trailer[];
 
 #include "CvcTypes.hh"
 

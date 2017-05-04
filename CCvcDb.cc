@@ -1638,7 +1638,7 @@ void CCvcDb::CalculateResistorVoltages() {
 		if ( (*power_ppit)->type[RESISTOR_BIT] && IsCalculatedVoltage_((*power_ppit)) && ! (*power_ppit)->printed ) {
 			netId_t myPowerNet = (*power_ppit)->netId;
 			if ( netVoltagePtr_v[myPowerNet]->simVoltage == UNKNOWN_VOLTAGE ) {
-				reportFile << "WARNING: Could not calculate explicit resistor voltage for " << NetName((*power_ppit)->netId, PRINT_CIRCUIT_ON) << endl;
+				logFile << "WARNING: Could not calculate explicit resistor voltage for " << NetName((*power_ppit)->netId, PRINT_CIRCUIT_ON) << endl;
 			} else {
 				if ( netVoltagePtr_v[myPowerNet] != *power_ppit ) continue; // skip unused power nodes
 				netId_t myNextNet = minNet_v[myPowerNet].nextNetId;
@@ -1647,14 +1647,14 @@ void CCvcDb::CalculateResistorVoltages() {
 					myNextNet = minNet_v[myNextNet].nextNetId;
 				}
 				do {
-					reportFile << "INFO: Resistor voltage calculation " << calculatedResistanceInfo_v[myPowerNet] << endl;
+					logFile << "INFO: Resistor voltage calculation " << calculatedResistanceInfo_v[myPowerNet] << endl;
 					netVoltagePtr_v[myPowerNet]->printed = true;
 					myLastPowerNet = myPowerNet;
 					myPowerNet = maxNet_v[myPowerNet].nextNetId;
 					minNet_v[myLastPowerNet].nextNetId = maxNet_v[myLastPowerNet].nextNetId = myLastPowerNet;
 					minNet_v[myLastPowerNet].finalNetId = maxNet_v[myLastPowerNet].finalNetId = myLastPowerNet;
 				} while ( netVoltagePtr_v[myPowerNet] && netVoltagePtr_v[myPowerNet]->simVoltage != UNKNOWN_VOLTAGE && ! maxNet_v.IsTerminal(myPowerNet));
-				reportFile << endl;
+				logFile << endl;
 			}
 		}
 	}
@@ -2436,7 +2436,7 @@ void CCvcDb::CheckConnections() {
 			} else if ( IsCalculatedVoltage_(myPower_p) ) {
 				reportFile << "WARNING: calculated bias (" << connectionCount_v[net_it].bulkCount << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
 				reportFile << " at " << DeviceName(firstBulk_v[net_it], PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF)
-						<< (myPower_p->type[MIN_CALCULATED_BIT] ? "1|" : "0|")
+						<< (myPower_p->type[MIN_CALCULATED_BIT] ? " 1|" : " 0|")
 						<< (myPower_p->type[SIM_CALCULATED_BIT] ? "1|" : "0|")
 						<< (myPower_p->type[MAX_CALCULATED_BIT] ? "1" : "0") <<	endl;
 			}
