@@ -1436,6 +1436,19 @@ void CCvcDb::PropagateMinMaxVoltages(CEventQueue& theEventQueue) {
 			}
 			ShortNets(theEventQueue, myDeviceId, myConnections, myDirection, myEventKey, myAdjustedCalculation);
 			EnqueueAttachedDevices(theEventQueue, myDrainId, myEventKey);
+			if ( deviceType_v[myDeviceId] == RESISTOR && myOriginalEventKey == myEventKey ) {
+				// resistors propagating unchanged voltages
+				CDeviceCount myDeviceCount(myDrainId, this);
+				if ( theEventQueue.queueType == MIN_QUEUE && myDeviceCount.resistorCount == 1 && myDeviceCount.pmosCount == 0 ) {
+					// one resistor connected to no pmos
+					ShortNets(minEventQueue, myDeviceId, myConnections, myDirection, myEventKey, "power through resistor");
+					EnqueueAttachedDevices(minEventQueue, myDrainId, myEventKey);
+				} else if (theEventQueue.queueType == MAX_QUEUE && myDeviceCount.resistorCount == 1 && myDeviceCount.nmosCount == 0 ) {
+					// one resistor connected to no nmos
+					ShortNets(maxEventQueue, myDeviceId, myConnections, myDirection, myEventKey, "power through resistor");
+					EnqueueAttachedDevices(maxEventQueue, myDrainId, myEventKey);
+				}
+			}
 		}
 	}
 }
@@ -2430,7 +2443,9 @@ void CCvcDb::CheckConnections() {
 //			myResistance = SimResistance(net_it);
 			if ( myVirtualNet.finalResistance > 1000000 && ! myVirtualNet.finalResistance == INFINITE_RESISTANCE ) {
 				reportFile << "WARNING: high res bias (" << connectionCount_v[net_it].bulkCount << ") " << NetName(net_it, PRINT_CIRCUIT_ON) << " r=" << myVirtualNet.finalResistance << endl;
-			} else if ( ! myPower_p || ( myPower_p->simVoltage == UNKNOWN_VOLTAGE && ! myPower_p->type[HIZ_BIT] ) ) {
+			} else if ( ! myPower_p
+					|| ( myPower_p->simVoltage == UNKNOWN_VOLTAGE
+						&& ( myPower_p->minVoltage == UNKNOWN_VOLTAGE || myPower_p->maxVoltage == UNKNOWN_VOLTAGE ) ) ) {  // no error for missing bias if min/max defined.
 				reportFile << "WARNING: missing bias (" << connectionCount_v[net_it].bulkCount << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
 				reportFile << " at " << DeviceName(firstBulk_v[net_it], PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF) << endl;
 			} else if ( IsCalculatedVoltage_(myPower_p) ) {

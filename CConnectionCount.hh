@@ -41,4 +41,17 @@ class CConnectionCountVector : public vector<CConnectionCount> {
 public:
 };
 
+#include "CCvcDb.hh"
+
+class CDeviceCount {
+public:
+	deviceId_t resistorCount = 0;
+	deviceId_t nmosCount = 0;
+	deviceId_t pmosCount = 0;
+	deviceId_t capacitorCount = 0;
+	deviceId_t diodeCount = 0;
+
+	CDeviceCount(netId_t theNetId, CCvcDb * theCvcDb);
+};
+
 #endif /* CCONNECTIONCOUNT_HH_ */
