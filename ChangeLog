@@ -96,4 +96,7 @@
 170504_1251	Print resistor calculations to log only
 		Equations allow SI notation
 		Fixed calculated bias printing
+170508_1111	Added device count routine
+		Propagate power through power resistors 
+		No missing bias errors if min/max defined for sim power
 
