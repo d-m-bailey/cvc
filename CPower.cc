@@ -209,7 +209,7 @@ CPower::CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, net
 	type[MIN_CALCULATED_BIT] = true;
 //	type[SIM_CALCULATED_BIT] = true;
 	type[MAX_CALCULATED_BIT] = true;
-	definition = theCalculation;
+	definition = definition + " calculation=> " + theCalculation;
 }
 
 /*

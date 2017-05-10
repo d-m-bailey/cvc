@@ -99,4 +99,13 @@
 170508_1111	Added device count routine
 		Propagate power through power resistors 
 		No missing bias errors if min/max defined for sim power
-
+170510_1640	Detect possible leaks between simulation voltages and open voltages
+		Added interactive debug command for module debugging
+		DeviceCount only counts devices in specified instance
+		Added gate and bulk counts to DeviceCount
+		Added DeviceCount print routine
+		Added subroutines to calculate depth and check inclusion in subcircuit
+		Added ""calculation=>"" string to resistor definition to differentiate between original definition and calculation
+		In interactive, changing to invalid instance returns an error and doesn't change current instance
+		Debug power files have "NO AUTO MACROS" that don't automatically create macro from power definitions
+		Added UNKNOWN_INSTANCE definition

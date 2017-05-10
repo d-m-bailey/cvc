@@ -990,3 +990,26 @@ bool CCvcDb::HasActiveConnections(netId_t theNetId) {
 	}
 	return false;
 }
+
+size_t CCvcDb::InstanceDepth(instanceId_t theInstanceId) {
+	size_t myDepth = 0;
+	while ( theInstanceId != 0 ) {
+		assert(myDepth < subcircuitCount);
+		assert(theInstanceId != UNKNOWN_INSTANCE);
+		myDepth++;
+		theInstanceId = instancePtr_v[theInstanceId]->parentId;
+	}
+	return(myDepth);
+}
+
+bool CCvcDb::IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId) {
+	if ( theInstanceId == theParentId ) return true;
+	if ( instancePtr_v[theInstanceId]->parentId == theParentId ) return true;
+	size_t myCount = 0;
+	while ( instancePtr_v[theInstanceId]->parentId != 0 ) {
+		assert(myCount++ < subcircuitCount);
+		theInstanceId = instancePtr_v[theInstanceId]->parentId;
+		if ( theInstanceId == theParentId ) return true;
+	}
+	return false;
+}

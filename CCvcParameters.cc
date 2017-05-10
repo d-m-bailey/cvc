@@ -311,9 +311,11 @@ returnCode_t CCvcParameters::LoadPower() {
 
 	reportFile << "CVC: Reading power settings..." << endl;
 	bool myPowerErrorFlag = false;
+	bool myAutoMacroFlag = true;
 	while ( getline(myPowerFile, myInput) ) {
 		try {
 			bool myIsMacro = ( myInput.substr(0, myInput.find_first_of(" \t", 0)) == "#define" );
+			if ( myInput == "#NO AUTO MACROS" ) myAutoMacroFlag = false;
 			if ( myInput[0] == '#' && ! myIsMacro ) continue; // skip comments
 			if ( myInput.find_first_not_of(" \t\n") > myInput.length() ) continue; // skip blank lines
 			myInput = trim_(myInput);
@@ -354,11 +356,15 @@ returnCode_t CCvcParameters::LoadPower() {
 				if (myPowerPtr->type != NO_TYPE || myPowerPtr->minVoltage != UNKNOWN_VOLTAGE || myPowerPtr->simVoltage != UNKNOWN_VOLTAGE || myPowerPtr->maxVoltage != UNKNOWN_VOLTAGE) {
 					cvcPowerPtrList.push_back(myPowerPtr);
 				}
-				myMacroName = myPowerPtr->powerSignal;
-				if ( myMacroName[0] == '/' ) { // macros for top level nets that are not ports
-					myMacroName = myMacroName.substr(1);
+				if ( myAutoMacroFlag ) {
+					myMacroName = myPowerPtr->powerSignal;
+					if ( myMacroName[0] == '/' ) { // macros for top level nets that are not ports
+						myMacroName = myMacroName.substr(1);
+					}
+					myMacroDefinition = myInput;
+				} else {
+					myMacroName = "?";
 				}
-				myMacroDefinition = myInput;
 			}
 			if ( myMacroName.find_first_of("(<[}/*@+-") > myMacroName.length() && isalpha(myMacroName[0]) ) { // no special characters in macro names
 				if ( cvcPowerMacroPtrMap.count(myMacroName) > 0 ) throw EPowerError("duplicate macro name: " + myMacroName);

@@ -226,8 +226,12 @@ instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string the
 		}
 		myStringBegin = theHierarchy.find_first_not_of(HIERARCHY_DELIMITER, myStringEnd);
 	}
-	if ( ! myUnmatchedHierarchy.empty() && thePrintUnmatchFlag ) {
-		reportFile << "Could not find instance " << myInstanceName << endl;
+	if ( ! myUnmatchedHierarchy.empty() ) {
+		theCurrentInstanceId = UNKNOWN_INSTANCE;
+		if ( thePrintUnmatchFlag ) {
+			reportFile << "Could not find instance " << myInstanceName << endl;
+
+		}
 	}
 	return ( theCurrentInstanceId );
 }
@@ -450,6 +454,7 @@ netId_t CCvcDb::FindNet(instanceId_t theCurrentInstanceId, string theNetName, bo
 			myInitialHierarchy = HierarchyName(theCurrentInstanceId, false) + HIERARCHY_DELIMITER;
 			myCurrentInstanceId = FindHierarchy(theCurrentInstanceId, mySearchHierarchy, false);
 		}
+		if ( myCurrentInstanceId == UNKNOWN_INSTANCE ) throw out_of_range("not found");
 		CCircuit * myCircuit_p = instancePtr_v[myCurrentInstanceId]->master_p;
 		string myParentName = HierarchyName(myCurrentInstanceId, false) + HIERARCHY_DELIMITER;
 		myNetName = theNetName.substr(myParentName.length() - myInitialHierarchy.length());
@@ -481,6 +486,7 @@ deviceId_t CCvcDb::FindDevice(instanceId_t theCurrentInstanceId, string theDevic
 			myInitialHierarchy = HierarchyName(theCurrentInstanceId, false) + HIERARCHY_DELIMITER;
 			myCurrentInstanceId = FindHierarchy(theCurrentInstanceId, mySearchHierarchy, false);
 		}
+		if ( myCurrentInstanceId == UNKNOWN_INSTANCE ) throw out_of_range("not found");
 		CCircuit * myCircuit_p = instancePtr_v[myCurrentInstanceId]->master_p;
 		string myParentName = HierarchyName(myCurrentInstanceId, false) + HIERARCHY_DELIMITER;
 		myDeviceName = theDeviceName.substr(myParentName.length() - myInitialHierarchy.length());
@@ -604,7 +610,12 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 			} else if ( myCommand == "goto" || myCommand == "g" || myCommand == "cd" ) {
 				myHierarchy = "/"; // default returns to top
 				myInputStream >> myHierarchy;
-				myCurrentInstanceId = FindHierarchy(myCurrentInstanceId, RemoveCellNames(myHierarchy));
+				instanceId_t myNewInstanceId = FindHierarchy(myCurrentInstanceId, RemoveCellNames(myHierarchy));
+				if ( myNewInstanceId == UNKNOWN_INSTANCE ) {
+					cout << "Could not find instance " << myHierarchy << endl;
+				} else {
+					myCurrentInstanceId = myNewInstanceId;
+				}
 //				myCommand = "pwd"; // after goto, print hierarchy
 //				continue;
 			} else if ( myCommand == "help" || myCommand == "h" ) {
@@ -632,6 +643,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				cout << "printpower<pp>: print power settings" << endl;
 				cout << "printmodel<pm>: print model statistics" << endl;
 				cout << "source file: read commands from file" << endl;
+				cout << "debug instance cvcrcFile: create cvcrc file for debugging instance" << endl;
 				cout << "skip: skip this cvcrc and use next one" << endl;
 				cout << "rerun: rerun this cvcrc" << endl;
 				cout << "continue<c>: continue" << endl;
@@ -649,8 +661,28 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				} else {
 					reportFile << "Could not open " << myFileName << endl;
 				}
+			} else if ( myCommand == "debug" ) {
+				if ( theCurrentStage < STAGE_SECOND_SIM ) {
+					reportFile << "ERROR: Can only debug after final sim." << endl;
+					continue;
+				}
+				string myInstanceName = "";
+				myInputStream >> myInstanceName;
+				instanceId_t myInstanceId = FindHierarchy(myCurrentInstanceId, RemoveCellNames(myInstanceName));
+				if ( myInstanceId == UNKNOWN_INSTANCE ) {
+					cout << "ERROR: Could not find " << myInstanceName << endl;
+					continue;
+				}
+				string myDebugCvcrcName = "";
+				myInputStream >> myDebugCvcrcName;
+				ofstream myDebugCvcrcFile(myDebugCvcrcName);
+				if ( myDebugCvcrcFile && myDebugCvcrcFile.good() ) {
+					CreateDebugCvcrcFile(myDebugCvcrcFile, myInstanceId, theCurrentStage);
+				} else {
+					cout << "ERROR: Could not create cvcrc file " << myDebugCvcrcName << endl;
+				}
 			} else if ( myCommand == "setmodel" || myCommand == "sm" ) {
-				if ( theCurrentStage != 1 ) {
+				if ( theCurrentStage != STAGE_START ) {
 					reportFile << "ERROR: Can only change model file at stage 1." << endl;
 					continue;
 				}
@@ -959,4 +991,126 @@ returnCode_t CCvcDb::CheckFuses() {
 	}
 	myFuseFile.close();
 	return ((myFuseError) ? FAIL : OK);
+}
+
+void CCvcDb::CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInstanceId, int theCurrentStage) {
+	theOutputFile << "# Debug cvcrc for " << HierarchyName(theInstanceId) << endl;
+	string mySubcircuitName = instancePtr_v[theInstanceId]->master_p->name;
+	theOutputFile << "CVC_TOP = '" << mySubcircuitName << "'" << endl;
+	PrintSubcircuitCdl(mySubcircuitName);
+	theOutputFile << "CVC_NETLIST = '" << mySubcircuitName + ".cdl" << "'" << endl;
+	theOutputFile << "CVC_MODE = '" << cvcParameters.cvcMode << "'" << endl;
+	theOutputFile << "CVC_MODEL_FILE = '" << cvcParameters.cvcModelFilename << "'" << endl;
+	string myPowerFile = "power." + mySubcircuitName + "." + cvcParameters.cvcMode;
+	PrintInstancePowerFile(theInstanceId, myPowerFile, theCurrentStage);
+	theOutputFile << "CVC_POWER_FILE = '" << myPowerFile << "'" << endl;
+	theOutputFile << "CVC_FUSE_FILE = ''" << endl;
+	theOutputFile << "CVC_REPORT_FILE = '" << "debug_" + mySubcircuitName + "_" + cvcParameters.cvcMode + ".log" << "'" << endl;
+	theOutputFile << "CVC_REPORT_TITLE = 'Debug " << mySubcircuitName << " mode " << cvcParameters.cvcMode << "'" << endl;
+	theOutputFile << "CVC_CIRCUIT_ERROR_LIMIT = '" << cvcParameters.cvcCircuitErrorLimit << "'" << endl;
+	theOutputFile << "CVC_SEARCH_LIMIT = '" << cvcParameters.cvcSearchLimit << "'" << endl;
+	theOutputFile << "CVC_LEAK_LIMIT = '" << cvcParameters.cvcLeakLimit << "'" << endl;
+	theOutputFile << "CVC_SOI = '" << (( cvcParameters.cvcSOI ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_SCRC = '" << (( cvcParameters.cvcSCRC ) ? "true" : "false") << "'" << endl;
+}
+
+void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerFileName, int theCurrentStage) {
+	ofstream myPowerFile(thePowerFileName);
+	if ( ! ( myPowerFile && myPowerFile.good() ) ) {
+		cout << "ERROR: Could not open power file " << thePowerFileName << " for output." << endl;
+		return;
+	}
+	myPowerFile << "#NO AUTO MACROS" << endl;
+	// print macro definitions
+	// really bad overkill
+	CPowerPtrVector myMacroPtr_v;
+	myMacroPtr_v.reserve(CPower::powerCount);
+	myMacroPtr_v.resize(CPower::powerCount, NULL);
+	for ( auto pair_pit = cvcParameters.cvcPowerMacroPtrMap.begin(); pair_pit != cvcParameters.cvcPowerMacroPtrMap.end(); pair_pit++ ) {
+		myMacroPtr_v[pair_pit->second->powerId] = pair_pit->second;
+	}
+	for ( netId_t macro_it = 0; macro_it < CPower::powerCount; macro_it++ ) {
+		if ( myMacroPtr_v[macro_it] ) {
+			myPowerFile << "#define " << myMacroPtr_v[macro_it]->powerSignal << " " << myMacroPtr_v[macro_it]->definition << endl;
+		}
+	}
+	CInstance * myInstance_p = instancePtr_v[theInstanceId];
+	CCircuit * myCircuit_p = myInstance_p->master_p;
+	// print port power and input definitions
+	vector<text_t> mySignals_v;
+	mySignals_v.reserve(myCircuit_p->localSignalIdMap.size());
+	for (auto signal_net_pair_pit = myCircuit_p->localSignalIdMap.begin(); signal_net_pair_pit != myCircuit_p->localSignalIdMap.end(); signal_net_pair_pit++) {
+		mySignals_v[signal_net_pair_pit->second] = signal_net_pair_pit->first;
+	}
+	for ( netId_t net_it = 0; net_it < myInstance_p->master_p->portCount; net_it++ ) {
+		netId_t myGlobalNetId = myInstance_p->localToGlobalNetId_v[net_it];
+		CPower * myPower_p = netVoltagePtr_v[myGlobalNetId];
+		if ( myPower_p && ! myPower_p->powerSignal.empty() ) {
+			string myDefinition = myPower_p->definition.substr(0, myPower_p->definition.find(" calculation=>"));
+			myPowerFile << mySignals_v[net_it] << myDefinition << endl;
+		} else {
+			CDeviceCount myDeviceCounts(myGlobalNetId, this, theInstanceId);
+//			myDeviceCounts.Print(this);
+			string mySuffix = "";
+			if ( myDeviceCounts.nmosCount + myDeviceCounts.pmosCount + myDeviceCounts.resistorCount == 0 ) {
+				mySuffix = " input";
+			} else {
+				// for reference
+				myPowerFile << "#";
+			}
+			myPowerFile << mySignals_v[net_it] << mySuffix;
+			netId_t myMinNetId, myMaxNetId;
+			CPower * myMinPower_p, * myMaxPower_p;
+			if ( theCurrentStage == STAGE_COMPLETE ) {
+				myMinNetId = minLeakNet_v[myGlobalNetId].finalNetId;
+				if ( myMinNetId == UNKNOWN_NET ) {
+					myMinPower_p = NULL;
+				} else {
+					myMinPower_p = leakVoltagePtr_v[myMinNetId];
+				}
+				myMaxNetId = maxLeakNet_v[myGlobalNetId].finalNetId;
+				if ( myMaxNetId == UNKNOWN_NET ) {
+					myMaxPower_p = NULL;
+				} else {
+					myMaxPower_p = leakVoltagePtr_v[myMaxNetId];
+				}
+			} else {
+				myMinNetId = minNet_v[myGlobalNetId].finalNetId;
+				if ( myMinNetId == UNKNOWN_NET ) {
+					myMinPower_p = NULL;
+				} else {
+					myMinPower_p = netVoltagePtr_v[myMinNetId];
+				}
+				myMaxNetId = maxNet_v[myGlobalNetId].finalNetId;
+				if ( myMaxNetId == UNKNOWN_NET ) {
+					myMaxPower_p = NULL;
+				} else {
+					myMaxPower_p = netVoltagePtr_v[myMaxNetId];
+				}
+			}
+			netId_t mySimNetId = simNet_v[myGlobalNetId].finalNetId;
+			if ( myMinPower_p  ) {
+				myPowerFile << " min@" << PrintVoltage(myMinPower_p->minVoltage);
+			}
+			if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId] ) {
+				myPowerFile << " sim@" << PrintVoltage(netVoltagePtr_v[mySimNetId]->simVoltage);
+				if ( netVoltagePtr_v[mySimNetId]->type[HIZ_BIT] ) {
+					myPowerFile << " open";
+				}
+			}
+			if ( myMaxPower_p ) {
+				myPowerFile << " max@" << PrintVoltage(myMaxPower_p->maxVoltage);
+			}
+			myPowerFile << endl;
+		}
+	}
+	// print internal definitions
+	netId_t myFirstNetId = myInstance_p->firstNetId;
+	for ( netId_t net_it = myFirstNetId; net_it < netCount && IsSubcircuitOf(netParent_v[net_it], theInstanceId); net_it++ ) {
+		if ( netVoltagePtr_v[net_it] && ! netVoltagePtr_v[net_it]->powerSignal.empty() ) {
+			myPowerFile << netVoltagePtr_v[net_it]->powerSignal << " " << netVoltagePtr_v[net_it]->definition << endl;
+		}
+	}
+	cout << "Wrote debug power file " << thePowerFileName << endl;
+	myPowerFile.close();
 }

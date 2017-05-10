@@ -322,7 +322,8 @@ public:
 	eventKey_t SimKey(eventKey_t theCurrentKey, resistance_t theIncrement);
 	bool IsDerivedFromFloating(CVirtualNetVector& theVirtualNet_v, netId_t theNetId);
 	bool HasActiveConnections(netId_t theNetId);
-
+	size_t InstanceDepth(instanceId_t theInstanceId);
+	bool IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId);
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);
@@ -395,6 +396,8 @@ public:
 	returnCode_t InteractiveCvc(int theCurrentStage);
 	void DumpFuses(string theFileName);
 	returnCode_t CheckFuses();
+	void CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInstanceId, int theCurrentStage);
+	void PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerFileName, int theCurrentStage);
 
 };
 

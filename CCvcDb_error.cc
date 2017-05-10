@@ -1133,8 +1133,15 @@ void CCvcDb::FindNmosPossibleLeakErrors() {
 
 		if ( myConnections.CheckTerminalSimVoltages(SOURCE | DRAIN) == true ) {
 			if ( myConnections.simSourceVoltage == myConnections.simDrainVoltage ) continue;
-			if ( myConnections.simSourcePower_p->IsInternalOverride() || myConnections.simDrainPower_p->IsInternalOverride() ) continue;
-			if ( myConnections.simSourcePower_p->type[SIM_CALCULATED_BIT] || myConnections.simDrainPower_p->type[SIM_CALCULATED_BIT] ) {
+			if ( myConnections.simSourcePower_p->type[HIZ_BIT] &&
+					! myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, false) ) {
+				;  // possible leaks to cutoff power
+			} else if ( myConnections.simDrainPower_p->type[HIZ_BIT] &&
+					! myConnections.simDrainPower_p->IsRelatedPower(myConnections.simSourcePower_p, netVoltagePtr_v, simNet_v, simNet_v, false) ) {
+				;  // possible leaks to cutoff power
+			} else if ( myConnections.simSourcePower_p->IsInternalOverride() || myConnections.simDrainPower_p->IsInternalOverride() ) {
+				continue;
+			} else if ( myConnections.simSourcePower_p->type[SIM_CALCULATED_BIT] || myConnections.simDrainPower_p->type[SIM_CALCULATED_BIT] ) {
 				if ( myConnections.EstimatedCurrent() <= cvcParameters.cvcLeakLimit ) continue;
 			}
 			myErrorFlag = true;
@@ -1221,8 +1228,15 @@ void CCvcDb::FindPmosPossibleLeakErrors() {
 //					bool myErrorFlag = false;
 		if ( myConnections.CheckTerminalSimVoltages(SOURCE | DRAIN) == true ) {
 			if ( myConnections.simSourceVoltage == myConnections.simDrainVoltage ) continue;
-			if ( myConnections.simSourcePower_p->IsInternalOverride() || myConnections.simDrainPower_p->IsInternalOverride() ) continue;
-			if ( myConnections.simSourcePower_p->type[SIM_CALCULATED_BIT] || myConnections.simDrainPower_p->type[SIM_CALCULATED_BIT] ) {
+			if ( myConnections.simSourcePower_p->type[HIZ_BIT] &&
+					! myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, false) ) {
+				;  // possible leaks to cutoff power
+			} else if ( myConnections.simDrainPower_p->type[HIZ_BIT] &&
+					! myConnections.simDrainPower_p->IsRelatedPower(myConnections.simSourcePower_p, netVoltagePtr_v, simNet_v, simNet_v, false) ) {
+				;  // possible leaks to cutoff power
+			} else if ( myConnections.simSourcePower_p->IsInternalOverride() || myConnections.simDrainPower_p->IsInternalOverride() ) {
+				continue;
+			} else if ( myConnections.simSourcePower_p->type[SIM_CALCULATED_BIT] || myConnections.simDrainPower_p->type[SIM_CALCULATED_BIT] ) {
 				if ( myConnections.EstimatedCurrent() <= cvcParameters.cvcLeakLimit ) continue;
 			}
 			myErrorFlag = true;

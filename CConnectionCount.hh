@@ -45,13 +45,20 @@ public:
 
 class CDeviceCount {
 public:
+	netId_t netId;
 	deviceId_t resistorCount = 0;
 	deviceId_t nmosCount = 0;
 	deviceId_t pmosCount = 0;
+	deviceId_t nmosGateCount = 0;
+	deviceId_t pmosGateCount = 0;
+	deviceId_t nmosBulkCount = 0;
+	deviceId_t pmosBulkCount = 0;
 	deviceId_t capacitorCount = 0;
 	deviceId_t diodeCount = 0;
 
-	CDeviceCount(netId_t theNetId, CCvcDb * theCvcDb);
+	CDeviceCount(netId_t theNetId, CCvcDb * theCvcDb, instanceId_t theInstanceId = 0);
+	void Print(CCvcDb * theCvcDb_p);
+
 };
 
 #endif /* CCONNECTIONCOUNT_HH_ */

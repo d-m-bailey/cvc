@@ -1573,7 +1573,7 @@ void CCvcDb::CalculateResistorVoltage(netId_t theNetId, voltage_t theMinVoltage,
 		myPower_p->type[MIN_CALCULATED_BIT] = true;
 	//	myPower_p->type[SIM_CALCULATED_BIT] = true;
 		myPower_p->type[MAX_CALCULATED_BIT] = true;
-		myPower_p->definition += myCalculation;
+		myPower_p->definition += " calculation=> " + myCalculation;
 //		cvcParameters.cvcPowerPtrList.push_back(new CPower(theNetId, NetName(theNetId), myNewVoltage, minNet_v[theNetId].finalNetId, maxNet_v[theNetId].finalNetId, myCalculation));
 //		netVoltagePtr_v[theNetId] = cvcParameters.cvcPowerPtrList.back();
 		myPower_p->type[RESISTOR_BIT] = true;
