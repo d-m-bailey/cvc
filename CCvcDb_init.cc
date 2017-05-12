@@ -50,6 +50,7 @@ void interrupt_handler(int signum) {
 		cout << endl << "Switching to interactive mode at next stage. Use Control-\\ to abort." << endl << endl;
 		gInteractive_cvc = true;
 	}
+	gInterrupted = true;
 }
 
 void cleanup_handler(int signum) {

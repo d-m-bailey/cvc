@@ -251,7 +251,8 @@ void CCvcDb::PrintHierarchicalCdl(CCircuit *theCircuit, unordered_set<text_t> & 
 	}
 	for (deviceId_t device_it = 0; device_it < theCircuit->devicePtr_v.size(); device_it++) {
 		PrintNewCdlLine(theCircuit->devicePtr_v[device_it]->name, theCdlFile);
-		if ( theCircuit->devicePtr_v[device_it]->model_p->baseType == "R" ) {
+		string myDeviceType = theCircuit->devicePtr_v[device_it]->model_p->baseType;
+		if ( myDeviceType == "R" || myDeviceType == "C" ) {
 			for (netId_t net_it = 0; net_it < 2; net_it++) {
 				PrintCdlLine(mySignals_v[theCircuit->devicePtr_v[device_it]->signalId_v[net_it]], theCdlFile);
 			}
@@ -260,13 +261,13 @@ void CCvcDb::PrintHierarchicalCdl(CCircuit *theCircuit, unordered_set<text_t> & 
 				PrintCdlLine(mySignals_v[theCircuit->devicePtr_v[device_it]->signalId_v[net_it]], theCdlFile);
 			}
 		}
-		PrintCdlLine(theCircuit->devicePtr_v[device_it]->parameters + 2, theCdlFile);
+		PrintCdlLine(theCircuit->devicePtr_v[device_it]->parameters + 2, theCdlFile);  // The first 2 characters of the parameters are device type code. ignore them.
 /*
 		if ( theCircuit->devicePtr_v[device_it]->model_p->type == NRESISTOR || theCircuit->devicePtr_v[device_it]->model_p->type == PRESISTOR ) {
 			PrintCdlLine(string("$SUB=") + mySignals_v[theCircuit->devicePtr_v[device_it]->signalId_v[2]], theCdlFile);
 		}
 */
-		if ( theCircuit->devicePtr_v[device_it]->model_p->baseType == "R" && theCircuit->devicePtr_v[device_it]->signalId_v.size() == 3 ) {
+		if ( (myDeviceType == "R" || myDeviceType == "C") && theCircuit->devicePtr_v[device_it]->signalId_v.size() == 3 ) {
 			PrintCdlLine(string("$SUB=") + mySignals_v[theCircuit->devicePtr_v[device_it]->signalId_v[2]], theCdlFile);
 		}
 		PrintCdlLine(string(""), theCdlFile);
@@ -1130,20 +1131,24 @@ void CCvcDb::PrintErrorTotals() {
 	reportFile << "CVC: Min Voltage Conflicts: " << errorCount[MIN_VOLTAGE_CONFLICT] << endl;
 	reportFile << "CVC: Max Voltage Conflicts: " << errorCount[MAX_VOLTAGE_CONFLICT] << endl;
 	reportFile << "CVC: Leaks:                 " << errorCount[LEAK] << endl;
-	reportFile << "CVC: LDD drain->source:     " << errorCount[LDD_SOURCE] << endl;
-	reportFile << "CVC: HI-Z Inputs:           " << errorCount[HIZ_INPUT] << endl;
-	reportFile << "CVC: Forward Bias Diodes:   " << errorCount[FORWARD_DIODE] << endl;
-	if ( ! cvcParameters.cvcSOI ) reportFile << "CVC: NMOS Source vs Bulk:   " << errorCount[NMOS_SOURCE_BULK] << endl;
-	reportFile << "CVC: NMOS Gate vs Source:   " << errorCount[NMOS_GATE_SOURCE] << endl;
-	reportFile << "CVC: NMOS Possible Leaks:   " << errorCount[NMOS_POSSIBLE_LEAK] << endl;
-	if ( ! cvcParameters.cvcSOI ) reportFile << "CVC: PMOS Source vs Bulk:   " << errorCount[PMOS_SOURCE_BULK] << endl;
-	reportFile << "CVC: PMOS Gate vs Source:   " << errorCount[PMOS_GATE_SOURCE] << endl;
-	reportFile << "CVC: PMOS Possible Leaks:   " << errorCount[PMOS_POSSIBLE_LEAK] << endl;
-	reportFile << "CVC: Overvoltage-VBG:       " << errorCount[OVERVOLTAGE_VBG] << endl;
-	reportFile << "CVC: Overvoltage-VBS:       " << errorCount[OVERVOLTAGE_VBS] << endl;
-	reportFile << "CVC: Overvoltage-VDS:       " << errorCount[OVERVOLTAGE_VDS] << endl;
-	reportFile << "CVC: Overvoltage-VGS:       " << errorCount[OVERVOLTAGE_VGS] << endl;
-	reportFile << "CVC: Unexpected voltage :   " << errorCount[EXPECTED_VOLTAGE] << endl;
+	if ( detectErrorFlag ) {
+		reportFile << "CVC: LDD drain->source:     " << errorCount[LDD_SOURCE] << endl;
+		reportFile << "CVC: HI-Z Inputs:           " << errorCount[HIZ_INPUT] << endl;
+		reportFile << "CVC: Forward Bias Diodes:   " << errorCount[FORWARD_DIODE] << endl;
+		if ( ! cvcParameters.cvcSOI ) reportFile << "CVC: NMOS Source vs Bulk:   " << errorCount[NMOS_SOURCE_BULK] << endl;
+		reportFile << "CVC: NMOS Gate vs Source:   " << errorCount[NMOS_GATE_SOURCE] << endl;
+		reportFile << "CVC: NMOS Possible Leaks:   " << errorCount[NMOS_POSSIBLE_LEAK] << endl;
+		if ( ! cvcParameters.cvcSOI ) reportFile << "CVC: PMOS Source vs Bulk:   " << errorCount[PMOS_SOURCE_BULK] << endl;
+		reportFile << "CVC: PMOS Gate vs Source:   " << errorCount[PMOS_GATE_SOURCE] << endl;
+		reportFile << "CVC: PMOS Possible Leaks:   " << errorCount[PMOS_POSSIBLE_LEAK] << endl;
+		reportFile << "CVC: Overvoltage-VBG:       " << errorCount[OVERVOLTAGE_VBG] << endl;
+		reportFile << "CVC: Overvoltage-VBS:       " << errorCount[OVERVOLTAGE_VBS] << endl;
+		reportFile << "CVC: Overvoltage-VDS:       " << errorCount[OVERVOLTAGE_VDS] << endl;
+		reportFile << "CVC: Overvoltage-VGS:       " << errorCount[OVERVOLTAGE_VGS] << endl;
+		reportFile << "CVC: Unexpected voltage :   " << errorCount[EXPECTED_VOLTAGE] << endl;
+	} else {
+		reportFile << "WARNING: Error detection incomplete" << endl;
+	}
 	size_t myErrorTotal = 0;
 	for ( auto myIndex = 0; myIndex < ERROR_TYPE_COUNT; myIndex++ ) {
 		myErrorTotal += errorCount[myIndex];
@@ -1275,7 +1280,7 @@ void CCvcDb::PrintShortedNets(string theShortFileName) {
 }
 
 string CCvcDb::NetVoltageSuffix(string theDelimiter, string theVoltage, resistance_t theResistance, string theLeakVoltage) {
-	if ( theVoltage == "???" ) return ("");
+	if ( theVoltage == "???" && theLeakVoltage.empty() ) return ("");
 	if ( ! theLeakVoltage.empty() ) theLeakVoltage = "(" + theLeakVoltage + ")";
 	return ( theDelimiter + theVoltage + theLeakVoltage + " r=" + to_string<resistance_t>(theResistance));
 }

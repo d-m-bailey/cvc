@@ -51,6 +51,8 @@ public:
 	int	cvcArgIndex = 1;
 	int	cvcArgCount;
 
+	bool detectErrorFlag;  //!< skip error processing if false
+
 	CCvcParameters	cvcParameters;
 	CCircuitPtrList	cvcCircuitList;
 
@@ -396,7 +398,7 @@ public:
 	returnCode_t InteractiveCvc(int theCurrentStage);
 	void DumpFuses(string theFileName);
 	returnCode_t CheckFuses();
-	void CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInstanceId, int theCurrentStage);
+	void CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInstanceId, string theMode, int theCurrentStage);
 	void PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerFileName, int theCurrentStage);
 
 };

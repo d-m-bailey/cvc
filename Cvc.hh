@@ -24,9 +24,10 @@
 #ifndef CVC_H_
 #define CVC_H_
 
-#define CVC_VERSION "0.8.0-170510_1640"
+#define CVC_VERSION "0.8.0-170512_1049"
 
 extern bool gDebug_cvc;
+extern bool gInterrupted;
 extern bool gInteractive_cvc;
 
 // valid voltage globals

@@ -109,3 +109,8 @@
 		In interactive, changing to invalid instance returns an error and doesn't change current instance
 		Debug power files have "NO AUTO MACROS" that don't automatically create macro from power definitions
 		Added UNKNOWN_INSTANCE definition
+170512_1049	Added abitlity to skip error extraction for debugging
+		Changed debug command to use unique mode name
+		Enable interrupt of interactive commands (currently findnet only)
+		Added 3 terminal capacitor cdl output
+		Print leak voltage even if normal voltage is unknown

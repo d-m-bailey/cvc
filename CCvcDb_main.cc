@@ -58,6 +58,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// Setup
 		gContinueCount = 0;
 		RemoveLock();
+		detectErrorFlag = true;
 		cout << "CVC: Circuit Validation Check  Version " << CVC_VERSION << endl;
 		cvcParameters.ResetEnvironment();
 		cvcParameters.LoadEnvironment(argv[cvcArgIndex], reportPrefix);
@@ -159,15 +160,17 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		reportFile << PrintProgress(&lastSnapshot) << endl;
 //	Print("", "CVC Database");
 //	PrintAllVirtualNets<CVirtualNetVector>(minNet_v, simNet_v, maxNet_v, "(first)");
-		FindForwardBiasDiodes();
-		if ( ! cvcParameters.cvcSOI ) {
-			FindNmosSourceVsBulkErrors();
+		if ( detectErrorFlag ) {
+			FindForwardBiasDiodes();
+			if ( ! cvcParameters.cvcSOI ) {
+				FindNmosSourceVsBulkErrors();
+			}
+			FindNmosGateVsSourceErrors();
+			if ( ! cvcParameters.cvcSOI ) {
+				FindPmosSourceVsBulkErrors();
+			}
+			FindPmosGateVsSourceErrors();
 		}
-		FindNmosGateVsSourceErrors();
-		if ( ! cvcParameters.cvcSOI ) {
-			FindPmosSourceVsBulkErrors();
-		}
-		FindPmosGateVsSourceErrors();
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_FIRST_MINMAX) == SKIP ) continue;
 
@@ -190,7 +193,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 			SetSCRCPower();
 		}
 		SetSimPower(ALL_NETS_AND_FUSE);
-		FindLDDErrors();
+		if ( detectErrorFlag ) FindLDDErrors();
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_SECOND_SIM) == SKIP ) continue;
 
@@ -203,14 +206,16 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		ResetMinMaxPower();
 		SetInverterHighLow();
 		reportFile << PrintProgress(&lastSnapshot) << endl;
-		FindOverVoltageErrors("Vbg", OVERVOLTAGE_VBG);
-		FindOverVoltageErrors("Vbs", OVERVOLTAGE_VBS);
-		FindOverVoltageErrors("Vds", OVERVOLTAGE_VDS);
-		FindOverVoltageErrors("Vgs", OVERVOLTAGE_VGS);
-		FindNmosPossibleLeakErrors();
-		FindPmosPossibleLeakErrors();
-		FindFloatingInputErrors();
-		CheckExpectedValues();
+		if ( detectErrorFlag ) {
+			FindOverVoltageErrors("Vbg", OVERVOLTAGE_VBG);
+			FindOverVoltageErrors("Vbs", OVERVOLTAGE_VBS);
+			FindOverVoltageErrors("Vds", OVERVOLTAGE_VDS);
+			FindOverVoltageErrors("Vgs", OVERVOLTAGE_VGS);
+			FindNmosPossibleLeakErrors();
+			FindPmosPossibleLeakErrors();
+			FindFloatingInputErrors();
+			CheckExpectedValues();
+		}
 		PrintErrorTotals();
 //		PrintShortedNets(cvcParameters.cvcReportBaseFilename + ".shorts.gz");
 		reportFile << PrintProgress(&lastSnapshot, "Total ") << endl;

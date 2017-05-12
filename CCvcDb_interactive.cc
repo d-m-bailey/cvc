@@ -124,8 +124,10 @@ void CCvcDb::FindInstances(string theSubcircuit, bool thePrintCircuitFlag) {
 void CCvcDb::FindNets(string theName, instanceId_t theInstanceId, bool thePrintCircuitFlag) {
       size_t myNetCount = 0;
       cout << "Searching..." << endl;
+      gInterrupted = false;
       regex mySearchPattern(FuzzyFilter(theName));
       ShowNets(myNetCount, mySearchPattern, theInstanceId, thePrintCircuitFlag);
+      if ( gInterrupted ) cout << "Search cancelled" << endl;
       reportFile << "Displayed " << ((myNetCount < cvcParameters.cvcSearchLimit) ? myNetCount : cvcParameters.cvcSearchLimit);
       reportFile << "/" << myNetCount << " matches." << endl;
 }
@@ -137,19 +139,20 @@ void CCvcDb::ShowNets(size_t & theNetCount, regex & theSearchPattern, instanceId
       if ( myInstance_p->master_p->subcircuitPtr_v.size() == 0 && myInstance_p->master_p->devicePtr_v.size() == 0 ) return;
       // cout << myInstance_p->master_p->name << " count " << myInstance_p->master_p->localSignalIdMap.size() << endl; cout.flush();
       for( auto signalMap_pit = myInstance_p->master_p->localSignalIdMap.begin(); signalMap_pit != myInstance_p->master_p->localSignalIdMap.end(); signalMap_pit++ ) {
-              if ( regex_match(signalMap_pit->first, theSearchPattern) ) {
-                      if ( theNetCount++ < cvcParameters.cvcSearchLimit ) {
-                              string myLowerNet = HierarchyName(theInstanceId, thePrintCircuitFlag) + "/" + signalMap_pit->first;
-                              netId_t myNetId = myInstance_p->localToGlobalNetId_v[signalMap_pit->second];
-                              netId_t myEquivalentNetId = (isFixedEquivalentNet) ? GetEquivalentNet(myNetId) : myNetId;
-                              string myTopNet = NetName(myEquivalentNetId, thePrintCircuitFlag);
-                              reportFile << myLowerNet;
-                              if ( myLowerNet != myTopNet ) {
-                                      reportFile << " -> " << myTopNet;
-                              }
-                              reportFile << endl;
-                      }
-              }
+    	  if ( gInterrupted ) return;
+		  if ( regex_match(signalMap_pit->first, theSearchPattern) ) {
+				  if ( theNetCount++ < cvcParameters.cvcSearchLimit ) {
+						  string myLowerNet = HierarchyName(theInstanceId, thePrintCircuitFlag) + "/" + signalMap_pit->first;
+						  netId_t myNetId = myInstance_p->localToGlobalNetId_v[signalMap_pit->second];
+						  netId_t myEquivalentNetId = (isFixedEquivalentNet) ? GetEquivalentNet(myNetId) : myNetId;
+						  string myTopNet = NetName(myEquivalentNetId, thePrintCircuitFlag);
+						  reportFile << myLowerNet;
+						  if ( myLowerNet != myTopNet ) {
+								  reportFile << " -> " << myTopNet;
+						  }
+						  reportFile << endl;
+				  }
+		  }
       }
       for( size_t instance_it = 0; instance_it != myInstance_p->master_p->subcircuitPtr_v.size(); instance_it++ ) {
               ShowNets(theNetCount, theSearchPattern, myInstance_p->firstSubcircuitId + instance_it, thePrintCircuitFlag);
@@ -643,7 +646,8 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				cout << "printpower<pp>: print power settings" << endl;
 				cout << "printmodel<pm>: print model statistics" << endl;
 				cout << "source file: read commands from file" << endl;
-				cout << "debug instance cvcrcFile: create cvcrc file for debugging instance" << endl;
+				cout << "debug instance id: create debug.cvcrc.id file for debugging instance" << endl;
+				cout << "noerror: skip error processing (just propagation)" << endl;
 				cout << "skip: skip this cvcrc and use next one" << endl;
 				cout << "rerun: rerun this cvcrc" << endl;
 				cout << "continue<c>: continue" << endl;
@@ -673,14 +677,20 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 					cout << "ERROR: Could not find " << myInstanceName << endl;
 					continue;
 				}
-				string myDebugCvcrcName = "";
-				myInputStream >> myDebugCvcrcName;
+				string myMode = "";
+				myInputStream >> myMode;
+				string myDebugCvcrcName = "debug.cvcrc." + myMode;
 				ofstream myDebugCvcrcFile(myDebugCvcrcName);
 				if ( myDebugCvcrcFile && myDebugCvcrcFile.good() ) {
-					CreateDebugCvcrcFile(myDebugCvcrcFile, myInstanceId, theCurrentStage);
+					CreateDebugCvcrcFile(myDebugCvcrcFile, myInstanceId, myMode, theCurrentStage);
+					cout << "Wrote debug cvcrc file " << myDebugCvcrcName << endl;
 				} else {
 					cout << "ERROR: Could not create cvcrc file " << myDebugCvcrcName << endl;
 				}
+			} else if ( myCommand == "noerror" ) {
+				cout << "WARNING: Ignoring errors." << endl;
+				errorFile << "WARNING: ERROR DETECTION HALTED" << endl;
+				detectErrorFlag = false;
 			} else if ( myCommand == "setmodel" || myCommand == "sm" ) {
 				if ( theCurrentStage != STAGE_START ) {
 					reportFile << "ERROR: Can only change model file at stage 1." << endl;
@@ -993,20 +1003,20 @@ returnCode_t CCvcDb::CheckFuses() {
 	return ((myFuseError) ? FAIL : OK);
 }
 
-void CCvcDb::CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInstanceId, int theCurrentStage) {
+void CCvcDb::CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInstanceId, string theMode, int theCurrentStage) {
 	theOutputFile << "# Debug cvcrc for " << HierarchyName(theInstanceId) << endl;
 	string mySubcircuitName = instancePtr_v[theInstanceId]->master_p->name;
 	theOutputFile << "CVC_TOP = '" << mySubcircuitName << "'" << endl;
 	PrintSubcircuitCdl(mySubcircuitName);
 	theOutputFile << "CVC_NETLIST = '" << mySubcircuitName + ".cdl" << "'" << endl;
-	theOutputFile << "CVC_MODE = '" << cvcParameters.cvcMode << "'" << endl;
+	theOutputFile << "CVC_MODE = '" << theMode << "'" << endl;
 	theOutputFile << "CVC_MODEL_FILE = '" << cvcParameters.cvcModelFilename << "'" << endl;
-	string myPowerFile = "power." + mySubcircuitName + "." + cvcParameters.cvcMode;
+	string myPowerFile = "power." + theMode + "." + cvcParameters.cvcMode;
 	PrintInstancePowerFile(theInstanceId, myPowerFile, theCurrentStage);
 	theOutputFile << "CVC_POWER_FILE = '" << myPowerFile << "'" << endl;
 	theOutputFile << "CVC_FUSE_FILE = ''" << endl;
-	theOutputFile << "CVC_REPORT_FILE = '" << "debug_" + mySubcircuitName + "_" + cvcParameters.cvcMode + ".log" << "'" << endl;
-	theOutputFile << "CVC_REPORT_TITLE = 'Debug " << mySubcircuitName << " mode " << cvcParameters.cvcMode << "'" << endl;
+	theOutputFile << "CVC_REPORT_FILE = '" << "debug_" + mySubcircuitName + "_" + theMode + "_" + cvcParameters.cvcMode + ".log" << "'" << endl;
+	theOutputFile << "CVC_REPORT_TITLE = 'Debug " << mySubcircuitName << " mode " << theMode << " " << cvcParameters.cvcMode << "'" << endl;
 	theOutputFile << "CVC_CIRCUIT_ERROR_LIMIT = '" << cvcParameters.cvcCircuitErrorLimit << "'" << endl;
 	theOutputFile << "CVC_SEARCH_LIMIT = '" << cvcParameters.cvcSearchLimit << "'" << endl;
 	theOutputFile << "CVC_LEAK_LIMIT = '" << cvcParameters.cvcLeakLimit << "'" << endl;
