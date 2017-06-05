@@ -14,7 +14,7 @@ PO: Pulse On. Only on during pulse
 NH: Never high
 NL: Never low
 RI: Reference input.
-L0: No leak
+ZL: No leak
 FS: Forced short
 CV: Capacitor voltage mismatch
 VL: Check voltage level
@@ -43,3 +43,14 @@ PU: Pull up
 PD: Pull down
 LC: Logic conflict
 CS: Check control signals
+ND: Not driven
+CL: Cutoff power leak
+SL: Standby leak
+HL: Hi-Z Low
+HH: Hi-Z High
+HV: High voltage
+IO: I/O related
+IP: Uncheckable IP error
+LO: Logically ok.
+UN: Unused (no power)
+FX: Caused by CVC circuit change
