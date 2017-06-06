@@ -54,3 +54,4 @@ IP: Uncheckable IP error
 LO: Logically ok.
 UN: Unused (no power)
 FX: Caused by CVC circuit change
+ST: Setup problem
