@@ -55,3 +55,4 @@ LO: Logically ok.
 UN: Unused (no power)
 FX: Caused by CVC circuit change
 ST: Setup problem
+BC: Bad power connection
