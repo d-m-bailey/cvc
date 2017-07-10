@@ -57,3 +57,4 @@ FX: Caused by CVC circuit change
 ST: Setup problem
 BC: Bad power connection
 RB: Resistor bias. Mos bias is power connected through resistor.
+BP: Bipolar circuit
