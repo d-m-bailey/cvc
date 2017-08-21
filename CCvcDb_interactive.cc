@@ -187,7 +187,7 @@ void CCvcDb::PrintSubcircuitCdl(string theSubcircuit) {
 	myCdlFile.close();
 }
 
-instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string theHierarchy, bool thePrintUnmatchFlag) {
+instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string theHierarchy, bool theAllowPartialMatch, bool thePrintUnmatchFlag) {
 	// HIERARCHY_DELIMITER is only used to delimit hierarchy
 	if ( theHierarchy.substr(0, 1) == HIERARCHY_DELIMITER ) {
 		theCurrentInstanceId = 0;
@@ -229,11 +229,12 @@ instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string the
 		}
 		myStringBegin = theHierarchy.find_first_not_of(HIERARCHY_DELIMITER, myStringEnd);
 	}
-	if ( ! myUnmatchedHierarchy.empty() ) {
+	if ( myUnmatchedHierarchy.empty() || theAllowPartialMatch ) {
+		;  // For next searches, the last hierarchy may be part of a flattened hierarchy
+	} else {
 		theCurrentInstanceId = UNKNOWN_INSTANCE;
 		if ( thePrintUnmatchFlag ) {
 			reportFile << "Could not find instance " << myInstanceName << endl;
-
 		}
 	}
 	return ( theCurrentInstanceId );
@@ -452,10 +453,10 @@ netId_t CCvcDb::FindNet(instanceId_t theCurrentInstanceId, string theNetName, bo
 	try {
 		if ( theNetName.substr(0, 1) == HIERARCHY_DELIMITER ) {
 			myInitialHierarchy = "";
-			myCurrentInstanceId = FindHierarchy(0, mySearchHierarchy, false);
+			myCurrentInstanceId = FindHierarchy(0, mySearchHierarchy, true, false);
 		} else {
 			myInitialHierarchy = HierarchyName(theCurrentInstanceId, false) + HIERARCHY_DELIMITER;
-			myCurrentInstanceId = FindHierarchy(theCurrentInstanceId, mySearchHierarchy, false);
+			myCurrentInstanceId = FindHierarchy(theCurrentInstanceId, mySearchHierarchy, true, false);
 		}
 		if ( myCurrentInstanceId == UNKNOWN_INSTANCE ) throw out_of_range("not found");
 		CCircuit * myCircuit_p = instancePtr_v[myCurrentInstanceId]->master_p;
@@ -465,7 +466,7 @@ netId_t CCvcDb::FindNet(instanceId_t theCurrentInstanceId, string theNetName, bo
 	}
 	catch (const out_of_range& oor_exception) {
 		if ( theDisplayErrorFlag ) {
-			reportFile << "Could not find net " << HierarchyName(myCurrentInstanceId) << HIERARCHY_DELIMITER << myNetName << endl;
+			reportFile << "Could not find net " << myInitialHierarchy << myNetName << endl;
 		}
 	}
 	return ( UNKNOWN_NET );
@@ -484,10 +485,10 @@ deviceId_t CCvcDb::FindDevice(instanceId_t theCurrentInstanceId, string theDevic
 	try {
 		if ( theDeviceName.substr(0, 1) == HIERARCHY_DELIMITER ) {
 			myInitialHierarchy = "";
-			myCurrentInstanceId = FindHierarchy(0, mySearchHierarchy, false);
+			myCurrentInstanceId = FindHierarchy(0, mySearchHierarchy, true, false);
 		} else {
 			myInitialHierarchy = HierarchyName(theCurrentInstanceId, false) + HIERARCHY_DELIMITER;
-			myCurrentInstanceId = FindHierarchy(theCurrentInstanceId, mySearchHierarchy, false);
+			myCurrentInstanceId = FindHierarchy(theCurrentInstanceId, mySearchHierarchy, true, false);
 		}
 		if ( myCurrentInstanceId == UNKNOWN_INSTANCE ) throw out_of_range("not found");
 		CCircuit * myCircuit_p = instancePtr_v[myCurrentInstanceId]->master_p;

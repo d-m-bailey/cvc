@@ -384,7 +384,7 @@ public:
 	void ShowNets(size_t & theNetCount, regex & theSearchPattern, instanceId_t theInstanceId, bool thePrintCircuitFlag);
 	CCircuit * FindSubcircuit(string theSubcircuit);
 	void PrintSubcircuitCdl(string theSubcircuit);
-	instanceId_t FindHierarchy(instanceId_t theCurrentInstanceId, string theHierarchy, bool thePrintUnmatchFlag = true);
+	instanceId_t FindHierarchy(instanceId_t theCurrentInstanceId, string theHierarchy, bool theAllowPartialMatch = false, bool thePrintUnmatchFlag = true);
 	string ShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag);
 	string LeakShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag);
 	void PrintNets(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag, bool theIsValidPowerFlag);

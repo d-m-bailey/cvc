@@ -24,7 +24,7 @@
 #ifndef CVC_H_
 #define CVC_H_
 
-#define CVC_VERSION "0.8.0-170818_0900"
+#define CVC_VERSION "0.8.0-170822_0026"
 
 extern bool gDebug_cvc;
 extern bool gInterrupted;

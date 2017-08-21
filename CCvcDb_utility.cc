@@ -366,7 +366,13 @@ void CCvcDb::MapDeviceNets(deviceId_t theDeviceId, CEventQueue& theEventQueue, C
 		theConnections.gatePower_p = netVoltagePtr_v[theConnections.masterGateNet.finalNetId];
 	}
 	theConnections.sourcePower_p = netVoltagePtr_v[theConnections.masterSourceNet.finalNetId];
+	if ( IsSCRCPower(theConnections.sourcePower_p) ) {
+		theConnections.sourceVoltage = theConnections.sourcePower_p->minVoltage;  // min = max
+	}
 	theConnections.drainPower_p = netVoltagePtr_v[theConnections.masterDrainNet.finalNetId];
+	if ( IsSCRCPower(theConnections.drainPower_p) ) {
+		theConnections.drainVoltage = theConnections.drainPower_p->minVoltage;  // min = max
+	}
 	theConnections.device_p = myDevice_p;
 	theConnections.deviceId = theDeviceId;
 	theConnections.resistance = parameterResistanceMap[theConnections.device_p->parameters];
@@ -818,6 +824,7 @@ bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
 	 if ( theConnections.minSourcePower_p ) {
 		 if ( ! theConnections.minSourcePower_p->active[MIN_ACTIVE] ) return false;
 		 if ( theConnections.maxDrainPower_p && theConnections.minSourcePower_p->type[HIZ_BIT] ) {
+			 if ( theConnections.drainId == maxNet_v[theConnections.drainId].nextNetId && theConnections.maxDrainVoltage == UNKNOWN_VOLTAGE ) return false;
 //			 if ( theConnections.maxDrainPower_p->type[HIZ_BIT] ) return false;
 			 return ! theConnections.minSourcePower_p->IsRelatedPower(theConnections.maxDrainPower_p, netVoltagePtr_v, minNet_v, maxNet_v, false);
 		 }
@@ -825,6 +832,7 @@ bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
 	 if ( theConnections.minDrainPower_p ) {
 		 if ( ! theConnections.minDrainPower_p->active[MIN_ACTIVE] ) return false;
 		 if ( theConnections.maxSourcePower_p && theConnections.minDrainPower_p->type[HIZ_BIT] ) {
+			 if ( theConnections.sourceId == maxNet_v[theConnections.sourceId].nextNetId && theConnections.maxSourceVoltage == UNKNOWN_VOLTAGE ) return false;
 //			 if ( theConnections.maxSourcePower_p->type[HIZ_BIT] ) return false;
 			 return ! theConnections.minDrainPower_p->IsRelatedPower(theConnections.maxSourcePower_p, netVoltagePtr_v, minNet_v, maxNet_v, false);
 		 }
@@ -832,6 +840,7 @@ bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
 	 if ( theConnections.maxSourcePower_p ) {
 		 if ( ! theConnections.maxSourcePower_p->active[MAX_ACTIVE] ) return false;
 		 if ( theConnections.minDrainPower_p && theConnections.maxSourcePower_p->type[HIZ_BIT] ) {
+			 if ( theConnections.drainId == minNet_v[theConnections.drainId].nextNetId && theConnections.minDrainVoltage == UNKNOWN_VOLTAGE ) return false;
 //			 if ( theConnections.minDrainPower_p->type[HIZ_BIT] ) return false;
 			 return ! theConnections.maxSourcePower_p->IsRelatedPower(theConnections.minDrainPower_p, netVoltagePtr_v, maxNet_v, minNet_v, false);
 		 }
@@ -839,6 +848,7 @@ bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
 	 if ( theConnections.maxDrainPower_p ) {
 		 if ( ! theConnections.maxDrainPower_p->active[MAX_ACTIVE] ) return false;
 		 if ( theConnections.minSourcePower_p && theConnections.maxDrainPower_p->type[HIZ_BIT] ) {
+			 if ( theConnections.sourceId == minNet_v[theConnections.sourceId].nextNetId && theConnections.minSourceVoltage == UNKNOWN_VOLTAGE ) return false;
 //			 if ( theConnections.minSourcePower_p->type[HIZ_BIT] ) return false;
 			 return ! theConnections.maxDrainPower_p->IsRelatedPower(theConnections.minSourcePower_p, netVoltagePtr_v, maxNet_v, minNet_v, false);
 		 }

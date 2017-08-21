@@ -1203,6 +1203,7 @@ bool CCvcDb::IsSCRCLogicNet(netId_t theNetId) {
 
 bool CCvcDb::IsSCRCPower(CPower * thePower_p) {
 	// TODO: change to macro.
+	if ( ! thePower_p ) return false;
 	if ( ! thePower_p->type[HIZ_BIT] ) return false;
 	if ( thePower_p->minVoltage != thePower_p->maxVoltage ) return false;
 	return true;

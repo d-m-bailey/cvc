@@ -1237,11 +1237,14 @@ void CCvcDb::ShortSimNets(CEventQueue& theEventQueue, deviceId_t theDeviceId, CC
 //	CheckSourceDrain(theEventQueue.queueType, theConnections, theDirection);
 	netId_t myMasterNet, mySlaveNet;
 	voltage_t myMasterVoltage;
+	CPower * myMasterPower_p;
 	if ( theDirection == DRAIN_TO_MASTER_SOURCE ) {
+		myMasterPower_p = theConnections.sourcePower_p;
 		myMasterNet = theConnections.sourceId;
 		mySlaveNet = theConnections.drainId;
 		myMasterVoltage = theConnections.sourceVoltage;
 	} else if ( theDirection == SOURCE_TO_MASTER_DRAIN ) {
+		myMasterPower_p = theConnections.drainPower_p;
 		myMasterNet = theConnections.drainId;
 		mySlaveNet = theConnections.sourceId;
 		myMasterVoltage = theConnections.drainVoltage;
@@ -1261,6 +1264,16 @@ void CCvcDb::ShortSimNets(CEventQueue& theEventQueue, deviceId_t theDeviceId, CC
 		myCalculation = " Limited to min";
 	}
 	if ( theShortVoltage == myMasterVoltage ) {
+		if ( IsSCRCPower(myMasterPower_p) && connectionCount_v[mySlaveNet].sourceDrainType[NMOS] && connectionCount_v[mySlaveNet].sourceDrainType[PMOS] ) {
+			errorCount[LEAK]++;
+			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theDeviceId) < cvcParameters.cvcCircuitErrorLimit ) {
+				errorFile << "! Short Detected: SCRC " << PrintVoltage(myMasterVoltage) << " to output" << endl;
+				static CFullConnection myConnections;
+				MapDeviceNets(theDeviceId, myConnections);
+				PrintDeviceWithSimConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
+				errorFile << endl;
+			}
+		}
 		// do not increment lastUpdate
 		theEventQueue.virtualNet_v.Set(mySlaveNet, myMasterNet, parameterResistanceMap[theConnections.device_p->parameters], theEventQueue.virtualNet_v.lastUpdate);
 //		theEventQueue.virtualNet_v[mySlaveNet].nextNetId = myMasterNet;
@@ -1476,8 +1489,8 @@ void CCvcDb::PropagateSimVoltages(CEventQueue& theEventQueue, propagation_t theP
 	} else {
 		myDirection = DRAIN_TO_MASTER_SOURCE;
 	}
-	if ( myConnections.sourcePower_p && myConnections.sourcePower_p->type[HIZ_BIT] && myConnections.IsUnknownDrainVoltage() ) return;
-	if ( myConnections.drainPower_p && myConnections.drainPower_p->type[HIZ_BIT] && myConnections.IsUnknownSourceVoltage() ) return;
+	if ( myConnections.sourcePower_p && myConnections.sourcePower_p->type[HIZ_BIT] && myConnections.IsUnknownDrainVoltage() && ! IsSCRCPower(myConnections.sourcePower_p) ) return;
+	if ( myConnections.drainPower_p && myConnections.drainPower_p->type[HIZ_BIT] && myConnections.IsUnknownSourceVoltage() && ! IsSCRCPower(myConnections.drainPower_p) ) return;
 	if ( myDirection == SOURCE_TO_MASTER_DRAIN ) {
 		mySimVoltage = myConnections.drainVoltage;
 		myNextNetId = myConnections.sourceId;
@@ -2405,7 +2418,7 @@ void CCvcDb::SetSimPower(propagation_t thePropagationType) {
 //		mySimMasterNet = CVirtualNet(simNet_v, net_it);
 		if ( netVoltagePtr_v[mySimMasterNet.finalNetId] == NULL ) continue;
 		CPower * myPower_p = netVoltagePtr_v[mySimMasterNet.finalNetId];
-		if ( myPower_p->simVoltage == UNKNOWN_VOLTAGE ) continue;
+		if ( myPower_p->simVoltage == UNKNOWN_VOLTAGE && ! IsSCRCPower(myPower_p) ) continue;
 		if ( thePropagationType == POWER_NETS_ONLY && ! IsPriorityPower_(myPower_p) ) continue;
 		EnqueueAttachedDevicesByTerminal(simEventQueue, net_it, firstSource_v, nextSource_v, myPower_p->simVoltage);
 		EnqueueAttachedDevicesByTerminal(simEventQueue, net_it, firstDrain_v, nextDrain_v, myPower_p->simVoltage);
