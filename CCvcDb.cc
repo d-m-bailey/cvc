@@ -1417,6 +1417,7 @@ void CCvcDb::PropagateMinMaxVoltages(CEventQueue& theEventQueue) {
 			}
 		}
 */
+
 		myAdjustedCalculation = AdjustKey(theEventQueue, myDeviceId, myConnections, myEventKey, myQueuePosition, myDirection, PRINT_WARNINGS);
 		if (gDebug_cvc) cout << "DEBUG propagation:(" << gEventQueueTypeMap[theEventQueue.queueType] << ") device: " << myDeviceId << " QueueKey: " << myQueueKey << " EventKey: " << myEventKey << endl;
 		if ( theEventQueue.Later(myEventKey, myQueueKey) ) {

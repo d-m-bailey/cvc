@@ -274,6 +274,14 @@ void CFullConnection::SetMinMaxLeakVoltages(CCvcDb * theCvcDb) {
 	maxSourceLeakVoltage = theCvcDb->MaxLeakVoltage(sourceId);
 	maxDrainLeakVoltage = theCvcDb->MaxLeakVoltage(drainId);
 	maxBulkLeakVoltage = theCvcDb->MaxLeakVoltage(bulkId);
+	if ( minGateVoltage == UNKNOWN_VOLTAGE || ( minGateLeakVoltage != UNKNOWN_VOLTAGE && minGateLeakVoltage > minGateVoltage ) ) minGateVoltage = minGateLeakVoltage;
+	if ( minSourceVoltage == UNKNOWN_VOLTAGE || ( minSourceLeakVoltage != UNKNOWN_VOLTAGE && minSourceLeakVoltage > minSourceVoltage ) ) minSourceVoltage = minSourceLeakVoltage;
+	if ( minDrainVoltage == UNKNOWN_VOLTAGE || ( minDrainLeakVoltage != UNKNOWN_VOLTAGE && minDrainLeakVoltage > minDrainVoltage ) ) minDrainVoltage = minDrainLeakVoltage;
+	if ( minBulkVoltage == UNKNOWN_VOLTAGE || ( minBulkLeakVoltage != UNKNOWN_VOLTAGE && minBulkLeakVoltage > minBulkVoltage ) ) minBulkVoltage = minBulkLeakVoltage;
+	if ( maxGateVoltage == UNKNOWN_VOLTAGE || ( maxGateLeakVoltage != UNKNOWN_VOLTAGE && maxGateLeakVoltage < maxGateVoltage ) ) maxGateVoltage = maxGateLeakVoltage;
+	if ( maxSourceVoltage == UNKNOWN_VOLTAGE || ( maxSourceLeakVoltage != UNKNOWN_VOLTAGE && maxSourceLeakVoltage < maxSourceVoltage ) ) maxSourceVoltage = maxSourceLeakVoltage;
+	if ( maxDrainVoltage == UNKNOWN_VOLTAGE || ( maxDrainLeakVoltage != UNKNOWN_VOLTAGE && maxDrainLeakVoltage < maxDrainVoltage ) ) maxDrainVoltage = maxDrainLeakVoltage;
+	if ( maxBulkVoltage == UNKNOWN_VOLTAGE || ( maxBulkLeakVoltage != UNKNOWN_VOLTAGE && maxBulkLeakVoltage < maxBulkVoltage ) ) maxBulkVoltage = maxBulkLeakVoltage;
 }
 
 /*

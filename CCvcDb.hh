@@ -310,10 +310,8 @@ public:
 	void IgnoreDevice(deviceId_t theDeviceId);
 	bool EqualMasterNets(CVirtualNetVector& theVirtualNet_v, netId_t theFirstNetId, netId_t theSecondNetId);
 	bool GateEqualsDrain(CConnection& theConnections);
-	inline bool IsFloatingGate(CFullConnection& myConnections) { return myConnections.simGateVoltage == UNKNOWN_VOLTAGE &&
-			(myConnections.minGateVoltage == UNKNOWN_VOLTAGE || myConnections.minGatePower_p->type[HIZ_BIT] ||
-			        myConnections.maxGateVoltage == UNKNOWN_VOLTAGE || myConnections.maxGatePower_p->type[HIZ_BIT] ||
-			        myConnections.IsPossibleHiZ(this)); };
+	inline bool IsFloatingGate(CFullConnection& myConnections) { return (myConnections.minGateVoltage == UNKNOWN_VOLTAGE || myConnections.minGatePower_p->type[HIZ_BIT] ||
+			        myConnections.maxGateVoltage == UNKNOWN_VOLTAGE || myConnections.maxGatePower_p->type[HIZ_BIT]); };
 	bool HasLeakPath(CFullConnection& theConnections);
 	void RestoreQueue(CEventQueue& theBaseEventQueue, CEventQueue& theSavedEventQueue, deviceStatus_t theStatusBit);
 	void CheckConnections();

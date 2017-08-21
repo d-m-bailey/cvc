@@ -114,3 +114,9 @@
 		Enable interrupt of interactive commands (currently findnet only)
 		Added 3 terminal capacitor cdl output
 		Print leak voltage even if normal voltage is unknown
+170821_0958	Leak voltages override unknown min/max in overvoltage error display
+		Changed FloatingNet routine to not include PossibleHi-Z errors 
+		Possible HiZ errors shouldn't cause secondary Hi-Z errors
+		Added message for tri-state input
+		Changed HasLeak routine to ignore partial calculated voltages
+

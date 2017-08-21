@@ -859,9 +859,11 @@ bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
 		 if ( myPower_p->type[MIN_CALCULATED_BIT] && myPower_p->defaultMinNet != UNKNOWN_NET ) myMinDrainNet = myPower_p->defaultMinNet;
 		 if ( myPower_p->type[MAX_CALCULATED_BIT] && myPower_p->defaultMaxNet != UNKNOWN_NET ) myMaxDrainNet = myPower_p->defaultMaxNet;
 	 }
-	 if ( myMinSourceNet == theConnections.drainId && myMaxSourceNet == theConnections.drainId) return false;  // min/max path same with no gate connections
+	 if ( (myMinSourceNet == theConnections.drainId || theConnections.minSourceVoltage == UNKNOWN_VOLTAGE)
+			 && (myMaxSourceNet == theConnections.drainId || theConnections.maxSourceVoltage == UNKNOWN_VOLTAGE) ) return false;  // min/max path same or non-existant
 //			 && connectionCount_v[theConnections.sourceId].gateCount == 0) return false;  // min/max path same with no gate connections
-	 if ( myMinDrainNet == theConnections.sourceId && myMaxDrainNet == theConnections.sourceId) return false;  // min/max path same with no gate connections
+	 if ( (myMinDrainNet == theConnections.sourceId || theConnections.minDrainVoltage == UNKNOWN_VOLTAGE)
+		 	 && (myMaxDrainNet == theConnections.sourceId || theConnections.maxDrainVoltage == UNKNOWN_VOLTAGE) ) return false;  // min/max path same with no gate connections
 //			 && connectionCount_v[theConnections.drainId].gateCount == 0) return false;  // min/max path same with no gate connections
 	 if ( theConnections.minSourceVoltage != UNKNOWN_VOLTAGE && theConnections.maxDrainVoltage != UNKNOWN_VOLTAGE && theConnections.minSourceVoltage < theConnections.maxDrainVoltage ) return true;
 	 if ( theConnections.maxSourceVoltage != UNKNOWN_VOLTAGE && theConnections.minDrainVoltage != UNKNOWN_VOLTAGE && theConnections.maxSourceVoltage > theConnections.minDrainVoltage ) return true;

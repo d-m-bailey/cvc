@@ -1310,20 +1310,26 @@ void CCvcDb::FindFloatingInputErrors() {
 	CFullConnection myConnections;
 	reportFile << "! Checking mos floating input errors:" << endl << endl;
 	errorFile << "! Checking mos floating input errors:" << endl << endl;
+	bool myFloatingFlag;
 	for (netId_t net_it = 0; net_it < netCount; net_it++) {
 		if ( connectionCount_v[net_it].gateCount > 0 ) { // skips subordinate nets. only equivalent master nets have counts
 			if ( firstGate_v[net_it] == UNKNOWN_DEVICE ) continue;
 			MapDeviceNets(firstGate_v[net_it], myConnections);
-			if ( IsFloatingGate(myConnections) ) {
+			if ( myConnections.simGateVoltage != UNKNOWN_VOLTAGE ) continue;  // skip known voltages
+			myFloatingFlag = IsFloatingGate(myConnections);
+			if ( myFloatingFlag || myConnections.IsPossibleHiZ(this) ) {
 				for ( deviceId_t device_it = firstGate_v[net_it]; device_it != UNKNOWN_DEVICE; device_it = nextGate_v[device_it] ) {
 					MapDeviceNets(device_it, myConnections);
 					bool myHasLeakPath = HasLeakPath(myConnections);
-					deviceStatus_v[device_it][SIM_INACTIVE] = true;  // ignore all floating input gates
+					if ( myFloatingFlag ) {
+						deviceStatus_v[device_it][SIM_INACTIVE] = true;  // ignore true floating input gates (not possible floating)
+					}
 					if ( myHasLeakPath || connectionCount_v[net_it].SourceDrainCount() == 0 ) { // physically floating gates too
 //						CCircuit * myParent_p = instancePtr_v[deviceParent_v[device_it]]->master_p;
 						errorCount[HIZ_INPUT]++;
 						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
 							if ( ! myHasLeakPath ) errorFile << "* No leak path" << endl;
+							if ( ! myFloatingFlag ) errorFile << "* Tri-state input" << endl;
 							PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
 							errorFile << endl;
 						}
