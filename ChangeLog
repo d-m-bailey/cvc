@@ -119,4 +119,10 @@
 		Possible HiZ errors shouldn't cause secondary Hi-Z errors
 		Added message for tri-state input
 		Changed HasLeak routine to ignore partial calculated voltages
+170822_0026	SCRC power to output is error
+		Propagate SCRC power
+		Bug fix for smashed hierarchy devices
+		Include pointer check in IsSCRCPower for simplicity (slower)
+		For SCRC sim power values, use min/max
+		No leak if source/drain has no min/max
 

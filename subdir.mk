@@ -11,6 +11,7 @@ CC_SRCS += \
 ../src/CCircuit.cc \
 ../src/CCondition.cc \
 ../src/CConnection.cc \
+../src/CConnectionCount.cc \
 ../src/CCvcDb.cc \
 ../src/CCvcDb_error.cc \
 ../src/CCvcDb_init.cc \
@@ -45,6 +46,7 @@ CC_DEPS += \
 ./src/CCircuit.d \
 ./src/CCondition.d \
 ./src/CConnection.d \
+./src/CConnectionCount.d \
 ./src/CCvcDb.d \
 ./src/CCvcDb_error.d \
 ./src/CCvcDb_init.d \
@@ -75,6 +77,7 @@ OBJS += \
 ./src/CCircuit.o \
 ./src/CCondition.o \
 ./src/CConnection.o \
+./src/CConnectionCount.o \
 ./src/CCvcDb.o \
 ./src/CCvcDb_error.o \
 ./src/CCvcDb_init.o \
