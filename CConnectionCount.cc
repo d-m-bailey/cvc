@@ -1,7 +1,7 @@
 /*
  * CConnectionCount.cc
  *
- * Copyright 2014-2107 D. Mitch Bailey  d.mitch.bailey at gmail dot com
+ * Copyright 2014-2107 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *

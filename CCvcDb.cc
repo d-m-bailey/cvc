@@ -1,7 +1,7 @@
 /*
  * CCvcDb.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  d.mitch.bailey at gmail dot com
+ * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -2455,7 +2455,7 @@ void CCvcDb::CheckConnections() {
 			assert( myVirtualNet.finalNetId != UNKNOWN_NET );
 			CPower * myPower_p = netVoltagePtr_v[myVirtualNet.finalNetId];
 //			myResistance = SimResistance(net_it);
-			if ( myVirtualNet.finalResistance > 1000000 && ! myVirtualNet.finalResistance == INFINITE_RESISTANCE ) {
+			if ( myVirtualNet.finalResistance > 1000000 && myVirtualNet.finalResistance != INFINITE_RESISTANCE ) {
 				reportFile << "WARNING: high res bias (" << connectionCount_v[net_it].bulkCount << ") " << NetName(net_it, PRINT_CIRCUIT_ON) << " r=" << myVirtualNet.finalResistance << endl;
 			} else if ( ! myPower_p
 					|| ( myPower_p->simVoltage == UNKNOWN_VOLTAGE
