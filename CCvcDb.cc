@@ -719,6 +719,11 @@ string CCvcDb::AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDevice
 	netId_t myTargetNet = ( theDirection == SOURCE_TO_MASTER_DRAIN ) ? theConnections.sourceId : theConnections.drainId;
 	voltage_t myMinTargetVoltage = MinSimVoltage(myTargetNet);
 	voltage_t myMaxTargetVoltage = MaxSimVoltage(myTargetNet);
+	if ( myMinTargetVoltage > myMaxTargetVoltage ) {
+		voltage_t myTrueMinVoltage = myMaxTargetVoltage;
+		myMaxTargetVoltage = myMinTargetVoltage;
+		myMinTargetVoltage = myTrueMinVoltage;
+	}
 	string myCalculation = "";
 	if ( IsMos_(deviceType_v[theDeviceId]) ) {
 		if ( theConnections.gateId == myTargetNet ) { // mos as diodes

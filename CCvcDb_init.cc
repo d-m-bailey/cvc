@@ -1165,9 +1165,15 @@ size_t CCvcDb::SetSCRCGatePower(netId_t theNetId, CDeviceIdVector & theFirstSour
 
 void CCvcDb::SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool theExpectedHighInput, size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount) {
 	netId_t myParentNet = gateNet_v[theDeviceId];
-	while ( inverterNet_v[myParentNet] != UNKNOWN_NET ) {
+	while ( inverterNet_v[myParentNet] != UNKNOWN_NET && ! (netVoltagePtr_v[myParentNet] && netVoltagePtr_v[myParentNet]->simVoltage != UNKNOWN_VOLTAGE) ) {
 		myParentNet = inverterNet_v[myParentNet];
 		theExpectedHighInput = ! theExpectedHighInput;
+	}
+	if ( netVoltagePtr_v[myParentNet] && netVoltagePtr_v[myParentNet]->simVoltage != UNKNOWN_VOLTAGE ) {
+		logFile << NetName(theNetId) << ": voltage already set for " << NetName(myParentNet) << " expected " << (theExpectedHighInput ? "high" : "low");
+		logFile << " found " << netVoltagePtr_v[myParentNet]->simVoltage << endl;
+		theSCRCIgnoreCount++;
+		return;  // return if voltage already set
 	}
 	CPower * myHighPower_p = netVoltagePtr_v[maxNet_v[myParentNet].finalNetId];
 	CPower * myLowPower_p = netVoltagePtr_v[minNet_v[myParentNet].finalNetId];
@@ -1178,7 +1184,7 @@ void CCvcDb::SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool t
 		logFile << " found ???" << endl;
 		theSCRCIgnoreCount++;
 	} else if ( netVoltagePtr_v[myParentNet] == NULL ) {
-		logFile << "Setting net " << NetName(myParentNet) << " to " << PrintVoltage(myExpectedVoltage) << endl;
+		logFile << "Setting net " << NetName(myParentNet) << " to " << PrintVoltage(myExpectedVoltage) << " for " << NetName(gateNet_v[theDeviceId]) << endl;
 		netVoltagePtr_v[myParentNet] = new CPower(myParentNet, myExpectedVoltage);
 		cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[myParentNet]);
 		theSCRCSignalCount++;

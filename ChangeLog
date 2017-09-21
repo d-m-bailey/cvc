@@ -127,4 +127,8 @@
 		No leak if source/drain has no min/max
 0.9.0		Changed mail address to cvc at shuharisystem dot com
 		Fixed logic comparison bug
+0.9.1		Bug: Logic on min path greater than logic on max path
+		Bug: Calculating expected SCRC voltage ignored user setting
+		Bug: Virtual net count exceeded loop count causing abort. Increased loop count.
+		Added target net display when calculating SCRC nets
 

@@ -70,9 +70,9 @@ CVirtualNet& CVirtualNet::operator() (CVirtualNetVector& theVirtualNet_v, netId_
 				AddResistance(finalResistance, theVirtualNet_v[finalNetId].resistance);
 				finalNetId = theVirtualNet_v[finalNetId].nextNetId;
 				myLinkCount++;
-				if ( myLinkCount > 1000 ) {
+				if ( myLinkCount > 5000 ) {
 					cout << "looping at net " << finalNetId << endl;
-					assert ( myLinkCount < 1021 );
+					assert ( myLinkCount < 5021 );
 				}
 			}
 			AddResistance(finalResistance, theVirtualNet_v[finalNetId].resistance);
@@ -157,9 +157,9 @@ void CVirtualNetVector::Set(netId_t theNetId, netId_t theNextNet, resistance_t t
 			AddResistance(myFinalResistance, (*this)[myFinalNetId].resistance);
 			myFinalNetId = (*this)[myFinalNetId].nextNetId;
 			myLinkCount++;
-			if ( myLinkCount > 1000 ) {
+			if ( myLinkCount > 5000 ) {
 				cout << "looping at net " << myFinalNetId << endl;
-				assert ( myLinkCount < 1021 );
+				assert ( myLinkCount < 5021 );
 			}
 		}
 		assert ((*this)[myFinalNetId].resistance >= 0);
