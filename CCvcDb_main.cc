@@ -161,7 +161,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 //	Print("", "CVC Database");
 //	PrintAllVirtualNets<CVirtualNetVector>(minNet_v, simNet_v, maxNet_v, "(first)");
 		if ( detectErrorFlag ) {
-			FindForwardBiasDiodes();
+			//FindForwardBiasDiodes();
 			if ( ! cvcParameters.cvcSOI ) {
 				FindNmosSourceVsBulkErrors();
 			}
@@ -178,10 +178,11 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// - missing bulk connection check
 		SaveMinMaxLeakVoltages();
 		SetSimPower(POWER_NETS_ONLY);
+		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
 		CheckConnections();
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_FIRST_SIM) == SKIP ) continue;
-		if ( gInteractive_cvc ) SaveInitialVoltages();
+		SaveInitialVoltages();
 		if ( gDebug_cvc ) {
 			PrintAllVirtualNets<CVirtualLeakNetVector>(
 					minLeakNet_v, simNet_v, maxLeakNet_v, "(1)");
@@ -193,7 +194,14 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 			SetSCRCPower();
 		}
 		SetSimPower(ALL_NETS_AND_FUSE);
-		if ( detectErrorFlag ) FindLDDErrors();
+		while ( SetLatchPower() ) {
+			SetSimPower(ALL_NETS_AND_FUSE);
+		}
+		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+		if ( detectErrorFlag ) {
+			FindLDDErrors();
+			FindForwardBiasDiodes();
+		}
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_SECOND_SIM) == SKIP ) continue;
 

@@ -45,7 +45,7 @@
 #include "CvcTypes.hh"
 #include "CVirtualNet.hh"
 
-voltage_t CCvcDb::MinVoltage(netId_t theNetId) {
+voltage_t CCvcDb::MinVoltage(netId_t theNetId, bool theSkipHiZFlag) {
 	if ( theNetId != UNKNOWN_NET ) {
 		static CVirtualNet myVirtualNet;
 		assert(theNetId == GetEquivalentNet(theNetId));
@@ -62,6 +62,7 @@ voltage_t CCvcDb::MinVoltage(netId_t theNetId) {
 //		if ( isFixedMinNet && ! ( myVirtualNet == fixedMinNet_v[theNetId]) ) throw EDatabaseError("Fixed min net mismatch");
 		if ( myVirtualNet.finalNetId != UNKNOWN_NET ) {
 			if ( netVoltagePtr_v[myVirtualNet.finalNetId] ) {
+				if ( theSkipHiZFlag && netVoltagePtr_v[myVirtualNet.finalNetId]->type[HIZ_BIT] ) return UNKNOWN_VOLTAGE;
 				return netVoltagePtr_v[myVirtualNet.finalNetId]->minVoltage;
 			}
 		}
@@ -139,6 +140,68 @@ voltage_t CCvcDb::SimVoltage(netId_t theNetId) {
 	return UNKNOWN_VOLTAGE;
 }
 
+bool CCvcDb::IsAlwaysOnCandidate(deviceId_t theDeviceId, shortDirection_t theDirection) {
+	if ( theDeviceId == UNKNOWN_DEVICE ) return false;
+	static CVirtualNet myMinVirtualSourceNet;
+	static CVirtualNet myMinVirtualDrainNet;
+	static CVirtualNet myMaxVirtualSourceNet;
+	static CVirtualNet myMaxVirtualDrainNet;
+	netId_t mySourceNetId = GetEquivalentNet(sourceNet_v[theDeviceId]);
+	netId_t myDrainNetId = GetEquivalentNet(drainNet_v[theDeviceId]);
+	if ( theDirection == DRAIN_TO_MASTER_SOURCE && connectionCount_v[myDrainNetId].sourceDrainType != NMOS_PMOS ) return true;  // non-output devices are always true
+	if ( theDirection == SOURCE_TO_MASTER_DRAIN && connectionCount_v[mySourceNetId].sourceDrainType != NMOS_PMOS ) return true;  // non-output devices are always true
+	myMinVirtualSourceNet(minNet_v, mySourceNetId);
+	myMinVirtualDrainNet(minNet_v, myDrainNetId);
+	myMaxVirtualSourceNet(maxNet_v, mySourceNetId);
+	myMaxVirtualDrainNet(maxNet_v, myDrainNetId);
+	netId_t myMinSourceNetId = myMinVirtualSourceNet.finalNetId;
+	netId_t myMinDrainNetId = myMinVirtualDrainNet.finalNetId;
+	netId_t myMaxSourceNetId = myMaxVirtualSourceNet.finalNetId;
+	netId_t myMaxDrainNetId = myMaxVirtualDrainNet.finalNetId;
+	if ( myMinSourceNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMinSourceNetId] ) return false;
+	if ( myMinDrainNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMinDrainNetId] ) return false;
+	if ( myMaxSourceNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMaxSourceNetId] ) return false;
+	if ( myMaxDrainNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMaxDrainNetId] ) return false;
+	voltage_t myMinSourceVoltage = netVoltagePtr_v[myMinSourceNetId]->minVoltage;
+	voltage_t myMinDrainVoltage = netVoltagePtr_v[myMinDrainNetId]->minVoltage;
+	voltage_t myMaxSourceVoltage = netVoltagePtr_v[myMaxSourceNetId]->maxVoltage;
+	voltage_t myMaxDrainVoltage = netVoltagePtr_v[myMaxDrainNetId]->maxVoltage;
+	terminal_t myTargetTerminal;
+	if ( myMinSourceVoltage < myMinDrainVoltage ) {
+		myTargetTerminal = SOURCE;
+	} else if ( myMinSourceVoltage > myMinDrainVoltage ) {
+		myTargetTerminal = DRAIN;
+	} else if ( myMinSourceVoltage == myMaxSourceVoltage && myMinDrainVoltage == myMaxDrainVoltage ) {  // all voltages the same: no leak tie hi/lo
+		return true;
+	} else if ( myMinVirtualSourceNet.finalResistance > myMinVirtualDrainNet.finalResistance ) {
+		myTargetTerminal = SOURCE;
+	} else {
+		myTargetTerminal = DRAIN;
+	}
+	if ( myMaxSourceVoltage > myMaxDrainVoltage ) {
+		if ( myTargetTerminal != SOURCE ) return false;
+	} else if ( myMaxSourceVoltage < myMaxDrainVoltage ) {
+		if ( myTargetTerminal != DRAIN ) return false;
+	} else if ( myMaxVirtualSourceNet.finalResistance > myMaxVirtualDrainNet.finalResistance ) {
+		if ( myTargetTerminal != SOURCE ) return false;
+	} else {
+		if ( myTargetTerminal != DRAIN ) return false;
+	}
+	// Returns true if min/max resistance with 128 times
+	if ( myTargetTerminal == SOURCE && myMinVirtualSourceNet.finalResistance < MAX_RESISTANCE >> 7 && myMaxVirtualSourceNet.finalResistance < MAX_RESISTANCE >> 7 ) {
+		if ( myMinVirtualSourceNet.finalResistance << 7 > myMaxVirtualSourceNet.finalResistance
+				&& myMinVirtualSourceNet.finalResistance < myMaxVirtualSourceNet.finalResistance << 7 ) {
+			return true;
+		}
+	} else if ( myMinVirtualDrainNet.finalResistance < MAX_RESISTANCE >> 7 && myMaxVirtualDrainNet.finalResistance < MAX_RESISTANCE >> 7 ) {
+		if ( myMinVirtualDrainNet.finalResistance << 7 > myMaxVirtualDrainNet.finalResistance
+				&& myMinVirtualDrainNet.finalResistance < myMaxVirtualDrainNet.finalResistance << 7 ) {
+			return true;
+		}
+	}
+	return false;
+}
+
 resistance_t CCvcDb::SimResistance(netId_t theNetId) {
 //	resistance_t myResistance;
 	if ( theNetId != UNKNOWN_NET ) {
@@ -161,7 +224,7 @@ resistance_t CCvcDb::SimResistance(netId_t theNetId) {
 	return MAX_RESISTANCE;
 }
 
-voltage_t CCvcDb::MaxVoltage(netId_t theNetId) {
+voltage_t CCvcDb::MaxVoltage(netId_t theNetId, bool theSkipHiZFlag) {
 	if ( theNetId != UNKNOWN_NET ) {
 		static CVirtualNet myVirtualNet;
 		assert(theNetId == GetEquivalentNet(theNetId));
@@ -180,6 +243,7 @@ voltage_t CCvcDb::MaxVoltage(netId_t theNetId) {
 //		CVirtualNet myVirtualNet(maxNet_v, theNetId);
 		if ( myVirtualNet.finalNetId != UNKNOWN_NET ) {
 			if ( netVoltagePtr_v[myVirtualNet.finalNetId] ) {
+				if ( theSkipHiZFlag && netVoltagePtr_v[myVirtualNet.finalNetId]->type[HIZ_BIT] ) return UNKNOWN_VOLTAGE;
 				return netVoltagePtr_v[myVirtualNet.finalNetId]->maxVoltage;
 			}
 		}
@@ -820,6 +884,28 @@ bool CCvcDb::HasActiveConnection(netId_t theNetId) {
 	return false;
 }
 
+voltage_t CCvcDb::DefaultMinVoltage(CPower * thePower_p) {
+    if ( thePower_p->defaultMinNet == UNKNOWN_NET ) {
+		return(UNKNOWN_VOLTAGE);
+    } else {
+		netId_t myMinNet = minNet_v[thePower_p->defaultMinNet].finalNetId;
+		assert(netVoltagePtr_v[myMinNet]);
+		assert(netVoltagePtr_v[myMinNet]->minVoltage != UNKNOWN_VOLTAGE);
+		return(netVoltagePtr_v[myMinNet]->minVoltage);
+    }
+}
+
+voltage_t CCvcDb::DefaultMaxVoltage(CPower * thePower_p) {
+    if ( thePower_p->defaultMaxNet == UNKNOWN_NET ) {
+		return(UNKNOWN_VOLTAGE);
+    } else {
+		netId_t myMaxNet = maxNet_v[thePower_p->defaultMaxNet].finalNetId;
+		assert(netVoltagePtr_v[myMaxNet]);
+		assert(netVoltagePtr_v[myMaxNet]->maxVoltage != UNKNOWN_VOLTAGE);
+		return(netVoltagePtr_v[myMaxNet]->maxVoltage);
+    }
+}
+
 bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
 	 if ( theConnections.minSourcePower_p ) {
 		 if ( ! theConnections.minSourcePower_p->active[MIN_ACTIVE] ) return false;
@@ -875,8 +961,24 @@ bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
 	 if ( (myMinDrainNet == theConnections.sourceId || theConnections.minDrainVoltage == UNKNOWN_VOLTAGE)
 		 	 && (myMaxDrainNet == theConnections.sourceId || theConnections.maxDrainVoltage == UNKNOWN_VOLTAGE) ) return false;  // min/max path same with no gate connections
 //			 && connectionCount_v[theConnections.drainId].gateCount == 0) return false;  // min/max path same with no gate connections
-	 if ( theConnections.minSourceVoltage != UNKNOWN_VOLTAGE && theConnections.maxDrainVoltage != UNKNOWN_VOLTAGE && theConnections.minSourceVoltage < theConnections.maxDrainVoltage ) return true;
-	 if ( theConnections.maxSourceVoltage != UNKNOWN_VOLTAGE && theConnections.minDrainVoltage != UNKNOWN_VOLTAGE && theConnections.maxSourceVoltage > theConnections.minDrainVoltage ) return true;
+     voltage_t myMinSourceVoltage = theConnections.minSourceVoltage;
+     if ( theConnections.minSourcePower_p && theConnections.minSourcePower_p->type[MIN_CALCULATED_BIT] ) {
+    	 myMinSourceVoltage = DefaultMinVoltage(theConnections.minSourcePower_p);
+     }
+     voltage_t myMaxSourceVoltage = theConnections.maxSourceVoltage;
+     if ( theConnections.maxSourcePower_p && theConnections.maxSourcePower_p->type[MAX_CALCULATED_BIT] ) {
+    	 myMaxSourceVoltage = DefaultMaxVoltage(theConnections.maxSourcePower_p);
+     }
+     voltage_t myMinDrainVoltage = theConnections.minDrainVoltage;
+     if ( theConnections.minDrainPower_p && theConnections.minDrainPower_p->type[MIN_CALCULATED_BIT] ) {
+    	 myMinDrainVoltage = DefaultMinVoltage(theConnections.minDrainPower_p);
+     }
+     voltage_t myMaxDrainVoltage = theConnections.maxDrainVoltage;
+     if ( theConnections.maxDrainPower_p && theConnections.maxDrainPower_p->type[MAX_CALCULATED_BIT] ) {
+    	 myMaxDrainVoltage = DefaultMaxVoltage(theConnections.maxDrainPower_p);
+     }
+     if ( myMinSourceVoltage != UNKNOWN_VOLTAGE && myMaxDrainVoltage != UNKNOWN_VOLTAGE && myMinSourceVoltage < myMaxDrainVoltage ) return true;
+     if ( myMaxSourceVoltage != UNKNOWN_VOLTAGE && myMinDrainVoltage != UNKNOWN_VOLTAGE && myMaxSourceVoltage > myMinDrainVoltage ) return true;
 	 return false;
 }
 

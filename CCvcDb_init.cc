@@ -443,12 +443,12 @@ void CCvcDb::LinkDevices() {
 					switch (deviceType_v[myDeviceId]) {
 						case NMOS: case PMOS: case LDDN: case LDDP: {
 							myGateNet = gateNet_v[myDeviceId];
-							if ( firstGate_v[myGateNet] != UNKNOWN_NET ) nextGate_v[myDeviceId] = firstGate_v[myGateNet];
+							if ( firstGate_v[myGateNet] != UNKNOWN_DEVICE ) nextGate_v[myDeviceId] = firstGate_v[myGateNet];
 							firstGate_v[myGateNet] = myDeviceId;
 							connectionCount_v[myGateNet].gateCount++;
 							myBulkNet = bulkNet_v[myDeviceId];
-							if ( firstBulk_v[myBulkNet] != UNKNOWN_NET ) nextBulk_v[myDeviceId] = firstBulk_v[myBulkNet];
 							if ( myBulkNet != UNKNOWN_NET ) {
+								if ( firstBulk_v[myBulkNet] != UNKNOWN_DEVICE ) nextBulk_v[myDeviceId] = firstBulk_v[myBulkNet];
 								firstBulk_v[myBulkNet] = myDeviceId;
 								connectionCount_v[myBulkNet].bulkCount++;
 							}
@@ -459,13 +459,13 @@ void CCvcDb::LinkDevices() {
 							if ( IsNmos_(myDeviceType) ) myDeviceType = NMOS; // LDDN -> NMOS
 							if ( IsPmos_(myDeviceType) ) myDeviceType = PMOS; // LDDP -> PMOS
 							mySourceNet = sourceNet_v[myDeviceId];
-							if ( firstSource_v[mySourceNet] != UNKNOWN_NET ) nextSource_v[myDeviceId] = firstSource_v[mySourceNet];
+							if ( firstSource_v[mySourceNet] != UNKNOWN_DEVICE ) nextSource_v[myDeviceId] = firstSource_v[mySourceNet];
 							firstSource_v[mySourceNet] = myDeviceId;
 							connectionCount_v[mySourceNet].sourceCount++;
 							connectionCount_v[mySourceNet].sourceDrainType[myDeviceType] = true;
 							myDrainNet = drainNet_v[myDeviceId];
 							if ( myDrainNet != mySourceNet ) { // avoid double counting mos caps and inactive res
-								if ( firstDrain_v[myDrainNet] != UNKNOWN_NET ) nextDrain_v[myDeviceId] = firstDrain_v[myDrainNet];
+								if ( firstDrain_v[myDrainNet] != UNKNOWN_DEVICE ) nextDrain_v[myDeviceId] = firstDrain_v[myDrainNet];
 								firstDrain_v[myDrainNet] = myDeviceId;
 								connectionCount_v[myDrainNet].drainCount++;
 								connectionCount_v[myDrainNet].sourceDrainType[myDeviceType] = true;
@@ -656,7 +656,8 @@ deviceId_t CCvcDb::FindUniqueSourceDrainConnectedDevice(netId_t theNetId) {
 	return myResultDeviceId;
 }
 
-void CCvcDb::MergeConnectionListByTerminals(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, CNetIdVector& theTerminal_v) {
+void CCvcDb::MergeConnectionListByTerminals(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId,
+		CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, CNetIdVector& theTerminal_v) {
 	deviceId_t myNextDevice;
 	for ( deviceId_t device_it = theFirstDevice_v[theFromNet]; device_it != UNKNOWN_DEVICE; device_it = myNextDevice) {
 		myNextDevice = theNextDevice_v[device_it];
@@ -695,6 +696,14 @@ void CCvcDb::DumpConnectionLists(string theHeading) {
 	cout << "Connection list dump end" << endl;
 }
 
+deviceId_t CCvcDb::RecountConnections(netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v) {
+	deviceId_t myCount = 0;
+	for ( deviceId_t device_it = theFirstDevice_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theNextDevice_v[device_it] ) {
+		myCount++;
+	}
+	return myCount;
+}
+
 void CCvcDb::MergeConnectionLists(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId) {
 	static int myCallCount = 0;
 	if ( myCallCount == 0 ) {
@@ -704,6 +713,16 @@ void CCvcDb::MergeConnectionLists(netId_t theFromNet, netId_t theToNet, deviceId
 	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstSource_v, nextSource_v, sourceNet_v);
 	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstDrain_v, nextDrain_v, drainNet_v);
 	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstBulk_v, nextBulk_v, bulkNet_v);
+	// Source/drain counts handled in calling routine
+	connectionCount_v[theFromNet].gateCount = RecountConnections(theFromNet, firstGate_v, nextGate_v);
+//	connectionCount_v[theFromNet].sourceCount = RecountConnections(theFromNet, firstSource_v, nextSource_v);
+//	connectionCount_v[theFromNet].drainCount = RecountConnections(theFromNet, firstDrain_v, nextDrain_v);
+	connectionCount_v[theFromNet].bulkCount = RecountConnections(theFromNet, firstBulk_v, nextBulk_v);
+	connectionCount_v[theToNet].gateCount = RecountConnections(theToNet, firstGate_v, nextGate_v);
+//	connectionCount_v[theToNet].sourceCount = RecountConnections(theToNet, firstSource_v, nextSource_v);
+//	connectionCount_v[theToNet].drainCount = RecountConnections(theToNet, firstDrain_v, nextDrain_v);
+	connectionCount_v[theToNet].bulkCount = RecountConnections(theToNet, firstBulk_v, nextBulk_v);
+	connectionCount_v[theToNet].sourceDrainType |= connectionCount_v[theFromNet].sourceDrainType;
 //	DumpConnectionLists(to_string<int>(myCallCount++));
 }
 
@@ -729,6 +748,7 @@ void CCvcDb::ShortNonConductingResistor(deviceId_t theDeviceId, netId_t theFirst
 	deviceStatus_v[theDeviceId][MIN_INACTIVE] = true;
 	deviceStatus_v[theDeviceId][SIM_INACTIVE] = true;
 	myDevice_p->sourceDrainSet = true;
+
 	if ( theDirection == SOURCE_TO_MASTER_DRAIN ) {
 		connectionCount_v[theFirstNet].sourceCount--;
 		connectionCount_v[theSecondNet].drainCount--;
@@ -738,6 +758,7 @@ void CCvcDb::ShortNonConductingResistor(deviceId_t theDeviceId, netId_t theFirst
 		connectionCount_v[theFirstNet].drainCount--;
 		connectionCount_v[theSecondNet].sourceCount--;
 	}
+
 	minNet_v.Set(theFirstNet, theSecondNet, 1, ++minNet_v.lastUpdate);
 	simNet_v.Set(theFirstNet, theSecondNet, 1, ++simNet_v.lastUpdate);
 	maxNet_v.Set(theFirstNet, theSecondNet, 1, ++maxNet_v.lastUpdate);
@@ -765,10 +786,14 @@ void CCvcDb::ShortNonConductingResistors() {
 //  TODO: process by model?
 	for (deviceId_t device_it = 0; device_it < deviceCount; device_it++ ) {
 		if ( deviceType_v[device_it] == RESISTOR && ! deviceStatus_v[device_it][SIM_INACTIVE] ) {
-			if ( sourceNet_v[device_it] < topCircuit_p->portCount || drainNet_v[device_it] < topCircuit_p->portCount ) continue; // skip top ports
-			if ( connectionCount_v[sourceNet_v[device_it]].SourceDrainCount() == 1 && netVoltagePtr_v[sourceNet_v[device_it]] == NULL ) {
+//			if ( sourceNet_v[device_it] < topCircuit_p->portCount || drainNet_v[device_it] < topCircuit_p->portCount ) continue; // skip top ports
+			if ( sourceNet_v[device_it] >= topCircuit_p->portCount  // don't consider input nets
+					&& connectionCount_v[sourceNet_v[device_it]].SourceDrainCount() == 1  // only one leak path
+					&& netVoltagePtr_v[sourceNet_v[device_it]] == NULL ) {  // not defined
 				ShortNonConductingResistor(device_it, sourceNet_v[device_it], drainNet_v[device_it], SOURCE_TO_MASTER_DRAIN);
-			} else if ( connectionCount_v[drainNet_v[device_it]].SourceDrainCount() == 1 && netVoltagePtr_v[drainNet_v[device_it]] == NULL ) {
+			} else if ( drainNet_v[device_it] >= topCircuit_p->portCount  // don't consider ports
+					&& connectionCount_v[drainNet_v[device_it]].SourceDrainCount() == 1  // only one leak path
+					&& netVoltagePtr_v[drainNet_v[device_it]] == NULL ) {  // not defined
 				ShortNonConductingResistor(device_it, drainNet_v[device_it], sourceNet_v[device_it], DRAIN_TO_MASTER_SOURCE);
 			} else {
 				continue;
@@ -957,8 +982,9 @@ returnCode_t CCvcDb::SetModePower() {
 //				logFile << "INFO: Expanded " << myPower_p->powerSignal << " -> " << myExpandedNetName << endl;
 			}
  			if (netVoltagePtr_v[*netId_pit] && myPower_p->definition != netVoltagePtr_v[*netId_pit]->definition ) {
- 				reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"" << netVoltagePtr_v[*netId_pit]->definition;
- 				reportFile << "\" != \"" << myPower_p->definition << "\"" << endl;
+ 				reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"";
+ 				reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << netVoltagePtr_v[*netId_pit]->definition;
+ 				reportFile << ")\" != \"" << myPower_p->powerSignal << "(" << myPower_p->definition << ")\"" << endl;
  				myPowerError = true;
  			}
 			if ( netId_pit != myNetIdList->begin() ) {
@@ -992,13 +1018,13 @@ returnCode_t CCvcDb::SetModePower() {
 //				logFile << "INFO: Expanded " << myPower_p->powerSignal << " -> " << myExpandedNetName << endl;
 			}
  			if (netVoltagePtr_v[*netId_pit] && myPower_p->definition != netVoltagePtr_v[*netId_pit]->definition ) {
- 				reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"" << netVoltagePtr_v[*netId_pit]->definition;
- 				reportFile << "\" != \"" << myPower_p->definition << "\"" << endl;
- 				myPowerError = true;
+ 				reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"";
+ 				reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << netVoltagePtr_v[*netId_pit]->definition;
+ 				reportFile << ")\" != \"" << myPower_p->powerSignal << "(" << myPower_p->definition << ")\"" << endl; 				myPowerError = true;
  			} else if ( myExpectedLevelDefinitionMap.count(*netId_pit) > 0 && myPower_p->definition != myExpectedLevelDefinitionMap[*netId_pit] ) {
- 				reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"" << myExpectedLevelDefinitionMap[*netId_pit];
- 				reportFile << "\" != \"" << myPower_p->definition << "\"" << endl;
- 				myPowerError = true;
+ 				reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"";
+ 				reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << myExpectedLevelDefinitionMap[*netId_pit];
+ 				reportFile << ")\" != \"" << myPower_p->powerSignal << "(" << myPower_p->definition << ")\"" << endl; 				myPowerError = true;
  			}
 			if ( netId_pit != myNetIdList->begin() ) {
 				myPower_p = new CPower(myPower_p, *netId_pit);
@@ -1169,29 +1195,41 @@ void CCvcDb::SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool t
 		myParentNet = inverterNet_v[myParentNet];
 		theExpectedHighInput = ! theExpectedHighInput;
 	}
-	if ( netVoltagePtr_v[myParentNet] && netVoltagePtr_v[myParentNet]->simVoltage != UNKNOWN_VOLTAGE ) {
-		logFile << NetName(theNetId) << ": voltage already set for " << NetName(myParentNet) << " expected " << (theExpectedHighInput ? "high" : "low");
-		logFile << " found " << netVoltagePtr_v[myParentNet]->simVoltage << endl;
-		theSCRCIgnoreCount++;
-		return;  // return if voltage already set
-	}
 	CPower * myHighPower_p = netVoltagePtr_v[maxNet_v[myParentNet].finalNetId];
 	CPower * myLowPower_p = netVoltagePtr_v[minNet_v[myParentNet].finalNetId];
 	CPower * myExpectedPower_p = theExpectedHighInput ? myHighPower_p : myLowPower_p;
-	voltage_t myExpectedVoltage = theExpectedHighInput ? myHighPower_p->maxVoltage : myLowPower_p->minVoltage;
-	if ( myExpectedVoltage == UNKNOWN_VOLTAGE || myExpectedPower_p->type[HIZ_BIT] ) {
+	voltage_t myExpectedVoltage = UNKNOWN_VOLTAGE;
+	if ( myExpectedPower_p ) {
+		myExpectedVoltage = theExpectedHighInput ? myExpectedPower_p->maxVoltage : myExpectedPower_p->minVoltage;
+	}
+	if ( netVoltagePtr_v[myParentNet] && netVoltagePtr_v[myParentNet]->simVoltage != UNKNOWN_VOLTAGE ) {
+		if ( myExpectedPower_p && myExpectedVoltage != netVoltagePtr_v[myParentNet]->simVoltage ) {
+			logFile << NetName(theNetId) << ": voltage already set for " << NetName(myParentNet) << " expected " << (theExpectedHighInput ? "high" : "low");
+			logFile << " found " << netVoltagePtr_v[myParentNet]->simVoltage << endl;
+		}
+		theSCRCIgnoreCount++;
+		return;  // return if voltage already set
+	}
+	if ( ! myExpectedPower_p ) {
 		logFile << NetName(theNetId) << ": voltage not set for " << NetName(myParentNet) << " expected " << (theExpectedHighInput ? "high" : "low");
-		logFile << " found ???" << endl;
+		logFile << " found non-power" << endl;
 		theSCRCIgnoreCount++;
-	} else if ( netVoltagePtr_v[myParentNet] == NULL ) {
-		logFile << "Setting net " << NetName(myParentNet) << " to " << PrintVoltage(myExpectedVoltage) << " for " << NetName(gateNet_v[theDeviceId]) << endl;
-		netVoltagePtr_v[myParentNet] = new CPower(myParentNet, myExpectedVoltage);
-		cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[myParentNet]);
-		theSCRCSignalCount++;
-	} else if ( netVoltagePtr_v[myParentNet]->simVoltage != myExpectedVoltage ) {
-		logFile << "ERROR: " << NetName(theNetId) << ": voltage not set for " << NetName(myParentNet) << " expected " << PrintVoltage(myExpectedVoltage);
-		logFile << " found " << PrintVoltage(netVoltagePtr_v[myParentNet]->simVoltage) << endl;
-		theSCRCIgnoreCount++;
+	} else {
+		assert(myExpectedPower_p);
+		if ( myExpectedVoltage == UNKNOWN_VOLTAGE || myExpectedPower_p->type[HIZ_BIT] ) {
+			logFile << NetName(theNetId) << ": voltage not set for " << NetName(myParentNet) << " expected " << (theExpectedHighInput ? "high" : "low");
+			logFile << " found " << (myExpectedVoltage == UNKNOWN_VOLTAGE ? "???" : "Hi-Z") << endl;
+			theSCRCIgnoreCount++;
+		} else if ( netVoltagePtr_v[myParentNet] == NULL ) {
+			logFile << "Setting net " << NetName(myParentNet) << " to " << PrintVoltage(myExpectedVoltage) << " for " << NetName(gateNet_v[theDeviceId]) << endl;
+			netVoltagePtr_v[myParentNet] = new CPower(myParentNet, myExpectedVoltage);
+			cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[myParentNet]);
+			theSCRCSignalCount++;
+		} else if ( netVoltagePtr_v[myParentNet]->simVoltage != myExpectedVoltage ) {
+			logFile << "ERROR: " << NetName(theNetId) << ": voltage not set for " << NetName(myParentNet) << " expected " << PrintVoltage(myExpectedVoltage);
+			logFile << " found " << PrintVoltage(netVoltagePtr_v[myParentNet]->simVoltage) << endl;
+			theSCRCIgnoreCount++;
+		}
 	}
 }
 
@@ -1213,5 +1251,117 @@ bool CCvcDb::IsSCRCPower(CPower * thePower_p) {
 	if ( ! thePower_p->type[HIZ_BIT] ) return false;
 	if ( thePower_p->minVoltage != thePower_p->maxVoltage ) return false;
 	return true;
+}
+
+bool CCvcDb::SetLatchPower() {
+	int myLatchCount = 0;
+	for (unsigned int net_it = 0; net_it < simNet_v.size(); net_it++) {
+		if ( simNet_v[net_it].finalNetId != net_it ) continue;  // already assigned
+		if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE ) continue;  // already defined
+		if ( connectionCount_v[net_it].sourceDrainType != NMOS_PMOS ) continue;  // not an output net
+		if ( connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount > 6 ) continue;  // only simple connections
+		int myNmosCount = 0;
+		int myPmosCount = 0;
+		netId_t myNmosGate = UNKNOWN_NET;
+		netId_t myPmosGate = UNKNOWN_NET;
+		netId_t mySource = UNKNOWN_NET;
+		netId_t myNmosSource = UNKNOWN_NET;
+		netId_t myPmosSource = UNKNOWN_NET;
+		deviceId_t myNmos = UNKNOWN_DEVICE;
+//		deviceId_t myPmos = UNKNOWN_DEVICE;
+		bool mySetNmosPower = false;
+		bool mySetPmosPower = false;
+		for ( deviceId_t device_it = firstDrain_v[net_it]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
+			if ( sourceNet_v[device_it] == gateNet_v[device_it] && netVoltagePtr_v[sourceNet_v[device_it]] ) continue; // skip ESD mos
+			mySource = simNet_v[sourceNet_v[device_it]].finalNetId;
+			if ( IsNmos_(deviceType_v[device_it]) ) {
+				myNmosCount++;
+				if ( myNmosSource == UNKNOWN_NET ) {
+					myNmosSource = mySource;
+					myNmosGate = gateNet_v[device_it];
+				} else if ( myNmosSource == mySource && IsOppositeLogic(myNmosGate, gateNet_v[device_it]) ) {  // same source
+					mySetNmosPower = true;
+					myNmos = device_it;
+				}
+			}
+			if ( IsPmos_(deviceType_v[device_it]) ) {
+				myPmosCount++;
+				if ( myPmosSource == UNKNOWN_NET ) {
+					myPmosSource = mySource;
+					myPmosGate = gateNet_v[device_it];
+				} else if ( myPmosSource == mySource && IsOppositeLogic(myPmosGate, gateNet_v[device_it]) ) {  // same source
+					mySetPmosPower = true;
+//					myPmos = device_it;
+				}
+			}
+		}
+		for ( deviceId_t device_it = firstSource_v[net_it]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {  // actually drain
+			if ( drainNet_v[device_it] == gateNet_v[device_it] && netVoltagePtr_v[drainNet_v[device_it]] ) continue; // skip ESD mos
+			mySource = simNet_v[drainNet_v[device_it]].finalNetId;
+			if ( IsNmos_(deviceType_v[device_it]) ) {
+				myNmosCount++;
+				if ( myNmosSource == UNKNOWN_NET ) {
+					myNmosSource = mySource;
+					myNmosGate = gateNet_v[device_it];
+				} else if ( myNmosSource == mySource && IsOppositeLogic(myNmosGate, gateNet_v[device_it]) ) {  // same drain
+					mySetNmosPower = true;
+					myNmos = device_it;
+				}
+			}
+			if ( IsPmos_(deviceType_v[device_it]) ) {
+				myPmosCount++;
+				if ( myPmosSource == UNKNOWN_NET ) {
+					myPmosSource = mySource;
+					myPmosGate = gateNet_v[device_it];
+				} else if ( myPmosSource == mySource && IsOppositeLogic(myPmosGate, gateNet_v[device_it]) ) {  // same drain
+					mySetPmosPower = true;
+//					myPmos = device_it;
+				}
+			}
+		}
+		if ( myNmosCount > 2 || myPmosCount > 2 ) continue;  // too many devices
+		if ( mySetNmosPower && mySetPmosPower && myNmosSource != myPmosSource ) {
+			CPower * myNmosPower_p = netVoltagePtr_v[simNet_v[myNmosSource].finalNetId];
+			CPower * myPmosPower_p = netVoltagePtr_v[simNet_v[myPmosSource].finalNetId];
+			voltage_t myNmosVoltage = (myNmosPower_p ? myNmosPower_p->simVoltage : UNKNOWN_VOLTAGE);
+			voltage_t myPmosVoltage = (myPmosPower_p ? myNmosPower_p->simVoltage : UNKNOWN_VOLTAGE);
+			if ( myNmosVoltage != UNKNOWN_VOLTAGE && myPmosVoltage != UNKNOWN_VOLTAGE && myNmosVoltage != myPmosVoltage ) {
+				errorCount[LEAK]++;
+				if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myNmos) < cvcParameters.cvcCircuitErrorLimit ) {
+					CFullConnection myConnections;
+					MapDeviceNets(myNmos, myConnections);
+					errorFile << "! Short Detected: " << PrintVoltage(MaxVoltage(myPmosSource)) << " to " << PrintVoltage(MinVoltage(myNmosSource)) << " at latch" << endl;
+					PrintDeviceWithMinGateAndSimConnections(deviceParent_v[myNmos], myConnections, errorFile);
+					errorFile << endl;
+				}
+				continue;  // don't propagate non-matching power
+			}
+		}
+		if ( mySetNmosPower && netVoltagePtr_v[myNmosSource] && netVoltagePtr_v[myNmosSource]->simVoltage != UNKNOWN_VOLTAGE ) {
+			if ( netVoltagePtr_v[net_it] ) {  // just add sim voltage
+				netVoltagePtr_v[net_it]->simVoltage = netVoltagePtr_v[myNmosSource]->simVoltage;
+			} else {
+				netVoltagePtr_v[net_it] = new CPower(net_it, netVoltagePtr_v[myNmosSource]->simVoltage);
+				cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it]);
+			}
+			myLatchCount++;
+			logFile << "Added latch for " << NetName(net_it) << endl;
+		} else if ( mySetPmosPower && netVoltagePtr_v[myPmosSource] && netVoltagePtr_v[myPmosSource]->simVoltage != UNKNOWN_VOLTAGE ) {
+			if ( netVoltagePtr_v[net_it] ) {  // just add sim voltage
+				netVoltagePtr_v[net_it]->simVoltage = netVoltagePtr_v[myPmosSource]->simVoltage;
+			} else {
+				netVoltagePtr_v[net_it] = new CPower(net_it, netVoltagePtr_v[myPmosSource]->simVoltage);
+				cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it]);
+			}
+			myLatchCount++;
+			logFile << "Added latch for " << NetName(net_it) << endl;
+		}
+	}
+	reportFile << "Added " << myLatchCount << " latch voltages" << endl;
+	return (myLatchCount > 0);
+}
+
+bool CCvcDb::IsOppositeLogic(netId_t theFirstNet, netId_t theSecondNet) {
+	return (inverterNet_v[theFirstNet] == theSecondNet || theFirstNet == inverterNet_v[theSecondNet]);
 }
 

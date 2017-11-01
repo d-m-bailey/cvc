@@ -1,41 +1,41 @@
-160614_1505	"Add box handling
-		 Add parasitic diodes (just the setting)"
-160721_1627	"When reporting shorts to limited voltages, include the reason
+160614_1505	Add box handling
+		 Add parasitic diodes (just the setting)
+160721_1627	When reporting shorts to limited voltages, include the reason
 		Include calculated bit flags when reporting calculated biases
 		Added path contains check
 		Fixed bulk check to ignore errors to same levels that are actually open
 		Changed lock file removal
 		Ignore empty instances
-		Changed default for open nets in calculated power (all queues -> only current queue)"
-160816_1822	"Split model error lines
-		Already set voltage errors between defined power fix. (wasn't printing all errors)"
-160819_2315	"Added ExceedsLeakLimit macro for leak limit checks.
+		Changed default for open nets in calculated power (all queues -> only current queue)
+160816_1822	Split model error lines
+		Already set voltage errors between defined power fix. (wasn't printing all errors)
+160819_2315	Added ExceedsLeakLimit macro for leak limit checks.
 		Change current limit granularity uA -> nA.
-		Filter 'mos diode min/max voltage already set' errors by current."
-160820_0954	"Print progress when processing switches.
-		Shorted device count bug fix (was counting switches/cell. Now counts switches/instance.)"
-160823_1132	"New lines when printing shorted switches.
+		Filter 'mos diode min/max voltage already set' errors by current.
+160820_0954	Print progress when processing switches.
+		Shorted device count bug fix (was counting switches/cell. Now counts switches/instance.)
+160823_1132	New lines when printing shorted switches.
 		Don't adjust mos diode resistance when calculating leak current.
 		Fixed progress count for switch shorts.
 		Make sure power exists before checking for HI-Z.
-		Changed equivalent net processing."
+		Changed equivalent net processing.
 160823_1344	Improved equivalent net processing.
 160824_1750	Fixed fast equivalent net processing.
 160825_1209	Print estimated current in already set min/max (+bug fix in min)
 160829_1200	Move min/max voltage conflict to error processing.
 160830_0001	Added summary line after resistor propagation.
 160906_1035	Include resistor calculation in initial simulation propagation.
-160909_1219	"Print interactive commands to log file.
+160909_1219	Print interactive commands to log file.
 		Read commands from batch file (source).
-		Removed shortfile."
+		Removed shortfile.
 161013_1022	Ignore shorts at vth when gate is not calculated(ie. power. If actual leaks exist, they should be detected elsewhere).
-161021_1301	"No voltage calculations for Hi-Z nets in any min/max queues.
-		No leaks between Hi-Z nets."
+161021_1301	No voltage calculations for Hi-Z nets in any min/max queues.
+		No leaks between Hi-Z nets.
 161110_1402	When checking power families, check family intersect.
-161116_1112	"Leak path between 2 Hi-Z nets should not be automatically ignored (only if related).
+161116_1112	Leak path between 2 Hi-Z nets should not be automatically ignored (only if related).
 		When coping power, copy powerAliases and relativeSets
 		Don't copy family when using macros (powerAlias should be sufficient)
-		When checking relatives, check powerAliases too"
+		When checking relatives, check powerAliases too
 161116_1254	Don't do mos diode calculations for HI-Z voltages
 161117_1005	Reduce relative check time
 		Standardize empty string checks
@@ -105,7 +105,7 @@
 		Added gate and bulk counts to DeviceCount
 		Added DeviceCount print routine
 		Added subroutines to calculate depth and check inclusion in subcircuit
-		Added ""calculation=>"" string to resistor definition to differentiate between original definition and calculation
+		Added "calculation=>" string to resistor definition to differentiate between original definition and calculation
 		In interactive, changing to invalid instance returns an error and doesn't change current instance
 		Debug power files have "NO AUTO MACROS" that don't automatically create macro from power definitions
 		Added UNKNOWN_INSTANCE definition
@@ -131,4 +131,51 @@
 		Bug: Calculating expected SCRC voltage ignored user setting
 		Bug: Virtual net count exceeded loop count causing abort. Increased loop count.
 		Added target net display when calculating SCRC nets
-
+0.10.9		Bug: Add flag to ignore Hi-Z when calculating min/max
+		Bug: Check both MIN/MAX flag logic error
+		Bug: Constant and pointer check fixes
+		Bug: debug power value fix
+		Bug: Fixed connection counts.
+		Bug: Hi-Z voltages should not activate min/max voltages
+		Bug: Ignore sim limits on first sim propagation
+		Bug: Logic problem for non-conducting resistors (ignored power connections)
+		Bug: MIN = MAX fuse errors check nets, not voltages. only print to log file(not display).
+		Bug: Min/max checks also set pull-up/down.
+		Bug: No shorts from Hi-Z to expected power
+		Bug: No voltage change for Hi-Z power in second min/max propagation
+		Bug: non SCRC Hi-Z conflicts should yield error
+		Bug: Only reroute priority devices. Always reroute direct connections. Don't propagate direct connection. 
+		Bug: Prevent Vth drops back through mos.
+		Bug: Process fuse last
+		Bug: Recount connection fix
+		Bug: Restrict always on mos to non-ouput or low relative resistance.
+		Bug: Restrict MIN/MAX checks to relevant devices
+		Bug: Save pull-up/down voltages for subsequent min/max checks.
+		Bug: Shorts between calculated expected voltages should be flagged regardless of current
+		Bug: Use default min/max path to avoid false leakpath errors in Hi-Z check
+		Bug: Use first min/max voltages to validate second min/max voltages
+		Bug: Vth voltage drops should not cause leak current.
+		Bug: When calculating min/max in 2nd pass, use leak as well as sim voltage, and set default.
+		Bug: When copying power definitions, include family info
+		Bug: When resetting min/max after sim, don't use sim if min/max would be invalid.
+		Cha: Always save initial voltages
+		Cha: debug log file name
+		Cha: Improved duplicate power definition error display
+		Cha: Improved SCRC power warnings
+		Cha: Leak voltages do not override unknown min/max for overvoltage
+		Cha: No possible leak errors for always off gates
+		Cha: Overvoltage errors for logic levels don't include unknown voltages
+		Cha: Reduce mos bias false errors
+		Cha: Sim shorts print all connections instead of just sim
+		Eff: Added DefaultMin/Max routines
+		Eff: Added routine to check reroute and routine to calculate propagation priority
+		Eff: Centralized flags to check for min/max voltage validity
+		Eff: Skip power nets in trvial min/max calculations
+		Enh: Added parameter flags for leakOvervoltage, logicDiodes, vthGates
+		Enh: Added routine to calculate relative voltage
+		Enh: Added routines to prevent HiZ power propagation
+		Enh: Option to ignore Vth differences on gate-source connections
+		Enh: Option to only use logic values for overvoltage
+		Enh: Option to prefer logic values for diode checks
+		Enh: Print short summary once after all latch processing.
+		Enh: Propagate through latches if both voltages the same

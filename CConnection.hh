@@ -118,6 +118,27 @@ public:
 	voltage_t maxGateLeakVoltage = UNKNOWN_VOLTAGE;
 	voltage_t maxBulkLeakVoltage = UNKNOWN_VOLTAGE;
 
+	bool validMinSource = true;
+	bool validMinDrain = true;
+	bool validMinGate = true;
+	bool validMinBulk = true;
+	bool validSimSource = true;
+	bool validSimDrain = true;
+	bool validSimGate = true;
+	bool validSimBulk = true;
+	bool validMaxSource = true;
+	bool validMaxDrain = true;
+	bool validMaxGate = true;
+	bool validMaxBulk = true;
+	bool validMinSourceLeak = true;
+	bool validMinDrainLeak = true;
+	bool validMinGateLeak = true;
+	bool validMinBulkLeak = true;
+	bool validMaxSourceLeak = true;
+	bool validMaxDrainLeak = true;
+	bool validMaxGateLeak = true;
+	bool validMaxBulkLeak = true;
+
 	CDevice * device_p = NULL;
 	deviceId_t deviceId = UNKNOWN_DEVICE;
 	resistance_t resistance = INFINITE_RESISTANCE;
@@ -132,7 +153,7 @@ public:
 	bool CheckTerminalSimVoltages(int theCheckTerminals);
 	void SetUnknownVoltageToSim();
 	void SetUnknownVoltage();
-	void SetMinMaxLeakVoltages(CCvcDb * theCvcDb);
+	void SetMinMaxLeakVoltagesAndFlags(CCvcDb * theCvcDb);
 	bool IsPossibleHiZ(CCvcDb * theCvcDb);
 	bool IsPumpCapacitor();
 

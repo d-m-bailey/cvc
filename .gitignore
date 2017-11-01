@@ -6,3 +6,4 @@ cdlScanner.cc
 location.hh
 position.hh
 stack.hh
+*.o

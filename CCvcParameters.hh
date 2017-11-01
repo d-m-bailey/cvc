@@ -42,6 +42,9 @@ public:
 	const int defaultSearchLimit = 100;
 	const bool defaultSOI = false;
 	const bool defaultSCRC = false;
+	const bool defaultVthGates = false;
+	const bool defaultLeakOvervoltage = true;
+	const bool defaultLogicDiodes = false;
 
 	string	cvcReportTitle;
 
@@ -67,6 +70,9 @@ public:
 	size_t		cvcSearchLimit = defaultSearchLimit;
 	bool	cvcSOI = defaultSOI;
 	bool	cvcSCRC = defaultSCRC;
+	bool	cvcVthGates = defaultVthGates;
+	bool	cvcLeakOvervoltage = defaultLeakOvervoltage;
+	bool    cvcLogicDiodes = defaultLogicDiodes;
 
 	string	cvcLastTopBlock;
 	string	cvcLastNetlistFilename;
@@ -88,6 +94,7 @@ public:
 	returnCode_t	LoadPower();
 	void	AddTestModels();
 	void	AddTestPower();
+	void	SetHiZPropagation();
 	void	PrintPowerList(ostream & theLogFile, string theIndentation = "");
 };
 
