@@ -188,7 +188,9 @@ public:
 
 	void DumpConnectionLists(string theHeading);
 
-	void MergeConnectionListByTerminals(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, CNetIdVector& theTerminal_v);
+	void MergeConnectionListByTerminals(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId,
+			CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, CNetIdVector& theTerminal_v);
+	deviceId_t RecountConnections(netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v);
 	void MergeConnectionLists(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId);
 //	void ResetMosFuse();
 	void OverrideFuses();
@@ -206,6 +208,8 @@ public:
 	void SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool theExpectedHighInput, size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount);
 	bool IsSCRCLogicNet(netId_t theNetId);
 	bool IsSCRCPower(CPower * thePower_p);
+	bool SetLatchPower();
+	bool IsOppositeLogic(netId_t theFirstNet, netId_t theSecondNet);
 
 	// error
 	void PrintMinVoltageConflict(netId_t theTargetNetId, CConnection & theMinConnections, voltage_t theExpectedVoltage, float theLeakCurrent);
@@ -236,11 +240,15 @@ public:
 	bool LastPmosConnection(deviceStatus_t thePendingBit, netId_t theNetId);
 	bool IsIrrelevant(CEventQueue& theEventQueue, deviceId_t theDeviceId, CConnection& theConnections, voltage_t theVoltage, queueStatus_t theStatus);
 	string AdjustMaxPmosKey(CConnection& theConnections, netId_t theDrainId, voltage_t theMaxSource, eventKey_t& theEventKey, queuePosition_t& theQueuePosition);
-	string AdjustMaxNmosKey(CConnection& theConnections, voltage_t theSimGate, voltage_t theMaxSource, eventKey_t& theEventKey, queuePosition_t& theQueuePosition, bool theWarningFlag);
+	string AdjustMaxNmosKey(CConnection& theConnections, voltage_t theSimGate, voltage_t theMaxSource, eventKey_t& theEventKey, queuePosition_t& theQueuePosition,
+			bool theWarningFlag);
 	string AdjustMinNmosKey(CConnection& theConnections, netId_t theDrainId, voltage_t theMinSource, eventKey_t& theEventKey, queuePosition_t& theQueuePosition);
-	string AdjustMinPmosKey(CConnection& theConnections, voltage_t theSimGate, voltage_t theMinSource, eventKey_t& theEventKey, queuePosition_t& theQueuePosition, bool theWarningFlag);
-	string AdjustKey(CEventQueue& theEventQueue, deviceId_t theDeviceId, CConnection& theConnections, eventKey_t& theEventKey, queuePosition_t& theQueuePosition, shortDirection_t theDirection, bool theWarningFlag);
-	string AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDeviceId, CConnection& theConnections, voltage_t& theVoltage, shortDirection_t theDirection);
+	string AdjustMinPmosKey(CConnection& theConnections, voltage_t theSimGate, voltage_t theMinSource, eventKey_t& theEventKey, queuePosition_t& theQueuePosition,
+			bool theWarningFlag);
+	string AdjustKey(CEventQueue& theEventQueue, deviceId_t theDeviceId, CConnection& theConnections, eventKey_t& theEventKey, queuePosition_t& theQueuePosition,
+			shortDirection_t theDirection, bool theWarningFlag);
+	string AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDeviceId, CConnection& theConnections, voltage_t& theVoltage, shortDirection_t theDirection,
+			propagation_t thePropagationType);
 //	bool NeedsSwap(eventQueue_t theQueueType, modelType_t theModelType, shortDirection_t theDirection);
 //	void SwapSourceDrain(CDevice * theDevice_p);
 //	void CheckSourceDrain(eventQueue_t theQueueType, CConnection& theConnections, shortDirection_t theDirection);
@@ -261,6 +269,8 @@ public:
 
 	void EnqueueAttachedResistorsByTerminal(CEventQueue& theEventQueue, netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, eventKey_t theEventKey, queuePosition_t theQueuePosition);
 	void EnqueueAttachedResistors(CEventQueue& theEventQueue, netId_t theNetId, eventKey_t theEventKey, queuePosition_t theQueuePosition);
+	bool CheckConnectionReroute(CEventQueue& theEventQueue, CConnection& theConnections, shortDirection_t theDirection);
+	bool IsPriorityDevice(CEventQueue& theEventQueue, modelType_t theModel);
 	void AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, CConnection& theConnections);
 	void ShortNets(CEventQueue& theEventQueue, deviceId_t theDeviceId, CConnection& theConnections, shortDirection_t theDirection);
 	void ShortNets(CEventQueue& theEventQueue, deviceId_t theDeviceId, CConnection& theConnections, shortDirection_t theDirection, voltage_t theVoltage, string theCalculation);
@@ -281,12 +291,13 @@ public:
 	void SetInverterHighLow();
 
 	// CCvcDb-utility
-	voltage_t MinVoltage(netId_t theNetId);
+	voltage_t MinVoltage(netId_t theNetId, bool theSkipHiZFlag = false);
 	voltage_t MinSimVoltage(netId_t theNetId);
 	voltage_t MinLeakVoltage(netId_t theNetId);
 	voltage_t SimVoltage(netId_t theNetId);
+	bool IsAlwaysOnCandidate(deviceId_t theDeviceId, shortDirection_t theDirection);
 	resistance_t SimResistance(netId_t theNetId);
-	voltage_t MaxVoltage(netId_t theNetId);
+	voltage_t MaxVoltage(netId_t theNetId, bool theSkipHiZFlag = false);
 	voltage_t MaxSimVoltage(netId_t theNetId);
 	voltage_t MaxLeakVoltage(netId_t theNetId);
 	netId_t GetGreatestEquivalentNet(netId_t theNetId);
@@ -312,6 +323,8 @@ public:
 	bool GateEqualsDrain(CConnection& theConnections);
 	inline bool IsFloatingGate(CFullConnection& myConnections) { return (myConnections.minGateVoltage == UNKNOWN_VOLTAGE || myConnections.minGatePower_p->type[HIZ_BIT] ||
 			        myConnections.maxGateVoltage == UNKNOWN_VOLTAGE || myConnections.maxGatePower_p->type[HIZ_BIT]); };
+	voltage_t DefaultMinVoltage(CPower * thePower_p);
+	voltage_t DefaultMaxVoltage(CPower * thePower_p);
 	bool HasLeakPath(CFullConnection& theConnections);
 	void RestoreQueue(CEventQueue& theBaseEventQueue, CEventQueue& theSavedEventQueue, deviceStatus_t theStatusBit);
 	void CheckConnections();

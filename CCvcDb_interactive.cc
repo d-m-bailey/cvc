@@ -1016,7 +1016,7 @@ void CCvcDb::CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInst
 	PrintInstancePowerFile(theInstanceId, myPowerFile, theCurrentStage);
 	theOutputFile << "CVC_POWER_FILE = '" << myPowerFile << "'" << endl;
 	theOutputFile << "CVC_FUSE_FILE = ''" << endl;
-	theOutputFile << "CVC_REPORT_FILE = '" << "debug_" + mySubcircuitName + "_" + theMode + "_" + cvcParameters.cvcMode + ".log" << "'" << endl;
+	theOutputFile << "CVC_REPORT_FILE = '" << "debug_" + theMode + "_" + cvcParameters.cvcMode + ".log" << "'" << endl;
 	theOutputFile << "CVC_REPORT_TITLE = 'Debug " << mySubcircuitName << " mode " << theMode << " " << cvcParameters.cvcMode << "'" << endl;
 	theOutputFile << "CVC_CIRCUIT_ERROR_LIMIT = '" << cvcParameters.cvcCircuitErrorLimit << "'" << endl;
 	theOutputFile << "CVC_SEARCH_LIMIT = '" << cvcParameters.cvcSearchLimit << "'" << endl;
@@ -1100,17 +1100,17 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 				}
 			}
 			netId_t mySimNetId = simNet_v[myGlobalNetId].finalNetId;
-			if ( myMinPower_p  ) {
-				myPowerFile << " min@" << PrintVoltage(myMinPower_p->minVoltage);
+			if ( myMinPower_p  && myMinPower_p->minVoltage != UNKNOWN_VOLTAGE ) {
+				myPowerFile << " min@" << PrintParameter(myMinPower_p->minVoltage, VOLTAGE_SCALE);
 			}
-			if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId] ) {
-				myPowerFile << " sim@" << PrintVoltage(netVoltagePtr_v[mySimNetId]->simVoltage);
+			if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId] && netVoltagePtr_v[mySimNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
+				myPowerFile << " sim@" << PrintParameter(netVoltagePtr_v[mySimNetId]->simVoltage, VOLTAGE_SCALE);
 				if ( netVoltagePtr_v[mySimNetId]->type[HIZ_BIT] ) {
 					myPowerFile << " open";
 				}
 			}
-			if ( myMaxPower_p ) {
-				myPowerFile << " max@" << PrintVoltage(myMaxPower_p->maxVoltage);
+			if ( myMaxPower_p && myMaxPower_p->maxVoltage != UNKNOWN_VOLTAGE ) {
+				myPowerFile << " max@" << PrintParameter(myMaxPower_p->maxVoltage, VOLTAGE_SCALE);
 			}
 			myPowerFile << endl;
 		}

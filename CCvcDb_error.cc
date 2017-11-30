@@ -65,65 +65,72 @@ void CCvcDb::PrintMaxVoltageConflict(netId_t theTargetNetId, CConnection & theMa
 }
 
 string CCvcDb::FindVbgError(voltage_t theParameter, CFullConnection & theConnections) {
-	if ( ( theConnections.CheckTerminalMinMaxVoltages(GATE | BULK, false) &&
-				( abs(theConnections.maxGateVoltage - theConnections.minBulkVoltage) > theParameter ||
-						abs(theConnections.minGateVoltage - theConnections.maxBulkVoltage) > theParameter ) ) ||
-			( theConnections.CheckTerminalMinMaxVoltages(GATE, false) && ! theConnections.CheckTerminalMinMaxVoltages(BULK, false) &&
-					max(abs(theConnections.minGateVoltage), abs(theConnections.maxGateVoltage)) > theParameter ) ||
-			( ! theConnections.CheckTerminalMinMaxVoltages(GATE, false) && theConnections.CheckTerminalMinMaxVoltages(BULK, false) &&
-					max(abs(theConnections.minBulkVoltage), abs(theConnections.maxBulkVoltage)) > theParameter ) ) {
+	if ( ( theConnections.validMaxGate && theConnections.validMinBulk
+				&& abs(theConnections.maxGateVoltage - theConnections.minBulkVoltage) > theParameter )
+			|| ( theConnections.validMinGate && theConnections.validMaxBulk
+				&& abs(theConnections.minGateVoltage - theConnections.maxBulkVoltage) > theParameter ) ) {
 		return("Overvoltage Error:Gate vs Bulk:");
-	} else if ( ( theConnections.CheckTerminalMinMaxLeakVoltages(GATE | BULK) &&
-				( abs(theConnections.maxGateLeakVoltage - theConnections.minBulkLeakVoltage) > theParameter ||
-						abs(theConnections.minGateLeakVoltage - theConnections.maxBulkLeakVoltage) > theParameter ) ) ||
-			( theConnections.CheckTerminalMinMaxLeakVoltages(GATE) && ! theConnections.CheckTerminalMinMaxLeakVoltages(BULK) &&
-					max(abs(theConnections.minGateLeakVoltage), abs(theConnections.maxGateLeakVoltage)) > theParameter ) ||
-			( ! theConnections.CheckTerminalMinMaxLeakVoltages(GATE) && theConnections.CheckTerminalMinMaxLeakVoltages(BULK) &&
-					max(abs(theConnections.minBulkLeakVoltage), abs(theConnections.maxBulkLeakVoltage)) > theParameter ) ) {
+	} else if ( ! cvcParameters.cvcLeakOvervoltage ) {
+		return ("");
+	} else if ( ( theConnections.validMaxGateLeak && theConnections.validMinBulkLeak
+				&& abs(theConnections.maxGateLeakVoltage - theConnections.minBulkLeakVoltage) > theParameter )
+			|| ( theConnections.validMinGateLeak && theConnections.validMaxBulkLeak
+				&& abs(theConnections.minGateLeakVoltage - theConnections.maxBulkLeakVoltage) > theParameter )
+			|| ( theConnections.validMaxGateLeak && ! theConnections.validMinBulkLeak
+				&& abs(theConnections.maxGateLeakVoltage) > theParameter )
+			|| ( theConnections.validMinGateLeak && ! theConnections.validMaxBulkLeak
+				&& abs(theConnections.minGateLeakVoltage) > theParameter )
+			|| ( ! theConnections.validMaxGateLeak && theConnections.validMinBulkLeak
+				&& abs(theConnections.minBulkLeakVoltage) > theParameter )
+			|| ( ! theConnections.validMinGate && theConnections.validMaxBulkLeak
+				&& abs(theConnections.maxBulkLeakVoltage) > theParameter ) ) {
 		return("Overvoltage Error:Gate vs Bulk: (logic ok)");
 	}
 	return("");
 }
 
 string CCvcDb::FindVbsError(voltage_t theParameter, CFullConnection & theConnections) {
-	if ( ( theConnections.CheckTerminalMinMaxVoltages(SOURCE | BULK, false) &&
-				(abs(theConnections.maxBulkVoltage - theConnections.minSourceVoltage) > theParameter ||
-					abs(theConnections.minBulkVoltage - theConnections.maxSourceVoltage) > theParameter) ) ||
-			( theConnections.CheckTerminalMinMaxVoltages(DRAIN | BULK, false) &&
-				(abs(theConnections.maxBulkVoltage - theConnections.minDrainVoltage) > theParameter ||
-					abs(theConnections.minBulkVoltage - theConnections.maxDrainVoltage) > theParameter ) ) ||
-			( theConnections.CheckTerminalMinMaxVoltages(BULK, false) && ! theConnections.CheckTerminalMinMaxVoltages(SOURCE | DRAIN, false) &&
-				max(abs(theConnections.minBulkVoltage), abs(theConnections.maxBulkVoltage)) > theParameter ) ||
-			( ! theConnections.CheckTerminalMinMaxVoltages(BULK, false) && theConnections.CheckTerminalMinMaxVoltages(SOURCE, false) &&
-				max(abs(theConnections.minSourceVoltage), abs(theConnections.maxSourceVoltage)) > theParameter ) ||
-			( ! theConnections.CheckTerminalMinMaxVoltages(BULK, false) && theConnections.CheckTerminalMinMaxVoltages(DRAIN, false) &&
-				max(abs(theConnections.minDrainVoltage), abs(theConnections.maxDrainVoltage)) > theParameter ) )	{
+	if ( ( theConnections.validMaxSource && theConnections.validMinBulk
+				&& abs(theConnections.maxSourceVoltage - theConnections.minBulkVoltage) > theParameter )
+			|| ( theConnections.validMinSource && theConnections.validMaxBulk
+				&& abs(theConnections.minSourceVoltage - theConnections.maxBulkVoltage) > theParameter )
+			|| ( theConnections.validMaxDrain && theConnections.validMinBulk
+				&& abs(theConnections.maxDrainVoltage - theConnections.minBulkVoltage) > theParameter )
+			|| ( theConnections.validMinDrain && theConnections.validMaxBulk
+				&& abs(theConnections.minDrainVoltage - theConnections.maxBulkVoltage) > theParameter ) ) {
 		return("Overvoltage Error:Source/Drain vs Bulk:");
-	} else if ( ( theConnections.CheckTerminalMinMaxLeakVoltages(SOURCE | BULK) &&
-				(abs(theConnections.maxBulkLeakVoltage - theConnections.minSourceLeakVoltage) > theParameter ||
-					abs(theConnections.minBulkLeakVoltage - theConnections.maxSourceLeakVoltage) > theParameter ) ) ||
-			( theConnections.CheckTerminalMinMaxLeakVoltages(DRAIN | BULK) &&
-				(abs(theConnections.maxBulkLeakVoltage - theConnections.minDrainLeakVoltage) > theParameter ||
-					abs(theConnections.minBulkLeakVoltage - theConnections.maxDrainLeakVoltage) > theParameter ) ) ||
-			( theConnections.CheckTerminalMinMaxLeakVoltages(BULK) && ! theConnections.CheckTerminalMinMaxLeakVoltages(SOURCE | DRAIN) &&
-				max(abs(theConnections.minBulkLeakVoltage), abs(theConnections.maxBulkLeakVoltage)) > theParameter ) ||
-			( ! theConnections.CheckTerminalMinMaxLeakVoltages(BULK) && theConnections.CheckTerminalMinMaxLeakVoltages(SOURCE) &&
-				max(abs(theConnections.minSourceLeakVoltage), abs(theConnections.maxSourceLeakVoltage)) > theParameter ) ||
-			( ! theConnections.CheckTerminalMinMaxLeakVoltages(BULK) && theConnections.CheckTerminalMinMaxLeakVoltages(DRAIN) &&
-				max(abs(theConnections.minDrainLeakVoltage), abs(theConnections.maxDrainLeakVoltage)) > theParameter ) )	{
+	} else if ( ! cvcParameters.cvcLeakOvervoltage ) {
+		return ("");
+	} else if ( ( theConnections.validMaxSourceLeak && theConnections.validMinBulkLeak
+				&& abs(theConnections.maxSourceLeakVoltage - theConnections.minBulkLeakVoltage) > theParameter )
+			|| ( theConnections.validMinSourceLeak && theConnections.validMaxBulkLeak
+				&& abs(theConnections.minSourceLeakVoltage - theConnections.maxBulkLeakVoltage) > theParameter )
+			|| ( theConnections.validMaxDrainLeak && theConnections.validMinBulkLeak
+				&& abs(theConnections.maxDrainLeakVoltage - theConnections.minBulkLeakVoltage) > theParameter )
+			|| ( theConnections.validMinDrainLeak && theConnections.validMaxBulkLeak
+				&& abs(theConnections.minDrainLeakVoltage - theConnections.maxBulkLeakVoltage) > theParameter )
+			|| ( theConnections.validMinBulkLeak && ! theConnections.validMaxSourceLeak && ! theConnections.validMaxDrainLeak
+				&& abs(theConnections.minBulkLeakVoltage) > theParameter )
+			|| ( theConnections.validMaxBulkLeak && ! theConnections.validMinSourceLeak && ! theConnections.validMinDrainLeak
+				&& abs(theConnections.maxBulkLeakVoltage) > theParameter )
+			|| ( theConnections.validMinSourceLeak && ! theConnections.validMaxBulkLeak
+				&& abs(theConnections.minSourceLeakVoltage) > theParameter )
+			|| ( theConnections.validMaxSourceLeak && ! theConnections.validMinBulkLeak
+				&& abs(theConnections.maxSourceLeakVoltage) > theParameter )
+			|| ( theConnections.validMinDrainLeak && ! theConnections.validMaxBulkLeak
+				&& abs(theConnections.minDrainLeakVoltage) > theParameter )
+			|| ( theConnections.validMaxDrainLeak && ! theConnections.validMinBulkLeak
+				&& abs(theConnections.maxDrainLeakVoltage) > theParameter ) ) {
 		return("Overvoltage Error:Source/Drain vs Bulk: (logic ok)");
 	}
 	return("");
 }
 
 string CCvcDb::FindVdsError(voltage_t theParameter, CFullConnection & theConnections) {
-	if ( ( theConnections.CheckTerminalMinMaxVoltages(SOURCE | DRAIN, false) &&
-				(abs(theConnections.maxSourceVoltage - theConnections.minDrainVoltage) > theParameter ||
-					abs(theConnections.minSourceVoltage - theConnections.maxDrainVoltage) > theParameter ) ) ||
-			( theConnections.CheckTerminalMinMaxVoltages(SOURCE, false) && ! theConnections.CheckTerminalMinMaxVoltages(DRAIN, false) &&
-				max(abs(theConnections.minSourceVoltage), abs(theConnections.maxSourceVoltage)) > theParameter ) ||
-			( ! theConnections.CheckTerminalMinMaxVoltages(SOURCE, false) && theConnections.CheckTerminalMinMaxVoltages(DRAIN, false) &&
-				max(abs(theConnections.minDrainVoltage), abs(theConnections.maxDrainVoltage)) > theParameter ) ) {
+	if ( ( theConnections.validMinSource && theConnections.validMaxDrain
+				&& abs(theConnections.minSourceVoltage - theConnections.maxDrainVoltage) > theParameter )
+			|| ( theConnections.validMaxSource && theConnections.validMinDrain
+				&& abs(theConnections.maxSourceVoltage - theConnections.minDrainVoltage) > theParameter ) ) {
 		if ( theConnections.IsPumpCapacitor() &&
 				abs(theConnections.minSourceVoltage - theConnections.minDrainVoltage) <= theParameter &&
 				abs(theConnections.maxSourceVoltage - theConnections.maxDrainVoltage) <= theParameter ) {
@@ -131,44 +138,57 @@ string CCvcDb::FindVdsError(voltage_t theParameter, CFullConnection & theConnect
 		} else {
 			return("Overvoltage Error:Source vs Drain:");
 		}
-	} else if ( ( theConnections.CheckTerminalMinMaxLeakVoltages(SOURCE | DRAIN) &&
-				(abs(theConnections.maxSourceLeakVoltage - theConnections.minDrainLeakVoltage) > theParameter ||
-					abs(theConnections.minSourceLeakVoltage - theConnections.maxDrainLeakVoltage) > theParameter ) ) ||
-			( theConnections.CheckTerminalMinMaxLeakVoltages(SOURCE) && ! theConnections.CheckTerminalMinMaxLeakVoltages(DRAIN) &&
-				max(abs(theConnections.minSourceLeakVoltage), abs(theConnections.maxSourceLeakVoltage)) > theParameter ) ||
-			( ! theConnections.CheckTerminalMinMaxLeakVoltages(SOURCE) && theConnections.CheckTerminalMinMaxLeakVoltages(DRAIN) &&
-				max(abs(theConnections.minDrainLeakVoltage), abs(theConnections.maxDrainLeakVoltage)) > theParameter ) ) {
+	} else if ( ! cvcParameters.cvcLeakOvervoltage ) {
+		return ("");
+	} else if ( ( theConnections.validMinSourceLeak && theConnections.validMaxDrainLeak
+				&& abs(theConnections.minSourceLeakVoltage - theConnections.maxDrainLeakVoltage) > theParameter )
+			|| ( theConnections.validMaxSourceLeak && theConnections.validMinDrainLeak
+				&& abs(theConnections.maxSourceLeakVoltage - theConnections.minDrainLeakVoltage) > theParameter )
+			|| ( theConnections.validMinSourceLeak && ! theConnections.validMaxDrainLeak
+				&& abs(theConnections.minSourceLeakVoltage) > theParameter )
+			|| ( ! theConnections.validMinSourceLeak && theConnections.validMaxDrainLeak
+				&& abs(theConnections.maxDrainLeakVoltage) > theParameter )
+			|| ( theConnections.validMaxSourceLeak && ! theConnections.validMinDrainLeak
+				&& abs(theConnections.maxSourceLeakVoltage) > theParameter )
+			|| ( ! theConnections.validMaxSourceLeak && theConnections.validMinDrainLeak
+				&& abs(theConnections.minDrainLeakVoltage) > theParameter )	) {
 		return("Overvoltage Error:Source vs Drain: (logic ok)");
 	}
 	return("");
 }
 
 string CCvcDb::FindVgsError(voltage_t theParameter, CFullConnection & theConnections) {
-	if ( ( theConnections.CheckTerminalMinMaxVoltages(GATE | SOURCE, false) &&
-				( abs(theConnections.maxGateVoltage - theConnections.minSourceVoltage) > theParameter ||
-					abs(theConnections.minGateVoltage - theConnections.maxSourceVoltage) > theParameter ) ) ||
-			( theConnections.CheckTerminalMinMaxVoltages(GATE | DRAIN, false) &&
-				( abs(theConnections.maxGateVoltage - theConnections.minDrainVoltage) > theParameter ||
-					abs(theConnections.minGateVoltage - theConnections.maxDrainVoltage) > theParameter ) ) ||
-			( theConnections.CheckTerminalMinMaxVoltages(GATE, false) && ! theConnections.CheckTerminalMinMaxVoltages(SOURCE | DRAIN, false) &&
-					max(abs(theConnections.minGateVoltage), abs(theConnections.maxGateVoltage)) > theParameter ) ||
-			( ! theConnections.CheckTerminalMinMaxVoltages(GATE, false) && theConnections.CheckTerminalMinMaxVoltages(SOURCE, false) &&
-					max(abs(theConnections.minSourceVoltage), abs(theConnections.maxSourceVoltage)) > theParameter ) ||
-			( ! theConnections.CheckTerminalMinMaxVoltages(GATE, false) && theConnections.CheckTerminalMinMaxVoltages(DRAIN, false) &&
-					max(abs(theConnections.minDrainVoltage), abs(theConnections.maxDrainVoltage)) > theParameter ) ) {
+	if ( ( theConnections.validMinGate && theConnections.validMaxSource
+				&& abs(theConnections.minGateVoltage - theConnections.maxSourceVoltage) > theParameter )
+			|| ( theConnections.validMaxGate && theConnections.validMinSource
+				&& abs(theConnections.maxGateVoltage - theConnections.minSourceVoltage) > theParameter )
+			|| ( theConnections.validMinGate && theConnections.validMaxDrain
+				&& abs(theConnections.minGateVoltage - theConnections.maxDrainVoltage) > theParameter )
+			|| ( theConnections.validMaxGate && theConnections.validMinDrain
+				&& abs(theConnections.maxGateVoltage - theConnections.minDrainVoltage) > theParameter ) ) {
 		return("Overvoltage Error:Gate vs Source/Drain:");
-	} else if ( ( theConnections.CheckTerminalMinMaxLeakVoltages(GATE | SOURCE) &&
-				( abs(theConnections.maxGateLeakVoltage - theConnections.minSourceLeakVoltage) > theParameter ||
-					abs(theConnections.minGateLeakVoltage - theConnections.maxSourceLeakVoltage) > theParameter ) ) ||
-			( theConnections.CheckTerminalMinMaxLeakVoltages(GATE | DRAIN) &&
-				( abs(theConnections.maxGateLeakVoltage - theConnections.minDrainLeakVoltage) > theParameter ||
-					abs(theConnections.minGateLeakVoltage - theConnections.maxDrainLeakVoltage) > theParameter ) ) ||
-			( theConnections.CheckTerminalMinMaxLeakVoltages(GATE) && ! theConnections.CheckTerminalMinMaxLeakVoltages(SOURCE | DRAIN) &&
-					max(abs(theConnections.minGateLeakVoltage), abs(theConnections.maxGateLeakVoltage)) > theParameter ) ||
-			( ! theConnections.CheckTerminalMinMaxLeakVoltages(GATE) && theConnections.CheckTerminalMinMaxLeakVoltages(SOURCE) &&
-					max(abs(theConnections.minSourceLeakVoltage), abs(theConnections.maxSourceLeakVoltage)) > theParameter ) ||
-			( ! theConnections.CheckTerminalMinMaxLeakVoltages(GATE) && theConnections.CheckTerminalMinMaxLeakVoltages(DRAIN) &&
-					max(abs(theConnections.minDrainLeakVoltage), abs(theConnections.maxDrainLeakVoltage)) > theParameter ) ) {
+	} else if ( ! cvcParameters.cvcLeakOvervoltage ) {
+		return ("");
+	} else if ( ( theConnections.validMinGateLeak && theConnections.validMaxSourceLeak
+				&& abs(theConnections.minGateLeakVoltage - theConnections.maxSourceLeakVoltage) > theParameter )
+			|| ( theConnections.validMaxGateLeak && theConnections.validMinSourceLeak
+				&& abs(theConnections.maxGateLeakVoltage - theConnections.minSourceLeakVoltage) > theParameter )
+			|| ( theConnections.validMinGateLeak && theConnections.validMaxDrainLeak
+				&& abs(theConnections.minGateLeakVoltage - theConnections.maxDrainLeakVoltage) > theParameter )
+			|| ( theConnections.validMaxGateLeak && theConnections.validMinDrainLeak
+				&& abs(theConnections.maxGateLeakVoltage - theConnections.minDrainLeakVoltage) > theParameter )
+			|| ( theConnections.validMinGateLeak && ! theConnections.validMaxSourceLeak && ! theConnections.validMaxDrainLeak
+				&& abs(theConnections.minGateLeakVoltage) > theParameter )
+			|| ( theConnections.validMaxGateLeak && ! theConnections.validMinSourceLeak && ! theConnections.validMinDrainLeak
+				&& abs(theConnections.maxGateLeakVoltage) > theParameter )
+			|| ( ! theConnections.validMinGateLeak && theConnections.validMaxSourceLeak
+				&& abs(theConnections.maxSourceLeakVoltage) > theParameter )
+			|| ( ! theConnections.validMinGateLeak && theConnections.validMaxDrainLeak
+				&& abs(theConnections.maxDrainLeakVoltage) > theParameter )
+			|| ( ! theConnections.validMaxGateLeak && theConnections.validMinSourceLeak
+				&& abs(theConnections.minSourceLeakVoltage) > theParameter )
+			|| ( ! theConnections.validMaxGateLeak && theConnections.validMinDrainLeak
+				&& abs(theConnections.minDrainLeakVoltage) > theParameter )	) {
 		return("Overvoltage Error:Gate vs Source/Drain: (logic ok)");
 	}
 	return("");
@@ -201,7 +221,7 @@ void CCvcDb::FindOverVoltageErrors(string theCheck, int theErrorIndex) {
 				for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
 					CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
 					MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-					myConnections.SetMinMaxLeakVoltages(this);
+					myConnections.SetMinMaxLeakVoltagesAndFlags(this);
 					string myErrorExplanation = "";
 					if ( theErrorIndex == OVERVOLTAGE_VBG ) {
 						myErrorExplanation = FindVbgError(model_pit->maxVbg, myConnections);
@@ -427,12 +447,15 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 			if ( myConnections.sourceId == myConnections.drainId &&
 					! ( netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId]->type[POWER_BIT] &&
 					netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]->type[POWER_BIT] ) ) continue;
+			bool myVthFlag = myConnections.minGatePower_p->type[MIN_CALCULATED_BIT]
+					&& ( myConnections.minGateVoltage - myConnections.minSourceVoltage == myDevice_p->model_p->Vth
+							|| myConnections.minGateVoltage - myConnections.minDrainVoltage == myDevice_p->model_p->Vth );
+			if ( myVthFlag && ! cvcParameters.cvcVthGates ) continue;
 			errorCount[NMOS_GATE_SOURCE]++;
 			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
 				if ( myConnections.minGatePower_p->type[REFERENCE_BIT] ) {
 					errorFile << "Gate reference signal" << endl;
-				} else if ( myConnections.minGateVoltage - myConnections.minSourceVoltage == myDevice_p->model_p->Vth ||
-						myConnections.minGateVoltage - myConnections.minDrainVoltage == myDevice_p->model_p->Vth ) {
+				} else if ( myVthFlag ) {
 					errorFile << "Gate-source = Vth" << endl;
 				}
 				PrintDeviceWithMinConnections(deviceParent_v[device_it], myConnections, errorFile);
@@ -525,12 +548,15 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 			if ( myConnections.sourceId == myConnections.drainId &&
 					! ( netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId]->type[POWER_BIT] &&
 					netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]->type[POWER_BIT] ) ) continue;
+			bool myVthFlag = myConnections.maxGatePower_p->type[MAX_CALCULATED_BIT]
+			    && ( myConnections.maxGateVoltage - myConnections.maxSourceVoltage == myDevice_p->model_p->Vth
+			    		|| myConnections.maxGateVoltage - myConnections.maxDrainVoltage == myDevice_p->model_p->Vth );
+			if ( myVthFlag && ! cvcParameters.cvcVthGates ) continue;
 			errorCount[PMOS_GATE_SOURCE]++;
 			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
 				if ( myConnections.maxGatePower_p->type[REFERENCE_BIT] ) {
 					errorFile << "Gate reference signal" << endl;
-				} else if ( myConnections.maxGateVoltage - myConnections.maxSourceVoltage == myDevice_p->model_p->Vth ||
-						myConnections.maxGateVoltage - myConnections.maxDrainVoltage == myDevice_p->model_p->Vth ) {
+				} else if ( myVthFlag ) {
 					errorFile << "Gate-source = Vth" << endl;
 				}
 				PrintDeviceWithMaxConnections(deviceParent_v[device_it], myConnections, errorFile);
@@ -592,19 +618,24 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 		CDevice * myDevice_p = myParent_p->devicePtr_v[device_it - myInstance_p->firstDeviceId];
 		if ( ! IsNmos_(myDevice_p->model_p->type) ) continue;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
+		if ( myConnections.maxBulkVoltage == myConnections.minSourceVoltage && myConnections.maxBulkVoltage == myConnections.minDrainVoltage ) continue;
+			// no error if max bulk = min source = min drain
 		bool myErrorFlag = false;
 		if ( myConnections.minBulkPower_p && myConnections.minBulkPower_p->type[HIZ_BIT] ) {
+			if ( myConnections.sourceId == myConnections.bulkId && myConnections.drainId == myConnections.bulkId ) continue;
 			if ( myConnections.minSourcePower_p && ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.minSourcePower_p, netVoltagePtr_v, minNet_v, minNet_v, false) ) {
 				myErrorFlag = true;
-			} else if ( myConnections.simSourcePower_p && IsKnownVoltage_(myConnections.simSourcePower_p->simVoltage) &&
-					! myConnections.minBulkPower_p->IsRelatedPower(myConnections.simSourcePower_p, netVoltagePtr_v, minNet_v, simNet_v, false) ) {
+			} else if ( myConnections.simSourcePower_p && IsKnownVoltage_(myConnections.simSourcePower_p->simVoltage)
+					&& ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.simSourcePower_p, netVoltagePtr_v, minNet_v, simNet_v, false)
+					&& myConnections.simSourceVoltage < myConnections.maxBulkVoltage ) {
 				myErrorFlag = true;
 			} else if ( myConnections.maxSourcePower_p && ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.maxSourcePower_p, netVoltagePtr_v, minNet_v, maxNet_v, false) ) {
 				myErrorFlag = true;
 			} else if ( myConnections.minDrainPower_p && ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.minDrainPower_p, netVoltagePtr_v, minNet_v, minNet_v, false) ) {
 				myErrorFlag = true;
-			} else if ( myConnections.simDrainPower_p && IsKnownVoltage_(myConnections.simDrainPower_p->simVoltage) &&
-					! myConnections.minBulkPower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, minNet_v, simNet_v, false) ) {
+			} else if ( myConnections.simDrainPower_p && IsKnownVoltage_(myConnections.simDrainPower_p->simVoltage)
+					&& ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, minNet_v, simNet_v, false)
+					&& myConnections.simDrainVoltage < myConnections.maxBulkVoltage ) {
 				myErrorFlag = true;
 			} else if ( myConnections.maxDrainPower_p && ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.maxDrainPower_p, netVoltagePtr_v, minNet_v, maxNet_v, false) ) {
 				myErrorFlag = true;
@@ -771,20 +802,23 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 		CDevice * myDevice_p = myParent_p->devicePtr_v[device_it - myInstance_p->firstDeviceId];
 		if ( ! IsPmos_(myDevice_p->model_p->type) ) continue;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
+		if ( myConnections.minBulkVoltage == myConnections.maxSourceVoltage && myConnections.minBulkVoltage == myConnections.maxDrainVoltage ) continue;
+		 	 // no error if min bulk = max source = max drain
 		bool myErrorFlag = false;
-
 		if ( myConnections.maxBulkPower_p && myConnections.maxBulkPower_p->type[HIZ_BIT] ) {
 			if ( myConnections.minSourcePower_p && ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.minSourcePower_p, netVoltagePtr_v, maxNet_v, minNet_v, false) ) {
 				myErrorFlag = true;
-			} else if ( myConnections.simSourcePower_p && IsKnownVoltage_(myConnections.simSourcePower_p->simVoltage) &&
-					! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.simSourcePower_p, netVoltagePtr_v, maxNet_v, simNet_v, false) ) {
+			} else if ( myConnections.simSourcePower_p && IsKnownVoltage_(myConnections.simSourcePower_p->simVoltage)
+					&& ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.simSourcePower_p, netVoltagePtr_v, maxNet_v, simNet_v, false)
+					&& myConnections.simSourceVoltage > myConnections.minBulkVoltage ) {
 				myErrorFlag = true;
 			} else if ( myConnections.maxSourcePower_p && ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.maxSourcePower_p, netVoltagePtr_v, maxNet_v, maxNet_v, false) ) {
 				myErrorFlag = true;
 			} else if ( myConnections.minDrainPower_p && ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.minDrainPower_p, netVoltagePtr_v, maxNet_v, minNet_v, false) ) {
 				myErrorFlag = true;
-			} else if ( myConnections.simDrainPower_p && IsKnownVoltage_(myConnections.simDrainPower_p->simVoltage) &&
-					! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, maxNet_v, simNet_v, false) ) {
+			} else if ( myConnections.simDrainPower_p && IsKnownVoltage_(myConnections.simDrainPower_p->simVoltage)
+					&& ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, maxNet_v, simNet_v, false)
+					&& myConnections.simDrainVoltage > myConnections.minBulkVoltage ) {
 				myErrorFlag = true;
 			} else if ( myConnections.maxDrainPower_p && ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.maxDrainPower_p, netVoltagePtr_v, maxNet_v, maxNet_v, false) ) {
 				myErrorFlag = true;
@@ -987,8 +1021,20 @@ void CCvcDb::FindForwardBiasDiodes() {
 					mySourceVoltage = myConnections.maxSourceVoltage; // max source overrides
 				}
 			}
-			if ( mySourceVoltage == UNKNOWN_VOLTAGE ) mySourceVoltage = myConnections.maxSourceVoltage;
-			if ( myDrainVoltage == UNKNOWN_VOLTAGE ) myDrainVoltage = myConnections.minDrainVoltage;
+			if ( mySourceVoltage == UNKNOWN_VOLTAGE ) {
+				if ( cvcParameters.cvcLogicDiodes && myConnections.simSourceVoltage != UNKNOWN_VOLTAGE ) {
+					mySourceVoltage = myConnections.simSourceVoltage;
+				} else {
+					mySourceVoltage = myConnections.maxSourceVoltage;
+				}
+			}
+			if ( myDrainVoltage == UNKNOWN_VOLTAGE ) {
+				if ( cvcParameters.cvcLogicDiodes && myConnections.simDrainVoltage != UNKNOWN_VOLTAGE ) {
+					myDrainVoltage = myConnections.simDrainVoltage;
+				} else {
+					myDrainVoltage = myConnections.minDrainVoltage;
+				}
+			}
 			if ( mySourceVoltage > myDrainVoltage ) {
 /*
 				if ( myConnections.maxSourcePower_p->type[HIZ_BIT] ) {
@@ -1130,7 +1176,14 @@ void CCvcDb::FindNmosPossibleLeakErrors() {
 		myErrorFlag = false;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 		if ( IsKnownVoltage_(myConnections.simGateVoltage) ) continue;
-
+		if ( myConnections.CheckTerminalMinVoltages(SOURCE | DRAIN) == true ) {
+			voltage_t myMaxLeakGateVoltage = MaxLeakVoltage(myConnections.gateId);
+			if ( myMaxLeakGateVoltage != UNKNOWN_VOLTAGE
+					&& myMaxLeakGateVoltage <= myConnections.minSourceVoltage + myConnections.device_p->model_p->Vth
+					&& myMaxLeakGateVoltage <= myConnections.minDrainVoltage + myConnections.device_p->model_p->Vth ) {
+				continue;  // always off
+			}
+		}
 		if ( myConnections.CheckTerminalSimVoltages(SOURCE | DRAIN) == true ) {
 			if ( myConnections.simSourceVoltage == myConnections.simDrainVoltage ) continue;
 			if ( myConnections.simSourcePower_p->type[HIZ_BIT] &&
@@ -1224,7 +1277,14 @@ void CCvcDb::FindPmosPossibleLeakErrors() {
 		myErrorFlag = false;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 		if ( IsKnownVoltage_(myConnections.simGateVoltage) ) continue;
-
+		if ( myConnections.CheckTerminalMaxVoltages(SOURCE | DRAIN) == true ) {
+			voltage_t myMinLeakGateVoltage = MinLeakVoltage(myConnections.gateId);
+			if ( myMinLeakGateVoltage != UNKNOWN_VOLTAGE
+					&& myMinLeakGateVoltage >= myConnections.maxSourceVoltage + myConnections.device_p->model_p->Vth
+					&& myMinLeakGateVoltage >= myConnections.maxDrainVoltage + myConnections.device_p->model_p->Vth ) {
+				continue;  // always off
+			}
+		}
 //					bool myErrorFlag = false;
 		if ( myConnections.CheckTerminalSimVoltages(SOURCE | DRAIN) == true ) {
 			if ( myConnections.simSourceVoltage == myConnections.simDrainVoltage ) continue;

@@ -94,6 +94,12 @@ void CCvcParameters::ResetEnvironment() {
 	cvcSCRC = defaultSCRC;
 	//! cvcSCRC (Sub-threshhold Current Reduction Circuit)
 	//! When set, calculates expected SCRC levels after first propagation.
+	cvcVthGates = defaultVthGates;
+	//! When set, detects gate-source errors at Vth. Default is to ignore errors at exactly Vth.
+	cvcLeakOvervoltage = defaultLeakOvervoltage;
+	//! When set, detects worst case overvoltage errors. Default is to flag all errors including those not possible with current mode logic.
+	cvcLogicDiodes = defaultLogicDiodes;
+	//! When set, uses logic values, if known, for diode checks. Default is to ignore logic values.
 }
 
 void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
@@ -111,6 +117,9 @@ void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
 	theOutputFile << "CVC_LEAK_LIMIT = '" << cvcLeakLimit << "'" << endl;
 	theOutputFile << "CVC_SOI = '" << (( cvcSOI ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "CVC_SCRC = '" << (( cvcSCRC ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_VTH_GATES = '" << (( cvcVthGates ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_LEAK_OVERVOLTAGE = '" << (( cvcLeakOvervoltage ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_LOGIC_DIODES = '" << (( cvcLogicDiodes ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "End of parameters" << endl << endl;
 }
 
@@ -135,6 +144,9 @@ void CCvcParameters::PrintDefaultEnvironment() {
 	myDefaultCvcrc << "CVC_LEAK_LIMIT = '" << cvcLeakLimit << "'" << endl;
 	myDefaultCvcrc << "CVC_SOI = '" << (( cvcSOI ) ? "true" : "false") << "'" << endl;
 	myDefaultCvcrc << "CVC_SCRC = '" << (( cvcSCRC ) ? "true" : "false") << "'" << endl;
+	myDefaultCvcrc << "CVC_VTH_GATES = '" << (( cvcVthGates ) ? "true" : "false") << "'" << endl;
+	myDefaultCvcrc << "CVC_LEAK_OVERVOLTAGE = '" << (( cvcLeakOvervoltage ) ? "true" : "false") << "'" << endl;
+	myDefaultCvcrc << "CVC_LOGIC_DIODES = '" << (( cvcLogicDiodes ) ? "true" : "false") << "'" << endl;
 	myDefaultCvcrc.close();
 }
 
@@ -203,6 +215,12 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 			cvcSOI = strcasecmp(myBuffer, "true") == 0;
 		} else if ( myVariable == "CVC_SCRC" ) {
 			cvcSCRC = strcasecmp(myBuffer, "true") == 0;
+		} else if ( myVariable == "CVC_VTH_GATES" ) {
+			cvcVthGates = strcasecmp(myBuffer, "true") == 0;
+		} else if ( myVariable == "CVC_LEAK_OVERVOLTAGE" ) {
+			cvcLeakOvervoltage = strcasecmp(myBuffer, "true") == 0;
+		} else if ( myVariable == "CVC_LOGIC_DIODES" ) {
+			cvcLogicDiodes = strcasecmp(myBuffer, "true") == 0;
 		}
 	}
 	if ( ! theReportPrefix.empty() ) {
@@ -377,12 +395,26 @@ returnCode_t CCvcParameters::LoadPower() {
 		}
 	}
 	cvcPowerPtrList.SetFamilies(cvcPowerFamilyMap);
+	SetHiZPropagation();
 	myPowerFile.close();
 	if ( myPowerErrorFlag ) {
 		reportFile << "Invalid power file: " << cvcPowerFilename << endl;
 		return (SKIP);
 	} else {
 		return (OK);
+	}
+}
+
+void CCvcParameters::SetHiZPropagation() {
+	for ( auto power_ppit = cvcPowerPtrList.begin(); power_ppit != cvcPowerPtrList.end(); power_ppit++ ) {
+		if ( (*power_ppit)->type[HIZ_BIT] && ! (*power_ppit)->family.empty() ) {
+			if ( (*power_ppit)->RelativeVoltage(cvcPowerMacroPtrMap, MIN_POWER, cvcModelListMap) == (*power_ppit)->minVoltage ) {
+				(*power_ppit)->active[MIN_IGNORE] = true;
+			}
+			if ( (*power_ppit)->RelativeVoltage(cvcPowerMacroPtrMap, MAX_POWER, cvcModelListMap) == (*power_ppit)->maxVoltage ) {
+				(*power_ppit)->active[MAX_IGNORE] = true;
+			}
+		}
 	}
 }
 

@@ -36,17 +36,22 @@ float CFullConnection::EstimatedMinimumCurrent() {
 	if ( minSourceVoltage == UNKNOWN_VOLTAGE || minDrainVoltage == UNKNOWN_VOLTAGE || maxSourceVoltage == UNKNOWN_VOLTAGE || maxDrainVoltage == UNKNOWN_VOLTAGE ) return(0);
 	voltage_t myMaxMinVoltage, myMinMaxVoltage;
 	resistance_t myMinResistance, myMaxResistance;
+	bool mySelfShort = false;  // for voltage drops across mosfet
 	if (minSourceVoltage > minDrainVoltage) {
+		if ( minSourcePower_p->type[MIN_CALCULATED_BIT] && minSourcePower_p->defaultMinNet == drainId ) mySelfShort = true;
 		myMaxMinVoltage = minSourceVoltage;
 		myMaxResistance = masterMinSourceNet.finalResistance;
 	} else {
+		if ( minDrainPower_p->type[MIN_CALCULATED_BIT] && minDrainPower_p->defaultMinNet == sourceId ) mySelfShort = true;
 		myMaxMinVoltage = minDrainVoltage;
 		myMaxResistance = masterMinDrainNet.finalResistance;
 	}
 	if (maxSourceVoltage < maxDrainVoltage) {
+		if ( maxSourcePower_p->type[MAX_CALCULATED_BIT] && maxSourcePower_p->defaultMaxNet == drainId ) mySelfShort = true;
 		myMinMaxVoltage = maxSourceVoltage;
 		myMinResistance = masterMaxSourceNet.finalResistance;
 	} else {
+		if ( maxDrainPower_p->type[MAX_CALCULATED_BIT] && maxDrainPower_p->defaultMaxNet == sourceId ) mySelfShort = true;
 		myMinMaxVoltage = maxDrainVoltage;
 		myMinResistance = masterMaxDrainNet.finalResistance;
 	}
@@ -57,6 +62,7 @@ float CFullConnection::EstimatedMinimumCurrent() {
 			( IsPmos_(device_p->model_p->type) &&
 				( minGateVoltage - myMaxMinVoltage == device_p->model_p->Vth ||
 						myMaxMinVoltage - myMinMaxVoltage >= device_p->model_p->Vth ) ) );
+	if ( mySelfShort && myVthFlag ) return (0);  // zero current for calculated voltage drops
 	if ( IsNmos_(device_p->model_p->type) && maxGateVoltage != UNKNOWN_VOLTAGE ) {
 		myMaxMinVoltage = max(myMinMaxVoltage, min(maxGateVoltage, myMaxMinVoltage));
 	} else if ( IsPmos_(device_p->model_p->type) && minGateVoltage != UNKNOWN_VOLTAGE ) {
@@ -265,7 +271,7 @@ void CFullConnection::SetUnknownVoltage() {
 	if ( simGateVoltage == UNKNOWN_VOLTAGE && minGateVoltage == maxGateVoltage ) simGateVoltage = minGateVoltage;
 }
 
-void CFullConnection::SetMinMaxLeakVoltages(CCvcDb * theCvcDb) {
+void CFullConnection::SetMinMaxLeakVoltagesAndFlags(CCvcDb * theCvcDb) {
 	minGateLeakVoltage = theCvcDb->MinLeakVoltage(gateId);
 	minSourceLeakVoltage = theCvcDb->MinLeakVoltage(sourceId);
 	minDrainLeakVoltage = theCvcDb->MinLeakVoltage(drainId);
@@ -274,14 +280,85 @@ void CFullConnection::SetMinMaxLeakVoltages(CCvcDb * theCvcDb) {
 	maxSourceLeakVoltage = theCvcDb->MaxLeakVoltage(sourceId);
 	maxDrainLeakVoltage = theCvcDb->MaxLeakVoltage(drainId);
 	maxBulkLeakVoltage = theCvcDb->MaxLeakVoltage(bulkId);
-	if ( minGateVoltage == UNKNOWN_VOLTAGE || ( minGateLeakVoltage != UNKNOWN_VOLTAGE && minGateLeakVoltage > minGateVoltage ) ) minGateVoltage = minGateLeakVoltage;
-	if ( minSourceVoltage == UNKNOWN_VOLTAGE || ( minSourceLeakVoltage != UNKNOWN_VOLTAGE && minSourceLeakVoltage > minSourceVoltage ) ) minSourceVoltage = minSourceLeakVoltage;
-	if ( minDrainVoltage == UNKNOWN_VOLTAGE || ( minDrainLeakVoltage != UNKNOWN_VOLTAGE && minDrainLeakVoltage > minDrainVoltage ) ) minDrainVoltage = minDrainLeakVoltage;
-	if ( minBulkVoltage == UNKNOWN_VOLTAGE || ( minBulkLeakVoltage != UNKNOWN_VOLTAGE && minBulkLeakVoltage > minBulkVoltage ) ) minBulkVoltage = minBulkLeakVoltage;
-	if ( maxGateVoltage == UNKNOWN_VOLTAGE || ( maxGateLeakVoltage != UNKNOWN_VOLTAGE && maxGateLeakVoltage < maxGateVoltage ) ) maxGateVoltage = maxGateLeakVoltage;
-	if ( maxSourceVoltage == UNKNOWN_VOLTAGE || ( maxSourceLeakVoltage != UNKNOWN_VOLTAGE && maxSourceLeakVoltage < maxSourceVoltage ) ) maxSourceVoltage = maxSourceLeakVoltage;
-	if ( maxDrainVoltage == UNKNOWN_VOLTAGE || ( maxDrainLeakVoltage != UNKNOWN_VOLTAGE && maxDrainLeakVoltage < maxDrainVoltage ) ) maxDrainVoltage = maxDrainLeakVoltage;
-	if ( maxBulkVoltage == UNKNOWN_VOLTAGE || ( maxBulkLeakVoltage != UNKNOWN_VOLTAGE && maxBulkLeakVoltage < maxBulkVoltage ) ) maxBulkVoltage = maxBulkLeakVoltage;
+
+	validMinGate = ! ( minGateVoltage == UNKNOWN_VOLTAGE || (minGatePower_p && minGatePower_p->type[HIZ_BIT]) );
+	validMinSource = ! ( minSourceVoltage == UNKNOWN_VOLTAGE || (minSourcePower_p && minSourcePower_p->type[HIZ_BIT]) );
+	validMinDrain = ! ( minDrainVoltage == UNKNOWN_VOLTAGE || (minDrainPower_p && minDrainPower_p->type[HIZ_BIT]) );
+	validMinBulk = ! ( minBulkVoltage == UNKNOWN_VOLTAGE || (minBulkPower_p && minBulkPower_p->type[HIZ_BIT]) );
+	validSimGate = simGateVoltage != UNKNOWN_VOLTAGE;
+	validSimSource = simSourceVoltage != UNKNOWN_VOLTAGE;
+	validSimDrain = simDrainVoltage != UNKNOWN_VOLTAGE;
+	validSimBulk = simBulkVoltage != UNKNOWN_VOLTAGE;
+	validMaxGate = ! ( maxGateVoltage == UNKNOWN_VOLTAGE || (maxGatePower_p && maxGatePower_p->type[HIZ_BIT]) );
+	validMaxSource = ! ( maxSourceVoltage == UNKNOWN_VOLTAGE || (maxSourcePower_p && maxSourcePower_p->type[HIZ_BIT]) );
+	validMaxDrain = ! ( maxDrainVoltage == UNKNOWN_VOLTAGE || (maxDrainPower_p && maxDrainPower_p->type[HIZ_BIT]) );
+	validMaxBulk = ! ( maxBulkVoltage == UNKNOWN_VOLTAGE || (maxBulkPower_p && maxBulkPower_p->type[HIZ_BIT]) );
+	validMinGateLeak = minGateLeakVoltage != UNKNOWN_VOLTAGE;
+	validMinSourceLeak = minSourceLeakVoltage != UNKNOWN_VOLTAGE;
+	validMinDrainLeak = minDrainLeakVoltage != UNKNOWN_VOLTAGE;
+	validMinBulkLeak = minBulkLeakVoltage != UNKNOWN_VOLTAGE;
+	validMaxGateLeak = maxGateLeakVoltage != UNKNOWN_VOLTAGE;
+	validMaxSourceLeak = maxSourceLeakVoltage != UNKNOWN_VOLTAGE;
+	validMaxDrainLeak = maxDrainLeakVoltage != UNKNOWN_VOLTAGE;
+	validMaxBulkLeak = maxBulkLeakVoltage != UNKNOWN_VOLTAGE;
+	if ( validMinGate && validMaxGate ) {
+		validMinGate = validMaxGate = minGateVoltage <= maxGateVoltage;
+	}
+	if ( validMinSource && validMaxSource ) {
+		validMinSource = validMaxSource = minSourceVoltage <= maxSourceVoltage;
+	}
+	if ( validMinDrain && validMaxDrain ) {
+		validMinDrain = validMaxDrain = minDrainVoltage <= maxDrainVoltage;
+	}
+	if ( validMinBulk && validMaxBulk ) {
+		validMinBulk = validMaxBulk = minBulkVoltage <= maxBulkVoltage;
+	}
+	if ( validMinGateLeak && validMaxGateLeak ) {
+		validMinGateLeak = validMaxGateLeak = minGateLeakVoltage <= maxGateLeakVoltage;
+	}
+	if ( validMinSourceLeak && validMaxSourceLeak ) {
+		validMinSourceLeak = validMaxSourceLeak = minSourceLeakVoltage <= maxSourceLeakVoltage;
+	}
+	if ( validMinDrainLeak && validMaxDrainLeak ) {
+		validMinDrainLeak = validMaxDrainLeak = minDrainLeakVoltage <= maxDrainLeakVoltage;
+	}
+	if ( validMinBulkLeak && validMaxBulkLeak ) {
+		validMinBulkLeak = validMaxBulkLeak = minBulkLeakVoltage <= maxBulkLeakVoltage;
+	}
+	if ( validMinGate && validMinGateLeak ) {
+		validMinGate = minGateVoltage >= minGateLeakVoltage;
+	}
+	if ( validMinSource && validMinSourceLeak ) {
+		validMinSource = minSourceVoltage >= minSourceLeakVoltage;
+	}
+	if ( validMinDrain && validMinDrainLeak ) {
+		validMinDrain = minDrainVoltage >= minDrainLeakVoltage;
+	}
+	if ( validMinBulk && validMinBulkLeak ) {
+		validMinBulk = minBulkVoltage >= minBulkLeakVoltage;
+	}
+	if ( validMaxGate && validMaxGateLeak ) {
+		validMaxGate = maxGateVoltage <= maxGateLeakVoltage;
+	}
+	if ( validMaxSource && validMaxSourceLeak ) {
+		validMaxSource = maxSourceVoltage <= maxSourceLeakVoltage;
+	}
+	if ( validMaxDrain && validMaxDrainLeak ) {
+		validMaxDrain = maxDrainVoltage <= maxDrainLeakVoltage;
+	}
+	if ( validMaxBulk && validMaxBulkLeak ) {
+		validMaxBulk = maxBulkVoltage <= maxBulkLeakVoltage;
+	}
+
+	// following lines handled elsewhere
+//	if ( minGateVoltage == UNKNOWN_VOLTAGE || ( minGateLeakVoltage != UNKNOWN_VOLTAGE && minGateLeakVoltage > minGateVoltage ) ) minGateVoltage = minGateLeakVoltage;
+//	if ( minSourceVoltage == UNKNOWN_VOLTAGE || ( minSourceLeakVoltage != UNKNOWN_VOLTAGE && minSourceLeakVoltage > minSourceVoltage ) ) minSourceVoltage = minSourceLeakVoltage;
+//	if ( minDrainVoltage == UNKNOWN_VOLTAGE || ( minDrainLeakVoltage != UNKNOWN_VOLTAGE && minDrainLeakVoltage > minDrainVoltage ) ) minDrainVoltage = minDrainLeakVoltage;
+//	if ( minBulkVoltage == UNKNOWN_VOLTAGE || ( minBulkLeakVoltage != UNKNOWN_VOLTAGE && minBulkLeakVoltage > minBulkVoltage ) ) minBulkVoltage = minBulkLeakVoltage;
+//	if ( maxGateVoltage == UNKNOWN_VOLTAGE || ( maxGateLeakVoltage != UNKNOWN_VOLTAGE && maxGateLeakVoltage < maxGateVoltage ) ) maxGateVoltage = maxGateLeakVoltage;
+//	if ( maxSourceVoltage == UNKNOWN_VOLTAGE || ( maxSourceLeakVoltage != UNKNOWN_VOLTAGE && maxSourceLeakVoltage < maxSourceVoltage ) ) maxSourceVoltage = maxSourceLeakVoltage;
+//	if ( maxDrainVoltage == UNKNOWN_VOLTAGE || ( maxDrainLeakVoltage != UNKNOWN_VOLTAGE && maxDrainLeakVoltage < maxDrainVoltage ) ) maxDrainVoltage = maxDrainLeakVoltage;
+//	if ( maxBulkVoltage == UNKNOWN_VOLTAGE || ( maxBulkLeakVoltage != UNKNOWN_VOLTAGE && maxBulkLeakVoltage < maxBulkVoltage ) ) maxBulkVoltage = maxBulkLeakVoltage;
 }
 
 /*

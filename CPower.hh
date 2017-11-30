@@ -34,7 +34,7 @@ class CVirtualNetVector;
 
 // status type bits
 enum powerType_t { POWER_BIT=0, INPUT_BIT, HIZ_BIT, RESISTOR_BIT, REFERENCE_BIT, MIN_CALCULATED_BIT, SIM_CALCULATED_BIT, MAX_CALCULATED_BIT };
-enum activeType_t { MIN_ACTIVE=0, MAX_ACTIVE };
+enum activeType_t { MIN_ACTIVE=0, MAX_ACTIVE, MIN_IGNORE, MAX_IGNORE };
 
 #define IsExternalPower_(power_p) ((power_p)->type[POWER_BIT] || (power_p)->type[INPUT_BIT])
 #define IsPriorityPower_(power_p) ((power_p)->type[POWER_BIT] || (power_p)->type[INPUT_BIT] || (power_p)->type[RESISTOR_BIT])
@@ -71,6 +71,8 @@ public:
 	string	expectedSim = "";
 	string	expectedMin = "";
 	string	expectedMax = "";
+	voltage_t pullDownVoltage = UNKNOWN_VOLTAGE;
+	voltage_t pullUpVoltage = UNKNOWN_VOLTAGE;
 	// base of calculations for calculated nets
 //	netId_t	baseMinId = UNKNOWN_NET;
 //	netId_t	baseSimId = UNKNOWN_NET;
@@ -80,6 +82,7 @@ public:
 	bool relativeFriendly = true;
 	CSet	relativeSet;
 	bool	printed = false;
+	bool    flagAllShorts = false;
 
 	CPower();
 	CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModelListMap & theModelListMap);
@@ -110,6 +113,7 @@ public:
 	void Print(ostream & theLogFile, string theIndentation = "", string theRealPowerName = "");
 	string PowerDefinition();
 	string StandardDefinition();
+	voltage_t RelativeVoltage(CPowerPtrMap & thePowerMacroPtrMap, netStatus_t theType, CModelListMap & theModelListMap);
 };
 
 #define PowerDelimiter_(power_p, BIT) ((power_p == NULL || power_p->type[BIT]) ? "=" : "@")

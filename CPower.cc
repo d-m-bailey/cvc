@@ -193,6 +193,7 @@ CPower::CPower(netId_t theNetId, voltage_t theSimVoltage) {
 //	type[MIN_CALCULATED_BIT] = true;
 //	type[SIM_CALCULATED_BIT] = true;
 //	type[MAX_CALCULATED_BIT] = true;
+	flagAllShorts = true;
 }
 
 CPower::CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, netId_t theMinNet, netId_t theMaxNet, string theCalculation) {
@@ -788,6 +789,9 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 */
 	if ( (*this)[theDefaultNetId] && (*this)[theDefaultNetId]->type[HIZ_BIT] ) {
 		myPower_p->type[HIZ_BIT] = true;
+		myPower_p->family = (*this)[theDefaultNetId]->family;
+		myPower_p->relativeFriendly = (*this)[theDefaultNetId]->relativeFriendly;
+		myPower_p->relativeSet = (*this)[theDefaultNetId]->relativeSet;
 //		myPower_p->defaultMinNet = theDefaultNetId;
 //		myPower_p->type[MIN_CALCULATED_BIT] = true;
 //		myPower_p->defaultMaxNet = theDefaultNetId;
@@ -991,4 +995,14 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 	delete myTokenList_p;
 //	cout << "Final voltage " << myVoltageStack.front() << endl;
 	return ( round(myVoltageStack.front() * VOLTAGE_SCALE + 0.1) );
+}
+
+voltage_t CPower::RelativeVoltage(CPowerPtrMap & thePowerMacroPtrMap, netStatus_t theType, CModelListMap & theModelListMap) {
+	if ( family.empty() ) return UNKNOWN_VOLTAGE;
+	try {
+		return thePowerMacroPtrMap.CalculateVoltage(*(relativeSet.begin()), theType, theModelListMap);
+	}
+	catch (...) {
+		return UNKNOWN_VOLTAGE;
+	}
 }
