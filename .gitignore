@@ -7,3 +7,8 @@ location.hh
 position.hh
 stack.hh
 *.o
+.deps
+Makefile*
+default.cvcrc
+cvc.exe
+autoscan*
