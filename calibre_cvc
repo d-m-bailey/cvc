@@ -1,0 +1,129 @@
+#!/bin/bash
+
+#   calibre_cvc: runs calibre svs to create a standardized netlist
+
+#   Copyright 2106, 2017 D. Mitch Bailey
+
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+echo $0 $*
+
+rulefile=cvc.svrf
+
+if [[ ${#*} -ne 3 ]]; then 
+	echo "usage: calibre_cvc topBlock dataPath output"
+	exit 1
+fi
+
+PRIMARY="$1"
+DATA="$2"
+OUTPUT="$3"
+
+additionalRules="cvc.include"
+#   Additional rules include the following statements
+#   CASE (except LVS CASE[included later])
+#   VIRTUAL CONNECT COLON YES (if used)
+#   LVS (except LVS SOFTCHK[ignored], LVS REPORT/WRITE[fixed], LVS INJECT LOGIC[always NO], and
+#     LVS CULL PRIMITIVE CELLS[should be no for box instances])
+#   TRACE
+
+cellOverrides="override.list"
+#   Cell overrides are
+#   EXPAND cell  <- force flattening
+#   KEEP cell    <- prevent explicit flattening (parameterized cells always flattened)
+#   IGNORE cell  <- ignore
+
+if [[ -f box.awk ]]; then
+	BOX_FILTER='awk -f box.awk'
+else
+	BOX_FILTER=cat
+fi
+
+if [[ "${OUTPUT##*.}" == "gz" ]]; then
+	compress=
+	OUTPUT="${OUTPUT%%.gz}"
+fi
+
+log="cdl.log"
+echo "log file: $log"
+
+cat > $rulefile <<-svs_rule
+	LAYOUT PRIMARY $PRIMARY
+	LAYOUT PATH "$DATA"
+	SOURCE PRIMARY $PRIMARY
+	SOURCE PATH "$DATA"
+	LVS WRITE SOURCE NETLIST "$OUTPUT.0"
+
+	LVS REPORT "lvs_cdl.rep"
+	LVS REPORT MAXIMUM 100
+	LVS REPORT OPTION F R S V
+	MASK RESULTS DATABASE none
+
+	SOURCE SYSTEM SPICE
+	LAYOUT SYSTEM SPICE
+
+	LVS INJECT LOGIC NO
+svs_rule
+
+if [[ -f $additionalRules ]]; then
+	echo "Adding $additionalRules to cvc.svrf"
+	cat $additionalRules >> $rulefile
+else
+	echo "Warning: missing $additionalRules"
+fi
+
+if [[ ( $DATA -nt expand.list ) || ( $cellOverrides -nt expand.list ) ]]; then
+	echo "Finding cells to expand using $cellOverrides ..."
+	if [[ -f $cellOverrides ]]; then
+		expand_cells.py $cellOverrides $PRIMARY $DATA > expand.list
+	else
+		echo "Warning: missing $cellOverrides"
+		expand_cells.py /dev/null $PRIMARY $DATA > expand.list
+	fi
+else
+	echo "Reusing expand.list"
+fi
+cat expand.list >> $rulefile
+
+if [[ -f $OUTPUT.0 ]]; then
+	mv $OUTPUT.0 $OUTPUT.0.bak
+fi
+
+echo "Performing SVS..."
+calibre -hier -automatch -lvs -64 $rulefile > $log
+tail -15 $log
+
+echo "Removing leading double characters and changing commented parameters ..."
+# ^RR -> R
+# $LDD deleted (functionality in cvc model file LDDN/LDDP)
+# X*==3 -> X* (done twice to handle up to 2 occurances on same instance)
+# == -> --
+# $a -> a
+# $SUB= -> SUB= -> $SUB=  (no change)
+sed -e 's/^\(.\)\1/\1/' \
+    -e 's/\$SUB=/^SUB=/' \
+    -e 's/\$LDD//' \
+    -e 's/\$//g' \
+    -e 's/^\([^ ]*\)==[0-9]*/\1/' \
+    -e 's/^\([^ ]*\)==[0-9]*/\1/' \
+    -e 's/==/--/g' \
+    -e 's/\$//g' \
+    -e 's/\^SUB=/$SUB=/' $OUTPUT.0 | \
+$BOX_FILTER > $OUTPUT
+
+if [[ ! -z "${compress+x}" ]]; then
+	gzip -f $OUTPUT
+fi
+
+#23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
