@@ -38,9 +38,9 @@ Sub SaveCvcParameters()
     ElseIf Not CheckCVCModelFile Then
         Exit Sub
     End If
-    
+   
     Call WritePowerFiles
-    
+   
     ChDir gCurrentDirectory
     Call WriteModelFile
 
@@ -57,7 +57,7 @@ Private Function CheckCVCPowerDirectory() As Boolean
     Dim myAddress As String
     Dim powerFileDirectory As String
     Dim modelFile As String
-    
+   
     CheckCVCPowerDirectory = True
     On Error Resume Next
     Sheets("Power").Select
@@ -91,7 +91,7 @@ Private Function CheckCVCPowerDirectory() As Boolean
             End If
         End If
     End If
-    
+   
 End Function
 
 Private Function CheckCVCModelFile() As Boolean
@@ -106,7 +106,7 @@ Private Function CheckCVCModelFile() As Boolean
     Dim myAddress As String
     Dim powerFileDirectory As String
     Dim modelFile As String
-    
+   
     CheckCVCModelFile = True
     On Error Resume Next
     Sheets("Model").Select
@@ -138,7 +138,7 @@ Private Function CheckCVCModelFile() As Boolean
             End If
         End If
     End If
-    
+   
 End Function
 
 Private Function StandardPath(thePath As String) As String
@@ -155,7 +155,7 @@ Private Sub WritePowerFiles()
     'Write power files to power directory
     Dim myRange As Range
     Dim myLastRow As Integer
-    
+   
     Sheets("Power").Select
     Set myRange = FindFirst("Net")
     If myRange Is Nothing Then
@@ -176,7 +176,7 @@ Sub GetModes(theRange As Range)
     'Set gModes
     'Read until blank or 'Comment'
     Dim myModeCount As Integer
-    
+   
     myModeCount = 0
     While (theRange.Offset(0, myModeCount + 2).Value <> "" _
             And theRange.Offset(0, myModeCount + 2).Value <> "Comment")
@@ -193,7 +193,7 @@ Sub GetNets(theRange As Range)
     'Rows with blank types are comments
     Dim myNetCount As Integer
     Dim myBlankRowCount As Integer
-    
+   
     myBlankRowCount = 0
     myNetCount = 0
     While (theRange.Offset(myNetCount + 1, 0) <> "History" And myBlankRowCount < 100)
@@ -220,7 +220,7 @@ Sub WriteOnePowerFile(theRange As Range)
     Dim myModeIndex As Integer
     Dim myNetIndex As Integer
     Dim myPowerFileName As String
-    
+   
     For myModeIndex = LBound(gModes) To UBound(gModes)
         myPowerFileName = gPowerFileDirectory & "\power." & gModes(myModeIndex)
         Open myPowerFileName For Output As #1
@@ -251,7 +251,7 @@ Private Function PowerDefinition(thePowerText As String) As String
     Dim myMinPower As String
     Dim mySimPower As String
     Dim myMaxPower As String
-    
+   
     PowerDefinition = ""
     myPower = Split(thePowerText, "|")
     If LBound(myPower) = UBound(myPower) Then
@@ -268,7 +268,7 @@ Private Function PowerDefinition(thePowerText As String) As String
     ElseIf Not thePowerText = "" Then
         MsgBox "Invalid power definition" & thePowerText
     End If
-    
+   
 End Function
 
 Private Function ReformatPower(thePowerText As String, theType As String) As String
@@ -295,7 +295,7 @@ Private Sub WriteModelFile()
     Dim myRange As Range
     Dim myModeCount As Integer
     Dim myRowIndex As Integer
-    
+   
     Sheets("Model").Select
     Set myRange = FindFirst("Device")
     If myRange Is Nothing Then
@@ -306,10 +306,10 @@ Private Sub WriteModelFile()
         Exit Sub
     End If
     MsgBox "Writing model file to " & gModelFile
-    
+   
     Dim myBlankCount As Integer
     Dim myParameters() As String
-    
+   
     Open gModelFile For Output As #1
     myBlankCount = 0
     myRowIndex = 0
@@ -336,7 +336,7 @@ Private Function GetParameters(theRange As Range, theIndex As Integer) As Varian
     'Return a list of parameters in a device definition row
     Dim myParameterCount As Integer
     Dim myParameters() As String
-    
+   
     myParameterCount = 0
     While (theRange.Offset(theIndex, myParameterCount + 2).Value <> "" _
             And theRange.Offset(theIndex, myParameterCount + 2).Value <> "Comment")
@@ -351,7 +351,7 @@ Private Sub PrintDeviceDetails(theRange As Range, theRow As Integer, theParamete
     'Print one device line
     Dim myModel As String
     Dim myType As String
-    
+   
     myModel = theRange.Offset(theRow, 0)
     myType = theRange.Offset(theRow, 1)
     If Left(myModel, 1) = "#" Then
@@ -387,7 +387,7 @@ Private Function FolderExists(strFolderPath As String) As Boolean
     'Check that folder exists and is writable
     Dim myFileAttr As Integer
     Dim myCurrentPath As String
-       
+      
     FolderExists = False
     On Error Resume Next
     myFileAttr = GetAttr(strFolderPath)
@@ -412,7 +412,7 @@ Private Function FileNameFromPath(strFullPath As String) As String
         End If
     Next
 End Function
- 
+
 Private Function FolderFromPath(strFullPath As String) As String
     'Return parent path
     Dim I As Integer
@@ -452,7 +452,7 @@ Sub Reformat()
         .Orientation = 45
     End With
     Cells.EntireColumn.AutoFit
-    
+   
     'Sort data
     ActiveWorkbook.Worksheets(ActiveSheet.Name).Sort.SortFields.Clear
     ActiveWorkbook.Worksheets(ActiveSheet.Name).Sort.SortFields.Add Key _
@@ -504,7 +504,7 @@ Sub Reformat()
         .Color = 255
         .TintAndShade = 0
     End With
-    
+   
     'Re-enter data with leading ' (on initial open, ' displays before data. e.g. '2/2.
     'Re-entering data hides the initial '.)
     Dim myDataRow As Integer, myDataColumn As Integer
