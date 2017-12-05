@@ -1,6 +1,6 @@
-# Makefile for creating a batch job to run CVC on cvcrc files in the current directory 
+# Makefile for creating a batch job to run CVC on cvcrc files in the current directory
 # based on corresponding netlist, power, and model files.
-# Version 0.7
+# Version 0.8
 
 #   Copyright 2107 D. Mitch Bailey
 
@@ -33,6 +33,9 @@ CVCRCFILES := $(wildcard cvcrc.*)
 MODES := $(CVCRCFILES:cvcrc.%=%)
 MAKEFILES := $(MODES:%=makefile.%)
 
+# Set batchcvc file
+batchcvc := $(shell mktemp /tmp/batchcvc.XXXXX)
+
 # Set first and last goal.
 ifneq ($(MAKECMDGOALS),)
 FIRST_GOAL := $(word 1, $(MAKECMDGOALS))
@@ -51,7 +54,7 @@ all ::
 
 # Remove files before first target.
 $(FIRST_GOAL) ::
-	@rm -f batchecv
+	@rm -f $(batchcvc)
 	@rm -f $(MAKEFILES)
 	@echo Checking modes
 
@@ -73,35 +76,36 @@ makefile.% :
 # Create report file target.
 	@echo '$$(CVC_REPORT_FILE) :: \
 		$$(CVC_NETLIST) $$(CVC_MODEL_FILE) $$(CVC_POWER_FILE) $(@:makefile.%=cvcrc.%)' >> $@
-	@echo "	@cvc $(@:makefile.%=cvcrc.%)" >> $@
+	@echo " @cvc $(@:makefile.%=cvcrc.%)" >> $@
 	@echo "" >> $@
 # Create cdl if necessary
 	@echo '$$(CVC_NETLIST) :: cdl' >> $@
-	@echo '	calibre_cvc $$(CVC_TOP) $(realpath cdl) $$(@)' >> $@
+	@echo ' calibre_cvc $$(CVC_TOP) $(realpath cdl) $$(@)' >> $@
 	@echo "" >> $@
 # Check that report file ended correctly. If not, touch cvcrc file to rebuild.
 	@echo "check-$(@:makefile.%=%) ::" >> $@
-	@echo '	@grep -q "CVC: End:" $$(CVC_REPORT_FILE) || touch $(@:makefile.%=cvcrc.%)' >> $@
+	@echo ' @grep -s -q "CVC: End:" $$(CVC_REPORT_FILE) || touch $(@:makefile.%=cvcrc.%)' >> $@
 	@$(MAKE) --no-print-directory -f $@ check-$(@:makefile.%=%)
-# Create batchecv file with commands for all modes that need updating.
+# Create batchcvc file with commands for all modes that need updating.
 	@$(MAKE) --no-print-directory -q -f $@ \
 			&& echo "mode $(@:makefile.%=%) is up to date" \
 			|| $(MAKE) --no-print-directory -n -f $@ | \
-		uniq >> batchecv
+		uniq >> $(batchcvc)
 
-# Run batchecv after last target, if batchecv file exists.
+# Run batchcvc after last target, if batchcvc file exists.
 $(LAST_GOAL) ::
-# In case batchecv does not exist, create empty file.
-	@touch batchecv
+# In case batchcvc does not exist, create empty file.
+	@touch $(batchcvc)
 	@echo ""
 	@rm -f $(MAKEFILES)
-	@cat batchecv
+	@sed -i '2,$${/calibre/d;}' $(batchcvc)
+	@cat $(batchcvc)
 # Pause for comfirmation if there are updates.
-	@[ -s batchecv ] \
+	@[ -s $(batchcvc) ] \
 		&& read -r -n 1 -p "Press any key to continue, ctrl-C to quit: ==>" \
 		|| echo no update necessary
-	@chmod u+x batchecv
-	@export date=$(DATE); ./batchecv
-	@rm -f batchecv
+	@chmod u+x $(batchcvc)
+	@export date=$(DATE); $(batchcvc)
+	@rm -f $(batchcvc)
 
 #23456789*123456789*123456789*123456789*123456789*123456789*123456789*123456789*123456789*123456789*
