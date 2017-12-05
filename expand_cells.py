@@ -118,7 +118,7 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
     myParameterRE = re.compile("([^=\s]+=[^=\s]+)|(\$\S+)")
     myCircuit = None
     for line_it in theSubcircuits:
-        if line_it.startswith("X"):
+        if line_it.startswith("X") or line_it.startswith("x"):
             myInstance = ""
             myWordList = line_it.split()
             if myParameterRE.match(myWordList[-1]):
@@ -140,7 +140,7 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
             if myInstance not in myCircuit['instances']:
                 myCircuit['instances'][myInstance] = 0
             myCircuit['instances'][myInstance] += 1
-        elif line_it.startswith("M"):
+        elif line_it.startswith("M") or line_it.startswith("m")::
             myMatch = myMosRE.search(line_it)
             if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D MOS.
                 myMosModel = myMatch.group(3)
@@ -149,7 +149,7 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
                 myCircuit['mos_models'][myMosModel] += 1
             else:
                 myCircuit['other_count'] += 1
-        elif line_it.startswith("R"):
+        elif line_it.startswith("R") or line_it.startswith("r"):
             myMatch = myResistorRE.search(line_it)
             if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D resistor.
                 myCircuit['resistor_count'] += 1
