@@ -2,7 +2,7 @@
 
 #   calibre_cvc: runs calibre svs to create a standardized netlist
 
-#   Copyright 2106 D. Mitch Bailey
+#   Copyright 2106, 2017 D. Mitch Bailey
 
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -107,14 +107,18 @@ tail -15 $log
 echo "Removing leading double characters and changing commented parameters ..."
 # ^RR -> R
 # $LDD deleted (functionality in cvc model file LDDN/LDDP)
+# X*==3 -> X* (done twice to handle up to 2 occurances on same instance)
+# == -> --
 # $a -> a
-# X*==3 -> X*
 # $SUB= -> SUB= -> $SUB=  (no change)
 sed -e 's/^\(.\)\1/\1/' \
     -e 's/\$SUB=/^SUB=/' \
     -e 's/\$LDD//' \
     -e 's/\$//g' \
-    -e 's/^\([^ ]*\)==[0-9]* /\1 /' \
+    -e 's/^\([^ ]*\)==[0-9]*/\1/' \
+    -e 's/^\([^ ]*\)==[0-9]*/\1/' \
+    -e 's/==/--/g' \
+    -e 's/\$//g' \
     -e 's/\^SUB=/$SUB=/' $OUTPUT.0 | \
 $BOX_FILTER > $OUTPUT
 
