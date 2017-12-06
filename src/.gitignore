@@ -8,7 +8,8 @@ position.hh
 stack.hh
 *.o
 .deps
-Makefile*
+Makefile
+Makefile.in
 default.cvcrc
 cvc.exe
 autoscan*

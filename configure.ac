@@ -42,5 +42,8 @@ AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memset mkdir pow rint rmdir setenv strcasecmp strchr])
 
 AC_CONFIG_FILES([Makefile 
+		scripts/Makefile
+		doc/Makefile
+		src_py/Makefile
 		src/Makefile])
 AC_OUTPUT
