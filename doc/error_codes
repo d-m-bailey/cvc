@@ -1,0 +1,62 @@
+AC: Analog circuit. Leak when operational. No leak when disabled. Max/min voltages may not be calculated correctly.
+AD: Forward biased analog diode
+AL: Analog leak. Always has leak current. Check
+AO: Alway off
+AV: Analog Vth leak
+BC: Bad power connection
+BP: Bipolar circuit
+BV: Bias voltage override.
+CL: Cutoff power leak
+CM: Cascode mos
+CP: Compare circuit. Analog circuit for comparing voltage.
+CS: Check control signals
+CV: Capacitor voltage mismatch
+DC: Different capacitance in series capacitors
+DD: Double forward biased diode
+DT: Detect circuit.
+FS: Forced short
+FU: Fuse related.
+FX: Caused by CVC circuit change
+GS: Gate vs source
+GV: Gate vs source error less than Vth
+HH: Hi-Z High
+HL: Hi-Z Low
+HV: High voltage
+IO: I/O related
+IP: Uncheckable IP error
+LC: Legacy circuit
+LC: Logic conflict
+LG: Overvoltage error based on Lg
+LO: Logically ok.
+LS: Level shifter
+MD: Mos diode unexpected voltage ok
+MO: Monitor circuit
+ND: Not driven
+NE: Never exceed voltage limit. logic level ok.
+NH: Never high
+NL: Never low
+NP: Not Possible. The error conditions will never occur.
+OL: Leak when off
+ON: Always on.
+OS: Output short. Short or possible short to defined output.
+PD: Pull down
+PG: Power generation. Error has to do with power generation. normally ignore.
+PL: Possible leak
+PN: Power on leak
+PO: Pulse On. Only on during pulse
+PP: Propagation problem. Usually represents program problem.
+PR: Program problem
+PU: Pull up
+RB: Resistor bias. Mos bias is power connected through resistor.
+RC: Resistor chain. Has leak current when active.
+RI: Reference input.
+SC: SCRC error
+SL: Standby leak
+SP: SCRC power error
+ST: Setup problem
+UN: Unused (no power)
+VC: Voltage clamp mos input
+VL: Check voltage level
+VS: Check overvoltage setting.
+VT: Gate vs source error at Vth.
+ZL: No leak

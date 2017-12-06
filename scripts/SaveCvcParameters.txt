@@ -1,0 +1,520 @@
+'    SaveCvcParameters VBA excel macro
+'
+'    Macro to convert excel book with 'Power' and 'Model' sheets to text parameter files for CVC
+'
+'    Copyright 2106 D. Mitch Bailey  d.mitch.bailey at gmail dot com
+'
+'    This program is free software: you can redistribute it and/or modify
+'    it under the terms of the GNU General Public License as published by
+'    the Free Software Foundation, either version 3 of the License, or
+'    (at your option) any later version.
+'
+'    This program is distributed in the hope that it will be useful,
+'    but WITHOUT ANY WARRANTY; without even the implied warranty of
+'    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+'    GNU General Public License for more details.
+'
+'    You should have received a copy of the GNU General Public License
+'    along with this program.  If not, see <http://www.gnu.org/licenses/>.Option Explicit
+
+Dim gCurrentDirectory As String
+Dim gPowerFileDirectory As String
+Dim gModelFile As String
+Dim gModes() As String
+Dim gNetType() As String
+Dim gNetName() As String
+
+Sub SaveCvcParameters()
+'
+' SaveCvc Macro
+' Converts Power sheet to separate files in the power file directory
+' Converts Model sheet to model file
+' All files must be in the same directory or subdirectories
+' Shortcuts are not supported
+'
+    gCurrentDirectory = ActiveWorkbook.Path
+    If Not CheckCVCPowerDirectory Then
+        Exit Sub
+    ElseIf Not CheckCVCModelFile Then
+        Exit Sub
+    End If
+   
+    Call WritePowerFiles
+   
+    ChDir gCurrentDirectory
+    Call WriteModelFile
+
+End Sub
+
+Private Function CheckCVCPowerDirectory() As Boolean
+    'Check that power directory is defined and writable
+    'Requires 'Power' sheet
+    'Requires 'Power file directory' text in one cell with actual name of
+    '  power file directory in the cell to the right
+    'Requires one and only one heading line with 'Net', 'Type', mode1, mode2, ..., <Comment>
+    Dim foundRange As Range
+    Dim foundNext As Range
+    Dim myAddress As String
+    Dim powerFileDirectory As String
+    Dim modelFile As String
+   
+    CheckCVCPowerDirectory = True
+    On Error Resume Next
+    Sheets("Power").Select
+    If Err.Number <> 0 Then
+        MsgBox "Missing 'Power' sheet"
+        CheckCVCPowerDirectory = False
+        Err.Clear
+    Else
+        On Error GoTo 0
+
+        Set foundRange = FindFirst("Power file directory")
+        If foundRange Is Nothing Then
+            MsgBox "Missing 'Power file directory'"
+            CheckCVCPowerDirectory = False
+            Err.Clear
+        Else
+            myAddress = foundRange.Address
+            gPowerFileDirectory = StandardPath(foundRange.Offset(0, 1).Value)
+            Set foundNext = ActiveSheet.Cells.FindNext(After:=foundRange)
+            If Not myAddress = foundNext.Address Then
+                MsgBox "Multiple 'Power file directory' at " & myAddress _
+                    & " and " & foundNext.Address
+                CheckCVCPowerDirectory = False
+                Err.Clear
+            Else
+                If Not FolderExists(gPowerFileDirectory) Then
+                    MsgBox "Could not find directory " & gPowerFileDirectory
+                    CheckCVCPowerDirectory = False
+                    Err.Clear
+                End If
+            End If
+        End If
+    End If
+   
+End Function
+
+Private Function CheckCVCModelFile() As Boolean
+    'Check that model file is defined and writable
+    'Requires 'Model' sheet
+    'Requires 'Model file' text in one cell with actual name of
+    '  model file in the cell to the right
+    'Requires heading lines with 'Device', 'Type', parameter1, parameter2, ..., <Comment>
+    '  for each device type
+    Dim foundRange As Range
+    Dim foundNext As Range
+    Dim myAddress As String
+    Dim powerFileDirectory As String
+    Dim modelFile As String
+   
+    CheckCVCModelFile = True
+    On Error Resume Next
+    Sheets("Model").Select
+    If Err.Number <> 0 Then
+        MsgBox "Missing 'Model' sheet"
+        CheckCVCModelFile = False
+        Err.Clear
+    Else
+        On Error GoTo 0
+        Set foundRange = FindFirst("Model file")
+        If foundRange Is Nothing Then
+            MsgBox "Missing 'Model file'"
+            CheckCVCModelFile = False
+            Err.Clear
+        Else
+            myAddress = foundRange.Address
+            gModelFile = StandardPath(foundRange.Offset(0, 1).Value)
+            Set foundNext = ActiveSheet.Cells.FindNext(After:=foundRange)
+            If Not myAddress = foundNext.Address Then
+                MsgBox "Multiple 'Model file' at " & myAddress & " and " & foundNext.Address
+                CheckCVCModelFile = False
+                Err.Clear
+            Else
+                If Not FileWritable(gModelFile) Then
+                    MsgBox "Could not write " & gModelFile
+                    CheckCVCModelFile = False
+                    Err.Clear
+                End If
+            End If
+        End If
+    End If
+   
+End Function
+
+Private Function StandardPath(thePath As String) As String
+    'Return path as subdirectory of current directory.
+    'Parent directories not allowed.
+    If InStr(thePath, "..") Then
+        MsgBox "Invalid path " & thePath
+    Else
+        StandardPath = gCurrentDirectory & "\" & thePath
+    End If
+End Function
+
+Private Sub WritePowerFiles()
+    'Write power files to power directory
+    Dim myRange As Range
+    Dim myLastRow As Integer
+   
+    Sheets("Power").Select
+    Set myRange = FindFirst("Net")
+    If myRange Is Nothing Then
+        MsgBox "Could not find 'Net' keyword"
+        Exit Sub
+    ElseIf myRange.Offset(0, 1).Value <> "Type" Then
+        MsgBox "Could not find 'Type' keyword"
+        Exit Sub
+    End If
+    MsgBox "Writing power files to " & gPowerFileDirectory
+
+    Call GetModes(myRange)
+    Call GetNets(myRange)
+    Call WriteOnePowerFile(myRange)
+End Sub
+
+Sub GetModes(theRange As Range)
+    'Set gModes
+    'Read until blank or 'Comment'
+    Dim myModeCount As Integer
+   
+    myModeCount = 0
+    While (theRange.Offset(0, myModeCount + 2).Value <> "" _
+            And theRange.Offset(0, myModeCount + 2).Value <> "Comment")
+        myModeCount = myModeCount + 1
+        ReDim Preserve gModes(1 To myModeCount)
+        gModes(myModeCount) = theRange.Offset(0, myModeCount + 1).Value
+    Wend
+End Sub
+
+Sub GetNets(theRange As Range)
+    'Set gNetName, gNetType
+    'Format:  Net Type
+    'Read until 'History' or 100 blank nets
+    'Rows with blank types are comments
+    Dim myNetCount As Integer
+    Dim myBlankRowCount As Integer
+   
+    myBlankRowCount = 0
+    myNetCount = 0
+    While (theRange.Offset(myNetCount + 1, 0) <> "History" And myBlankRowCount < 100)
+        myNetCount = myNetCount + 1
+        ReDim Preserve gNetName(1 To myNetCount)
+        ReDim Preserve gNetType(1 To myNetCount)
+        If theRange.Offset(myNetCount, 0) = "" Then
+            myBlankRowCount = myBlankRowCount + 1
+            gNetType(myNetCount) = "blank"
+        ElseIf theRange.Offset(myNetCount, 1) = "" Then
+            myBlankRowCount = 0
+            gNetType(myNetCount) = "comment"
+            gNetName(myNetCount) = theRange.Offset(myNetCount, 0)
+        Else
+            myBlankRowCount = 0
+            gNetName(myNetCount) = theRange.Offset(myNetCount, 0)
+            gNetType(myNetCount) = theRange.Offset(myNetCount, 1)
+        End If
+    Wend
+End Sub
+
+Sub WriteOnePowerFile(theRange As Range)
+    'Write one power file to power file directory
+    Dim myModeIndex As Integer
+    Dim myNetIndex As Integer
+    Dim myPowerFileName As String
+   
+    For myModeIndex = LBound(gModes) To UBound(gModes)
+        myPowerFileName = gPowerFileDirectory & "\power." & gModes(myModeIndex)
+        Open myPowerFileName For Output As #1
+        For myNetIndex = LBound(gNetName) To UBound(gNetName)
+            If gNetType(myNetIndex) = "blank" Then
+'                Print #1, ""; vbLf;
+            ElseIf gNetType(myNetIndex) = "comment" Then
+                Print #1, "#"; gNetName(myNetIndex); vbLf;
+            ElseIf gNetType(myNetIndex) = "internal" Then
+                Print #1, gNetName(myNetIndex); " " _
+                    & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
+            ElseIf gNetType(myNetIndex) = "macro" Then
+                Print #1, "#define "; gNetName(myNetIndex); " " _
+                    & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
+            Else
+                Print #1, gNetName(myNetIndex); " "; gNetType(myNetIndex); " " _
+                    & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
+            End If
+        Next myNetIndex
+        Close #1
+    Next myModeIndex
+End Sub
+
+Private Function PowerDefinition(thePowerText As String) As String
+    'Return formatted power definition
+    'Ex. VSS|VDD|VDD -> min@VSS sim@VDD max@VDD
+    Dim myPower() As String
+    Dim myMinPower As String
+    Dim mySimPower As String
+    Dim myMaxPower As String
+   
+    PowerDefinition = ""
+    myPower = Split(thePowerText, "|")
+    If LBound(myPower) = UBound(myPower) Then
+        If thePowerText = "?open" Then
+            PowerDefinition = "expectSim@open"
+        Else
+            PowerDefinition = thePowerText
+        End If
+    ElseIf UBound(myPower) - LBound(myPower) = 2 Then
+        myMinPower = ReformatPower(myPower(LBound(myPower)), "min")
+        mySimPower = ReformatPower(myPower(LBound(myPower) + 1), "sim")
+        myMaxPower = ReformatPower(myPower(UBound(myPower)), "max")
+        PowerDefinition = myMinPower & " " & mySimPower & " " & myMaxPower
+    ElseIf Not thePowerText = "" Then
+        MsgBox "Invalid power definition" & thePowerText
+    End If
+   
+End Function
+
+Private Function ReformatPower(thePowerText As String, theType As String) As String
+    'Return formatted power definition for 1 type. 'min', 'sim', 'max'
+    'prefixes: '?' expect, '=' permitted, '!' prohibited
+    If Left(thePowerText, 1) = "?" Then
+        ReformatPower = "expect" & StrConv(theType, vbProperCase) & "@" & Mid(thePowerText, 2)
+    ElseIf Left(thePowerText, 1) = "=" Then
+        ReformatPower = theType & "@" & Mid(thePowerText, 2) & " permit@" & Mid(thePowerText, 2)
+    ElseIf Left(thePowerText, 1) = "!" Then
+        ReformatPower = theType & "@" & Mid(thePowerText, 2) & " prohibit@" & Mid(thePowerText, 2)
+    ElseIf thePowerText = "open" Then
+        ReformatPower = "open"
+    ElseIf thePowerText = "" Then
+        ReformatPower = ""
+    Else
+        ReformatPower = theType & "@" & thePowerText
+    End If
+End Function
+
+Private Sub WriteModelFile()
+    'Write the model file
+    'Format: Device Type <parameter>
+    Dim myRange As Range
+    Dim myModeCount As Integer
+    Dim myRowIndex As Integer
+   
+    Sheets("Model").Select
+    Set myRange = FindFirst("Device")
+    If myRange Is Nothing Then
+        MsgBox "Could not find 'Device' keyword"
+        Exit Sub
+    ElseIf myRange.Offset(0, 1).Value <> "Type" Then
+        MsgBox "Could not find 'Type' keyword"
+        Exit Sub
+    End If
+    MsgBox "Writing model file to " & gModelFile
+   
+    Dim myBlankCount As Integer
+    Dim myParameters() As String
+   
+    Open gModelFile For Output As #1
+    myBlankCount = 0
+    myRowIndex = 0
+    While myBlankCount < 100 And Not myRange.Offset(myRowIndex, 0) = "History"
+        If myRange.Offset(myRowIndex, 0) = "Device" _
+                And myRange.Offset(myRowIndex, 1) = "Type" Then
+            myParameters = GetParameters(myRange, myRowIndex)
+            myBlankCount = 0
+        ElseIf myRange.Offset(myRowIndex, 0) = "" Then
+            myBlankCount = myBlankCount + 1
+        ElseIf myRange.Offset(myRowIndex, 1) = "" Then
+            myBlankCount = 0
+            Print #1, "#" & myRange.Offset(myRowIndex, 0); vbLf;
+        Else
+            myBlankCount = 0
+            Call PrintDeviceDetails(myRange, myRowIndex, myParameters)
+        End If
+        myRowIndex = myRowIndex + 1
+    Wend
+    Close #1
+End Sub
+
+Private Function GetParameters(theRange As Range, theIndex As Integer) As Variant
+    'Return a list of parameters in a device definition row
+    Dim myParameterCount As Integer
+    Dim myParameters() As String
+   
+    myParameterCount = 0
+    While (theRange.Offset(theIndex, myParameterCount + 2).Value <> "" _
+            And theRange.Offset(theIndex, myParameterCount + 2).Value <> "Comment")
+        myParameterCount = myParameterCount + 1
+        ReDim Preserve myParameters(1 To myParameterCount)
+        myParameters(myParameterCount) = theRange.Offset(theIndex, myParameterCount + 1).Value
+    Wend
+    GetParameters = myParameters
+End Function
+
+Private Sub PrintDeviceDetails(theRange As Range, theRow As Integer, theParameters() As String)
+    'Print one device line
+    Dim myModel As String
+    Dim myType As String
+   
+    myModel = theRange.Offset(theRow, 0)
+    myType = theRange.Offset(theRow, 1)
+    If Left(myModel, 1) = "#" Then
+        myType = "#" & myType
+        myModel = Mid(myModel, 2)
+    End If
+    Print #1, myType; " "; myModel;
+    Dim myParameterIndex As Integer
+    For myParameterIndex = LBound(theParameters) To UBound(theParameters)
+        If theRange.Offset(theRow, myParameterIndex + 1) <> "" Then
+            If theParameters(myParameterIndex) = "condition" Then
+                Print #1, " condition=("; theRange.Offset(theRow, myParameterIndex + 1); ")";
+            ElseIf theParameters(myParameterIndex) = "diode" Then
+                Print #1, " diode=("; theRange.Offset(theRow, myParameterIndex + 1); ")";
+            Else
+                Print #1, " "; theParameters(myParameterIndex); _
+                    "=" & theRange.Offset(theRow, myParameterIndex + 1);
+            End If
+        End If
+    Next myParameterIndex
+    Print #1, vbLf;
+End Sub
+
+Private Function FindFirst(theString As String) As Range
+    'Return first cell in sheet that exactly matches theString
+    Set FindFirst = ActiveSheet.Cells.Find(What:=theString, LookIn:=xlFormulas, _
+        LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, _
+        MatchCase:=False, MatchByte:=False, SearchFormat:=False, _
+        After:=Cells(1, 1))
+End Function
+
+Private Function FolderExists(strFolderPath As String) As Boolean
+    'Check that folder exists and is writable
+    Dim myFileAttr As Integer
+    Dim myCurrentPath As String
+      
+    FolderExists = False
+    On Error Resume Next
+    myFileAttr = GetAttr(strFolderPath)
+    FolderExists = ((myFileAttr And vbDirectory) = vbDirectory) _
+        And ((myFileAttr And vbReadOnly) = 0)
+    On Error GoTo 0
+End Function
+
+Private Function FileWritable(strFileName As String) As Boolean
+    'Check that parent path exists and is writable
+    FileWritable = FolderExists(FolderFromPath(strFileName))
+End Function
+
+Private Function FileNameFromPath(strFullPath As String) As String
+    'Return base file name
+    Dim I As Integer
+
+    For I = Len(strFullPath) To 1 Step -1
+        If Mid(strFullPath, I, 1) = "\" Then
+            FileNameFromPath = Right(strFullPath, Len(strFullPath) - I)
+            Exit For
+        End If
+    Next
+End Function
+
+Private Function FolderFromPath(strFullPath As String) As String
+    'Return parent path
+    Dim I As Integer
+
+    FolderFromPath = "."
+    For I = Len(strFullPath) To 1 Step -1
+        If Mid(strFullPath, I, 1) = "\" Then
+            FolderFromPath = Left(strFullPath, I - 1)
+            Exit For
+        End If
+    Next
+End Function
+
+Sub Reformat()
+    'Reformat the csv file output of check_cvc
+
+    'Fix scrolling header
+    Range("E2").Select
+    ActiveWindow.FreezePanes = True
+
+    'Reformat header
+    Range("1:1").Select
+    With Selection
+        .HorizontalAlignment = xlGeneral
+        .VerticalAlignment = xlBottom
+        .WrapText = False
+        .AddIndent = False
+        .IndentLevel = 0
+        .ShrinkToFit = False
+        .ReadingOrder = xlContext
+        .MergeCells = False
+        .Font.Bold = True
+    End With
+    Range(Range("E1"), Range("E1").End(xlToRight)).Select
+    With Selection
+        .HorizontalAlignment = xlCenter
+        .Orientation = 45
+    End With
+    Cells.EntireColumn.AutoFit
+   
+    'Sort data
+    ActiveWorkbook.Worksheets(ActiveSheet.Name).Sort.SortFields.Clear
+    ActiveWorkbook.Worksheets(ActiveSheet.Name).Sort.SortFields.Add Key _
+        :=Range(Range("A2"), Range("A2").End(xlDown)), SortOn:=xlSortOnValues, Order:=xlAscending, _
+        DataOption:=xlSortNormal  ' reference
+    ActiveWorkbook.Worksheets(ActiveSheet.Name).Sort.SortFields.Add Key _
+        :=Range(Range("C2"), Range("C2").End(xlDown)), SortOn:=xlSortOnValues, Order:=xlAscending, _
+        DataOption:=xlSortNormal  ' type
+    ActiveWorkbook.Worksheets(ActiveSheet.Name).Sort.SortFields.Add Key _
+        :=Range(Range("D2"), Range("D2").End(xlDown)), SortOn:=xlSortOnValues, Order:=xlAscending, _
+        DataOption:=xlSortNormal  ' device
+    With ActiveWorkbook.Worksheets(ActiveSheet.Name).Sort
+        .SetRange Range(Range("A1"), _
+            Range("A1").Offset(Range("A1").End(xlDown).Row, Range("A1").End(xlToRight).Column))
+        .Header = xlYes
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+
+    'Color error types
+    Columns("B:B").Select
+    Selection.FormatConditions.Add Type:=xlCellValue, Operator:=xlEqual, _
+        Formula1:="=""ignore"""  ' grey
+    With Selection.FormatConditions(Selection.FormatConditions.Count).Interior
+        .PatternColorIndex = xlAutomatic
+        .ThemeColor = xlThemeColorDark1
+        .TintAndShade = -0.249946592608417
+    End With
+    Selection.FormatConditions.Add Type:=xlCellValue, Operator:=xlEqual, _
+        Formula1:="=""Check"""  ' yellow
+    With Selection.FormatConditions(Selection.FormatConditions.Count).Interior
+        .PatternColorIndex = xlAutomatic
+        .Color = 65535
+        .TintAndShade = 0
+    End With
+    Selection.FormatConditions.Add Type:=xlCellValue, Operator:=xlEqual, _
+        Formula1:="=""Warning"""  ' orange
+    With Selection.FormatConditions(Selection.FormatConditions.Count).Interior
+        .PatternColorIndex = xlAutomatic
+        .Color = 49407
+        .TintAndShade = 0
+    End With
+    Selection.FormatConditions.Add Type:=xlCellValue, Operator:=xlEqual, _
+        Formula1:="=""ERROR"""  ' red
+    With Selection.FormatConditions(Selection.FormatConditions.Count).Interior
+        .PatternColorIndex = xlAutomatic
+        .Color = 255
+        .TintAndShade = 0
+    End With
+   
+    'Re-enter data with leading ' (on initial open, ' displays before data. e.g. '2/2.
+    'Re-entering data hides the initial '.)
+    Dim myDataRow As Integer, myDataColumn As Integer
+    For myDataRow = Range("E2").Row To Range("A1").End(xlDown).Row
+        For myDataColumn = Range("e2").Column To Range("A1").End(xlToRight).Column
+            ActiveSheet.Cells(myDataRow, myDataColumn).Value = _
+                ActiveSheet.Cells(myDataRow, myDataColumn).Value
+        Next
+    Next
+
+End Sub
+
+'234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890

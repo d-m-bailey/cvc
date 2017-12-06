@@ -1,0 +1,22 @@
+Version 1.0.1
+  Moved log display to immediately after module load.
+Version 1.0.2
+  Handle unexpected level errors.
+Version 1.0.3
+  Added GPLv3 display.
+Version 1.0.4
+  Speed up by reducing dereferences.
+Version 1.0.5
+  Ignore changes related to comments when saving.
+Version 1.0.6
+  Select first error with Shift-Right-Click.
+Version 1.0.7
+  Ctrl-Right-Click also sets reference and comment.
+Version 1.0.8
+  Summaries are saved every node except those that they don't apply to. This allows subsets of modes without losing all references for missing nodes. (Still loses references for only modes that are missing).
+Version 1.0.9
+  Summary files no longer use total cell count or error limit to match.
+Version 1.0.10
+  Print modes in sorted order in summary file.
+Version 1.0.11
+  Bug fix for version 1.0.10
