@@ -54,6 +54,7 @@ SC: SCRC error
 SL: Standby leak
 SP: SCRC power error
 ST: Setup problem
+TR: Trimming short
 UN: Unused (no power)
 VC: Voltage clamp mos input
 VL: Check voltage level
