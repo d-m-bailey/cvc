@@ -22,6 +22,7 @@ GV: Gate vs source error less than Vth
 HH: Hi-Z High
 HL: Hi-Z Low
 HV: High voltage
+HZ: High-Z input
 IO: I/O related
 IP: Uncheckable IP error
 LC: Legacy circuit
