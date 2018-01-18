@@ -43,6 +43,7 @@ OS: Output short. Short or possible short to defined output.
 PD: Pull down
 PG: Power generation. Error has to do with power generation. normally ignore.
 PL: Possible leak
+PM: Parameter mismatch
 PN: Power on leak
 PO: Pulse On. Only on during pulse
 PP: Propagation problem. Usually represents program problem.
