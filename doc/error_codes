@@ -53,6 +53,7 @@ RB: Resistor bias. Mos bias is power connected through resistor.
 RC: Resistor chain. Has leak current when active.
 RI: Reference input.
 SC: SCRC error
+SF: Secondary floating error
 SL: Standby leak
 SP: SCRC power error
 ST: Setup problem
