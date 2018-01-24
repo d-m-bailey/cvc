@@ -889,10 +889,16 @@ voltage_t CCvcDb::DefaultMinVoltage(CPower * thePower_p) {
 		return(UNKNOWN_VOLTAGE);
     } else {
 		netId_t myMinNet = minNet_v[thePower_p->defaultMinNet].finalNetId;
-		assert(netVoltagePtr_v[myMinNet]);
-		assert(netVoltagePtr_v[myMinNet]->minVoltage != UNKNOWN_VOLTAGE);
-		return(netVoltagePtr_v[myMinNet]->minVoltage);
-    }
+		if ( netVoltagePtr_v[myMinNet] && netVoltagePtr_v[myMinNet]->minVoltage != UNKNOWN_VOLTAGE ) {
+			return(netVoltagePtr_v[myMinNet]->minVoltage);
+		} else {
+			reportFile << "DEBUG: Unexpected min voltage at net " << NetName(myMinNet) << endl;
+			return(UNKNOWN_VOLTAGE);
+		}
+		//assert(netVoltagePtr_v[myMinNet]);
+		//assert(netVoltagePtr_v[myMinNet]->minVoltage != UNKNOWN_VOLTAGE);
+		//return(netVoltagePtr_v[myMinNet]->minVoltage);
+	}
 }
 
 voltage_t CCvcDb::DefaultMaxVoltage(CPower * thePower_p) {
@@ -900,9 +906,15 @@ voltage_t CCvcDb::DefaultMaxVoltage(CPower * thePower_p) {
 		return(UNKNOWN_VOLTAGE);
     } else {
 		netId_t myMaxNet = maxNet_v[thePower_p->defaultMaxNet].finalNetId;
-		assert(netVoltagePtr_v[myMaxNet]);
-		assert(netVoltagePtr_v[myMaxNet]->maxVoltage != UNKNOWN_VOLTAGE);
-		return(netVoltagePtr_v[myMaxNet]->maxVoltage);
+		if ( netVoltagePtr_v[myMaxNet] && netVoltagePtr_v[myMaxNet]->maxVoltage != UNKNOWN_VOLTAGE ) {
+			return(netVoltagePtr_v[myMaxNet]->maxVoltage);
+		} else {
+			reportFile << "DEBUG: Unexpected max voltage at net " << NetName(myMaxNet) << endl;
+			return(UNKNOWN_VOLTAGE);
+		}
+		//assert(netVoltagePtr_v[myMaxNet]);
+		//assert(netVoltagePtr_v[myMaxNet]->maxVoltage != UNKNOWN_VOLTAGE);
+		//return(netVoltagePtr_v[myMaxNet]->maxVoltage);
     }
 }
 
