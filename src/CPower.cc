@@ -938,8 +938,8 @@ string CPowerPtrMap::CalculateExpectedValue(string theEquation, netStatus_t theT
 	return(to_string<float>(float(myVoltage) / VOLTAGE_SCALE));
 }
 
-
-voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType, CModelListMap & theModelListMap) {
+#define UNKNOWN_TOKEN (float(MAX_VOLTAGE) * 2)
+voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType, CModelListMap & theModelListMap, bool thePermitUndefinedFlag) {
 	list<string> * myTokenList_p;
 	// exceptions cause memory leaks
 //	cout << "calculating " << theEquation << endl;
@@ -957,7 +957,17 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 			if ( myVoltageStack.size() < 2 ) throw EPowerError("invalid equation: " + theEquation);
 			myVoltage = myVoltageStack.back();
 			myVoltageStack.pop_back();
-			if ( *token_pit == "+" ) {
+			if ( myVoltage > MAX_VOLTAGE ) {
+				if ( ( *token_pit == "<" ) || ( *token_pit == ">" ) ) {  // min/max keep value on stack
+			    	;
+				} else {  // arithmetic with invalid values gives invalid value
+			    	myVoltageStack.back() = UNKNOWN_TOKEN;
+				}
+			} else if ( myVoltageStack.back() > MAX_VOLTAGE ) {
+				if ( ( *token_pit == "<" ) || ( *token_pit == ">" ) ) {  // min/max replace with last voltage
+					myVoltageStack.back() = myVoltage;
+				}
+			} else if ( *token_pit == "+" ) {
 				myVoltageStack.back() += myVoltage;
 			} else if ( *token_pit == "-" ) {
 				myVoltageStack.back() -= myVoltage;
@@ -982,6 +992,8 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 				} else {
 					throw EModelError("power definition error: " + theEquation + " unknown Vth for " + myModelName.substr(2));
 				}
+			} else if ( thePermitUndefinedFlag ){
+				myVoltageStack.push_back(UNKNOWN_TOKEN);
 			} else {
 				throw EPowerError("undefined macro: " + *token_pit);
 			}
@@ -991,8 +1003,12 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 			throw EPowerError("invalid power calculation token: " + *token_pit);
 		}
 	}
-	if ( myVoltageStack.size() != 1 ) EPowerError("invalid equation: " + theEquation);
 	delete myTokenList_p;
+	if ( myVoltageStack.size() != 1 ) EPowerError("invalid equation: " + theEquation);
+	if ( myVoltageStack.front() > MAX_VOLTAGE ) {
+		cout << "Warning: equation contains undefined tokens: " << theEquation << endl;
+		return(UNKNOWN_VOLTAGE);
+	}
 //	cout << "Final voltage " << myVoltageStack.front() << endl;
 	return ( round(myVoltageStack.front() * VOLTAGE_SCALE + 0.1) );
 }

@@ -21,14 +21,20 @@ echo $0 $*
 
 rulefile=cvc.svrf
 
-if [[ ${#*} -ne 3 ]]; then 
-	echo "usage: calibre_cvc topBlock dataPath output"
+if [[ ${#*} -ne 4 ]]; then 
+	echo "usage: calibre_cvc rulefile topBlock dataPath output"
 	exit 1
 fi
 
-PRIMARY="$1"
-DATA="$2"
-OUTPUT="$3"
+RULEFILE="$1"
+PRIMARY="$2"
+DATA="$3"
+OUTPUT="$4"
+
+if [[ ! -f $RULEFILE ]]; then
+	echo "ERROR: can not open $RULEFILE"
+	exit 1
+fi
 
 additionalRules="cvc.include"
 #   Additional rules include the following statements
@@ -83,6 +89,22 @@ else
 	echo "Warning: missing $additionalRules"
 fi
 
+sed -e 's/[   ][      ]*/ /g' \
+	-e 's/^ *LAYOUT PRIMARY/\/\/&/I' \
+	-e 's/^ *LAYOUT PATH/\/\/&/I' \
+	-e 's/^ *SOURCE PRIMARY/\/\/&/I' \
+	-e 's/^ *SOURCE PATH/\/\/&/I' \
+	-e 's/^ *LVS WRITE SOURCE NETLIST/\/\/&/I' \
+	-e 's/^ *LVS REPORT/\/\/&/I' \
+	-e 's/^ *MASK RESULTS DATABASE/\/\/&/I' \
+	-e 's/^ *SOURCE SYSTEM/\/\/&/I' \
+	-e 's/^ *LAYOUT SYSTEM/\/\/&/I' \
+	-e 's/^ *LVS INJECT LOGIC/\/\/&/I' \
+	-e 's/^ *LVS FILTER UNUSED/\/\/&/I' \
+	-e 's/^ *LVS EXECUTE ERC/\/\/&/I' \
+	-e 's/^ *MASK SVDB DIRECTORY/\/\/&/I' $RULEFILE >> $rulefile
+
+
 if [[ ( $DATA -nt expand.list ) || ( $cellOverrides -nt expand.list ) ]]; then
 	echo "Finding cells to expand using $cellOverrides ..."
 	if [[ -f $cellOverrides ]]; then
@@ -111,15 +133,15 @@ echo "Removing leading double characters and changing commented parameters ..."
 # == -> --
 # $a -> a
 # $SUB= -> SUB= -> $SUB=  (no change)
-sed -e 's/^\(.\)\1/\1/' \
-    -e 's/\$SUB=/^SUB=/' \
-    -e 's/\$LDD//' \
-    -e 's/\$//g' \
-    -e 's/^\([^ ]*\)==[0-9]*/\1/' \
-    -e 's/^\([^ ]*\)==[0-9]*/\1/' \
-    -e 's/==/--/g' \
-    -e 's/\$//g' \
-    -e 's/\^SUB=/$SUB=/' $OUTPUT.0 | \
+sed -e 's/^¥(.¥)¥1/¥1/' ¥
+    -e 's/¥$SUB=/^SUB=/' ¥
+    -e 's/¥$LDD//' ¥
+    -e 's/¥$//g' ¥
+    -e 's/^¥([^ ]*¥)==[0-9]*/¥1/' ¥
+    -e 's/^¥([^ ]*¥)==[0-9]*/¥1/' ¥
+    -e 's/==/--/g' ¥
+    -e 's/¥$//g' ¥
+    -e 's/¥^SUB=/$SUB=/' $OUTPUT.0 | ¥
 $BOX_FILTER > $OUTPUT
 
 if [[ ! -z "${compress+x}" ]]; then

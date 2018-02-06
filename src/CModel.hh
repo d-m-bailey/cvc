@@ -56,6 +56,7 @@ public:
 	string	baseType = "";
 
 	bool isLDD = false;
+	bool validModel = true;
 
 	modelType_t type = UNKNOWN;
 

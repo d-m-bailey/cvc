@@ -374,16 +374,29 @@ void CModelListMap::DebugPrint(string theIndentation) {
 	cout << theIndentation << "ModelList> end" << endl << endl;
 }
 
+#define PERMIT_UNDEFINED true
 returnCode_t CModelListMap::SetVoltageTolerances(teestream & theReportFile, CPowerPtrMap & thePowerMacroPtrMap) {
 	theReportFile << "Setting model tolerances..." << endl;
 	bool myToleranceErrorFlag = false;
 	for (CModelListMap::iterator modelList_pit = begin(); modelList_pit != end(); modelList_pit++) {
 		for (CModelList::iterator model_pit = modelList_pit->second.begin(); model_pit != modelList_pit->second.end(); model_pit++) {
 			try {
-				if ( ! model_pit->maxVbgDefinition.empty() ) model_pit->maxVbg = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbgDefinition, SIM_POWER, (*this));
-				if ( ! model_pit->maxVbsDefinition.empty() ) model_pit->maxVbs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbsDefinition, SIM_POWER, (*this));
-				if ( ! model_pit->maxVdsDefinition.empty() ) model_pit->maxVds = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVdsDefinition, SIM_POWER, (*this));
-				if ( ! model_pit->maxVgsDefinition.empty() ) model_pit->maxVgs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVgsDefinition, SIM_POWER, (*this));
+				if ( ! model_pit->maxVbgDefinition.empty() ) {
+					model_pit->maxVbg = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbgDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
+					if ( model_pit->maxVbg == UNKNOWN_VOLTAGE ) model_pit->validModel = false;
+				}
+				if ( ! model_pit->maxVbsDefinition.empty() ) {
+					model_pit->maxVbs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbsDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
+					if ( model_pit->maxVbs == UNKNOWN_VOLTAGE ) model_pit->validModel = false;
+				}
+				if ( ! model_pit->maxVdsDefinition.empty() ) {
+					model_pit->maxVds = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVdsDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
+					if ( model_pit->maxVds == UNKNOWN_VOLTAGE ) model_pit->validModel = false;
+				}
+				if ( ! model_pit->maxVgsDefinition.empty() ) {
+					model_pit->maxVgs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVgsDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
+					if ( model_pit->maxVgs == UNKNOWN_VOLTAGE ) model_pit->validModel = false;
+				}
 			}
 			catch (EPowerError & myException) {
 				theReportFile << "ERROR: Model tolerance " << myException.what() << endl;

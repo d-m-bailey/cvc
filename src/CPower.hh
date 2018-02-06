@@ -128,7 +128,7 @@ public:
 class CPowerPtrMap : public unordered_map<string, CPower *> {
 public:
 	string CalculateExpectedValue(string theEquation, netStatus_t theType, CModelListMap & theModelListMap);
-	voltage_t CalculateVoltage(string theEquation, netStatus_t theType, CModelListMap & theModelListMap);
+	voltage_t CalculateVoltage(string theEquation, netStatus_t theType, CModelListMap & theModelListMap, bool thePermitUndefinedFlag = false);
 };
 
 class CPowerPtrList : public list<CPower *> {

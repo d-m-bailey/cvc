@@ -516,6 +516,12 @@ returnCode_t CCvcDb::SetDeviceModels() {
 					string	myParameterString = trim_(string(myDevice_p->parameters));
 					myErrorModelSet.insert(myParameterString.substr(0, myParameterString.find(" ", 2)));
 					myModelError = true;
+				} else if ( ! myDevice_p->model_p->validModel ) {
+					reportFile << "ERROR: Invalid model definition for " << (*circuit_ppit)->name << "/" << myDevice_p->name;
+					reportFile << " " << myDevice_p->parameters << endl;
+					string	myParameterString = trim_(string(myDevice_p->parameters));
+					myErrorModelSet.insert(myParameterString.substr(0, myParameterString.find(" ", 2)));
+					myModelError = true;
 				} else {
 					if ( myDevice_p->model_p->firstDevice_p != NULL ) {
 						myDevice_p->nextDevice_p = myDevice_p->model_p->firstDevice_p;
