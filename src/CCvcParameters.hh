@@ -45,6 +45,7 @@ public:
 	const bool defaultVthGates = false;
 	const bool defaultLeakOvervoltage = true;
 	const bool defaultLogicDiodes = false;
+	const voltage_t defaultErrorThreshold = 0;
 
 	string	cvcReportTitle;
 
@@ -73,6 +74,11 @@ public:
 	bool	cvcVthGates = defaultVthGates;
 	bool	cvcLeakOvervoltage = defaultLeakOvervoltage;
 	bool    cvcLogicDiodes = defaultLogicDiodes;
+	voltage_t	cvcShortErrorThreshold = defaultErrorThreshold;
+	voltage_t	cvcBiasErrorThreshold = defaultErrorThreshold;
+	voltage_t	cvcForwardErrorThreshold = defaultErrorThreshold;
+	voltage_t	cvcGateErrorThreshold = defaultErrorThreshold;
+	voltage_t	cvcLeakErrorThreshold = defaultErrorThreshold;
 
 	string	cvcLastTopBlock;
 	string	cvcLastNetlistFilename;

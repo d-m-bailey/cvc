@@ -551,6 +551,12 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 			myPrompt << "--> get instance (^D to exit) ?> ";
 		} else if ( myCommandMode == "gn" ) {
 			myPrompt << "--> get net (^D to exit) ?> ";
+		} else if ( myCommandMode == "en" ) {
+			myPrompt << "--> expand net (^D to exit) ?> ";
+		} else if ( myCommandMode == "ed" ) {
+			myPrompt << "--> expand device (^D to exit) ?> ";
+		} else if ( myCommandMode == "ei" ) {
+			myPrompt << "--> expand instance (^D to exit) ?> ";
 		} else {
 			myPrompt << "** Stage " << theCurrentStage << "/" << STAGE_COMPLETE << ": Enter command ?> ";
 		}
@@ -633,6 +639,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				cout << "printnet<pn> netnumber: print net name" << endl;
 				cout << "listnet|listdevice|listinstance<ln|ld|li> filter: list net|device|instances in current subcircuit filtered by filter" << endl;
 				cout << "getnet|getdevice|getinstance<gn|gd|gi> name: get net|device|instance number for name" << endl;
+				cout << "expandnet|expanddevice|expandinstance<en|ed|ei> name: expand net|device|instance to top level" << endl;
 				cout << "dumpfuse<df> filname: dump fuse to filename" << endl;
 				cout << "traceinverter<ti> name: trace signal as inverter output for name" << endl;
 				cout << "findsubcircuit<fs> subcircuit: list all instances of subcircuit or if regex, subcircuits that match" << endl;
@@ -772,6 +779,33 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 					PrintInstances(myCurrentInstanceId, "", myPrintSubcircuitNameFlag);
 				}
 	//			myInputStream >> myOption, myFilter;
+			} else if ( myCommand == "expandnet" || myCommand == "en" ) {
+				if ( myInputStream >> myName ) {
+					set<netId_t> * myNetIdList = FindNetIds(myName); // expands buses and hierarchy
+					for (auto netId_pit = myNetIdList->begin(); netId_pit != myNetIdList->end(); netId_pit++) {
+						  netId_t myEquivalentNetId = (isFixedEquivalentNet) ? GetEquivalentNet(*netId_pit) : *netId_pit;
+						  string myTopNet = NetName(myEquivalentNetId, myPrintSubcircuitNameFlag);
+						  reportFile << myTopNet << endl;
+					}
+					if ( myNetIdList->empty() ) {
+						reportFile << "* Could not expand net " << myName << endl;
+					}
+				} else {
+					myCommandMode = "en";
+				}
+			} else if ( myCommand == "expanddevice" || myCommand == "ed" ) {
+				if ( myInputStream >> myName ) {
+					reportFile << "expanddevice not yet implemented" << endl;
+				} else {
+					myCommandMode = "ed";
+				}
+			} else if ( myCommand == "expandinstance" || myCommand == "ei" ) {
+				if ( myInputStream >> myName ) {
+					reportFile << "expandinstance not yet implemented" << endl;
+				} else {
+					myCommandMode = "ei";
+				}
+	//			myInputStream >> myOption, myFilter;
 			} else if ( myCommand == "dumpfuse" || myCommand == "df" ) {
 				if ( myInputStream >> myFileName ) {
 					if ( modelFileStatus == OK ) {
@@ -812,6 +846,11 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 					myCommandMode = "pn";
 				}
 			} else if ( myCommand == "getinstance" || myCommand == "gi" ) {
+				if ( myInputStream >> myName ) {
+					reportFile << "getinstance not yet implemented" << endl;
+				} else {
+					myCommandMode = "gi";
+				}
 			} else if ( myCommand == "getdevice" || myCommand == "gd" ) {
 				myName = "";
 				if ( myInputStream >> myName ) {

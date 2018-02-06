@@ -141,6 +141,10 @@ CVirtualLeakNetVector& CVirtualLeakNetVector::operator() (CVirtualNetVector& the
 }
 
 void CVirtualNetVector::Set(netId_t theNetId, netId_t theNextNet, resistance_t theResistance, eventKey_t theTime) {
+	if ( (*this)[theNextNet].nextNetId == theNetId && theNextNet != theNetId ) {
+		cout << "DEBUG: The next net of " << theNetId << " is already set to " << theNextNet << endl;
+		return;
+	}
 	(*this)[theNetId].nextNetId = theNextNet;
 	(*this)[theNetId].resistance = theResistance;
 	netId_t myFinalNetId;
@@ -159,6 +163,7 @@ void CVirtualNetVector::Set(netId_t theNetId, netId_t theNextNet, resistance_t t
 			myLinkCount++;
 			if ( myLinkCount > 5000 ) {
 				cout << "looping at net " << myFinalNetId << endl;
+				cout << "DEBUG: linking " << theNetId << " to " << theNextNet << endl;
 				assert ( myLinkCount < 5021 );
 			}
 		}

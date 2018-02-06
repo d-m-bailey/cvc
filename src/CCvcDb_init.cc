@@ -1324,7 +1324,7 @@ bool CCvcDb::SetLatchPower() {
 			CPower * myNmosPower_p = netVoltagePtr_v[simNet_v[myNmosSource].finalNetId];
 			CPower * myPmosPower_p = netVoltagePtr_v[simNet_v[myPmosSource].finalNetId];
 			voltage_t myNmosVoltage = (myNmosPower_p ? myNmosPower_p->simVoltage : UNKNOWN_VOLTAGE);
-			voltage_t myPmosVoltage = (myPmosPower_p ? myNmosPower_p->simVoltage : UNKNOWN_VOLTAGE);
+			voltage_t myPmosVoltage = (myPmosPower_p ? myPmosPower_p->simVoltage : UNKNOWN_VOLTAGE);
 			if ( myNmosVoltage != UNKNOWN_VOLTAGE && myPmosVoltage != UNKNOWN_VOLTAGE && myNmosVoltage != myPmosVoltage ) {
 				errorCount[LEAK]++;
 				if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myNmos) < cvcParameters.cvcCircuitErrorLimit ) {

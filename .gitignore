@@ -1,4 +1,7 @@
+.cproject
+.project
 Debug
+default.cvcrc
 Doxyfile
 Makefile
 Makefile.in
@@ -16,6 +19,7 @@ install-sh
 missing
 po
 m4
+release
 share
 stamp-h1
 test

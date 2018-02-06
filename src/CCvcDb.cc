@@ -52,7 +52,8 @@ void CCvcDb::ReportSimShort(deviceId_t theDeviceId, voltage_t theMainVoltage, vo
 //	if ( rint((myLeakCurrent - cvcParameters.cvcLeakLimit) * 1e6) / 1e6 > 0 ||
 //			! myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, true) ||
 //			(myConnections.simSourcePower_p->type[POWER_BIT] && myConnections.simDrainPower_p->type[POWER_BIT] && myMaxVoltage != myMinVoltage && ! myVthFlag) ) {
-	if ( abs(theMainVoltage - theShortVoltage) != abs(myConnections.device_p->model_p->Vth) ) {
+	if ( abs(theMainVoltage - theShortVoltage) != abs(myConnections.device_p->model_p->Vth) &&
+			abs(theMainVoltage - theShortVoltage) > cvcParameters.cvcShortErrorThreshold ) {
 		errorCount[LEAK]++;
 		if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theDeviceId) < cvcParameters.cvcCircuitErrorLimit ) {
 			errorFile << "! Short Detected: " << PrintVoltage(myMaxVoltage) << " to " << PrintVoltage(myMinVoltage) << theCalculation << endl;
@@ -96,7 +97,9 @@ void CCvcDb::ReportShort(deviceId_t theDeviceId) {
 	if ( ExceedsLeakLimit_(myLeakCurrent)  // flag all leaks with large current
 			|| ! myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, true)  // flag leaks between unrelated power
 			|| ( myMaxVoltage != myMinVoltage && ! myVthFlag  // ignore leaks between same voltages or at Vth
-				&& ( ( IsExternalPower_(myConnections.simSourcePower_p) && IsExternalPower_(myConnections.simDrainPower_p) )  // flag leaks between power nets
+				&& ( ( IsExternalPower_(myConnections.simSourcePower_p)
+						&& IsExternalPower_(myConnections.simDrainPower_p)
+						&& myMaxVoltage - myMinVoltage > cvcParameters.cvcShortErrorThreshold )  // flag leaks between power nets
 					|| myConnections.simSourcePower_p->flagAllShorts || myConnections.simDrainPower_p->flagAllShorts ) ) ) {  // flag nets for calculated logic levels
 		errorCount[LEAK]++;
 		if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theDeviceId) < cvcParameters.cvcCircuitErrorLimit ) {
@@ -650,6 +653,19 @@ bool CCvcDb::IsIrrelevant(CEventQueue& theEventQueue, deviceId_t theDeviceId, CC
 			myTargetNet = theConnections.drainId;
 		} else {
 			// Voltage conflict with off mos
+			if ( theEventQueue.queueType == MIN_QUEUE ) {
+				if ( netStatus_v[theConnections.sourceId][NEEDS_MIN_CONNECTION] && theConnections.sourceVoltage > theConnections.drainVoltage ) {
+					netStatus_v[theConnections.sourceId][NEEDS_MIN_CONNECTION] = false;
+				} else if ( netStatus_v[theConnections.drainId][NEEDS_MIN_CONNECTION] && theConnections.drainVoltage > theConnections.sourceVoltage ) {
+					netStatus_v[theConnections.drainId][NEEDS_MIN_CONNECTION] = false;
+				}
+			} else if  ( theEventQueue.queueType == MAX_QUEUE ) {
+				if ( netStatus_v[theConnections.sourceId][NEEDS_MAX_CONNECTION] && theConnections.sourceVoltage < theConnections.drainVoltage ) {
+					netStatus_v[theConnections.sourceId][NEEDS_MAX_CONNECTION] = false;
+				} else if ( netStatus_v[theConnections.drainId][NEEDS_MAX_CONNECTION] && theConnections.drainVoltage < theConnections.sourceVoltage ) {
+					netStatus_v[theConnections.drainId][NEEDS_MAX_CONNECTION] = false;
+				}
+			}
 			return true;
 		}
 		// first time enqueue all off mos, subsequently only process last connections
@@ -1635,6 +1651,7 @@ void CCvcDb::PropagateMinMaxVoltages(CEventQueue& theEventQueue) {
 */
 
 		myAdjustedCalculation = AdjustKey(theEventQueue, myDeviceId, myConnections, myEventKey, myQueuePosition, myDirection, PRINT_WARNINGS);
+		if ( myQueuePosition == SKIP_QUEUE ) return;
 		if (gDebug_cvc) cout << "DEBUG propagation:(" << gEventQueueTypeMap[theEventQueue.queueType] << ") device: " << myDeviceId << " QueueKey: " << myQueueKey << " EventKey: " << myEventKey << endl;
 		if ( theEventQueue.Later(myEventKey, myQueueKey) ) {
 			theEventQueue.AddEvent(myEventKey, myDeviceId, myQueuePosition);

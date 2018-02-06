@@ -179,3 +179,11 @@
 		Enh: Option to prefer logic values for diode checks
 		Enh: Print short summary once after all latch processing.
 		Enh: Propagate through latches if both voltages the same
+0.11.3		Enh: Add threshold parameter to filter errors
+		Bug: Set expected min/max for off mos, too
+		Bug: SKIP_QUEUE was being processed
+		Bug: Latch setting bug
+		Enh: Added expandnet to interactive
+		Bug: Display message for unimplemented commands
+		Bug: Looping when setting virtual vector
+		Bug: Unknown min/max abort
