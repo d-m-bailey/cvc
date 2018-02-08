@@ -1022,3 +1022,15 @@ voltage_t CPower::RelativeVoltage(CPowerPtrMap & thePowerMacroPtrMap, netStatus_
 		return UNKNOWN_VOLTAGE;
 	}
 }
+
+CInstancePower::CInstancePower(string theDefinition) {
+	theDefinition = trim_(theDefinition);
+	size_t	myAtIndex;
+	size_t	myStringEnd = theDefinition.find_first_of(" \t");  // skip #instance
+	size_t	myStringBegin = theDefinition.find_first_not_of(" \t", myStringEnd);
+	myStringEnd = theDefinition.find_first_of(" \t", myStringBegin);
+	instanceName = theDefinition.substr(myStringBegin, myStringEnd);
+	myStringBegin = theDefinition.find_first_not_of(" \t", myStringEnd);
+	myStringEnd = theDefinition.find_first_of(" \t", myStringBegin);
+	powerFile = theDefinition.substr(myStringBegin, myStringEnd);
+}

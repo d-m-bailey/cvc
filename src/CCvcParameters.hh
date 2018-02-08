@@ -65,6 +65,7 @@ public:
 	CPowerPtrList	cvcPowerPtrList;
 	CPowerPtrList	cvcExpectedLevelPtrList;
 	CPowerPtrMap	cvcPowerMacroPtrMap;
+	CInstancePowerPtrList	cvcInstancePowerPtrList;
 	CPowerFamilyMap cvcPowerFamilyMap;
 	deviceId_t	cvcCircuitErrorLimit = defaultErrorLimit;
 	float	cvcLeakLimit = defaultLeakLimit;

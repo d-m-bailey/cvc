@@ -151,6 +151,20 @@ public:
 	void CalculatePower(CEventQueue& theEventQueue, voltage_t theShortVoltage, netId_t theNetId, netId_t theDefaultNetId, CCvcDb * theCvdDb_p, string theCalculation);
 };
 
+class CInstancePower {
+public:
+	string	instanceName;
+	string	powerFile;
+	list<string>	powerList;
+
+	CInstancePower(string theDefinition);
+};
+
+class CInstancePowerPtrList : public list<CInstancePower *> {
+public:
+
+};
+
 #define IsUnknownMinVoltage_(power_p) ( ! power_p || power_p->minVoltage == UNKNOWN_VOLTAGE || power_p->active[MIN_ACTIVE] == false )
 #define IsUnknownMaxVoltage_(power_p) ( ! power_p || power_p->maxVoltage == UNKNOWN_VOLTAGE || power_p->active[MAX_ACTIVE] == false )
 

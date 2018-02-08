@@ -198,7 +198,8 @@ public:
 	deviceId_t FindUniqueSourceDrainConnectedDevice(netId_t theNetId);
 	void ShortNonConductingResistor(deviceId_t theDeviceId, netId_t theFirstNet, netId_t theSecondNet, shortDirection_t theDirection);
 	void ShortNonConductingResistors();
-	set<netId_t> * FindNetIds(string thePowerSignal);
+	forward_list<instanceId_t> FindInstanceIds(string theHierarchy, instanceId_t theParent = 0);
+	set<netId_t> * FindNetIds(string thePowerSignal, instanceId_t theParent = 0);
 	returnCode_t SetModePower();
 	bool LockReport(bool theInteractiveFlag);
 	void RemoveLock();

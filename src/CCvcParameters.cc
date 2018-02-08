@@ -359,8 +359,9 @@ returnCode_t CCvcParameters::LoadPower() {
 	while ( getline(myPowerFile, myInput) ) {
 		try {
 			bool myIsMacro = ( myInput.substr(0, myInput.find_first_of(" \t", 0)) == "#define" );
+			bool myIsInstance = ( myInput.substr(0, myInput.find_first_of(" \t", 0)) == "#instance" );
 			if ( myInput == "#NO AUTO MACROS" ) myAutoMacroFlag = false;
-			if ( myInput[0] == '#' && ! myIsMacro ) continue; // skip comments
+			if ( myInput[0] == '#' && ! (myIsMacro || myIsInstance) ) continue; // skip comments
 			if ( myInput.find_first_not_of(" \t\n") > myInput.length() ) continue; // skip blank lines
 			myInput = trim_(myInput);
 	/*  // handle bus signals in SetModePower
@@ -392,6 +393,8 @@ returnCode_t CCvcParameters::LoadPower() {
 				} else {
 					myMacroName = myMacroDefinition.substr(0, myMacroDefinition.find_first_of(" \t", 0));
 				}
+			} else if ( myIsInstance ) {
+				cvcInstancePowerPtrList.push_back(new CInstancePower(myInput));
 			} else {
 				CPower * myPowerPtr = new CPower(myInput, cvcPowerMacroPtrMap, cvcModelListMap);
 				if ( ! (myPowerPtr->expectedMin.empty() && myPowerPtr->expectedSim.empty() && myPowerPtr->expectedMax.empty()) ) {
@@ -419,6 +422,20 @@ returnCode_t CCvcParameters::LoadPower() {
 			reportFile << myException.what() << endl;
 			myPowerErrorFlag = true;
 		}
+	}
+	for ( auto instance_ppit = cvcInstancePowerPtrList.begin(); instance_ppit != cvcInstancePowerPtrList.end(); instance_ppit++ ) {
+		ifstream myInstancePowerFile((*instance_ppit)->powerFile);
+		if ( myInstancePowerFile.fail() ) {
+			reportFile << "ERROR: Could not open " << (*instance_ppit)->powerFile << endl;
+			return (FAIL);
+		}
+		while ( getline(myInstancePowerFile, myInput) ) {
+			if ( myInput[0] == '#' ) continue; // skip comments, macros, and instances (no instance in instance)
+			if ( myInput.find_first_not_of(" \t\n") > myInput.length() ) continue; // skip blank lines
+			myInput = trim_(myInput);
+			(*instance_ppit)->powerList.push_back(myInput);
+		}
+		myInstancePowerFile.close();
 	}
 	cvcPowerPtrList.SetFamilies(cvcPowerFamilyMap);
 	SetHiZPropagation();

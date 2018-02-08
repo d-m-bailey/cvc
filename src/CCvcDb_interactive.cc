@@ -1093,7 +1093,7 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 		mySignals_v[signal_net_pair_pit->second] = signal_net_pair_pit->first;
 	}
 	for ( netId_t net_it = 0; net_it < myInstance_p->master_p->portCount; net_it++ ) {
-		netId_t myGlobalNetId = myInstance_p->localToGlobalNetId_v[net_it];
+		netId_t myGlobalNetId = GetEquivalentNet(myInstance_p->localToGlobalNetId_v[net_it]);
 		CPower * myPower_p = netVoltagePtr_v[myGlobalNetId];
 		if ( myPower_p && ! myPower_p->powerSignal.empty() ) {
 			string myDefinition = myPower_p->definition.substr(0, myPower_p->definition.find(" calculation=>"));

@@ -808,9 +808,8 @@ void CCvcDb::ShortNonConductingResistors() {
 	}
 }
 
-set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal) {
-	list<string> * myHierarchyList_p = SplitHierarchy(thePowerSignal);
-	set<netId_t> * myNetIdSet_p = new set<netId_t>;
+forward_list<instanceId_t> CCvcDb::FindInstanceIds(string theHierarchy, instanceId_t theParent) {
+	list<string> * myHierarchyList_p = SplitHierarchy(theHierarchy);
 	forward_list<instanceId_t> mySearchInstanceIdList;
 //	size_t myHierarchyOffset = thePowerSignal.find(HIERARCHY_DELIMITER, 0);
 //	size_t myStringBegin = 0;
@@ -819,12 +818,12 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal) {
 	string	myUnmatchedInstance = "";
 //	instanceId_t mySearchInstanceId = UNKNOWN_SUBCIRCUIT;
 	try {
-		for ( auto hierarchy_pit = myHierarchyList_p->begin(); *hierarchy_pit != myHierarchyList_p->back(); hierarchy_pit++ ) { // last hierarchy is net name - don't process
+		for ( auto hierarchy_pit = myHierarchyList_p->begin(); hierarchy_pit != myHierarchyList_p->end(); hierarchy_pit++ ) {
 			if ( (*hierarchy_pit).empty() ) {
 				mySearchInstanceIdList.push_front(0);
 			} else if ( hierarchy_pit->substr(0,2) == "*(" && hierarchy_pit->substr(hierarchy_pit->size() - 1, 1) == ")" ) { // circuit search
 				if ( ! myUnmatchedInstance.empty() ) throw out_of_range("invalid hierarchy: " + myUnmatchedInstance + HIERARCHY_DELIMITER + *hierarchy_pit ); // no circuit searches with pending hierarchy
-				string myCellName = thePowerSignal.substr(2, hierarchy_pit->size() - 3);
+				string myCellName = theHierarchy.substr(2, hierarchy_pit->size() - 3);
 				regex mySearchPattern(FuzzyFilter(myCellName));
 				bool myFoundMatch = false;
 				if ( mySearchInstanceIdList.empty() ) { // global circuit search
@@ -870,7 +869,7 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal) {
 					mySearchInstanceIdList.clear();
 					mySearchInstanceIdList = myNewSearchList;
 				}
-				if ( ! myFoundMatch ) throw out_of_range("invalid signal: missing circuit " + myCellName);
+				if ( ! myFoundMatch ) throw out_of_range("invalid hierarchy: missing circuit " + myCellName);
 			} else { // instance search
 				if ( mySearchInstanceIdList.empty() ) throw out_of_range("invalid hierarchy: " + *hierarchy_pit); // no relative path searches
 				if ( ! myUnmatchedInstance.empty() ) {
@@ -909,14 +908,63 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal) {
 				}
 			}
 		}
-		list<string> * myNetNameList_p = ExpandBusNet(myHierarchyList_p->back());
-		bool myCheckTopPort = false;
-		if ( mySearchInstanceIdList.empty() ) { // top port
-			myCheckTopPort = true;
-			mySearchInstanceIdList.push_front(0);
+		if ( theParent != 0 ) {
+			// only use instances in parent
+			forward_list<instanceId_t> myNewSearchList;
+			for (auto instanceId_pit = mySearchInstanceIdList.begin(); instanceId_pit != mySearchInstanceIdList.end(); instanceId_pit++) {
+				if ( IsSubcircuitOf(*instanceId_pit, theParent) ) {
+					myNewSearchList.push_front(*instanceId_pit);
+				}
+			}
+			mySearchInstanceIdList = myNewSearchList;
 		}
-		bool myFoundNetMatch = false;
+	}
+	catch (const out_of_range& oor_exception) {
+		reportFile << "ERROR: could not expand instance " << theHierarchy << " " << oor_exception.what() << endl;
+		mySearchInstanceIdList.clear();
+	}
+	catch (const regex_error& myError) {
+		reportFile << "regex_error: " << RegexErrorString(myError.code()) << endl;
+		mySearchInstanceIdList.clear();
+	}
+	return mySearchInstanceIdList;
+}
+
+set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal, instanceId_t theParent) {
+	list<string> * myHierarchyList_p = SplitHierarchy(thePowerSignal);
+	set<netId_t> * myNetIdSet_p = new set<netId_t>;
+	forward_list<instanceId_t> mySearchInstanceIdList;
+//	size_t myHierarchyOffset = thePowerSignal.find(HIERARCHY_DELIMITER, 0);
+//	size_t myStringBegin = 0;
+//	size_t myStringEnd;
+	string	myInstanceName = "";
+	string	mySignalName = "";
+	string	myUnmatchedInstance = "";
+//	instanceId_t mySearchInstanceId = UNKNOWN_SUBCIRCUIT;
+	size_t mySearchEnd = thePowerSignal.length();
+	do {
+		mySearchEnd = thePowerSignal.find_last_of(HIERARCHY_DELIMITER, mySearchEnd-1);
+		if (mySearchEnd > thePowerSignal.length()) {
+			mySearchEnd = 0;
+			myInstanceName = "";
+			mySignalName = thePowerSignal;
+		} else {
+			myInstanceName = thePowerSignal.substr(0, mySearchEnd);
+			mySignalName = thePowerSignal.substr(mySearchEnd+1);
+		}
+		mySearchInstanceIdList = FindInstanceIds(myInstanceName, theParent);
+//		cout << "DEBUG: " << thePowerSignal << " split into " << myInstanceName << " and " << mySignalName << endl;
+	} while( mySearchInstanceIdList.empty() && myInstanceName != "" );
+	try {
+//		cout << "DEBUG: instance list " << mySearchInstanceIdList.front() << endl;
+		list<string> * myNetNameList_p = ExpandBusNet(mySignalName);
+		bool myCheckTopPort = false;
+		if ( mySignalName == thePowerSignal ) { // top port
+			myCheckTopPort = true;
+//			mySearchInstanceIdList.push_front(0);
+		}
 		for ( auto myNetName_pit = myNetNameList_p->begin(); myNetName_pit != myNetNameList_p->end(); myNetName_pit++ ) {
+			bool myFoundNetMatch = false;
 			string myNetName = *myNetName_pit;
 			if ( ! myUnmatchedInstance.empty() ) {
 				myNetName = myUnmatchedInstance + HIERARCHY_DELIMITER + myNetName;
@@ -924,9 +972,12 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal) {
 			regex mySearchPattern(FuzzyFilter(myNetName));
 			netId_t myNetId;
 			for (auto instanceId_pit = mySearchInstanceIdList.begin(); instanceId_pit != mySearchInstanceIdList.end(); instanceId_pit++) {
+//				bool myCheckTopPort = ( *instanceId_pit == 0 );
 				CTextNetIdMap * mySignalIdMap_p = &(instancePtr_v[*instanceId_pit]->master_p->localSignalIdMap);
 				for ( auto signalIdPair_pit = mySignalIdMap_p->begin(); signalIdPair_pit != mySignalIdMap_p->end(); signalIdPair_pit++ ) {
 					try { // exact match
+//						cout << "DEBUG: looking for " << myNetName << " in instance " << (*instanceId_pit);
+//						cout << " checking " << myNetName << " vs " << signalIdPair_pit->first << " " << myFoundNetMatch << endl;
 						text_t mySignalText = cvcCircuitList.cdlText.GetTextAddress(myNetName);
 						if ( signalIdPair_pit->first == mySignalText ) {
 							myNetId = instancePtr_v[*instanceId_pit]->localToGlobalNetId_v[signalIdPair_pit->second];
@@ -958,16 +1009,17 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal) {
 //					if ( *net_pit >= topCircuit_p->portCount ) throw out_of_range("invalid signal"); // top signals that are not ports without leading hierarchy delimiter
 //				}
 //			}
+			if ( ! myFoundNetMatch ) throw out_of_range("signal " + myNetName + " not found");
 		}
-		if ( ! myFoundNetMatch ) throw out_of_range("signal not found");
 		delete myNetNameList_p;
 	}
 	catch (const out_of_range& oor_exception) {
-		reportFile << "ERROR: could not expand " << thePowerSignal << " " << oor_exception.what() << endl;
+		reportFile << "ERROR: could not expand signal " << thePowerSignal << " " << oor_exception.what() << endl;
 		myNetIdSet_p->clear();
 	}
 	catch (const regex_error& myError) {
 		reportFile << "regex_error: " << RegexErrorString(myError.code()) << endl;
+		myNetIdSet_p->clear();
 	}
 	delete myHierarchyList_p;
 	return myNetIdSet_p;
@@ -979,6 +1031,7 @@ returnCode_t CCvcDb::SetModePower() {
 	ResetVector<CStatusVector>(netStatus_v, netCount, 0);
 //	for (CPowerPtrList::iterator power_ppit = cvcParameters.cvcPowerPtrList.begin(); power_ppit != cvcParameters.cvcPowerPtrList.end(); power_ppit++) {
 	CPowerPtrList::iterator power_ppit = cvcParameters.cvcPowerPtrList.begin();
+	// Normal power definitions
 	while( power_ppit != cvcParameters.cvcPowerPtrList.end() ) {
 		CPower * myPower_p = *power_ppit;
 		set<netId_t> * myNetIdList = FindNetIds(myPower_p->powerSignal); // expands buses and hierarchy
@@ -1013,6 +1066,60 @@ returnCode_t CCvcDb::SetModePower() {
 		}
 		power_ppit++;
 	}
+	// Instance power definitions
+	for ( auto instance_ppit = cvcParameters.cvcInstancePowerPtrList.begin(); instance_ppit != cvcParameters.cvcInstancePowerPtrList.end(); instance_ppit++ ) {
+		forward_list<instanceId_t> myInstanceIdList = FindInstanceIds((*instance_ppit)->instanceName);  // expands buses and hierarchy
+		for ( auto instanceId_pit = myInstanceIdList.begin(); instanceId_pit != myInstanceIdList.end(); instanceId_pit++ ) {
+			CPowerPtrMap myLocalMacroPtrMap;
+			for ( auto power_pit = (*instance_ppit)->powerList.begin(); power_pit != (*instance_ppit)->powerList.end(); power_pit++ ) {
+				set<netId_t> * myNetIdList_p;
+				if ( power_pit->substr(0, 2) == "*(" ) {
+					myNetIdList_p = FindNetIds(*power_pit, *instanceId_pit);
+				} else if ( power_pit->substr(0, 1) == "/" ) {
+					myNetIdList_p = FindNetIds(HierarchyName(*instanceId_pit) + *power_pit);
+				} else {
+					myNetIdList_p = FindNetIds(HierarchyName(*instanceId_pit) + HIERARCHY_DELIMITER + *power_pit);
+				}
+				for ( auto net_pit = myNetIdList_p->begin(); net_pit != myNetIdList_p->end(); net_pit++ ) {
+					CPower * myPower_p = new CPower(*power_pit, myLocalMacroPtrMap, cvcParameters.cvcModelListMap);
+					if ( myPower_p->type[POWER_BIT] && isalpha((*power_pit)[0]) ) {
+						if ( netVoltagePtr_v[*net_pit] && netVoltagePtr_v[*net_pit]->type[POWER_BIT] ) {  // regular power definitions become macros
+							myLocalMacroPtrMap[*power_pit] = netVoltagePtr_v[*net_pit];
+						} else {  // top instance power nets must be already defined
+							reportFile << "ERROR: Instance power signal " << *power_pit << " of " << HierarchyName(*instanceId_pit);
+							reportFile << " not defined in parent " << NetName(*net_pit) << endl;
+							myPowerError = true;
+						}
+					} else if ( myPower_p->type[INPUT_BIT] ) {
+						if ( netVoltagePtr_v[*net_pit] && netVoltagePtr_v[*net_pit]->simVoltage != UNKNOWN_VOLTAGE && myPower_p->simVoltage != UNKNOWN_VOLTAGE
+								&& netVoltagePtr_v[*net_pit]->simVoltage != myPower_p->simVoltage ) {
+							reportFile << "ERROR: Instance input signal " << *power_pit << " of " << HierarchyName(*instanceId_pit);
+							reportFile << " not equal to parent " << NetName(*net_pit) << endl;
+							myPowerError = true;
+						} else {
+							if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedMin = to_string<float>(myPower_p->minVoltage / VOLTAGE_SCALE);
+							if ( myPower_p->simVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedSim = to_string<float>(myPower_p->simVoltage / VOLTAGE_SCALE);
+							if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedMax = to_string<float>(myPower_p->maxVoltage / VOLTAGE_SCALE);
+							if ( ! (myPower_p->expectedMin.empty() && myPower_p->expectedSim.empty() && myPower_p->expectedMax.empty()) ) {
+								myPower_p->minVoltage = UNKNOWN_VOLTAGE;
+								myPower_p->simVoltage = UNKNOWN_VOLTAGE;
+								myPower_p->maxVoltage = UNKNOWN_VOLTAGE;
+								cvcParameters.cvcExpectedLevelPtrList.push_back(myPower_p);
+							}
+						}
+					} else {
+						if ( netVoltagePtr_v[*net_pit] ) {
+							reportFile << "Warning: Duplicate power definition " << NetName(*net_pit);
+							reportFile << " and " << *power_pit << " of " << HierarchyName(*instanceId_pit) << " ignored" << endl;
+						} else {
+							netVoltagePtr_v[*net_pit] = myPower_p;
+						}
+					}
+				}
+			}
+		}
+	}
+	// Expected voltage definitions
 	unordered_map<netId_t, string> myExpectedLevelDefinitionMap;
 	power_ppit = cvcParameters.cvcExpectedLevelPtrList.begin();
 	while( power_ppit != cvcParameters.cvcExpectedLevelPtrList.end() ) {
