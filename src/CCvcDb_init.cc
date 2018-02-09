@@ -1066,79 +1066,117 @@ returnCode_t CCvcDb::SetModePower() {
 		}
 		power_ppit++;
 	}
+	if ( myPowerError ) {
+		reportFile << "Power definition error" << endl;
+		return(SKIP);
+	} else {
+		return(OK);
+	}
+}
+
+returnCode_t CCvcDb::SetInstancePower() {
+	// Instance power definitions
+	reportFile << "Setting instance power..." << endl;
+	bool myPowerError = false;
 	// Instance power definitions
 	for ( auto instance_ppit = cvcParameters.cvcInstancePowerPtrList.begin(); instance_ppit != cvcParameters.cvcInstancePowerPtrList.end(); instance_ppit++ ) {
 		forward_list<instanceId_t> myInstanceIdList = FindInstanceIds((*instance_ppit)->instanceName);  // expands buses and hierarchy
 		for ( auto instanceId_pit = myInstanceIdList.begin(); instanceId_pit != myInstanceIdList.end(); instanceId_pit++ ) {
 			CPowerPtrMap myLocalMacroPtrMap;
 			for ( auto power_pit = (*instance_ppit)->powerList.begin(); power_pit != (*instance_ppit)->powerList.end(); power_pit++ ) {
-				set<netId_t> * myNetIdList_p;
-				if ( power_pit->substr(0, 2) == "*(" ) {
-					myNetIdList_p = FindNetIds(*power_pit, *instanceId_pit);
-				} else if ( power_pit->substr(0, 1) == "/" ) {
-					myNetIdList_p = FindNetIds(HierarchyName(*instanceId_pit) + *power_pit);
-				} else {
-					myNetIdList_p = FindNetIds(HierarchyName(*instanceId_pit) + HIERARCHY_DELIMITER + *power_pit);
+				CPower * myPower_p = new CPower(*power_pit, myLocalMacroPtrMap, cvcParameters.cvcModelListMap);
+				string myOriginalPower = myPower_p->powerSignal;
+				if ( myPower_p->powerSignal.substr(0, 1) == "/" ) {
+					myPower_p->powerSignal = HierarchyName(*instanceId_pit) + myPower_p->powerSignal;
+				} else if ( myPower_p->powerSignal.substr(0, 2) != "*(" ) {
+					myPower_p->powerSignal = HierarchyName(*instanceId_pit) + HIERARCHY_DELIMITER + myPower_p->powerSignal;
 				}
+				set<netId_t> * myNetIdList_p = FindNetIds(myPower_p->powerSignal, *instanceId_pit);
 				for ( auto net_pit = myNetIdList_p->begin(); net_pit != myNetIdList_p->end(); net_pit++ ) {
-					CPower * myPower_p = new CPower(*power_pit, myLocalMacroPtrMap, cvcParameters.cvcModelListMap);
-					if ( myPower_p->type[POWER_BIT] && isalpha((*power_pit)[0]) ) {
-						if ( netVoltagePtr_v[*net_pit] && netVoltagePtr_v[*net_pit]->type[POWER_BIT] ) {  // regular power definitions become macros
-							myLocalMacroPtrMap[*power_pit] = netVoltagePtr_v[*net_pit];
+					netId_t myNetId = GetEquivalentNet(*net_pit);
+					if ( net_pit != myNetIdList_p->begin() ) {
+						myPower_p = new CPower(myPower_p, myNetId);
+					} else { // add net number to existing power definitions
+						myPower_p->netId = myNetId;
+					}
+					if ( myPower_p->type[POWER_BIT] && isalpha(myOriginalPower[0]) ) {
+						if ( netVoltagePtr_v[myNetId] && netVoltagePtr_v[myNetId]->type[POWER_BIT] ) {  // regular power definitions become macros
+							myLocalMacroPtrMap[myOriginalPower] = netVoltagePtr_v[myNetId];
 						} else {  // top instance power nets must be already defined
-							reportFile << "ERROR: Instance power signal " << *power_pit << " of " << HierarchyName(*instanceId_pit);
-							reportFile << " not defined in parent " << NetName(*net_pit) << endl;
+							reportFile << "ERROR: Instance power signal " << myPower_p->powerSignal << " not defined in parent " << NetName(myNetId) << endl;
 							myPowerError = true;
 						}
 					} else if ( myPower_p->type[INPUT_BIT] ) {
-						if ( netVoltagePtr_v[*net_pit] && netVoltagePtr_v[*net_pit]->simVoltage != UNKNOWN_VOLTAGE && myPower_p->simVoltage != UNKNOWN_VOLTAGE
-								&& netVoltagePtr_v[*net_pit]->simVoltage != myPower_p->simVoltage ) {
-							reportFile << "ERROR: Instance input signal " << *power_pit << " of " << HierarchyName(*instanceId_pit);
-							reportFile << " not equal to parent " << NetName(*net_pit) << endl;
-							myPowerError = true;
-						} else {
-							if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedMin = to_string<float>(myPower_p->minVoltage / VOLTAGE_SCALE);
-							if ( myPower_p->simVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedSim = to_string<float>(myPower_p->simVoltage / VOLTAGE_SCALE);
-							if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedMax = to_string<float>(myPower_p->maxVoltage / VOLTAGE_SCALE);
-							if ( ! (myPower_p->expectedMin.empty() && myPower_p->expectedSim.empty() && myPower_p->expectedMax.empty()) ) {
-								myPower_p->minVoltage = UNKNOWN_VOLTAGE;
-								myPower_p->simVoltage = UNKNOWN_VOLTAGE;
-								myPower_p->maxVoltage = UNKNOWN_VOLTAGE;
-								cvcParameters.cvcExpectedLevelPtrList.push_back(myPower_p);
-							}
+						if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedMin = to_string<float>(myPower_p->minVoltage / VOLTAGE_SCALE);
+						if ( myPower_p->simVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedSim = to_string<float>(myPower_p->simVoltage / VOLTAGE_SCALE);
+						if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedMax = to_string<float>(myPower_p->maxVoltage / VOLTAGE_SCALE);
+						if ( ! (myPower_p->expectedMin.empty() && myPower_p->expectedSim.empty() && myPower_p->expectedMax.empty()) ) {
+							myPower_p->minVoltage = UNKNOWN_VOLTAGE;
+							myPower_p->simVoltage = UNKNOWN_VOLTAGE;
+							myPower_p->maxVoltage = UNKNOWN_VOLTAGE;
+							myPower_p->type[INPUT_BIT] = false;
+							myPower_p->definition = myPower_p->StandardDefinition();
+							cvcParameters.cvcExpectedLevelPtrList.push_back(myPower_p);
 						}
 					} else {
-						if ( netVoltagePtr_v[*net_pit] ) {
-							reportFile << "Warning: Duplicate power definition " << NetName(*net_pit);
-							reportFile << " and " << *power_pit << " of " << HierarchyName(*instanceId_pit) << " ignored" << endl;
+						if ( netVoltagePtr_v[myNetId] ) {
+							reportFile << "Warning: Duplicate power definition " << NetName(myNetId);
+							reportFile << " and " << myPower_p->powerSignal << " of " << HierarchyName(*instanceId_pit) << " ignored" << endl;
 						} else {
-							netVoltagePtr_v[*net_pit] = myPower_p;
+							cvcParameters.cvcPowerPtrList.push_back(myPower_p);
+							netVoltagePtr_v[myNetId] = myPower_p;
 						}
 					}
 				}
 			}
 		}
 	}
+//	cout << "DEBUG: finished instance power" << endl; cout.flush();
+	if ( myPowerError ) {
+		reportFile << "Power definition error" << endl;
+		return(SKIP);
+	} else {
+		return(OK);
+	}
+}
+
+returnCode_t CCvcDb::SetExpectedPower() {
 	// Expected voltage definitions
 	unordered_map<netId_t, string> myExpectedLevelDefinitionMap;
-	power_ppit = cvcParameters.cvcExpectedLevelPtrList.begin();
+	CPowerPtrList::iterator power_ppit = cvcParameters.cvcExpectedLevelPtrList.begin();
+	bool myPowerError = false;
 	while( power_ppit != cvcParameters.cvcExpectedLevelPtrList.end() ) {
 		CPower * myPower_p = *power_ppit;
-		set<netId_t> * myNetIdList = FindNetIds(myPower_p->powerSignal); // expands buses and hierarchy
+		set<netId_t> * myNetIdList;
+		if ( myPower_p->netId == UNKNOWN_NET ) {
+			myNetIdList = FindNetIds(myPower_p->powerSignal); // expands buses and hierarchy
+		} else {
+			myNetIdList = new set<netId_t>;
+			myNetIdList->insert(myPower_p->netId);
+		}
 		for (auto netId_pit = myNetIdList->begin(); netId_pit != myNetIdList->end(); netId_pit++) {
 			string myExpandedNetName = NetName(*netId_pit);
 			if ( myPower_p->powerSignal != myExpandedNetName ) {
 //				logFile << "INFO: Expanded " << myPower_p->powerSignal << " -> " << myExpandedNetName << endl;
 			}
- 			if (netVoltagePtr_v[*netId_pit] && myPower_p->definition != netVoltagePtr_v[*netId_pit]->definition ) {
- 				reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"";
- 				reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << netVoltagePtr_v[*netId_pit]->definition;
- 				reportFile << ")\" != \"" << myPower_p->powerSignal << "(" << myPower_p->definition << ")\"" << endl; 				myPowerError = true;
- 			} else if ( myExpectedLevelDefinitionMap.count(*netId_pit) > 0 && myPower_p->definition != myExpectedLevelDefinitionMap[*netId_pit] ) {
- 				reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"";
- 				reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << myExpectedLevelDefinitionMap[*netId_pit];
- 				reportFile << ")\" != \"" << myPower_p->powerSignal << "(" << myPower_p->definition << ")\"" << endl; 				myPowerError = true;
- 			}
+			if (netVoltagePtr_v[*netId_pit] && myPower_p->definition != netVoltagePtr_v[*netId_pit]->definition ) {
+				voltage_t mySimVoltage = netVoltagePtr_v[*netId_pit]->simVoltage;
+				if ( IsValidVoltage_(myPower_p->expectedSim) && mySimVoltage == String_to_Voltage(myPower_p->expectedSim) ) {
+					continue;
+				} else {
+					reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"";
+					reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << netVoltagePtr_v[*netId_pit]->definition;
+					reportFile << ")\" != \"" << myPower_p->powerSignal << "(" << myPower_p->definition << ")\"" << endl;
+					myPowerError = true;
+				}
+			} else if ( myExpectedLevelDefinitionMap.count(*netId_pit) > 0 && myPower_p->definition != myExpectedLevelDefinitionMap[*netId_pit] ) {
+				reportFile << "ERROR: Duplicate power expectation " << NetName(*netId_pit) << ": \"";
+				reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << myExpectedLevelDefinitionMap[*netId_pit];
+				reportFile << ")\" != \"" << myPower_p->powerSignal << "(" << myPower_p->definition << ")\"" << endl;
+				myPowerError = true;
+			} else {
+				myExpectedLevelDefinitionMap[*netId_pit] = myPower_p->definition;
+			}
 			if ( netId_pit != myNetIdList->begin() ) {
 				myPower_p = new CPower(myPower_p, *netId_pit);
 				cvcParameters.cvcExpectedLevelPtrList.insert(++power_ppit, myPower_p); // insert after current power_ppit (before next node)
@@ -1146,7 +1184,6 @@ returnCode_t CCvcDb::SetModePower() {
 			} else { // add net number to existing power definitions
 				myPower_p->netId = *netId_pit;
 			}
-			myExpectedLevelDefinitionMap[*netId_pit] = myPower_p->definition;
 		}
 		if ( myNetIdList->empty() ) {
 			reportFile << "ERROR: Could not find net " << myPower_p->powerSignal << endl;

@@ -201,6 +201,8 @@ public:
 	forward_list<instanceId_t> FindInstanceIds(string theHierarchy, instanceId_t theParent = 0);
 	set<netId_t> * FindNetIds(string thePowerSignal, instanceId_t theParent = 0);
 	returnCode_t SetModePower();
+	returnCode_t SetInstancePower();
+	returnCode_t SetExpectedPower();
 	bool LockReport(bool theInteractiveFlag);
 	void RemoveLock();
 	void SetSCRCPower();

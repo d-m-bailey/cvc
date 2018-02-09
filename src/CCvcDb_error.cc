@@ -207,13 +207,13 @@ void CCvcDb::FindOverVoltageErrors(string theCheck, int theErrorIndex) {
 			CDevice * myDevice_p = model_pit->firstDevice_p;
 			string myDisplayParameter;
 			if ( theErrorIndex == OVERVOLTAGE_VBG ) {
-			        myDisplayParameter = " Vbg=" + PrintToleranceParameter(model_pit->maxVbgDefinition, model_pit->maxVbg, VOLTAGE_SCALE);
+				myDisplayParameter = " Vbg=" + PrintToleranceParameter(model_pit->maxVbgDefinition, model_pit->maxVbg, VOLTAGE_SCALE);
 			} else if ( theErrorIndex == OVERVOLTAGE_VBS ) {
-			        myDisplayParameter = " Vbs=" + PrintToleranceParameter(model_pit->maxVbsDefinition, model_pit->maxVbs, VOLTAGE_SCALE);
+				myDisplayParameter = " Vbs=" + PrintToleranceParameter(model_pit->maxVbsDefinition, model_pit->maxVbs, VOLTAGE_SCALE);
 			} else if ( theErrorIndex == OVERVOLTAGE_VDS ) {
-			        myDisplayParameter = " Vds=" + PrintToleranceParameter(model_pit->maxVdsDefinition, model_pit->maxVds, VOLTAGE_SCALE);
+				myDisplayParameter = " Vds=" + PrintToleranceParameter(model_pit->maxVdsDefinition, model_pit->maxVds, VOLTAGE_SCALE);
 			} else if ( theErrorIndex == OVERVOLTAGE_VGS ) {
-			        myDisplayParameter = " Vgs=" + PrintToleranceParameter(model_pit->maxVgsDefinition, model_pit->maxVgs, VOLTAGE_SCALE);
+				myDisplayParameter = " Vgs=" + PrintToleranceParameter(model_pit->maxVgsDefinition, model_pit->maxVgs, VOLTAGE_SCALE);
 			}
 			myDisplayParameter += " " + model_pit->ConditionString();
 			while (myDevice_p) {

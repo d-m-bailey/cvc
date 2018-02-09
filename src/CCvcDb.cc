@@ -81,10 +81,10 @@ void CCvcDb::ReportShort(deviceId_t theDeviceId) {
 	float myLeakCurrent;
 	bool myVthFlag;
 	if ( myConnections.simSourcePower_p->type[HIZ_BIT]
-	        && myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, false) ) return;
+		&& myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, false) ) return;
 		// no shorts from Hi-Z to expected leak path
 	if ( myConnections.simDrainPower_p->type[HIZ_BIT]
-	        && myConnections.simDrainPower_p->IsRelatedPower(myConnections.simSourcePower_p, netVoltagePtr_v, simNet_v, simNet_v, false) ) return;
+		&& myConnections.simDrainPower_p->IsRelatedPower(myConnections.simSourcePower_p, netVoltagePtr_v, simNet_v, simNet_v, false) ) return;
 		// no shorts from Hi-Z to expected leak path
 	if ( myMaxVoltage == UNKNOWN_VOLTAGE || myMinVoltage == UNKNOWN_VOLTAGE ) {
 		myLeakCurrent = 0;
@@ -440,8 +440,8 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 				if ( myMaxConnections.gateVoltage == UNKNOWN_VOLTAGE ) {
 					EnqueueAttachedDevices(maxEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
 				} else if ( ! myMaxConnections.gatePower_p->type[HIZ_BIT]
-				        && ((myMaxConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
-				        		|| (myMaxConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) ) {
+						&& ((myMaxConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
+							|| (myMaxConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) ) {
 					float myLeakCurrent = myMaxConnections.EstimatedMosDiodeCurrent(mySourceVoltage, theConnections);
 					if ( ExceedsLeakLimit_(myLeakCurrent) ) {
 						PrintMaxVoltageConflict(myTargetNetId, myMaxConnections, myExpectedVoltage, myLeakCurrent);
@@ -518,8 +518,8 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 				if ( myMinConnections.gateVoltage == UNKNOWN_VOLTAGE ) {
 					EnqueueAttachedDevices(minEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
 				} else if ( ! myMinConnections.gatePower_p->type[HIZ_BIT]
-				        && ((myMinConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
-				        		|| (myMinConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) ) {
+						&& ((myMinConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
+							|| (myMinConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) ) {
 					float myLeakCurrent = myMinConnections.EstimatedMosDiodeCurrent(mySourceVoltage, theConnections);
 					if ( ExceedsLeakLimit_(myLeakCurrent) ) {
 						PrintMinVoltageConflict(myTargetNetId, myMinConnections, myExpectedVoltage, myLeakCurrent);
@@ -2235,7 +2235,7 @@ void CCvcDb::ResetMinMaxActiveStatus() {
 	for (auto power_ppit = cvcParameters.cvcPowerPtrList.begin(); power_ppit != cvcParameters.cvcPowerPtrList.end(); power_ppit++) {
 		(*power_ppit)->active[MIN_ACTIVE] = (*power_ppit)->active[MAX_ACTIVE] = false;
 		if ( (*power_ppit)->type[INPUT_BIT] // always activate min/max for inputs
-		        || (*power_ppit)->type[POWER_BIT] // always activate min/max for power
+				|| (*power_ppit)->type[POWER_BIT] // always activate min/max for power
  //				|| (! leakVoltageSet && (*power_ppit)->type[HIZ_BIT]) // only activate min/max for HIZ on first pass
 //				|| (*power_ppit)->type[HIZ_BIT]
 				|| ! ((*power_ppit)->simVoltage == UNKNOWN_VOLTAGE || (*power_ppit)->type[SIM_CALCULATED_BIT]) ) { // activate min/max if sim set but not calculated

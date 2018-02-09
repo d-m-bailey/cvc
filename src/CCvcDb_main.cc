@@ -126,11 +126,15 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		}
 
 /// Stage 2) Create database
+		ResetMinSimMaxAndQueues();
+		SetEquivalentNets();
+		if ( SetInstancePower() != OK || SetExpectedPower() != OK ) {
+			reportFile << "ERROR: skipped due to problems in power files" << endl;
+			continue;
+		}
 		cvcParameters.cvcModelListMap.Print(logFile);
 		PrintPowerList(logFile, "Power List");
 		cvcParameters.cvcPowerPtrList.SetPowerLimits(maxPower, minPower);
-		ResetMinSimMaxAndQueues();
-		SetEquivalentNets();
 		LinkDevices();
 		OverrideFuses();
 		reportFile << PrintProgress(&lastSnapshot) << endl;

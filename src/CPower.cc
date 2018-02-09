@@ -281,9 +281,9 @@ void CPowerFamilyMap::AddFamily(string thePowerString) {
 	string myRelativeName;
 	size_t	myStringBegin = thePowerString.find_first_not_of(" \t");
 	size_t	myStringEnd = thePowerString.find_first_of(" \t", myStringBegin);
-    assert(thePowerString.substr(myStringBegin, myStringEnd - myStringBegin) == "family");
-    myStringBegin = thePowerString.find_first_not_of(" \t", myStringEnd);
-    myStringEnd = thePowerString.find_first_of(" \t", myStringBegin);
+	assert(thePowerString.substr(myStringBegin, myStringEnd - myStringBegin) == "family");
+	myStringBegin = thePowerString.find_first_not_of(" \t", myStringEnd);
+	myStringEnd = thePowerString.find_first_of(" \t", myStringBegin);
 	myFamilyName = thePowerString.substr(myStringBegin, myStringEnd - myStringBegin);
 	while (myStringEnd < thePowerString.length()) {
 		myStringBegin = thePowerString.find_first_not_of(", \t", myStringEnd);
@@ -492,31 +492,31 @@ bool CPower::RelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVolta
 		}
 		myMinPower_p = theNetVoltagePtr_v[myNetId];
 	}
-    if ( defaultMinNet != UNKNOWN_NET ) {
-    	assert(defaultMinNet != UNKNOWN_NET);
+	if ( defaultMinNet != UNKNOWN_NET ) {
+		assert(defaultMinNet != UNKNOWN_NET);
 		myIsRelatedCalculation &= ((baseMinId == theTestPower_p->netId) || (baseMinId == theTestPower_p->baseMinId) || (defaultMinNet == theTestPower_p->defaultMinNet));
-    }
-    if ( theTestPower_p->baseMinId != UNKNOWN_NET ) {
-    	assert(theTestPower_p->defaultMinNet != UNKNOWN_NET);
+	}
+	if ( theTestPower_p->baseMinId != UNKNOWN_NET ) {
+		assert(theTestPower_p->defaultMinNet != UNKNOWN_NET);
 		myIsRelatedCalculation &= ((theTestPower_p->baseMinId == netId) || (theTestPower_p->baseMinId == baseMinId) || (theTestPower_p->defaultMinNet == defaultMinNet));
-    }
-    if ( baseSimId != UNKNOWN_NET ) {
-    	assert(defaultSimNet != UNKNOWN_NET);
+	}
+	if ( baseSimId != UNKNOWN_NET ) {
+		assert(defaultSimNet != UNKNOWN_NET);
 		myIsRelatedCalculation &= ((baseSimId == theTestPower_p->netId) || (baseSimId == theTestPower_p->baseSimId) || (defaultSimNet == theTestPower_p->defaultSimNet));
-    }
-    if ( theTestPower_p->baseSimId != UNKNOWN_NET ) {
-    	assert(theTestPower_p->defaultSimNet != UNKNOWN_NET);
+	}
+	if ( theTestPower_p->baseSimId != UNKNOWN_NET ) {
+		assert(theTestPower_p->defaultSimNet != UNKNOWN_NET);
 		myIsRelatedCalculation &= ((theTestPower_p->baseSimId == netId) || (theTestPower_p->baseSimId == baseSimId) || (theTestPower_p->defaultSimNet == defaultSimNet));
-    }
-    if ( baseMaxId != UNKNOWN_NET ) {
-    	assert(defaultMaxNet != UNKNOWN_NET);
+	}
+	if ( baseMaxId != UNKNOWN_NET ) {
+		assert(defaultMaxNet != UNKNOWN_NET);
 		myIsRelatedCalculation &= ((baseMaxId == theTestPower_p->netId) || (baseMaxId == theTestPower_p->baseSimId) || (defaultMaxNet == theTestPower_p->defaultMaxNet));
-    }
-    if ( theTestPower_p->baseMaxId != UNKNOWN_NET ) {
-    	assert(theTestPower_p->defaultMaxNet != UNKNOWN_NET);
+	}
+	if ( theTestPower_p->baseMaxId != UNKNOWN_NET ) {
+		assert(theTestPower_p->defaultMaxNet != UNKNOWN_NET);
 		myIsRelatedCalculation &= ((theTestPower_p->baseMaxId == netId) || (theTestPower_p->baseMaxId == baseMaxId) || (theTestPower_p->defaultMaxNet == defaultMaxNet));
-    }
-    if ( ! myIsRelatedCalculation ) return false;
+	}
+	if ( ! myIsRelatedCalculation ) return false;
 	if ( family != "" ) {
 		if ( relativeFriendly ) {
 			if ( relativeSet.count(theTestPower_p->powerSignal) == 0 ) return false;
@@ -957,13 +957,13 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 			if ( myVoltageStack.size() < 2 ) throw EPowerError("invalid equation: " + theEquation);
 			myVoltage = myVoltageStack.back();
 			myVoltageStack.pop_back();
-			if ( myVoltage > MAX_VOLTAGE ) {
+			if ( myVoltage > float(MAX_VOLTAGE) ) {
 				if ( ( *token_pit == "<" ) || ( *token_pit == ">" ) ) {  // min/max keep value on stack
-			    	;
+					;
 				} else {  // arithmetic with invalid values gives invalid value
-			    	myVoltageStack.back() = UNKNOWN_TOKEN;
+					myVoltageStack.back() = UNKNOWN_TOKEN;
 				}
-			} else if ( myVoltageStack.back() > MAX_VOLTAGE ) {
+			} else if ( myVoltageStack.back() > float(MAX_VOLTAGE) ) {
 				if ( ( *token_pit == "<" ) || ( *token_pit == ">" ) ) {  // min/max replace with last voltage
 					myVoltageStack.back() = myVoltage;
 				}
@@ -1004,8 +1004,8 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 		}
 	}
 	delete myTokenList_p;
-	if ( myVoltageStack.size() != 1 ) EPowerError("invalid equation: " + theEquation);
-	if ( myVoltageStack.front() > MAX_VOLTAGE ) {
+	if ( myVoltageStack.size() != 1 ) throw EPowerError("invalid equation: " + theEquation);
+	if ( myVoltageStack.front() > float(MAX_VOLTAGE) ) {
 		cout << "Warning: equation contains undefined tokens: " << theEquation << endl;
 		return(UNKNOWN_VOLTAGE);
 	}
@@ -1029,8 +1029,8 @@ CInstancePower::CInstancePower(string theDefinition) {
 	size_t	myStringEnd = theDefinition.find_first_of(" \t");  // skip #instance
 	size_t	myStringBegin = theDefinition.find_first_not_of(" \t", myStringEnd);
 	myStringEnd = theDefinition.find_first_of(" \t", myStringBegin);
-	instanceName = theDefinition.substr(myStringBegin, myStringEnd);
+	instanceName = theDefinition.substr(myStringBegin, myStringEnd - myStringBegin);
 	myStringBegin = theDefinition.find_first_not_of(" \t", myStringEnd);
 	myStringEnd = theDefinition.find_first_of(" \t", myStringBegin);
-	powerFile = theDefinition.substr(myStringBegin, myStringEnd);
+	powerFile = theDefinition.substr(myStringBegin, myStringEnd - myStringBegin);
 }

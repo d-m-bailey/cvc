@@ -61,24 +61,20 @@ static char *line_read = (char *)NULL;
 
 /* Read a string, and return a pointer to it.  Returns NULL on EOF. */
 char *
-rl_gets (string thePrompt)
-{
-  /* If the buffer has already been allocated, return the memory
-     to the free pool. */
-  if (line_read)
-    {
-      free (line_read);
-      line_read = (char *)NULL;
-    }
+rl_gets (string thePrompt) {
+	/* If the buffer has already been allocated, return the memory to the free pool. */
+	if (line_read) {
+		free (line_read);
+		line_read = (char *)NULL;
+	}
 
-  /* Get a line from the user. */
-  line_read = readline (thePrompt.c_str());
+	/* Get a line from the user. */
+	line_read = readline (thePrompt.c_str());
 
-  /* If the line has any text in it, save it on the history. */
-  if (line_read && *line_read)
-    add_history (line_read);
+	/* If the line has any text in it, save it on the history. */
+	if (line_read && *line_read) add_history (line_read);
 
-  return (line_read);
+	return (line_read);
 }
 
 void CCvcDb::FindInstances(string theSubcircuit, bool thePrintCircuitFlag) {
@@ -122,41 +118,41 @@ void CCvcDb::FindInstances(string theSubcircuit, bool thePrintCircuitFlag) {
 }
 
 void CCvcDb::FindNets(string theName, instanceId_t theInstanceId, bool thePrintCircuitFlag) {
-      size_t myNetCount = 0;
-      cout << "Searching..." << endl;
-      gInterrupted = false;
-      regex mySearchPattern(FuzzyFilter(theName));
-      ShowNets(myNetCount, mySearchPattern, theInstanceId, thePrintCircuitFlag);
-      if ( gInterrupted ) cout << "Search cancelled" << endl;
-      reportFile << "Displayed " << ((myNetCount < cvcParameters.cvcSearchLimit) ? myNetCount : cvcParameters.cvcSearchLimit);
-      reportFile << "/" << myNetCount << " matches." << endl;
+	size_t myNetCount = 0;
+	cout << "Searching..." << endl;
+	gInterrupted = false;
+	regex mySearchPattern(FuzzyFilter(theName));
+	ShowNets(myNetCount, mySearchPattern, theInstanceId, thePrintCircuitFlag);
+	if ( gInterrupted ) cout << "Search cancelled" << endl;
+	reportFile << "Displayed " << ((myNetCount < cvcParameters.cvcSearchLimit) ? myNetCount : cvcParameters.cvcSearchLimit);
+	reportFile << "/" << myNetCount << " matches." << endl;
 }
 
 void CCvcDb::ShowNets(size_t & theNetCount, regex & theSearchPattern, instanceId_t theInstanceId, bool thePrintCircuitFlag) {
-      // updates theNetCount
-      CInstance * myInstance_p = instancePtr_v[theInstanceId];
-      if ( instancePtr_v[theInstanceId] == NULL ) return;
-      if ( myInstance_p->master_p->subcircuitPtr_v.size() == 0 && myInstance_p->master_p->devicePtr_v.size() == 0 ) return;
-      // cout << myInstance_p->master_p->name << " count " << myInstance_p->master_p->localSignalIdMap.size() << endl; cout.flush();
-      for( auto signalMap_pit = myInstance_p->master_p->localSignalIdMap.begin(); signalMap_pit != myInstance_p->master_p->localSignalIdMap.end(); signalMap_pit++ ) {
-    	  if ( gInterrupted ) return;
-		  if ( regex_match(signalMap_pit->first, theSearchPattern) ) {
-				  if ( theNetCount++ < cvcParameters.cvcSearchLimit ) {
-						  string myLowerNet = HierarchyName(theInstanceId, thePrintCircuitFlag) + "/" + signalMap_pit->first;
-						  netId_t myNetId = myInstance_p->localToGlobalNetId_v[signalMap_pit->second];
-						  netId_t myEquivalentNetId = (isFixedEquivalentNet) ? GetEquivalentNet(myNetId) : myNetId;
-						  string myTopNet = NetName(myEquivalentNetId, thePrintCircuitFlag);
-						  reportFile << myLowerNet;
-						  if ( myLowerNet != myTopNet ) {
-								  reportFile << " -> " << myTopNet;
-						  }
-						  reportFile << endl;
-				  }
-		  }
-      }
-      for( size_t instance_it = 0; instance_it != myInstance_p->master_p->subcircuitPtr_v.size(); instance_it++ ) {
-              ShowNets(theNetCount, theSearchPattern, myInstance_p->firstSubcircuitId + instance_it, thePrintCircuitFlag);
-      }
+	// updates theNetCount
+	CInstance * myInstance_p = instancePtr_v[theInstanceId];
+	if ( instancePtr_v[theInstanceId] == NULL ) return;
+	if ( myInstance_p->master_p->subcircuitPtr_v.size() == 0 && myInstance_p->master_p->devicePtr_v.size() == 0 ) return;
+	// cout << myInstance_p->master_p->name << " count " << myInstance_p->master_p->localSignalIdMap.size() << endl; cout.flush();
+	for( auto signalMap_pit = myInstance_p->master_p->localSignalIdMap.begin(); signalMap_pit != myInstance_p->master_p->localSignalIdMap.end(); signalMap_pit++ ) {
+		if ( gInterrupted ) return;
+		if ( regex_match(signalMap_pit->first, theSearchPattern) ) {
+			if ( theNetCount++ < cvcParameters.cvcSearchLimit ) {
+				string myLowerNet = HierarchyName(theInstanceId, thePrintCircuitFlag) + "/" + signalMap_pit->first;
+				netId_t myNetId = myInstance_p->localToGlobalNetId_v[signalMap_pit->second];
+				netId_t myEquivalentNetId = (isFixedEquivalentNet) ? GetEquivalentNet(myNetId) : myNetId;
+				string myTopNet = NetName(myEquivalentNetId, thePrintCircuitFlag);
+				reportFile << myLowerNet;
+				if ( myLowerNet != myTopNet ) {
+					reportFile << " -> " << myTopNet;
+				}
+				reportFile << endl;
+			}
+		}
+	}
+	for( size_t instance_it = 0; instance_it != myInstance_p->master_p->subcircuitPtr_v.size(); instance_it++ ) {
+		ShowNets(theNetCount, theSearchPattern, myInstance_p->firstSubcircuitId + instance_it, thePrintCircuitFlag);
+	}
 }
 
 CCircuit * CCvcDb::FindSubcircuit(string theSubcircuit) {
@@ -267,7 +263,7 @@ string CCvcDb::LeakShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag
 		myShortString += " shorted to " + NetName(short_v[theNetId].first, thePrintSubcircuitNameFlag) + short_v[theNetId].second;
 	}
 	if ( leakVoltagePtr_v[theNetId] ) {
-//      myShortString = netVoltagePtr_v[myNetId]->PowerDefinition();
+//	myShortString = netVoltagePtr_v[myNetId]->PowerDefinition();
 		string myStandardDefinition = leakVoltagePtr_v[theNetId]->StandardDefinition();
 		if ( IsCalculatedVoltage_(leakVoltagePtr_v[theNetId]) ) {
 				myShortString += " calculated as";
@@ -613,7 +609,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				}
 			} else if ( myCommand == "findnet" || myCommand == "fn"  ) {
 				if ( myInputStream >> myName ) {
-				    FindNets(myName, myCurrentInstanceId, myPrintSubcircuitNameFlag);
+					FindNets(myName, myCurrentInstanceId, myPrintSubcircuitNameFlag);
 				} else {
 					myCommandMode = "fn";
 				}

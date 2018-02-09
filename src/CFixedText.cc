@@ -61,15 +61,15 @@ text_t CFixedText::SetTextAddress(const string theType,	CTextList* theNewTextLis
 		myKeyText += " ";
 		myKeyText += *text_pit;
 	}
-    try {
-    	myTextAddress = this->fixedTextToAddressMap.at(myKeyText);
-    }
-    catch (const out_of_range& oor_exception) {
-            int myNewSize = int(myKeyText.length());
-            myTextAddress = (text_t) obstack_copy0(&(this->fixedTextObstack), (void *) myKeyText.c_str(), myNewSize);
-            size += myNewSize + 1;
-            this->fixedTextToAddressMap[myKeyText] = myTextAddress;
-    }
+	try {
+		myTextAddress = this->fixedTextToAddressMap.at(myKeyText);
+	}
+	catch (const out_of_range& oor_exception) {
+		int myNewSize = int(myKeyText.length());
+		myTextAddress = (text_t) obstack_copy0(&(this->fixedTextObstack), (void *) myKeyText.c_str(), myNewSize);
+		size += myNewSize + 1;
+		this->fixedTextToAddressMap[myKeyText] = myTextAddress;
+	}
 	return (myTextAddress);
 }
 
