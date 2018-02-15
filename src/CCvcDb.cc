@@ -1,7 +1,7 @@
 /*
  * CCvcDb.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2108 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -966,19 +966,23 @@ string CCvcDb::AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDevice
 					theVoltage = (myTargetVoltageLimit == UNKNOWN_VOLTAGE) ? theConnections.gateVoltage : min(myTargetVoltageLimit, theConnections.gateVoltage);
 				}
 */
-			} else if ( IsNmos_(deviceType_v[theDeviceId]) ) {
+			} else if ( IsNmos_(deviceType_v[theDeviceId]) && myMinTargetVoltage != UNKNOWN_VOLTAGE ) {
+				voltage_t myGateStepDown = theConnections.gateVoltage - theConnections.device_p->model_p->Vth;
 				if ( myPower_p && myPower_p->type[HIZ_BIT] ) {
 					;  // Don't adjust open voltages
-				} else if ( theConnections.gateVoltage - theConnections.device_p->model_p->Vth < theVoltage ) {
+				} else if ( myGateStepDown < theVoltage ) {
 					myCalculation = " NMOS sim Vth drop " + PrintParameter(theConnections.gateVoltage, VOLTAGE_SCALE) + "-" + PrintParameter(theConnections.device_p->model_p->Vth, VOLTAGE_SCALE);
-					theVoltage = theConnections.gateVoltage - theConnections.device_p->model_p->Vth;
+					myCalculation += " limited by " + PrintParameter(myMinTargetVoltage, VOLTAGE_SCALE);
+					theVoltage = max(myGateStepDown, myMinTargetVoltage);
 				}
-			} else if ( IsPmos_(deviceType_v[theDeviceId]) ) {
+			} else if ( IsPmos_(deviceType_v[theDeviceId]) && myMaxTargetVoltage != UNKNOWN_VOLTAGE) {
+				voltage_t myGateStepUp = theConnections.gateVoltage - theConnections.device_p->model_p->Vth;
 				if ( myPower_p && myPower_p->type[HIZ_BIT] ) {
 					;  // Don't adjust open voltages
-				} else if ( theConnections.gateVoltage - theConnections.device_p->model_p->Vth > theVoltage ) {
+				} else if ( myGateStepUp > theVoltage ) {
 					myCalculation = " PMOS sim Vth drop " + PrintParameter(theConnections.gateVoltage, VOLTAGE_SCALE) + "+" + PrintParameter(-theConnections.device_p->model_p->Vth, VOLTAGE_SCALE);
-					theVoltage = theConnections.gateVoltage - theConnections.device_p->model_p->Vth;
+					myCalculation += " limited by " + PrintParameter(myMaxTargetVoltage, VOLTAGE_SCALE);
+					theVoltage = min(myGateStepUp, myMaxTargetVoltage);
 				}
 			}
 		}
@@ -994,12 +998,12 @@ string CCvcDb::AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDevice
 	}
 	if ( theVoltage == UNKNOWN_VOLTAGE ) return("");
  	if ( myMinTargetVoltage != UNKNOWN_VOLTAGE && theVoltage < myMinTargetVoltage ) {
-		myCalculation = " Limited sim to min";
+		myCalculation = " Limited sim to min" + myCalculation;
  		if ( thePropagationType != POWER_NETS_ONLY ) ReportSimShort(theDeviceId, theVoltage, myMinTargetVoltage, myCalculation);
 		theVoltage = myMinTargetVoltage;
 	}
 	if ( myMaxTargetVoltage != UNKNOWN_VOLTAGE && theVoltage > myMaxTargetVoltage ) {
-		myCalculation = " Limited sim to max";
+		myCalculation = " Limited sim to max" + myCalculation;
 		if ( thePropagationType != POWER_NETS_ONLY ) ReportSimShort(theDeviceId, theVoltage, myMaxTargetVoltage, myCalculation);
 		theVoltage = myMaxTargetVoltage;
 	}

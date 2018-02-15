@@ -640,7 +640,8 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				cout << "listnet|listdevice|listinstance<ln|ld|li> filter: list net|device|instances in current subcircuit filtered by filter" << endl;
 				cout << "getnet|getdevice|getinstance<gn|gd|gi> name: get net|device|instance number for name" << endl;
 				cout << "expandnet|expanddevice|expandinstance<en|ed|ei> name: expand net|device|instance to top level" << endl;
-				cout << "dumpfuse<df> filname: dump fuse to filename" << endl;
+				cout << "dumpfuse<df> filename: dump fuse to filename" << endl;
+				cout << "dumpanalognets<dan> filename: dump analog nets to filename" << endl;
 				cout << "traceinverter<ti> name: trace signal as inverter output for name" << endl;
 				cout << "findsubcircuit<fs> subcircuit: list all instances of subcircuit or if regex, subcircuits that match" << endl;
 				cout << "findnet<fn> net: list all nets that match in lower subcircuits." << endl;
@@ -815,6 +816,16 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 					}
 				} else {
 					reportFile << "ERROR: no fuse file name" << endl;
+				}
+			} else if ( myCommand == "dumpanalognets" || myCommand == "dan" ) {
+				if ( myInputStream >> myFileName ) {
+					if ( theCurrentStage > STAGE_START ) {
+						DumpAnalogNets(myFileName);
+					} else {
+						reportFile << "ERROR: Can only dump analog nets after second stage" << endl;
+					}
+				} else {
+					reportFile << "ERROR: no analog net file name" << endl;
 				}
 			} else if ( myCommand == "togglename" || myCommand == "n" ) {
 				myPrintSubcircuitNameFlag = ! myPrintSubcircuitNameFlag;
@@ -999,6 +1010,56 @@ void CCvcDb::DumpFuses(string theFileName) {
 	myDumpFile.close();
 }
 
+void CCvcDb::DumpAnalogNets(string theFileName) {
+	ofstream myDumpFile(theFileName);
+	if ( myDumpFile.fail() ) {
+		reportFile << "ERROR: Could not open " << theFileName << endl;
+		return;
+	}
+	reportFile << "Dumping analog nets to " << theFileName << " ... "; cout.flush();
+	size_t myNetCount = 0;
+	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+		if ( net_it != GetEquivalentNet(net_it) ) continue;  // skip shorted nets
+		if ( netVoltagePtr_v[net_it]
+		    && ( netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE || netVoltagePtr_v[net_it]->type[POWER_BIT] ) ) continue;  // skip defined sim voltages and power
+		bool myIsAnalog = false;
+		deviceId_t device_it = firstSource_v[net_it];
+		while ( ! myIsAnalog && device_it != UNKNOWN_DEVICE ) {
+			if ( GetEquivalentNet(drainNet_v[device_it]) != net_it ) {
+				switch( deviceType_v[device_it] ) {
+				case NMOS: case LDDN: case PMOS: case LDDP: {
+					if ( GetEquivalentNet(gateNet_v[device_it]) == net_it) myIsAnalog = true;
+					break;
+				}
+				case RESISTOR: { myIsAnalog = true; break; }
+				default: break;
+				}
+			}
+			device_it = nextSource_v[device_it];
+		}
+		device_it = firstDrain_v[net_it];
+		while ( ! myIsAnalog && device_it != UNKNOWN_DEVICE ) {
+			if ( GetEquivalentNet(sourceNet_v[device_it]) != net_it ) {
+				switch( deviceType_v[device_it] ) {
+				case NMOS: case LDDN: case PMOS: case LDDP: {
+					if ( GetEquivalentNet(gateNet_v[device_it]) == net_it) myIsAnalog = true;
+					break;
+				}
+				case RESISTOR: { myIsAnalog = true; break; }
+				default: break;
+				}
+			}
+			device_it = nextDrain_v[device_it];
+		}
+		if ( myIsAnalog ) {
+			myDumpFile << NetName(net_it) << endl;
+			myNetCount++;
+		}
+	}
+	reportFile << "total nets written: " << myNetCount << endl;
+	myDumpFile.close();
+}
+
 returnCode_t CCvcDb::CheckFuses() {
 	if ( cvcParameters.cvcFuseFilename.empty() ) return (OK);
 	ifstream myFuseFile(cvcParameters.cvcFuseFilename);
@@ -1093,7 +1154,7 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 		mySignals_v[signal_net_pair_pit->second] = signal_net_pair_pit->first;
 	}
 	for ( netId_t net_it = 0; net_it < myInstance_p->master_p->portCount; net_it++ ) {
-		netId_t myGlobalNetId = myInstance_p->localToGlobalNetId_v[net_it];
+		netId_t myGlobalNetId = GetEquivalentNet(myInstance_p->localToGlobalNetId_v[net_it]);
 		CPower * myPower_p = netVoltagePtr_v[myGlobalNetId];
 		if ( myPower_p && ! myPower_p->powerSignal.empty() ) {
 			string myDefinition = myPower_p->definition.substr(0, myPower_p->definition.find(" calculation=>"));
