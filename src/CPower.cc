@@ -991,7 +991,7 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 			throw EPowerError("invalid power calculation token: " + *token_pit);
 		}
 	}
-	if ( myVoltageStack.size() != 1 ) EPowerError("invalid equation: " + theEquation);
+	if ( myVoltageStack.size() != 1 ) throw EPowerError("invalid equation: " + theEquation);
 	delete myTokenList_p;
 //	cout << "Final voltage " << myVoltageStack.front() << endl;
 	return ( round(myVoltageStack.front() * VOLTAGE_SCALE + 0.1) );

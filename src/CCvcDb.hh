@@ -337,6 +337,7 @@ public:
 	bool HasActiveConnections(netId_t theNetId);
 	size_t InstanceDepth(instanceId_t theInstanceId);
 	bool IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId);
+	deviceId_t GetSeriesConnectedDevice(deviceId_t theDeviceId, netId_t theNetId);
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);

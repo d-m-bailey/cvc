@@ -889,9 +889,15 @@ voltage_t CCvcDb::DefaultMinVoltage(CPower * thePower_p) {
 		return(UNKNOWN_VOLTAGE);
     } else {
 		netId_t myMinNet = minNet_v[thePower_p->defaultMinNet].finalNetId;
-		assert(netVoltagePtr_v[myMinNet]);
-		assert(netVoltagePtr_v[myMinNet]->minVoltage != UNKNOWN_VOLTAGE);
-		return(netVoltagePtr_v[myMinNet]->minVoltage);
+		if ( netVoltagePtr_v[myMinNet] && netVoltagePtr_v[myMinNet]->minVoltage != UNKNOWN_VOLTAGE ) {
+			return(netVoltagePtr_v[myMinNet]->minVoltage);
+		} else {
+			reportFile << "DEBUG: Unexpected min voltage at net " << NetName(myMinNet) << endl;
+			return(UNKNOWN_VOLTAGE);
+		}
+		//assert(netVoltagePtr_v[myMinNet]);
+		//assert(netVoltagePtr_v[myMinNet]->minVoltage != UNKNOWN_VOLTAGE);
+		//return(netVoltagePtr_v[myMinNet]->minVoltage);
     }
 }
 
@@ -900,9 +906,15 @@ voltage_t CCvcDb::DefaultMaxVoltage(CPower * thePower_p) {
 		return(UNKNOWN_VOLTAGE);
     } else {
 		netId_t myMaxNet = maxNet_v[thePower_p->defaultMaxNet].finalNetId;
-		assert(netVoltagePtr_v[myMaxNet]);
-		assert(netVoltagePtr_v[myMaxNet]->maxVoltage != UNKNOWN_VOLTAGE);
-		return(netVoltagePtr_v[myMaxNet]->maxVoltage);
+		if ( netVoltagePtr_v[myMaxNet] && netVoltagePtr_v[myMaxNet]->maxVoltage != UNKNOWN_VOLTAGE ) {
+			return(netVoltagePtr_v[myMaxNet]->maxVoltage);
+		} else {
+			reportFile << "DEBUG: Unexpected max voltage at net " << NetName(myMaxNet) << endl;
+			return(UNKNOWN_VOLTAGE);
+		}
+		//assert(netVoltagePtr_v[myMaxNet]);
+		//assert(netVoltagePtr_v[myMaxNet]->maxVoltage != UNKNOWN_VOLTAGE);
+		//return(netVoltagePtr_v[myMaxNet]->maxVoltage);
     }
 }
 
@@ -1126,4 +1138,36 @@ bool CCvcDb::IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId
 		if ( theInstanceId == theParentId ) return true;
 	}
 	return false;
+}
+
+deviceId_t CCvcDb::GetSeriesConnectedDevice(deviceId_t theDeviceId, netId_t theNetId) {
+	modelType_t myDeviceType = deviceType_v[theDeviceId];
+	deviceId_t myReturnDevice = UNKNOWN_DEVICE;
+	for ( deviceId_t device_it = firstDrain_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
+		switch ( deviceType_v[device_it] ) {
+		case SWITCH_OFF: case FUSE_OFF: case CAPACITOR: case DIODE: case BIPOLAR: {
+			break;
+		}
+		default: {
+			if ( theDeviceId == device_it ) continue;
+			if ( deviceType_v[device_it] != myDeviceType ) return UNKNOWN_DEVICE;  // different type
+			if ( myReturnDevice != UNKNOWN_DEVICE ) return UNKNOWN_DEVICE;  // more than one
+			myReturnDevice = device_it;
+		}
+		}
+	}
+	for ( deviceId_t device_it = firstSource_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {
+		switch ( deviceType_v[device_it] ) {
+		case SWITCH_OFF: case FUSE_OFF: case CAPACITOR: case DIODE: case BIPOLAR: {
+			break;
+		}
+		default: {
+			if ( theDeviceId == device_it ) continue;
+			if ( deviceType_v[device_it] != myDeviceType ) return UNKNOWN_DEVICE;  // different type
+			if ( myReturnDevice != UNKNOWN_DEVICE ) return UNKNOWN_DEVICE;  // more than one
+			myReturnDevice = device_it;
+		}
+		}
+	}
+	return(myReturnDevice);
 }

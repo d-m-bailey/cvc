@@ -1253,104 +1253,201 @@ bool CCvcDb::IsSCRCPower(CPower * thePower_p) {
 	return true;
 }
 
+#define MAX_LATCH_DEVICE_COUNT 6
+
 bool CCvcDb::SetLatchPower() {
 	int myLatchCount = 0;
 	for (unsigned int net_it = 0; net_it < simNet_v.size(); net_it++) {
 		if ( simNet_v[net_it].finalNetId != net_it ) continue;  // already assigned
 		if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE ) continue;  // already defined
 		if ( connectionCount_v[net_it].sourceDrainType != NMOS_PMOS ) continue;  // not an output net
-		if ( connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount > 6 ) continue;  // only simple connections
+		if ( connectionCount_v[net_it].SourceDrainCount() > MAX_LATCH_DEVICE_COUNT ) continue;  // only simple connections
 		int myNmosCount = 0;
 		int myPmosCount = 0;
-		netId_t myNmosGate = UNKNOWN_NET;
-		netId_t myPmosGate = UNKNOWN_NET;
+		netId_t myMinNet = minNet_v[net_it].finalNetId;
+		voltage_t myMinVoltage = UNKNOWN_VOLTAGE;
+		if ( myMinNet != UNKNOWN_NET && netVoltagePtr_v[myMinNet] && netVoltagePtr_v[myMinNet]->type[POWER_BIT] ) {
+			myMinVoltage = netVoltagePtr_v[myMinNet]->minVoltage;
+		} else {
+			myMinNet = UNKNOWN_NET;
+		}
+		netId_t myMaxNet = maxNet_v[net_it].finalNetId;
+		voltage_t myMaxVoltage = UNKNOWN_VOLTAGE;
+		if ( myMaxNet != UNKNOWN_NET && netVoltagePtr_v[myMaxNet] && netVoltagePtr_v[myMaxNet]->type[POWER_BIT] ) {
+			myMaxVoltage = netVoltagePtr_v[myMaxNet]->maxVoltage;
+		} else {
+			myMaxNet = UNKNOWN_NET;
+		}
+		if ( myMinVoltage == UNKNOWN_VOLTAGE && myMaxVoltage == UNKNOWN_VOLTAGE ) continue;  // skip unknown min/max output
+		if ( myMinVoltage == UNKNOWN_VOLTAGE ) myMinVoltage = myMaxVoltage;
+		if ( myMaxVoltage == UNKNOWN_VOLTAGE ) myMaxVoltage = myMinVoltage;
+		netId_t myNmosGate_v[MAX_LATCH_DEVICE_COUNT];
+		netId_t myPmosGate_v[MAX_LATCH_DEVICE_COUNT];
 		netId_t mySource = UNKNOWN_NET;
-		netId_t myNmosSource = UNKNOWN_NET;
-		netId_t myPmosSource = UNKNOWN_NET;
-		deviceId_t myNmos = UNKNOWN_DEVICE;
+		netId_t myGate = UNKNOWN_NET;
+		netId_t myNmosSource_v[MAX_LATCH_DEVICE_COUNT];
+		netId_t myPmosSource_v[MAX_LATCH_DEVICE_COUNT];
+		netId_t myCommonNmosSource = UNKNOWN_NET;
+		netId_t myCommonPmosSource = UNKNOWN_NET;
+		deviceId_t myNmosId_v[MAX_LATCH_DEVICE_COUNT];
+		deviceId_t myPmosId_v[MAX_LATCH_DEVICE_COUNT];
+		deviceId_t myNextDevice = UNKNOWN_DEVICE;
 //		deviceId_t myPmos = UNKNOWN_DEVICE;
 		bool mySetNmosPower = false;
 		bool mySetPmosPower = false;
 		for ( deviceId_t device_it = firstDrain_v[net_it]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
 			if ( sourceNet_v[device_it] == gateNet_v[device_it] && netVoltagePtr_v[sourceNet_v[device_it]] ) continue; // skip ESD mos
 			mySource = simNet_v[sourceNet_v[device_it]].finalNetId;
+			myGate = simNet_v[gateNet_v[device_it]].finalNetId;
+			voltage_t myGateVoltage = UNKNOWN_VOLTAGE;
+			if ( netVoltagePtr_v[myGate] && netVoltagePtr_v[myGate]->type[POWER_BIT] ) {
+				myGateVoltage = netVoltagePtr_v[myGate]->simVoltage;
+			}
 			if ( IsNmos_(deviceType_v[device_it]) ) {
-				myNmosCount++;
-				if ( myNmosSource == UNKNOWN_NET ) {
-					myNmosSource = mySource;
-					myNmosGate = gateNet_v[device_it];
-				} else if ( myNmosSource == mySource && IsOppositeLogic(myNmosGate, gateNet_v[device_it]) ) {  // same source
-					mySetNmosPower = true;
-					myNmos = device_it;
+				if ( myGateVoltage == UNKNOWN_VOLTAGE ) {
+					myNmosSource_v[myNmosCount] = mySource;
+					myNmosGate_v[myNmosCount] = myGate;
+					myNmosId_v[myNmosCount] = device_it;
+					myNmosCount++;
+				} else if ( myGateVoltage >= myMaxVoltage ) {  // device is on (assumes maxVoltage turns on nmos)
+					myNextDevice = GetSeriesConnectedDevice(device_it, mySource);
+					if ( myNextDevice != UNKNOWN_DEVICE ) {
+						if ( simNet_v[sourceNet_v[myNextDevice]].finalNetId == mySource ) {
+							myNmosSource_v[myNmosCount] = simNet_v[drainNet_v[myNextDevice]].finalNetId;
+						} else {
+							myNmosSource_v[myNmosCount] = simNet_v[sourceNet_v[myNextDevice]].finalNetId;
+						}
+						myNmosGate_v[myNmosCount] = simNet_v[gateNet_v[myNextDevice]].finalNetId;
+						myNmosId_v[myNmosCount] = myNextDevice;
+						myNmosCount++;
+					}
 				}
 			}
 			if ( IsPmos_(deviceType_v[device_it]) ) {
-				myPmosCount++;
-				if ( myPmosSource == UNKNOWN_NET ) {
-					myPmosSource = mySource;
-					myPmosGate = gateNet_v[device_it];
-				} else if ( myPmosSource == mySource && IsOppositeLogic(myPmosGate, gateNet_v[device_it]) ) {  // same source
-					mySetPmosPower = true;
-//					myPmos = device_it;
+				if ( myGateVoltage == UNKNOWN_VOLTAGE ) {
+					myPmosSource_v[myPmosCount] = mySource;
+					myPmosGate_v[myPmosCount] = myGate;
+					myPmosId_v[myPmosCount] = device_it;
+					myPmosCount++;
+				} else if ( myGateVoltage <= myMinVoltage ) {  // device is on (assumes minVoltage turns on pmos)
+					myNextDevice = GetSeriesConnectedDevice(device_it, mySource);
+					if ( myNextDevice != UNKNOWN_DEVICE ) {
+						if ( simNet_v[sourceNet_v[myNextDevice]].finalNetId == mySource ) {
+							myPmosSource_v[myPmosCount] = simNet_v[drainNet_v[myNextDevice]].finalNetId;
+						} else {
+							myPmosSource_v[myPmosCount] = simNet_v[sourceNet_v[myNextDevice]].finalNetId;
+						}
+						myPmosGate_v[myPmosCount] = simNet_v[gateNet_v[myNextDevice]].finalNetId;
+						myPmosId_v[myPmosCount] = myNextDevice;
+						myPmosCount++;
+					}
 				}
 			}
 		}
 		for ( deviceId_t device_it = firstSource_v[net_it]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {  // actually drain
 			if ( drainNet_v[device_it] == gateNet_v[device_it] && netVoltagePtr_v[drainNet_v[device_it]] ) continue; // skip ESD mos
 			mySource = simNet_v[drainNet_v[device_it]].finalNetId;
+			myGate = simNet_v[gateNet_v[device_it]].finalNetId;
+			voltage_t myGateVoltage = UNKNOWN_VOLTAGE;
+			if ( netVoltagePtr_v[myGate] && netVoltagePtr_v[myGate]->type[POWER_BIT] ) {
+				myGateVoltage = netVoltagePtr_v[myGate]->simVoltage;
+			}
 			if ( IsNmos_(deviceType_v[device_it]) ) {
-				myNmosCount++;
-				if ( myNmosSource == UNKNOWN_NET ) {
-					myNmosSource = mySource;
-					myNmosGate = gateNet_v[device_it];
-				} else if ( myNmosSource == mySource && IsOppositeLogic(myNmosGate, gateNet_v[device_it]) ) {  // same drain
-					mySetNmosPower = true;
-					myNmos = device_it;
+				if ( myGateVoltage == UNKNOWN_VOLTAGE ) {
+					myNmosSource_v[myNmosCount] = mySource;
+					myNmosGate_v[myNmosCount] = myGate;
+					myNmosId_v[myNmosCount] = device_it;
+					myNmosCount++;
+				} else if ( myGateVoltage >= myMaxVoltage ) {  // device is on (assumes maxVoltage turns on nmos)
+					myNextDevice = GetSeriesConnectedDevice(device_it, mySource);
+					if ( myNextDevice != UNKNOWN_DEVICE ) {
+						if ( simNet_v[sourceNet_v[myNextDevice]].finalNetId == mySource ) {
+							myNmosSource_v[myNmosCount] = simNet_v[drainNet_v[myNextDevice]].finalNetId;
+						} else {
+							myNmosSource_v[myNmosCount] = simNet_v[sourceNet_v[myNextDevice]].finalNetId;
+						}
+						myNmosGate_v[myNmosCount] = simNet_v[gateNet_v[myNextDevice]].finalNetId;
+						myNmosId_v[myNmosCount] = myNextDevice;
+						myNmosCount++;
+					}
 				}
 			}
 			if ( IsPmos_(deviceType_v[device_it]) ) {
-				myPmosCount++;
-				if ( myPmosSource == UNKNOWN_NET ) {
-					myPmosSource = mySource;
-					myPmosGate = gateNet_v[device_it];
-				} else if ( myPmosSource == mySource && IsOppositeLogic(myPmosGate, gateNet_v[device_it]) ) {  // same drain
-					mySetPmosPower = true;
-//					myPmos = device_it;
+				if ( myGateVoltage == UNKNOWN_VOLTAGE ) {
+					myPmosSource_v[myPmosCount] = mySource;
+					myPmosGate_v[myPmosCount] = myGate;
+					myPmosId_v[myPmosCount] = device_it;
+					myPmosCount++;
+				} else if ( myGateVoltage <= myMinVoltage ) {  // device is on (assumes minVoltage turns on pmos)
+					myNextDevice = GetSeriesConnectedDevice(device_it, mySource);
+					if ( myNextDevice != UNKNOWN_DEVICE ) {
+						if ( simNet_v[sourceNet_v[myNextDevice]].finalNetId == mySource ) {
+							myPmosSource_v[myPmosCount] = simNet_v[drainNet_v[myNextDevice]].finalNetId;
+						} else {
+							myPmosSource_v[myPmosCount] = simNet_v[sourceNet_v[myNextDevice]].finalNetId;
+						}
+						myPmosGate_v[myPmosCount] = simNet_v[gateNet_v[myNextDevice]].finalNetId;
+						myPmosId_v[myPmosCount] = myNextDevice;
+						myPmosCount++;
+					}
 				}
 			}
 		}
-		if ( myNmosCount > 2 || myPmosCount > 2 ) continue;  // too many devices
-		if ( mySetNmosPower && mySetPmosPower && myNmosSource != myPmosSource ) {
-			CPower * myNmosPower_p = netVoltagePtr_v[simNet_v[myNmosSource].finalNetId];
-			CPower * myPmosPower_p = netVoltagePtr_v[simNet_v[myPmosSource].finalNetId];
-			voltage_t myNmosVoltage = (myNmosPower_p ? myNmosPower_p->simVoltage : UNKNOWN_VOLTAGE);
-			voltage_t myPmosVoltage = (myPmosPower_p ? myNmosPower_p->simVoltage : UNKNOWN_VOLTAGE);
-			if ( myNmosVoltage != UNKNOWN_VOLTAGE && myPmosVoltage != UNKNOWN_VOLTAGE && myNmosVoltage != myPmosVoltage ) {
-				errorCount[LEAK]++;
-				if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myNmos) < cvcParameters.cvcCircuitErrorLimit ) {
-					CFullConnection myConnections;
-					MapDeviceNets(myNmos, myConnections);
-					errorFile << "! Short Detected: " << PrintVoltage(MaxVoltage(myPmosSource)) << " to " << PrintVoltage(MinVoltage(myNmosSource)) << " at latch" << endl;
-					PrintDeviceWithMinGateAndSimConnections(deviceParent_v[myNmos], myConnections, errorFile);
-					errorFile << endl;
+		voltage_t myNmosVoltage = UNKNOWN_VOLTAGE;
+		voltage_t myPmosVoltage = UNKNOWN_VOLTAGE;
+		deviceId_t mySampleNmos = UNKNOWN_DEVICE;
+		deviceId_t mySamplePmos = UNKNOWN_DEVICE;
+		for ( int mos_it = 0; mos_it < myNmosCount-1; mos_it++ ) {
+			if ( ! netVoltagePtr_v[myNmosSource_v[mos_it]] || netVoltagePtr_v[myNmosSource_v[mos_it]]->simVoltage == UNKNOWN_VOLTAGE ) continue;  // skip non power
+			voltage_t myVoltage = netVoltagePtr_v[myNmosSource_v[mos_it]]->simVoltage;
+			for ( int nextMos_it = mos_it+1; nextMos_it < myNmosCount; nextMos_it++ ) {
+				if ( ! netVoltagePtr_v[myNmosSource_v[nextMos_it]] || netVoltagePtr_v[myNmosSource_v[nextMos_it]]->simVoltage == UNKNOWN_VOLTAGE ) continue;  // skip non power
+				voltage_t myNextVoltage = netVoltagePtr_v[myNmosSource_v[nextMos_it]]->simVoltage;
+				if ( myVoltage == myNextVoltage && IsOppositeLogic(myNmosGate_v[mos_it], myNmosGate_v[nextMos_it]) ) {  // same source, opposite gate
+					myNmosVoltage = myVoltage;
+					mySampleNmos = myNmosId_v[mos_it];
 				}
-				continue;  // don't propagate non-matching power
 			}
 		}
-		if ( mySetNmosPower && netVoltagePtr_v[myNmosSource] && netVoltagePtr_v[myNmosSource]->simVoltage != UNKNOWN_VOLTAGE ) {
-			if ( netVoltagePtr_v[net_it] ) {  // just add sim voltage
-				netVoltagePtr_v[net_it]->simVoltage = netVoltagePtr_v[myNmosSource]->simVoltage;
+		for ( int mos_it = 0; mos_it < myPmosCount-1; mos_it++ ) {
+			if ( ! netVoltagePtr_v[myPmosSource_v[mos_it]] || netVoltagePtr_v[myPmosSource_v[mos_it]]->simVoltage == UNKNOWN_VOLTAGE ) continue;  // skip non power
+			voltage_t myVoltage = netVoltagePtr_v[myPmosSource_v[mos_it]]->simVoltage;
+			for ( int nextMos_it = mos_it+1; nextMos_it < myPmosCount; nextMos_it++ ) {
+				if ( ! netVoltagePtr_v[myPmosSource_v[nextMos_it]] || netVoltagePtr_v[myPmosSource_v[nextMos_it]]->simVoltage == UNKNOWN_VOLTAGE ) continue;  // skip non power
+				voltage_t myNextVoltage = netVoltagePtr_v[myPmosSource_v[nextMos_it]]->simVoltage;
+				if ( myVoltage == myNextVoltage && IsOppositeLogic(myPmosGate_v[mos_it], myPmosGate_v[nextMos_it]) ) {  // same source, opposite gate
+					myPmosVoltage = myVoltage;
+					mySamplePmos = myPmosId_v[mos_it];
+				}
+			}
+		}
+		if ( myNmosVoltage != UNKNOWN_VOLTAGE && myPmosVoltage != UNKNOWN_VOLTAGE && myNmosVoltage != myPmosVoltage ) {
+			errorCount[LEAK]++;
+			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(mySampleNmos) < cvcParameters.cvcCircuitErrorLimit ) {
+				CFullConnection myConnections;
+				MapDeviceNets(mySampleNmos, myConnections);
+				errorFile << "! Short Detected: " << PrintVoltage(myNmosVoltage) << " to " << PrintVoltage(myPmosVoltage) << " at n/pmux" << endl;
+				PrintDeviceWithAllConnections(deviceParent_v[mySampleNmos], myConnections, errorFile);
+				errorFile << endl;
+			}
+			continue;  // don't propagate non-matching power
+		}
+		if ( myNmosVoltage != UNKNOWN_VOLTAGE ) {
+			if ( netVoltagePtr_v[net_it] ) {  // just add sim voltage 
+				assert(netVoltagePtr_v[net_it]->simVoltage == UNKNOWN_VOLTAGE);
+				netVoltagePtr_v[net_it]->simVoltage = myNmosVoltage;
 			} else {
-				netVoltagePtr_v[net_it] = new CPower(net_it, netVoltagePtr_v[myNmosSource]->simVoltage);
+				netVoltagePtr_v[net_it] = new CPower(net_it, myNmosVoltage);
 				cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it]);
 			}
 			myLatchCount++;
 			logFile << "Added latch for " << NetName(net_it) << endl;
-		} else if ( mySetPmosPower && netVoltagePtr_v[myPmosSource] && netVoltagePtr_v[myPmosSource]->simVoltage != UNKNOWN_VOLTAGE ) {
-			if ( netVoltagePtr_v[net_it] ) {  // just add sim voltage
-				netVoltagePtr_v[net_it]->simVoltage = netVoltagePtr_v[myPmosSource]->simVoltage;
+		} else if ( myPmosVoltage != UNKNOWN_VOLTAGE ) {
+			if ( netVoltagePtr_v[net_it] ) {
+				assert(netVoltagePtr_v[net_it]->simVoltage == UNKNOWN_VOLTAGE);
+				netVoltagePtr_v[net_it]->simVoltage = myPmosVoltage;
 			} else {
-				netVoltagePtr_v[net_it] = new CPower(net_it, netVoltagePtr_v[myPmosSource]->simVoltage);
+				netVoltagePtr_v[net_it] = new CPower(net_it, myPmosVoltage);
 				cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it]);
 			}
 			myLatchCount++;
