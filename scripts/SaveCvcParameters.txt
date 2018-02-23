@@ -1,8 +1,8 @@
 '    SaveCvcParameters VBA excel macro
 '
-'    Macro to convert excel book with 'Power' and 'Model' sheets to text parameter files for CVC
+'    Macro to convert excel book power or model sheets to text parameter files for CVC
 '
-'    Copyright 2106 D. Mitch Bailey  d.mitch.bailey at gmail dot com
+'    Copyright 2106-2018 D. Mitch Bailey  d.mitch.bailey at gmail dot com
 '
 '    This program is free software: you can redistribute it and/or modify
 '    it under the terms of the GNU General Public License as published by
@@ -15,88 +15,58 @@
 '    GNU General Public License for more details.
 '
 '    You should have received a copy of the GNU General Public License
-'    along with this program.  If not, see <http://www.gnu.org/licenses/>.Option Explicit
+'    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Option Explicit
 
 Dim gCurrentDirectory As String
-Dim gPowerFileDirectory As String
+Dim gPowerFilePrefix As String
 Dim gModelFile As String
 Dim gModes() As String
 Dim gNetType() As String
 Dim gNetName() As String
 
-Sub SaveCvcParameters()
-'
-' SaveCvc Macro
-' Converts Power sheet to separate files in the power file directory
-' Converts Model sheet to model file
-' All files must be in the same directory or subdirectories
-' Shortcuts are not supported
-'
-    gCurrentDirectory = ActiveWorkbook.Path
-    If Not CheckCVCPowerDirectory Then
-        Exit Sub
-    ElseIf Not CheckCVCModelFile Then
-        Exit Sub
-    End If
-   
-    Call WritePowerFiles
-   
-    ChDir gCurrentDirectory
-    Call WriteModelFile
-
-End Sub
-
-Private Function CheckCVCPowerDirectory() As Boolean
+Sub SaveCVCPowerFiles()
     'Check that power directory is defined and writable
-    'Requires 'Power' sheet
-    'Requires 'Power file directory' text in one cell with actual name of
-    '  power file directory in the cell to the right
+    'Requires 'Power file prefix' text in one cell with actual name of
+    '  power file prefix in the cell to the right
     'Requires one and only one heading line with 'Net', 'Type', mode1, mode2, ..., <Comment>
     Dim foundRange As Range
     Dim foundNext As Range
     Dim myAddress As String
     Dim powerFileDirectory As String
     Dim modelFile As String
-   
-    CheckCVCPowerDirectory = True
+    
+    gCurrentDirectory = ActiveWorkbook.Path
     On Error Resume Next
-    Sheets("Power").Select
-    If Err.Number <> 0 Then
-        MsgBox "Missing 'Power' sheet"
-        CheckCVCPowerDirectory = False
+    On Error GoTo 0
+
+    Set foundRange = FindFirst("Power file prefix")
+    If foundRange Is Nothing Then
+        MsgBox "Missing 'Power file prefix'"
         Err.Clear
     Else
-        On Error GoTo 0
-
-        Set foundRange = FindFirst("Power file directory")
-        If foundRange Is Nothing Then
-            MsgBox "Missing 'Power file directory'"
-            CheckCVCPowerDirectory = False
+        myAddress = foundRange.Address
+        gPowerFilePrefix = StandardPath(foundRange.Offset(0, 1).Value)
+        Set foundNext = ActiveSheet.Cells.FindNext(After:=foundRange)
+        If Not myAddress = foundNext.Address Then
+            MsgBox "Multiple 'Power file prefix' at " & myAddress _
+                & " and " & foundNext.Address
             Err.Clear
         Else
-            myAddress = foundRange.Address
-            gPowerFileDirectory = StandardPath(foundRange.Offset(0, 1).Value)
-            Set foundNext = ActiveSheet.Cells.FindNext(After:=foundRange)
-            If Not myAddress = foundNext.Address Then
-                MsgBox "Multiple 'Power file directory' at " & myAddress _
-                    & " and " & foundNext.Address
-                CheckCVCPowerDirectory = False
+            powerFileDirectory = Left(gPowerFilePrefix, InStrRev(gPowerFilePrefix, "¥"))
+            If Not FolderExists(powerFileDirectory) Then
+                MsgBox "Could not find directory " & powerFileDirectory
                 Err.Clear
             Else
-                If Not FolderExists(gPowerFileDirectory) Then
-                    MsgBox "Could not find directory " & gPowerFileDirectory
-                    CheckCVCPowerDirectory = False
-                    Err.Clear
-                End If
+                Call WritePowerFiles(ActiveSheet.Name)
             End If
         End If
     End If
-   
-End Function
+End Sub
 
-Private Function CheckCVCModelFile() As Boolean
+Sub SaveCVCModelFile()
     'Check that model file is defined and writable
-    'Requires 'Model' sheet
     'Requires 'Model file' text in one cell with actual name of
     '  model file in the cell to the right
     'Requires heading lines with 'Device', 'Type', parameter1, parameter2, ..., <Comment>
@@ -106,40 +76,36 @@ Private Function CheckCVCModelFile() As Boolean
     Dim myAddress As String
     Dim powerFileDirectory As String
     Dim modelFile As String
-   
-    CheckCVCModelFile = True
+    Dim fileError As Boolean
+    
+    gCurrentDirectory = ActiveWorkbook.Path
+    fileError = False
     On Error Resume Next
-    Sheets("Model").Select
-    If Err.Number <> 0 Then
-        MsgBox "Missing 'Model' sheet"
-        CheckCVCModelFile = False
+    On Error GoTo 0
+    Set foundRange = FindFirst("Model file")
+    If foundRange Is Nothing Then
+        MsgBox "Missing 'Model file'"
+        fileError = True
         Err.Clear
     Else
-        On Error GoTo 0
-        Set foundRange = FindFirst("Model file")
-        If foundRange Is Nothing Then
-            MsgBox "Missing 'Model file'"
-            CheckCVCModelFile = False
+        myAddress = foundRange.Address
+        gModelFile = StandardPath(foundRange.Offset(0, 1).Value)
+        Set foundNext = ActiveSheet.Cells.FindNext(After:=foundRange)
+        If Not myAddress = foundNext.Address Then
+            MsgBox "Multiple 'Model file' at " & myAddress & " and " & foundNext.Address
+            fileError = True
             Err.Clear
         Else
-            myAddress = foundRange.Address
-            gModelFile = StandardPath(foundRange.Offset(0, 1).Value)
-            Set foundNext = ActiveSheet.Cells.FindNext(After:=foundRange)
-            If Not myAddress = foundNext.Address Then
-                MsgBox "Multiple 'Model file' at " & myAddress & " and " & foundNext.Address
-                CheckCVCModelFile = False
+            If Not FileWritable(gModelFile) Then
+                MsgBox "Could not write " & gModelFile
+                fileError = True
                 Err.Clear
             Else
-                If Not FileWritable(gModelFile) Then
-                    MsgBox "Could not write " & gModelFile
-                    CheckCVCModelFile = False
-                    Err.Clear
-                End If
+                Call WriteModelFile(ActiveSheet.Name)
             End If
         End If
     End If
-   
-End Function
+End Sub
 
 Private Function StandardPath(thePath As String) As String
     'Return path as subdirectory of current directory.
@@ -151,12 +117,12 @@ Private Function StandardPath(thePath As String) As String
     End If
 End Function
 
-Private Sub WritePowerFiles()
+Private Sub WritePowerFiles(mySheetName As String)
     'Write power files to power directory
     Dim myRange As Range
     Dim myLastRow As Integer
    
-    Sheets("Power").Select
+    Sheets(mySheetName).Select
     Set myRange = FindFirst("Net")
     If myRange Is Nothing Then
         MsgBox "Could not find 'Net' keyword"
@@ -165,7 +131,7 @@ Private Sub WritePowerFiles()
         MsgBox "Could not find 'Type' keyword"
         Exit Sub
     End If
-    MsgBox "Writing power files to " & gPowerFileDirectory
+    MsgBox "Writing power files with prefix " & gPowerFilePrefix
 
     Call GetModes(myRange)
     Call GetNets(myRange)
@@ -222,13 +188,23 @@ Sub WriteOnePowerFile(theRange As Range)
     Dim myPowerFileName As String
    
     For myModeIndex = LBound(gModes) To UBound(gModes)
-        myPowerFileName = gPowerFileDirectory & "\power." & gModes(myModeIndex)
+        myPowerFileName = gPowerFilePrefix & gModes(myModeIndex)
         Open myPowerFileName For Output As #1
         For myNetIndex = LBound(gNetName) To UBound(gNetName)
             If gNetType(myNetIndex) = "blank" Then
 '                Print #1, ""; vbLf;
             ElseIf gNetType(myNetIndex) = "comment" Then
                 Print #1, "#"; gNetName(myNetIndex); vbLf;
+            ElseIf theRange.Offset(myNetIndex, myModeIndex + 1) = "" And Not gNetType(myNetIndex) = "resistor" Then
+                Print #1, "#"; gNetName(myNetIndex); vbLf;
+            ElseIf theRange.Offset(myNetIndex, myModeIndex + 1) = "-" Then
+                Print #1, "#"; gNetName(myNetIndex); " -"; vbLf;
+            ElseIf gNetType(myNetIndex) = "circuit" Then
+                Print #1, "#instance"; "*(" & gNetName(myNetIndex) & ")"; _
+                    "power." & theRange.Offset(myNetIndex, myModeIndex + 1); vbLf;
+            ElseIf gNetType(myNetIndex) = "instance" Then
+                Print #1, "#instance"; gNetName(myNetIndex); _
+                    "power." & theRange.Offset(myNetIndex, myModeIndex + 1); vbLf;
             ElseIf gNetType(myNetIndex) = "internal" Then
                 Print #1, gNetName(myNetIndex); " " _
                     & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
@@ -289,14 +265,14 @@ Private Function ReformatPower(thePowerText As String, theType As String) As Str
     End If
 End Function
 
-Private Sub WriteModelFile()
+Private Sub WriteModelFile(mySheetName As String)
     'Write the model file
     'Format: Device Type <parameter>
     Dim myRange As Range
     Dim myModeCount As Integer
     Dim myRowIndex As Integer
    
-    Sheets("Model").Select
+    Sheets(mySheetName).Select
     Set myRange = FindFirst("Device")
     If myRange Is Nothing Then
         MsgBox "Could not find 'Device' keyword"

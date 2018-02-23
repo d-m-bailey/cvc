@@ -440,7 +440,8 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 //						cout << "Overvoltage Error:Gate vs Bulk:" << endl;
 			myMaxVoltageDifference = max(myMaxVoltageDifference, myGateDrainDifference);
 		}
-		if ( myMaxVoltageDifference <= cvcParameters.cvcGateErrorThreshold ) continue;  // no error
+		if ( myMaxVoltageDifference <= cvcParameters.cvcGateErrorThreshold
+				|| ( cvcParameters.cvcMinVthGates && myMaxVoltageDifference < myDevice_p->model_p->Vth ) ) continue;  // no error
 		// Skip gates that are always fully on
 		if ( myConnections.CheckTerminalMaxVoltages(SOURCE) ) {
 			if ( myConnections.CheckTerminalMaxVoltages(DRAIN) ) {
@@ -550,7 +551,8 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 //						errorFile errorFileOvervoltage Error:Gate vs Bulk:" << endl;
 			myMaxVoltageDifference = max(myMaxVoltageDifference, myGateDrainDifference);
 		}
-		if ( myMaxVoltageDifference <= cvcParameters.cvcGateErrorThreshold ) continue;  // no error
+		if ( myMaxVoltageDifference <= cvcParameters.cvcGateErrorThreshold
+				|| ( cvcParameters.cvcMinVthGates && myMaxVoltageDifference < myDevice_p->model_p->Vth ) ) continue;  // no error
 		// Skip gates that are always fully on
 		if ( myConnections.CheckTerminalMinVoltages(SOURCE) ) {
 			if ( myConnections.CheckTerminalMinVoltages(DRAIN) ) {
@@ -1474,7 +1476,8 @@ void CCvcDb::CheckExpectedValues() {
 					myExpectedValueFound = true;
 				}
 			} else if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId] && netVoltagePtr_v[mySimNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
-				if ( String_to_Voltage((*power_ppit)->expectedSim) == netVoltagePtr_v[mySimNetId]->simVoltage ) { // voltage match
+				if ( IsValidVoltage_((*power_ppit)->expectedSim)
+						&& abs(String_to_Voltage((*power_ppit)->expectedSim) - netVoltagePtr_v[mySimNetId]->simVoltage) <= cvcParameters.cvcExpectedErrorThreshold ) { // voltage match
 					myExpectedValueFound = true;
 				} else if ( (*power_ppit)->expectedSim == NetName(mySimNetId) ) { // name match
 					myExpectedValueFound = true;

@@ -76,15 +76,15 @@ makefile.% :
 # Create report file target.
 	@echo '$$(CVC_REPORT_FILE) :: \
 		$$(CVC_NETLIST) $$(CVC_MODEL_FILE) $$(CVC_POWER_FILE) $(@:makefile.%=cvcrc.%)' >> $@
-	@echo " @cvc $(@:makefile.%=cvcrc.%)" >> $@
+	@echo "	@cvc $(@:makefile.%=cvcrc.%)" >> $@
 	@echo "" >> $@
 # Create cdl if necessary
 	@echo '$$(CVC_NETLIST) :: cdl' >> $@
-	@echo ' calibre_cvc svsrule $$(CVC_TOP) cdl $$(@)' >> $@
+	@echo '	calibre_cvc svsrule $$(CVC_TOP) cdl $$(@)' >> $@
 	@echo "" >> $@
 # Check that report file ended correctly. If not, touch cvcrc file to rebuild.
 	@echo "check-$(@:makefile.%=%) ::" >> $@
-	@echo ' @grep -s -q "CVC: End:" $$(CVC_REPORT_FILE) || touch $(@:makefile.%=cvcrc.%)' >> $@
+	@echo '	@grep -s -q "CVC: End:" $$(CVC_REPORT_FILE) || touch $(@:makefile.%=cvcrc.%)' >> $@
 	@$(MAKE) --no-print-directory -f $@ check-$(@:makefile.%=%)
 # Create batchcvc file with commands for all modes that need updating.
 	@$(MAKE) --no-print-directory -q -f $@ \
