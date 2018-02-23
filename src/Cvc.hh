@@ -1,7 +1,7 @@
 /*
  * Cvc.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2108 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -24,7 +24,7 @@
 #ifndef CVC_H_
 #define CVC_H_
 
-#define CVC_VERSION "0.12.2"
+#define CVC_VERSION "0.12.3"
 
 extern bool gDebug_cvc;
 extern bool gInterrupted;

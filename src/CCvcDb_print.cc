@@ -120,9 +120,13 @@ void CCvcDb::SetOutputFiles(string theReportFilename) {
 		}
 	}
 	logFile.open(theReportFilename);
-	assert(logFile.good());
+	if ( ! logFile.good() ) {
+		throw EFatalError("Could not open " + theReportFilename);
+	}
 	errorFile.open(cvcParameters.cvcReportBaseFilename + ".error.gz");
-	assert(errorFile.good());
+	if ( ! errorFile.good() ) {
+		throw EFatalError("Could not open " + cvcParameters.cvcReportBaseFilename + ".error.gz");
+	}
 
 	reportFile << "CVC: Log output to " << theReportFilename << endl;
 	reportFile << "CVC: Error output to " << cvcParameters.cvcReportBaseFilename << ".error.gz" << endl;

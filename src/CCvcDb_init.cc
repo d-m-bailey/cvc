@@ -1,7 +1,7 @@
 /*
  * CCvcDb_init.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2108 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -1107,9 +1107,9 @@ returnCode_t CCvcDb::SetInstancePower() {
 							myPowerError = true;
 						}
 					} else if ( myPower_p->type[INPUT_BIT] ) {
-						if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedMin = to_string<float>(myPower_p->minVoltage / VOLTAGE_SCALE);
-						if ( myPower_p->simVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedSim = to_string<float>(myPower_p->simVoltage / VOLTAGE_SCALE);
-						if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedMax = to_string<float>(myPower_p->maxVoltage / VOLTAGE_SCALE);
+						if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedMin = to_string<float>(float(myPower_p->minVoltage) / VOLTAGE_SCALE);
+						if ( myPower_p->simVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedSim = to_string<float>(float(myPower_p->simVoltage) / VOLTAGE_SCALE);
+						if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) myPower_p->expectedMax = to_string<float>(float(myPower_p->maxVoltage) / VOLTAGE_SCALE);
 						if ( ! (myPower_p->expectedMin.empty() && myPower_p->expectedSim.empty() && myPower_p->expectedMax.empty()) ) {
 							myPower_p->minVoltage = UNKNOWN_VOLTAGE;
 							myPower_p->simVoltage = UNKNOWN_VOLTAGE;
@@ -1143,6 +1143,7 @@ returnCode_t CCvcDb::SetInstancePower() {
 returnCode_t CCvcDb::SetExpectedPower() {
 	// Expected voltage definitions
 	unordered_map<netId_t, string> myExpectedLevelDefinitionMap;
+	unordered_map<netId_t, string> myExpectedLevelSignalMap;
 	CPowerPtrList::iterator power_ppit = cvcParameters.cvcExpectedLevelPtrList.begin();
 	bool myPowerError = false;
 	while( power_ppit != cvcParameters.cvcExpectedLevelPtrList.end() ) {
@@ -1161,14 +1162,19 @@ returnCode_t CCvcDb::SetExpectedPower() {
 			}
 			if (netVoltagePtr_v[*netId_pit] && myPower_p->definition != netVoltagePtr_v[*netId_pit]->definition ) {
 				voltage_t mySimVoltage = netVoltagePtr_v[*netId_pit]->simVoltage;
-				if ( IsValidVoltage_(myPower_p->expectedSim) && mySimVoltage == String_to_Voltage(myPower_p->expectedSim) ) {
-					continue;
+				if ( myPower_p->expectedSim == ""
+						|| ( IsValidVoltage_(myPower_p->expectedSim) && mySimVoltage == String_to_Voltage(myPower_p->expectedSim) ) ) {
+					reportFile << "Warning: ignoring power check for " << NetName(*netId_pit) << ": \"";
+					reportFile << myPower_p->powerSignal << "(" << myPower_p->definition << ")\" already set as ";
+					reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << netVoltagePtr_v[*netId_pit]->definition << ")\"" << endl;
 				} else {
 					reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"";
 					reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << netVoltagePtr_v[*netId_pit]->definition;
 					reportFile << ")\" != \"" << myPower_p->powerSignal << "(" << myPower_p->definition << ")\"" << endl;
 					myPowerError = true;
 				}
+				continue;
+/*
 			} else if ( myExpectedLevelDefinitionMap.count(*netId_pit) > 0 && myPower_p->definition != myExpectedLevelDefinitionMap[*netId_pit] ) {
 				reportFile << "ERROR: Duplicate power expectation " << NetName(*netId_pit) << ": \"";
 				reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << myExpectedLevelDefinitionMap[*netId_pit];
@@ -1176,6 +1182,7 @@ returnCode_t CCvcDb::SetExpectedPower() {
 				myPowerError = true;
 			} else {
 				myExpectedLevelDefinitionMap[*netId_pit] = myPower_p->definition;
+*/
 			}
 			if ( netId_pit != myNetIdList->begin() ) {
 				myPower_p = new CPower(myPower_p, *netId_pit);

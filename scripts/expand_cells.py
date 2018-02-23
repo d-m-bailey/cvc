@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 """ expand_cells.py: Create a list of cells to expand or ignore from CDL netlist for calibre SVS
 
-    Copyright 2106 D. Mitch Bailey
+    Copyright 2106-2018 D. Mitch Bailey  cvc at shuharisystem dot com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
 from __future__ import division
 
 import sys
+if sys.hexversion < 0x02060000:
+    sys.exit("Python 2.6 or newer is required to run this program.")
+
 import getopt
 import gzip
 import re
@@ -140,7 +143,7 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
             if myInstance not in myCircuit['instances']:
                 myCircuit['instances'][myInstance] = 0
             myCircuit['instances'][myInstance] += 1
-        elif line_it.startswith("M") or line_it.startswith("m")::
+        elif line_it.startswith("M") or line_it.startswith("m"):
             myMatch = myMosRE.search(line_it)
             if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D MOS.
                 myMosModel = myMatch.group(3)
