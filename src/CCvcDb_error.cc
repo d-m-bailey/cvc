@@ -420,11 +420,11 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 //					bool myErrorFlag = false;
 		voltage_t myGateSourceDifference = myConnections.minGateVoltage - min(myConnections.minSourceVoltage, myConnections.minSourceVoltage + myDevice_p->model_p->Vth);
 		voltage_t myGateDrainDifference = myConnections.minGateVoltage - min(myConnections.minDrainVoltage, myConnections.minDrainVoltage + myDevice_p->model_p->Vth);
-		voltage_t myMaxVoltageDifference = 0;
+		voltage_t myMaxVoltageDifference = min(0, myDevice_p->model_p->Vth);;
 		if ( myConnections.CheckTerminalMinVoltages(GATE | SOURCE) &&
 //				myConnections.CheckTerminalMaxVoltages(DRAIN) &&
 //				myConnections.minGateVoltage > min(myConnections.minSourceVoltage, myConnections.minSourceVoltage + myDevice_p->model_p->Vth) &&
-				myGateSourceDifference > 0 &&
+				myGateSourceDifference > myMaxVoltageDifference &&
 				myConnections.gateId != myConnections.drainId ) {
 			myMaxVoltageDifference = myGateSourceDifference;
 		}
@@ -433,12 +433,12 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 		if ( myConnections.CheckTerminalMinVoltages(GATE | DRAIN) &&
 //					myConnections.CheckTerminalMaxVoltages(SOURCE) &&
 //				myConnections.minGateVoltage > min(myConnections.minDrainVoltage, myConnections.minDrainVoltage + myDevice_p->model_p->Vth) &&
-				myGateDrainDifference > 0 &&
+				myGateDrainDifference > myMaxVoltageDifference &&
 				myConnections.gateId != myConnections.sourceId ) {
 //					myConnections.minGateVoltage < myConnections.maxSourceVoltage && myConnections.gateId != myConnections.sourceId ) ) {
 //					myConnections.minGateVoltage - myConnections.minDrainVoltage != myDevice_p->model_p->Vth) ) {
 //						cout << "Overvoltage Error:Gate vs Bulk:" << endl;
-			myMaxVoltageDifference = max(myMaxVoltageDifference, myGateDrainDifference);
+			myMaxVoltageDifference = myGateDrainDifference;
 		}
 		if ( myMaxVoltageDifference <= cvcParameters.cvcGateErrorThreshold
 				|| ( cvcParameters.cvcMinVthGates && myMaxVoltageDifference < myDevice_p->model_p->Vth ) ) continue;  // no error
@@ -531,11 +531,11 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 //					bool myErrorFlag = false;
 		voltage_t myGateSourceDifference = max(myConnections.maxSourceVoltage, myConnections.maxSourceVoltage + myDevice_p->model_p->Vth) - myConnections.maxGateVoltage;
 		voltage_t myGateDrainDifference = max(myConnections.maxDrainVoltage, myConnections.maxDrainVoltage + myDevice_p->model_p->Vth) - myConnections.maxGateVoltage;
-		voltage_t myMaxVoltageDifference = 0;
+		voltage_t myMaxVoltageDifference = max(0, myDevice_p->model_p->Vth);
 		if ( myConnections.CheckTerminalMaxVoltages(GATE | SOURCE) &&
 //					myConnections.CheckTerminalMinVoltages(DRAIN) &&
 //				myConnections.maxGateVoltage < max(myConnections.maxSourceVoltage, myConnections.maxSourceVoltage + myDevice_p->model_p->Vth) &&
-				myGateSourceDifference > 0 &&
+				myGateSourceDifference > myMaxVoltageDifference  &&
 				myConnections.gateId != myConnections.drainId ) {
 			myMaxVoltageDifference = myGateSourceDifference;
 		}
@@ -544,15 +544,15 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 		if ( myConnections.CheckTerminalMaxVoltages(GATE | DRAIN) &&
 //					myConnections.CheckTerminalMinVoltages(SOURCE) &&
 //					myConnections.maxGateVoltage < max(myConnections.maxDrainVoltage, myConnections.maxDrainVoltage + myDevice_p->model_p->Vth) &&
-				myGateDrainDifference > 0 &&
+				myGateDrainDifference > myMaxVoltageDifference  &&
 				myConnections.gateId != myConnections.sourceId ) {
 //					myConnections.maxGateVoltage > myConnections.minSourceVoltage && myConnections.gateId != myConnections.sourceId ) ) {
 //					myConnections.maxGateVoltage - myConnections.maxDrainVoltage != myDevice_p->model_p->Vth) ) {
 //						errorFile errorFileOvervoltage Error:Gate vs Bulk:" << endl;
-			myMaxVoltageDifference = max(myMaxVoltageDifference, myGateDrainDifference);
+			myMaxVoltageDifference = myGateDrainDifference;
 		}
 		if ( myMaxVoltageDifference <= cvcParameters.cvcGateErrorThreshold
-				|| ( cvcParameters.cvcMinVthGates && myMaxVoltageDifference < myDevice_p->model_p->Vth ) ) continue;  // no error
+				|| ( cvcParameters.cvcMinVthGates && myMaxVoltageDifference < -myDevice_p->model_p->Vth ) ) continue;  // no error
 		// Skip gates that are always fully on
 		if ( myConnections.CheckTerminalMinVoltages(SOURCE) ) {
 			if ( myConnections.CheckTerminalMinVoltages(DRAIN) ) {

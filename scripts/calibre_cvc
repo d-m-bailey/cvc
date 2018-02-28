@@ -124,6 +124,7 @@ sed -e 's/[   ][      ]*/ /g' \
 	-e 's/^ *LVS INJECT LOGIC/\/\/&/I' \
 	-e 's/^ *LVS FILTER UNUSED/\/\/&/I' \
 	-e 's/^ *LVS EXECUTE ERC/\/\/&/I' \
+	-e 's/^ *LVS SUMMARY /\/\/&/I' \
 	-e 's/^ *MASK SVDB DIRECTORY/\/\/&/I' $RULEFILE >> $rulefile
 
 cat expand.list >> $rulefile
