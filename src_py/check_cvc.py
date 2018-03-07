@@ -58,7 +58,7 @@ import os
 import getopt
 
 os.environ["KIVY_NO_ARGS"] = "1"
-os.environ["KIVY_NO_CONSOLELOG"] = "1"
+#os.environ["KIVY_NO_CONSOLELOG"] = "1"
 
 import cvc_globals
 
@@ -104,19 +104,19 @@ def main(argv):
  
 if __name__ == '__main__':
     if len(sys.argv) == 1:
-        main(["-i", "../cvc/summary_cvc",
-              "../cvc/test_logs/160829_1200/CVC_TEST_diode.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_voltage.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_SHORT1.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_float1.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_float2.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_float3.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_float4.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_gate1.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_shadan.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_shadan1.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_pleak.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_base.cvc_20131001.log"])
+        main(["-i", "../../check_cvc/summary_cvc",
+              "../test/test_logs/160829_1200/CVC_TEST_diode.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_voltage.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_SHORT1.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_float1.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_float2.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_float3.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_float4.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_gate1.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_shadan.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_shadan1.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_pleak.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_base.cvc_20131001.log"])
     else:
         main(sys.argv[1:])
 

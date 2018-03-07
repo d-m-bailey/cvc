@@ -124,6 +124,8 @@
         halign: 'left'
         valign: 'middle'
 
+<SelectableRecycleBoxLayout@FocusBehavior+LayoutSelectionBehavior+RecycleBoxLayout>:
+
 <SummaryTabContent>:  # error lists and log/error file names
     orientation: 'vertical'
     minimum_height: 50
@@ -136,32 +138,40 @@
         Rectangle:
             size: self.size
             pos: self.pos     
-    ListView:  # filtered error list
+    RecycleView:  # filtered error list
         size_hint_x: 1
         id: list_id
         selectMode: ""
         selectType: ""
-        adapter:
-            ListAdapter( \
-            data = [{'errorText': 'dummy', \
-            'is_selected': False, \
-            'type': 'unknown', \
-            'baseIndex': index} \
-            for index in range(len(root.report.displayList))],
-            args_converter = lambda row_index, rec: \
-            {'errorText': rec['errorText'], \
-            'is_selected': rec['is_selected'], \
-            'parentView': self, \
-            'index': row_index, \
-            'type': rec['type'], \
-            'baseIndex': rec['baseIndex']}, \
-            cls = 'SummaryListItem', \
-            selection_mode = 'multiple', \
-            propagate_selection_to_data = True, \
-            allow_empty_selection = True)
-        on_touch_up:
+        viewclass: 'SummaryListItem'
+        SelectableRecycleBoxLayout:
+            default_size: None, dp(15)
+            default_size_hint: 1, None
+            size_hint_y: None
+            height: self.minimum_height
+            orientation: 'vertical'
+            multiselect: True
+        #adapter:
+            #ListAdapter( \
+            #data = [{'errorText': 'dummy', \
+            #'is_selected': False, \
+            #'type': 'unknown', \
+            #'baseIndex': index} \
+            #for index in range(len(root.report.displayList))],
+            #args_converter = lambda row_index, rec: \
+            #{'errorText': rec['errorText'], \
+            #'is_selected': rec['is_selected'], \
+            #'parentView': self, \
+            #'index': row_index, \
+            #'type': rec['type'], \
+            #'baseIndex': rec['baseIndex']}, \
+            #cls = 'SummaryListItem', \
+            #selection_mode = 'multiple', \
+            #propagate_selection_to_data = True, \
+            #allow_empty_selection = True)
+        #on_touch_up:
             # grab is handled in child SummaryListItem
-            if args[1].grab_current == self: root.FinishSelection(args[1], self)
+            #if args[1].grab_current == self: root.FinishSelection(args[1], self)
     BoxLayout:  # log and summary file names
         orientation: 'horizontal'
         size_hint_y: None
