@@ -239,8 +239,9 @@ CCircuit * CCircuitPtrList::FindCircuit(const string theSearchCircuitName) {
 */
 }
 
-void CCircuitPtrList::PrintAndResetCircuitErrors(deviceId_t theErrorLimit, ogzstream & theErrorFile) {
+void CCircuitPtrList::PrintAndResetCircuitErrors(deviceId_t theErrorLimit, ogzstream & theErrorFile, string theSummaryHeading, set<modelType_t> & theModelList) {
 	list<string> myErrorSummaryList;
+	theErrorFile << theSummaryHeading << endl;
 	for (auto circuit_ppit = begin(); circuit_ppit != end(); circuit_ppit++) {
 /*
 		if ( theErrorLimit > 0 && (*circuit_ppit)->errorCount > theErrorLimit ) {
@@ -250,7 +251,8 @@ void CCircuitPtrList::PrintAndResetCircuitErrors(deviceId_t theErrorLimit, ogzst
 		(*circuit_ppit)->errorCount = 0;
 */
 		for (size_t device_it = 0; device_it < (*circuit_ppit)->devicePtr_v.size(); device_it++) {
-			if ( (*circuit_ppit)->deviceErrorCount_v[device_it] > 0 ) {
+			if ( (*circuit_ppit)->deviceErrorCount_v[device_it] > 0
+					&& ( theModelList.empty() || theModelList.count((*circuit_ppit)->devicePtr_v[device_it]->model_p->type) > 0 ) ) {
 				stringstream myErrorSummary;
 				myErrorSummary.str("");
 				myErrorSummary << "INFO: SUBCKT (" << (*circuit_ppit)->name << ")/" << (*circuit_ppit)->devicePtr_v[device_it]->name;

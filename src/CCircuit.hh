@@ -78,6 +78,8 @@ public:
 
 };
 
+static set<modelType_t> emptyModelList;
+
 class CCircuitPtrList : public list<CCircuit *> {
 private:
 public:
@@ -93,7 +95,7 @@ public:
 	void Print(const string theIndentation = "", const string theHeading = "CircuitList>");
 //	void CreateDatabase(const string theTopBlockName);
 	CCircuit * FindCircuit(const string theSearchCircuit);
-	void PrintAndResetCircuitErrors(deviceId_t theErrorLimit, ogzstream & theErrorFile);
+	void PrintAndResetCircuitErrors(deviceId_t theErrorLimit, ogzstream & theErrorFile, string theSummaryHeading = "", set<modelType_t> & theModelList = emptyModelList);
 };
 
 

@@ -215,6 +215,7 @@ public:
 	bool IsOppositeLogic(netId_t theFirstNet, netId_t theSecondNet);
 
 	// error
+	void PrintFuseError(netId_t theTargetNetId, CConnection & theConnections);
 	void PrintMinVoltageConflict(netId_t theTargetNetId, CConnection & theMinConnections, voltage_t theExpectedVoltage, float theLeakCurrent);
 	void PrintMaxVoltageConflict(netId_t theTargetNetId, CConnection & theMaxConnections, voltage_t theExpectedVoltage, float theLeakCurrent);
 	string FindVbgError(voltage_t theParameter, CFullConnection & theConnections);

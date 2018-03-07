@@ -32,6 +32,27 @@
 #include "CEventQueue.hh"
 #include "CVirtualNet.hh"
 
+void CCvcDb::PrintFuseError(netId_t theTargetNetId, CConnection & theConnections) {
+      errorCount[FUSE_ERROR]++;
+      if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
+              CFullConnection myFullConnections;
+              CInstance * myInstance_p = instancePtr_v[deviceParent_v[theConnections.deviceId]];
+              CCircuit * myParent_p = myInstance_p->master_p;
+              CDevice * myDevice_p = myParent_p->devicePtr_v[theConnections.deviceId - myInstance_p->firstDeviceId];
+              MapDeviceNets(myInstance_p, myDevice_p, myFullConnections);
+              errorFile << "! Power/Ground path through fuse at " << NetName(theTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
+              if ( deviceType_v[theConnections.deviceId] == FUSE_ON ) {
+                      errorFile << "; possible floating when cut" << endl;
+              } else if ( deviceType_v[theConnections.deviceId] == FUSE_OFF ) {
+                      errorFile << "; possibly unusable" << endl;
+              } else {
+                      errorFile << "; unknown fuse type" << endl;
+              }
+              PrintDeviceWithMinMaxConnections(deviceParent_v[theConnections.deviceId], myFullConnections, errorFile);
+              errorFile << endl;
+      }
+}
+
 void CCvcDb::PrintMinVoltageConflict(netId_t theTargetNetId, CConnection & theMinConnections, voltage_t theExpectedVoltage, float theLeakCurrent) {
 	errorCount[MIN_VOLTAGE_CONFLICT]++;
 	if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theMinConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {

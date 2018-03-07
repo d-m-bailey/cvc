@@ -1421,7 +1421,8 @@ void CCvcDb::ShortNets(CEventQueue& theEventQueue, deviceId_t theDeviceId, CConn
 		}
 //		if ( myOtherVoltage == theShortVoltage ) {
 		if ( myNextOtherNet == myMasterNet ) {
-			logFile << "WARNING: MIN = MAX " << theShortVoltage << " through FUSE at " << NetName(mySlaveNet, PRINT_CIRCUIT_ON) << endl;
+			PrintFuseError(mySlaveNet, theConnections);
+			//logFile << "WARNING: MIN = MAX " << theShortVoltage << " through FUSE at " << NetName(mySlaveNet, PRINT_CIRCUIT_ON) << endl;
 		}
 	}
 /*

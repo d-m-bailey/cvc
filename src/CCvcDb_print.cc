@@ -1132,6 +1132,7 @@ void CCvcDb::PrintSimTerminalConnections(terminal_t theTerminal, CFullConnection
 
 void CCvcDb::PrintErrorTotals() {
 	reportFile << "CVC: Error Counts" << endl;
+	reportFile << "CVC: Fuse Problems:         " << errorCount[FUSE_ERROR] << endl;
 	reportFile << "CVC: Min Voltage Conflicts: " << errorCount[MIN_VOLTAGE_CONFLICT] << endl;
 	reportFile << "CVC: Max Voltage Conflicts: " << errorCount[MAX_VOLTAGE_CONFLICT] << endl;
 	reportFile << "CVC: Leaks:                 " << errorCount[LEAK] << endl;
