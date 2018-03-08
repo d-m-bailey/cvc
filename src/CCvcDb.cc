@@ -1,7 +1,7 @@
 /*
  * CCvcDb.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2108 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -32,6 +32,7 @@
 #include "CVirtualNet.hh"
 #include "CConnection.hh"
 
+extern set<modelType_t> FUSE_MODELS;
 
 void CCvcDb::ReportSimShort(deviceId_t theDeviceId, voltage_t theMainVoltage, voltage_t theShortVoltage, string theCalculation) {
 	static CFullConnection myConnections;
@@ -1961,7 +1962,7 @@ void CCvcDb::SetResistorVoltagesByPower() {
 //	minimumEventQueue.Print();
 //	maximumEventQueue.Print();
 	CalculateResistorVoltages();
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Resistor Errors");
 	if ( gDebug_cvc ) {
 		PrintVirtualNets(minNet_v, "(minimum r)");
 		PrintVirtualNets(maxNet_v, "(maximum r)");
@@ -2331,7 +2332,8 @@ void CCvcDb::SetInitialMinMaxPower() {
 		}
 	}
 	// Reset min/max voltage conflict errors
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Power/Ground path through fuse", FUSE_MODELS);
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! ... voltage already set");
 //	errorFile << "! Finished" << endl << endl;
 //	if ( ! isFixedSimNet ) cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile); // Bad LDD connections (first pass)
 	CheckEstimateDependencies();

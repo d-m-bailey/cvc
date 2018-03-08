@@ -1,7 +1,7 @@
 /*
  * CCvcDb_error.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2108 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -269,7 +269,7 @@ void CCvcDb::FindOverVoltageErrors(string theCheck, int theErrorIndex) {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking " + theCheck + " overvoltage errors");
 //	errorFile << "! Finished" << endl << endl;
 }
 
@@ -493,7 +493,7 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 			errorFile << endl;
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking nmos gate vs source errors: ");
 //	errorFile << "! Finished" << endl << endl;
 
 /*
@@ -603,7 +603,7 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 			errorFile << endl;
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking pmos gate vs source errors: ");
 //	errorFile << "! Finished" << endl << endl;
 
 /*
@@ -734,7 +734,7 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking pmos gate vs source errors: ");
 //	errorFile << "! Finished" << endl << endl;
 /*
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
@@ -918,7 +918,7 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking pmos source/drain vs bias errors: ");
 //	errorFile << "! Finished" << endl << endl;
 /*
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
@@ -1119,7 +1119,7 @@ void CCvcDb::FindForwardBiasDiodes() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking forward bias diode errors: ");
 //	errorFile << "! Finished" << endl << endl;
 /*
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
@@ -1267,7 +1267,7 @@ void CCvcDb::FindNmosPossibleLeakErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking nmos possible leak errors: ");
 //	errorFile << "! Finished" << endl << endl;
 /*
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
@@ -1370,7 +1370,7 @@ void CCvcDb::FindPmosPossibleLeakErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking pmos possible leak errors: ");
 //	errorFile << "! Finished" << endl << endl;
 /*
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
@@ -1465,7 +1465,7 @@ void CCvcDb::FindFloatingInputErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking mos floating input errors:");
 //	errorFile << "! Finished" << endl << endl;
 }
 
@@ -1655,7 +1655,7 @@ void CCvcDb::FindLDDErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking LDD errors for model: ");
 //	errorFile << "! Finished" << endl << endl;
 }
 

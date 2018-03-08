@@ -1,7 +1,7 @@
 /*
  * cvc.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2108 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -42,9 +42,10 @@ bool gInterrupted = false;  //!< for detecting interrupts
 
 HIST_ENTRY **gHistoryList; //!< readline history
 
-/// \name global status constants
+/// \name global constants
 ///@{
 CStatus PMOS_ONLY, NMOS_ONLY, NMOS_PMOS, NO_TYPE;
+set<modelType_t> FUSE_MODELS;
 ///@}
 
 CCvcDb	* gCvcDb; //!< CVC global database
@@ -66,6 +67,8 @@ int main(int argc, const char * argv[]) {
 	NMOS_PMOS[NMOS] = true;
 	NMOS_PMOS[PMOS] = true;
 	NO_TYPE = 0;
+	FUSE_MODELS.insert(FUSE_ON);
+	FUSE_MODELS.insert(FUSE_OFF);
 
 try {
 	using_history();

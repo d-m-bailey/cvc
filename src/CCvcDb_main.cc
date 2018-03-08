@@ -1,7 +1,7 @@
 /*
  * CCvcDb_main.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2108 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -182,7 +182,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// - missing bulk connection check
 		SaveMinMaxLeakVoltages();
 		SetSimPower(POWER_NETS_ONLY);
-		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Logic shorts 1");
 		CheckConnections();
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_FIRST_SIM) == SKIP ) continue;
@@ -201,7 +201,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		while ( SetLatchPower() ) {
 			SetSimPower(ALL_NETS_AND_FUSE);
 		}
-		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Logic shorts 2");
 		if ( detectErrorFlag ) {
 			FindLDDErrors();
 			FindForwardBiasDiodes();
