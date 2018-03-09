@@ -6,7 +6,7 @@
     Functions:
       InitializeErrors: Initialize error data from cvc_globals.
 
-    Copyright 2106-2018 D. Mitch Bailey  d dot bailey at shuharisystem dot com
+    Copyright 2106-2018 D. Mitch Bailey  cvc at shuharisystem dot com
 
     This file is part of check_cvc.
 

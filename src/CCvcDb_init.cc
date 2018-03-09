@@ -927,6 +927,9 @@ forward_list<instanceId_t> CCvcDb::FindInstanceIds(string theHierarchy, instance
 		reportFile << "regex_error: " << RegexErrorString(myError.code()) << endl;
 		mySearchInstanceIdList.clear();
 	}
+	if ( myUnmatchedInstance != "" ) {  // not a complete match
+		mySearchInstanceIdList.clear();
+	}
 	return mySearchInstanceIdList;
 }
 

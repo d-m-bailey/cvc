@@ -4,7 +4,7 @@
       OpenFile: Open a possibly compressed file and return file structure.
       CompareErrors: Compare 2 error records and return "<", "=", ">", or "?".
 
-    Copyright 2106, 2017 D. Mitch Bailey  d.mitch.bailey at gmail dot com
+    Copyright 2106, 2017 D. Mitch Bailey  cvc at shuharisystem dot com
 
     This file is part of check_cvc.
 
