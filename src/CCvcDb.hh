@@ -1,7 +1,7 @@
 /*
  * CCvcDb.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2108 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -341,6 +341,7 @@ public:
 	bool HasActiveConnections(netId_t theNetId);
 	size_t InstanceDepth(instanceId_t theInstanceId);
 	bool IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId);
+	void RemoveInvalidPower(netId_t theNetId, size_t & theRemovedCount);
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);

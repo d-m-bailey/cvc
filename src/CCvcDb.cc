@@ -426,12 +426,15 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 		if ( IsMos_(deviceType_v[theDeviceId]) ) {
 			voltage_t mySourceVoltage;
 			netId_t myTargetNetId = UNKNOWN_NET;
+			CStatus myStatus;
 			if ( theConnections.sourceId == theConnections.gateId ) {
 				myTargetNetId = theConnections.sourceId;
 				mySourceVoltage = theConnections.drainVoltage;
+				myStatus = myDrainStatus;
 			} else if ( theConnections.drainId == theConnections.gateId ) {
 				myTargetNetId = theConnections.drainId;
 				mySourceVoltage = theConnections.sourceVoltage;
+				myStatus = mySourceStatus;
 			}
 			if ( myTargetNetId != UNKNOWN_NET ) {
 				voltage_t myExpectedVoltage = mySourceVoltage + theConnections.device_p->model_p->Vth;
@@ -439,7 +442,9 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 				CConnection myMaxConnections;
 				MapDeviceNets(theConnections.deviceId, maxEventQueue, myMaxConnections);
 				if ( myMaxConnections.gateVoltage == UNKNOWN_VOLTAGE ) {
-					EnqueueAttachedDevices(maxEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
+					if ( ! (myStatus[NEEDS_MAX_CHECK] || myStatus[NEEDS_MAX_CONNECTION]) ) {  // do not cross propagate estimated voltages
+						EnqueueAttachedDevices(maxEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
+					}
 				} else if ( ! myMaxConnections.gatePower_p->type[HIZ_BIT]
 						&& ((myMaxConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
 							|| (myMaxConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) ) {
@@ -504,12 +509,15 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 		if ( IsMos_(deviceType_v[theDeviceId]) ) {
 			voltage_t mySourceVoltage;
 			netId_t myTargetNetId = UNKNOWN_NET;
+			CStatus myStatus;
 			if ( theConnections.sourceId == theConnections.gateId ) {
 				myTargetNetId = theConnections.sourceId;
 				mySourceVoltage = theConnections.drainVoltage;
+				myStatus = myDrainStatus;
 			} else if ( theConnections.drainId == theConnections.gateId ) {
 				myTargetNetId = theConnections.drainId;
 				mySourceVoltage = theConnections.sourceVoltage;
+				myStatus = mySourceStatus;
 			}
 			if ( myTargetNetId != UNKNOWN_NET ) {
 				voltage_t myExpectedVoltage = mySourceVoltage + theConnections.device_p->model_p->Vth;
@@ -517,7 +525,9 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 				CConnection myMinConnections;
 				MapDeviceNets(theConnections.deviceId, minEventQueue, myMinConnections);
 				if ( myMinConnections.gateVoltage == UNKNOWN_VOLTAGE ) {
-					EnqueueAttachedDevices(minEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
+					if ( ! (myStatus[NEEDS_MIN_CHECK] || myStatus[NEEDS_MIN_CONNECTION]) ) {  // do not cross propagate estimated voltages
+						EnqueueAttachedDevices(minEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
+					}
 				} else if ( ! myMinConnections.gatePower_p->type[HIZ_BIT]
 						&& ((myMinConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
 							|| (myMinConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) ) {
@@ -2341,121 +2351,7 @@ void CCvcDb::SetInitialMinMaxPower() {
 	size_t myRemovedCount = 0;
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 		if ( netVoltagePtr_v[net_it] == NULL ) continue; // skips subordinate nets
-		voltage_t myMaxVoltage = MaxVoltage(net_it, true);
-		voltage_t myMinVoltage = MinVoltage(net_it, true);
-		if ( netStatus_v[net_it][NEEDS_MIN_CHECK] && ! netStatus_v[net_it][NEEDS_MAX_CHECK] && ! IsDerivedFromFloating(minNet_v, net_it) ) {
-			voltage_t myMinCheckVoltage = ( myMinVoltage == UNKNOWN_VOLTAGE ) ? MinLeakVoltage(net_it) : myMinVoltage;
-			// intentionally not parallel with following check. only need to check high value for unknown.
-			if ( myMaxVoltage != UNKNOWN_VOLTAGE && myMinCheckVoltage < myMaxVoltage ) {
-				netStatus_v[net_it][NEEDS_MIN_CHECK] = false;
-			}
-		}
-		if ( netStatus_v[net_it][NEEDS_MAX_CHECK] && ! netStatus_v[net_it][NEEDS_MIN_CHECK] && ! IsDerivedFromFloating(maxNet_v, net_it) ) {
-			voltage_t myMaxCheckVoltage = ( myMaxVoltage == UNKNOWN_VOLTAGE ) ? MaxLeakVoltage(net_it) : myMaxVoltage;
-			if ( myMaxCheckVoltage != UNKNOWN_VOLTAGE && myMaxCheckVoltage > myMinVoltage ) {
-				netStatus_v[net_it][NEEDS_MAX_CHECK] = false;
-			}
-		}
-		if ( myMinVoltage != UNKNOWN_VOLTAGE && myMaxVoltage != UNKNOWN_VOLTAGE && myMinVoltage <= myMaxVoltage &&
-				netStatus_v[net_it][NEEDS_MIN_CHECK] && netStatus_v[net_it][NEEDS_MAX_CHECK] ) {
-			// both min and max are calculated values
-			netStatus_v[net_it][NEEDS_MIN_CHECK] = netStatus_v[net_it][NEEDS_MAX_CHECK] = false;
-		}
-		if ( gDebug_cvc && netStatus_v[net_it][NEEDS_MIN_CHECK] ) cout << "DEBUG: unverified min net " << net_it << endl;
-		if ( gDebug_cvc && netStatus_v[net_it][NEEDS_MAX_CHECK] ) cout << "DEBUG: unverified max net " << net_it << endl;
-		if ( IsCalculatedVoltage_(netVoltagePtr_v[net_it]) == false ) { // handle partial power specification
-			if ( netStatus_v[net_it][NEEDS_MIN_CHECK] || netStatus_v[net_it][NEEDS_MAX_CONNECTION] ) {
-				// NEEDS_MIN_CHECK means that max prop through nmos occurred (Vth drop), but no lower voltage was found
-				// NEEDS_MAX_CONNECTION means that max estimated voltage through nmos diode, does not have pull up connections
-				if (gDebug_cvc) cout << "INFO: Remove max voltage at net " << net_it << " Min: " << myMinVoltage << " Max: " << myMaxVoltage << endl;
-				// maybe use default min here
-//				netVoltagePtr_v[net_it]->maxVoltage = netVoltagePtr_v[net_it]->minVoltage;
-//				if (netStatus_v[net_it][NEEDS_MIN_CHECK]) {
-					netVoltagePtr_v[net_it]->maxVoltage = netVoltagePtr_v[netVoltagePtr_v[net_it]->defaultMaxNet]->maxVoltage;
-//				}
-//				if (netStatus_v[net_it][NEEDS_MAX_CONNECTION]) {
-//					netVoltagePtr_v[net_it]->maxVoltage = netVoltagePtr_v[netVoltagePtr_v[net_it]->defaultMinNet]->minVoltage;
-//				}
-//				netVoltagePtr_v[net_it]->maxVoltage = netVoltagePtr_v[net_it]->defaultMaxNet; // bugged
-				netStatus_v[net_it][NEEDS_MIN_CHECK] = netStatus_v[net_it][NEEDS_MAX_CONNECTION] = false;
-			}
-			if ( netStatus_v[net_it][NEEDS_MAX_CHECK] || netStatus_v[net_it][NEEDS_MIN_CONNECTION] ) {
-				// NEEDS_MAX_CHECK means that min prop through pmos occurred (Vth step up), but no higher voltage was found
-				// NEEDS_MIN_CONNECTION means that min estimated voltage through pmos diode, does not have pull down connections
-				if (gDebug_cvc) cout << "INFO: Remove min voltage at net " << net_it << " Min: " << myMinVoltage << " Max: " << myMaxVoltage << endl;
-				// maybe use default max here
-//				netVoltagePtr_v[net_it]->minVoltage = netVoltagePtr_v[net_it]->maxVoltage;
-//				if (netStatus_v[net_it][NEEDS_MAX_CHECK]) {
-					netVoltagePtr_v[net_it]->minVoltage = netVoltagePtr_v[netVoltagePtr_v[net_it]->defaultMinNet]->minVoltage;
-//				}
-//				if (netStatus_v[net_it][NEEDS_MIN_CONNECTION]) {
-//					netVoltagePtr_v[net_it]->minVoltage = netVoltagePtr_v[netVoltagePtr_v[net_it]->defaultMaxNet]->maxVoltage;
-//				}
-//				netVoltagePtr_v[net_it]->minVoltage = netVoltagePtr_v[net_it]->defaultMinNet;
-				netStatus_v[net_it][NEEDS_MAX_CHECK] = netStatus_v[net_it][NEEDS_MIN_CONNECTION] = false;
-			}
-			continue;
-		}
-		//		if ( IsCalculatedVoltage_(netVoltagePtr_v[net_it]) == false || netVoltagePtr_v[net_it]->type[HIZ_BIT] ) continue;
-//		voltage_t mySimVoltage = SimVoltage(net_it);
-		if ( myMinVoltage == UNKNOWN_VOLTAGE || myMaxVoltage == UNKNOWN_VOLTAGE || myMinVoltage > myMaxVoltage ||
-				netStatus_v[net_it][NEEDS_MIN_CHECK] || netStatus_v[net_it][NEEDS_MAX_CHECK] ||
-				netStatus_v[net_it][NEEDS_MIN_CONNECTION] || netStatus_v[net_it][NEEDS_MAX_CONNECTION] ) {
-			// invalid calculation
-			if (gDebug_cvc) cout << "INFO: Checking " << net_it
-					<< " MIN/MAX_CHECK " << (netStatus_v[net_it][NEEDS_MIN_CHECK] ? "1" : "0") << "|" << (netStatus_v[net_it][NEEDS_MAX_CHECK] ? "1" : "0")
-					<< " MIN/MAX_CONNECTION " << (netStatus_v[net_it][NEEDS_MIN_CONNECTION] ? "1" : "0") << "|" << (netStatus_v[net_it][NEEDS_MAX_CONNECTION] ? "1" : "0") << endl;
-			netStatus_v[net_it][NEEDS_MIN_CHECK] = netStatus_v[net_it][NEEDS_MAX_CHECK] = false;
-			netStatus_v[net_it][NEEDS_MIN_CONNECTION] = netStatus_v[net_it][NEEDS_MAX_CONNECTION] = false;
-			if ( leakVoltageSet && leakVoltagePtr_v[net_it] ) {
-				voltage_t myMaxLeakVoltage = MaxLeakVoltage(net_it);
-//				myMinVoltage = MinVoltage(net_it);
-				if ( myMaxLeakVoltage != UNKNOWN_VOLTAGE && myMinVoltage != UNKNOWN_VOLTAGE && myMaxVoltage != UNKNOWN_VOLTAGE
-						&& myMinVoltage <= myMaxVoltage	&& myMaxVoltage <= myMaxLeakVoltage && myMinVoltage >= MinLeakVoltage(net_it) ) {
-					continue;  // first pass leak voltages mean current calculated voltages ok.
-				}
-			}
-			if (gDebug_cvc) cout << "INFO: Remove calculated voltage at net " << net_it << " Min: " << myMinVoltage << " Max: " << myMaxVoltage << endl;
-			if ( net_it < instancePtr_v[0]->master_p->portCount ) {
-				reportFile << "WARNING: Invalid Min/Max on top level port: " << NetName(net_it) << " Min/Max: " << myMinVoltage << "/" << myMaxVoltage << endl;
-			}
-			CPower * myPower_p = netVoltagePtr_v[net_it];
-			netVoltagePtr_v[net_it] = NULL;
-			myRemovedCount++;
-			// replace deleted voltage with known voltage
-			myMaxVoltage = MaxVoltage(net_it);
-			myMinVoltage = MinVoltage(net_it);
-
-			if ( myMinVoltage == UNKNOWN_VOLTAGE ) {
-				if ( myPower_p->defaultMinNet != UNKNOWN_NET ) {
-					// do not increment lastUpdate
-					minNet_v.Set(net_it, myPower_p->defaultMinNet, DEFAULT_UNKNOWN_RESISTANCE, minNet_v.lastUpdate);
-					CheckResistorOverflow_(minNet_v[net_it].finalResistance, net_it, logFile);
-//					RecalculateFinalResistance(minEventQueue, net_it);
-//					minNet_v[net_it].nextNetId = myPower_p->defaultMinNet;
-//					minNet_v[net_it].resistance = DEFAULT_UNKNOWN_RESISTANCE;
-//					minNet_v.SetFinalNet(net_it);
-				}
-			}
-			if ( myMaxVoltage == UNKNOWN_VOLTAGE ) {
-				if ( myPower_p->defaultMaxNet != UNKNOWN_NET ) {
-					// do not increment lastUpdate
-					maxNet_v.Set(net_it, myPower_p->defaultMaxNet, DEFAULT_UNKNOWN_RESISTANCE, maxNet_v.lastUpdate);
-					CheckResistorOverflow_(maxNet_v[net_it].finalResistance, net_it, logFile);
-//					RecalculateFinalResistance(maxEventQueue, net_it);
-//					maxNet_v[net_it].nextNetId = myPower_p->defaultMaxNet;
-//					maxNet_v[net_it].resistance = DEFAULT_UNKNOWN_RESISTANCE;
-//					maxNet_v.SetFinalNet(net_it);
-				}
-			}
-//			delete myPower_p;
-/* removed because may lead to false sim value if floating. possibly ok after first max/min check.
-		} else if ( mySimVoltage == UNKNOWN_VOLTAGE && myMinVoltage != UNKNOWN_VOLTAGE && myMinVoltage == myMaxVoltage ) {
-			netVoltagePtr_v[net_it] = cvcParameters.cvcPowerPtrList.FindCalculatedPower(simEventQueue, netVoltagePtr_v[net_it], myMinVoltage, net_it, this);
-			cout << "INFO: min = max @ " << myMinVoltage << " Net " << NetName(net_it, PRINT_CIRCUIT_ON) << endl;
-			simNet_v[net_it].resistance = max(minNet_v[net_it].resistance, maxNet_v[net_it].resistance);
-*/
-		}
+		RemoveInvalidPower(net_it, myRemovedCount);
 	}
 	reportFile << "CVC:   Removed " << myRemovedCount << " calculations" << endl;
 	int	myProgressCount = 0;

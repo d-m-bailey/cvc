@@ -1139,3 +1139,96 @@ bool CCvcDb::IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId
 	}
 	return false;
 }
+
+void CCvcDb::RemoveInvalidPower(netId_t theNetId, size_t & theRemovedCount) {
+	if ( theNetId == UNKNOWN_NET || ! netVoltagePtr_v[theNetId] ) return;
+	if ( minNet_v[theNetId].finalNetId > theNetId ) {
+		RemoveInvalidPower(minNet_v[theNetId].finalNetId, theRemovedCount);
+	}
+	if ( maxNet_v[theNetId].finalNetId > theNetId ) {
+		RemoveInvalidPower(maxNet_v[theNetId].finalNetId, theRemovedCount);
+	}
+	//cout << "DEBUG: checking valid net " << theNetId << endl;
+	voltage_t myMaxVoltage = MaxVoltage(theNetId, true);
+	voltage_t myMinVoltage = MinVoltage(theNetId, true);
+	if ( netStatus_v[theNetId][NEEDS_MIN_CHECK] && ! netStatus_v[theNetId][NEEDS_MAX_CHECK] && ! IsDerivedFromFloating(minNet_v, theNetId) ) {
+		voltage_t myMinCheckVoltage = ( myMinVoltage == UNKNOWN_VOLTAGE ) ? MinLeakVoltage(theNetId) : myMinVoltage;
+		// intentionally not parallel with following check. only need to check high value for unknown.
+		if ( myMaxVoltage != UNKNOWN_VOLTAGE && myMinCheckVoltage < myMaxVoltage ) {
+			netStatus_v[theNetId][NEEDS_MIN_CHECK] = false;
+		}
+	}
+	if ( netStatus_v[theNetId][NEEDS_MAX_CHECK] && ! netStatus_v[theNetId][NEEDS_MIN_CHECK] && ! IsDerivedFromFloating(maxNet_v, theNetId) ) {
+		voltage_t myMaxCheckVoltage = ( myMaxVoltage == UNKNOWN_VOLTAGE ) ? MaxLeakVoltage(theNetId) : myMaxVoltage;
+		if ( myMaxCheckVoltage != UNKNOWN_VOLTAGE && myMaxCheckVoltage > myMinVoltage ) {
+			netStatus_v[theNetId][NEEDS_MAX_CHECK] = false;
+		}
+	}
+	if ( myMinVoltage != UNKNOWN_VOLTAGE && myMaxVoltage != UNKNOWN_VOLTAGE && myMinVoltage <= myMaxVoltage
+			&& netStatus_v[theNetId][NEEDS_MIN_CHECK] && netStatus_v[theNetId][NEEDS_MAX_CHECK] ) {
+		// both min and max are calculated values
+		netStatus_v[theNetId][NEEDS_MIN_CHECK] = netStatus_v[theNetId][NEEDS_MAX_CHECK] = false;
+	}
+	if ( gDebug_cvc && netStatus_v[theNetId][NEEDS_MIN_CHECK] ) cout << "DEBUG: unverified min net " << theNetId << endl;
+	if ( gDebug_cvc && netStatus_v[theNetId][NEEDS_MAX_CHECK] ) cout << "DEBUG: unverified max net " << theNetId << endl;
+	if ( IsCalculatedVoltage_(netVoltagePtr_v[theNetId]) == false ) { // handle partial power specification
+		if ( netStatus_v[theNetId][NEEDS_MIN_CHECK] || netStatus_v[theNetId][NEEDS_MAX_CONNECTION] ) {
+			// NEEDS_MIN_CHECK means that max prop through nmos occurred (Vth drop), but no lower voltage was found
+			// NEEDS_MAX_CONNECTION means that max estimated voltage through nmos diode, does not have pull up connections
+			if (gDebug_cvc) cout << "INFO: Remove max voltage at net " << theNetId << " Min: " << myMinVoltage << " Max: " << myMaxVoltage << endl;
+			// maybe use default min here
+			netVoltagePtr_v[theNetId]->maxVoltage = netVoltagePtr_v[netVoltagePtr_v[theNetId]->defaultMaxNet]->maxVoltage;
+			netStatus_v[theNetId][NEEDS_MIN_CHECK] = netStatus_v[theNetId][NEEDS_MAX_CONNECTION] = false;
+		}
+		if ( netStatus_v[theNetId][NEEDS_MAX_CHECK] || netStatus_v[theNetId][NEEDS_MIN_CONNECTION] ) {
+			// NEEDS_MAX_CHECK means that min prop through pmos occurred (Vth step up), but no higher voltage was found
+			// NEEDS_MIN_CONNECTION means that min estimated voltage through pmos diode, does not have pull down connections
+			if (gDebug_cvc) cout << "INFO: Remove min voltage at net " << theNetId << " Min: " << myMinVoltage << " Max: " << myMaxVoltage << endl;
+			// maybe use default max here
+			netVoltagePtr_v[theNetId]->minVoltage = netVoltagePtr_v[netVoltagePtr_v[theNetId]->defaultMinNet]->minVoltage;
+			netStatus_v[theNetId][NEEDS_MAX_CHECK] = netStatus_v[theNetId][NEEDS_MIN_CONNECTION] = false;
+		}
+		return;
+	}
+	if ( myMinVoltage == UNKNOWN_VOLTAGE || myMaxVoltage == UNKNOWN_VOLTAGE || myMinVoltage > myMaxVoltage ||
+		netStatus_v[theNetId][NEEDS_MIN_CHECK] || netStatus_v[theNetId][NEEDS_MAX_CHECK] ||
+		netStatus_v[theNetId][NEEDS_MIN_CONNECTION] || netStatus_v[theNetId][NEEDS_MAX_CONNECTION] ) {
+		// invalid calculation
+		if (gDebug_cvc) cout << "INFO: Checking " << theNetId
+				<< " MIN/MAX_CHECK " << (netStatus_v[theNetId][NEEDS_MIN_CHECK] ? "1" : "0") << "|" << (netStatus_v[theNetId][NEEDS_MAX_CHECK] ? "1" : "0")
+				<< " MIN/MAX_CONNECTION " << (netStatus_v[theNetId][NEEDS_MIN_CONNECTION] ? "1" : "0") << "|" << (netStatus_v[theNetId][NEEDS_MAX_CONNECTION] ? "1" : "0") << endl;
+			netStatus_v[theNetId][NEEDS_MIN_CHECK] = netStatus_v[theNetId][NEEDS_MAX_CHECK] = false;
+			netStatus_v[theNetId][NEEDS_MIN_CONNECTION] = netStatus_v[theNetId][NEEDS_MAX_CONNECTION] = false;
+			if ( leakVoltageSet && leakVoltagePtr_v[theNetId] ) {
+				voltage_t myMaxLeakVoltage = MaxLeakVoltage(theNetId);
+				if ( myMaxLeakVoltage != UNKNOWN_VOLTAGE && myMinVoltage != UNKNOWN_VOLTAGE && myMaxVoltage != UNKNOWN_VOLTAGE
+						&& myMinVoltage <= myMaxVoltage && myMaxVoltage <= myMaxLeakVoltage && myMinVoltage >= MinLeakVoltage(theNetId) ) {
+					return;  // first pass leak voltages mean current calculated voltages ok.
+			}
+		}
+		if (gDebug_cvc) cout << "INFO: Remove calculated voltage at net " << theNetId << " Min: " << myMinVoltage << " Max: " << myMaxVoltage << endl;
+		if ( theNetId < instancePtr_v[0]->master_p->portCount ) {
+			reportFile << "WARNING: Invalid Min/Max on top level port: " << NetName(theNetId) << " Min/Max: " << myMinVoltage << "/" << myMaxVoltage << endl;
+		}
+		CPower * myPower_p = netVoltagePtr_v[theNetId];
+		netVoltagePtr_v[theNetId] = NULL;
+		theRemovedCount++;
+		// replace deleted voltage with known voltage
+		myMaxVoltage = MaxVoltage(theNetId);
+		myMinVoltage = MinVoltage(theNetId);
+		if ( myMinVoltage == UNKNOWN_VOLTAGE ) {
+			if ( myPower_p->defaultMinNet != UNKNOWN_NET ) {
+				// do not increment lastUpdate
+				minNet_v.Set(theNetId, myPower_p->defaultMinNet, DEFAULT_UNKNOWN_RESISTANCE, minNet_v.lastUpdate);
+				CheckResistorOverflow_(minNet_v[theNetId].finalResistance, theNetId, logFile);
+			}
+		}
+		if ( myMaxVoltage == UNKNOWN_VOLTAGE ) {
+			if ( myPower_p->defaultMaxNet != UNKNOWN_NET ) {
+				// do not increment lastUpdate
+				maxNet_v.Set(theNetId, myPower_p->defaultMaxNet, DEFAULT_UNKNOWN_RESISTANCE, maxNet_v.lastUpdate);
+				CheckResistorOverflow_(maxNet_v[theNetId].finalResistance, theNetId, logFile);
+			}
+		}
+	}
+}
