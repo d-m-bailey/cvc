@@ -36,6 +36,8 @@ class CVirtualNetVector;
 enum powerType_t { POWER_BIT=0, INPUT_BIT, HIZ_BIT, RESISTOR_BIT, REFERENCE_BIT, MIN_CALCULATED_BIT, SIM_CALCULATED_BIT, MAX_CALCULATED_BIT };
 enum activeType_t { MIN_ACTIVE=0, MAX_ACTIVE, MIN_IGNORE, MAX_IGNORE };
 
+enum calculationType_t { UNKNOWN_CALCULATION=0, NO_CALCULATION, UP_CALCULATION, DOWN_CALCULATION, RESISTOR_CALCULATION, ESTIMATED_CALCULATION };
+
 #define IsExternalPower_(power_p) ((power_p)->type[POWER_BIT] || (power_p)->type[INPUT_BIT])
 #define IsPriorityPower_(power_p) ((power_p)->type[POWER_BIT] || (power_p)->type[INPUT_BIT] || (power_p)->type[RESISTOR_BIT])
 
@@ -79,6 +81,9 @@ public:
 //	netId_t	baseMaxId = UNKNOWN_NET;
 	string	family = "";
 	string	definition = "";
+	calculationType_t minCalculationType = UNKNOWN_CALCULATION;
+	calculationType_t simCalculationType = UNKNOWN_CALCULATION;
+	calculationType_t maxCalculationType = UNKNOWN_CALCULATION;
 	bool relativeFriendly = true;
 	CSet	relativeSet;
 	bool	printed = false;
@@ -89,7 +94,7 @@ public:
 	CPower(CPower * thePower_p, netId_t theNetId);
 	CPower(netId_t theNetId);
 	CPower(netId_t theNetId, voltage_t theSimVoltage);
-	CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, netId_t theMinNet, netId_t theMaxNet, string theCalculation);
+//	CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, netId_t theMinNet, netId_t theMaxNet, string theCalculation);
 //	CPower(voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage);
 	CPower(netId_t theNetId, voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage, netId_t theDefaultMinNet, netId_t theDefaultSimNet, netId_t theDefaultMaxNet);
 

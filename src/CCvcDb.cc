@@ -426,15 +426,15 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 		if ( IsMos_(deviceType_v[theDeviceId]) ) {
 			voltage_t mySourceVoltage;
 			netId_t myTargetNetId = UNKNOWN_NET;
-			CStatus myStatus;
+			calculationType_t myCalculationType;
 			if ( theConnections.sourceId == theConnections.gateId ) {
 				myTargetNetId = theConnections.sourceId;
 				mySourceVoltage = theConnections.drainVoltage;
-				myStatus = myDrainStatus;
+				myCalculationType = theConnections.drainPower_p->minCalculationType;
 			} else if ( theConnections.drainId == theConnections.gateId ) {
 				myTargetNetId = theConnections.drainId;
 				mySourceVoltage = theConnections.sourceVoltage;
-				myStatus = mySourceStatus;
+				myCalculationType = theConnections.sourcePower_p->minCalculationType;
 			}
 			if ( myTargetNetId != UNKNOWN_NET ) {
 				voltage_t myExpectedVoltage = mySourceVoltage + theConnections.device_p->model_p->Vth;
@@ -442,7 +442,7 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 				CConnection myMaxConnections;
 				MapDeviceNets(theConnections.deviceId, maxEventQueue, myMaxConnections);
 				if ( myMaxConnections.gateVoltage == UNKNOWN_VOLTAGE ) {
-					if ( ! (myStatus[NEEDS_MAX_CHECK] || myStatus[NEEDS_MAX_CONNECTION]) ) {  // do not cross propagate estimated voltages
+					if ( myCalculationType != DOWN_CALCULATION ) {  // do not cross propagate calculated voltages
 						EnqueueAttachedDevices(maxEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
 					}
 				} else if ( ! myMaxConnections.gatePower_p->type[HIZ_BIT]
@@ -509,15 +509,15 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 		if ( IsMos_(deviceType_v[theDeviceId]) ) {
 			voltage_t mySourceVoltage;
 			netId_t myTargetNetId = UNKNOWN_NET;
-			CStatus myStatus;
+			calculationType_t myCalculationType;
 			if ( theConnections.sourceId == theConnections.gateId ) {
 				myTargetNetId = theConnections.sourceId;
 				mySourceVoltage = theConnections.drainVoltage;
-				myStatus = myDrainStatus;
+				myCalculationType = theConnections.drainPower_p->maxCalculationType;
 			} else if ( theConnections.drainId == theConnections.gateId ) {
 				myTargetNetId = theConnections.drainId;
 				mySourceVoltage = theConnections.sourceVoltage;
-				myStatus = mySourceStatus;
+				myCalculationType = theConnections.sourcePower_p->maxCalculationType;
 			}
 			if ( myTargetNetId != UNKNOWN_NET ) {
 				voltage_t myExpectedVoltage = mySourceVoltage + theConnections.device_p->model_p->Vth;
@@ -525,7 +525,7 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 				CConnection myMinConnections;
 				MapDeviceNets(theConnections.deviceId, minEventQueue, myMinConnections);
 				if ( myMinConnections.gateVoltage == UNKNOWN_VOLTAGE ) {
-					if ( ! (myStatus[NEEDS_MIN_CHECK] || myStatus[NEEDS_MIN_CONNECTION]) ) {  // do not cross propagate estimated voltages
+					if ( myCalculationType != UP_CALCULATION ) {  // do not cross propagate calculated voltages
 						EnqueueAttachedDevices(minEventQueue, myTargetNetId, myExpectedVoltage); // enqueue in opposite queue
 					}
 				} else if ( ! myMinConnections.gatePower_p->type[HIZ_BIT]
@@ -1078,7 +1078,7 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 	eventKey_t myEventKey;
 //	int myDeviceCount = 0;
 	string myAdjustedCalculation;
-
+	calculationType_t myCalculationType = UNKNOWN_CALCULATION;
 	for (deviceId_t device_it = theFirstDevice_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theNextDevice_v[device_it]) {
 		if ( deviceStatus_v[device_it][theEventQueue.inactiveBit] || deviceStatus_v[device_it][theEventQueue.pendingBit] ) {
 //		if ( deviceStatus_v[device_it][theEventQueue.inactiveBit] ) { //@TODO: possibly ignore pending only if later event
@@ -1098,9 +1098,11 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 					if ( myConnections.sourceVoltage == UNKNOWN_VOLTAGE ) {
 						myDirection = SOURCE_TO_MASTER_DRAIN;
 						myQueuePosition = DefaultQueuePosition_(myConnections.drainPower_p->type[POWER_BIT], theEventQueue);
+						myCalculationType = GetCalculationType(myConnections.drainPower_p, theEventQueue.queueType);
 					} else {
 						myDirection = DRAIN_TO_MASTER_SOURCE;
 						myQueuePosition = DefaultQueuePosition_(myConnections.sourcePower_p->type[POWER_BIT], theEventQueue);
+						myCalculationType = GetCalculationType(myConnections.sourcePower_p, theEventQueue.queueType);
 					}
 					myAdjustedCalculation = AdjustKey(theEventQueue, device_it, myConnections, myEventKey, myQueuePosition, myDirection, IGNORE_WARNINGS);
 					// sets myQueuePosition, myEventKey
@@ -1108,6 +1110,16 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 					myQueuePosition = DefaultQueuePosition_(myConnections.sourcePower_p->type[POWER_BIT] || myConnections.drainPower_p->type[POWER_BIT], theEventQueue);
 				}
 				if ( myQueuePosition == SKIP_QUEUE ) continue; // SIM queues/maxNmos/minPmos with unknown mos gate return SKIP_QUEUE, skip for now
+				if ( myEventKey < theEventKey && myCalculationType == UP_CALCULATION ) {
+					cout << "DEBUG: Skipped down propagation at " << DeviceName(myConnections.deviceId);
+					cout << " voltage " << PrintVoltage(myEventKey) << " from " << PrintVoltage(theEventKey) << endl;
+					continue;  // do not propagate opposite calculations
+				}
+				if ( myEventKey > theEventKey && myCalculationType == DOWN_CALCULATION ) {
+					cout << "DEBUG: Skipped up propagation at " << DeviceName(myConnections.deviceId);
+					cout << " voltage " << PrintVoltage(myEventKey) << " from " << PrintVoltage(theEventKey) << endl;
+					continue;  // do not propagate opposite calculations
+				}
 				if ( theEventQueue.queueType == SIM_QUEUE ) {
 					myEventKey = SimKey(theEventQueue.QueueTime(), myConnections.resistance);
 				}
@@ -1826,8 +1838,11 @@ void CCvcDb::CalculateResistorVoltage(netId_t theNetId, voltage_t theMinVoltage,
 		myCalculation += AddSiSuffix((float) theMinResistance) + " ohm -> " + PrintParameter(theMinVoltage, 1000) + "V";
 
 		myPower_p->simVoltage = myNewVoltage;
+		myPower_p->simCalculationType = RESISTOR_CALCULATION;
 		myPower_p->maxVoltage = myNewVoltage;
+		myPower_p->maxCalculationType = RESISTOR_CALCULATION;
 		myPower_p->minVoltage = myNewVoltage;
+		myPower_p->minCalculationType = RESISTOR_CALCULATION;
 		myPower_p->defaultMinNet = minNet_v[theNetId].finalNetId;
 		myPower_p->defaultMaxNet = maxNet_v[theNetId].finalNetId;
 		myPower_p->netId = theNetId;

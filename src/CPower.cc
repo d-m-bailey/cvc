@@ -52,6 +52,9 @@ CPower::CPower(CPower * thePower_p, netId_t theNetId) {
 	definition = thePower_p->definition;
 	active = thePower_p->active;
 	netId = theNetId;
+	minCalculationType = thePower_p->minCalculationType;
+	simCalculationType = thePower_p->simCalculationType;
+	maxCalculationType = thePower_p->maxCalculationType;
 }
 
 CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModelListMap & theModelListMap) {
@@ -102,9 +105,18 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 			myParameterName = thePowerString.substr(myStringBegin, myAtIndex - myStringBegin);
 			myParameterValue = thePowerString.substr(myAtIndex + 1, myStringEnd - (myAtIndex + 1));
 //			cout << "parameter '" << myParameterName << "' = '" << myParameterValue << "'" << endl;
-			if ( myParameterName == "min" ) minVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, MIN_POWER, theModelListMap);
-			if ( myParameterName == "max" ) maxVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, MAX_POWER, theModelListMap);
-			if ( myParameterName == "sim" ) simVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, SIM_POWER, theModelListMap);
+			if ( myParameterName == "min" ) {
+				minVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, MIN_POWER, theModelListMap);
+				minCalculationType = NO_CALCULATION;
+			}
+			if ( myParameterName == "max" ) {
+				maxVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, MAX_POWER, theModelListMap);
+				maxCalculationType = NO_CALCULATION;
+			}
+			if ( myParameterName == "sim" ) {
+				simVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, SIM_POWER, theModelListMap);
+				simCalculationType = NO_CALCULATION;
+			}
 			if ( myParameterName == "expectMin" ) expectedMin = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, MIN_POWER, theModelListMap);
 			if ( myParameterName == "expectMax" ) expectedMax = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, MAX_POWER, theModelListMap);
 			if ( myParameterName == "expectSim" ) expectedSim = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, SIM_POWER, theModelListMap);
@@ -194,8 +206,10 @@ CPower::CPower(netId_t theNetId, voltage_t theSimVoltage) {
 //	type[SIM_CALCULATED_BIT] = true;
 //	type[MAX_CALCULATED_BIT] = true;
 	flagAllShorts = true;
+	simCalculationType = ESTIMATED_CALCULATION;
 }
 
+/*
 CPower::CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, netId_t theMinNet, netId_t theMaxNet, string theCalculation) {
 	// for resistance calculations
 	powerId = powerCount++;
@@ -211,9 +225,10 @@ CPower::CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, net
 //	type[SIM_CALCULATED_BIT] = true;
 	type[MAX_CALCULATED_BIT] = true;
 	definition = definition + " calculation=> " + theCalculation;
+	calculationType = RESISTOR_CALCULATION;
 }
 
-/*
+
 CPower::CPower(voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage) {
 	powerId = powerCount++;
 	powerSignal = "";
@@ -805,6 +820,13 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 		myPower_p->defaultMinNet = theDefaultNetId;
 		myPower_p->type[MIN_CALCULATED_BIT] = true;
 		myPower_p->active[MIN_ACTIVE] = true;
+		if ( (*this)[theDefaultNetId] && (*this)[theDefaultNetId]->minVoltage != UNKNOWN_VOLTAGE ) {
+			if ( theShortVoltage < (*this)[theDefaultNetId]->minVoltage ) {
+				myPower_p->minCalculationType = DOWN_CALCULATION;
+			} else if ( theShortVoltage > (*this)[theDefaultNetId]->minVoltage ) {
+				myPower_p->minCalculationType = UP_CALCULATION;
+			}
+		}
 //		if ( myPower_p->powerAlias == "" ) {
 //			CPower * myDefaultPower_p = myPower_p->GetBasePower(theCvcDb_p->netVoltagePtr_v, theCvcDb_p->minNet_v);
 //			if ( myDefaultPower_p ) {
@@ -819,6 +841,13 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 		myPower_p->defaultMaxNet = theDefaultNetId;
 		myPower_p->type[MAX_CALCULATED_BIT] = true;
 		myPower_p->active[MAX_ACTIVE] = true;
+		if ( (*this)[theDefaultNetId] && (*this)[theDefaultNetId]->maxVoltage != UNKNOWN_VOLTAGE ) {
+			if ( theShortVoltage < (*this)[theDefaultNetId]->maxVoltage ) {
+				myPower_p->maxCalculationType = DOWN_CALCULATION;
+			} else if ( theShortVoltage > (*this)[theDefaultNetId]->maxVoltage ) {
+				myPower_p->maxCalculationType = UP_CALCULATION;
+			}
+		}
 //		if ( myPower_p->powerAlias == "" ) {
 //			CPower * myDefaultPower_p = myPower_p->GetBasePower(theCvcDb_p->netVoltagePtr_v, theCvcDb_p->maxNet_v);
 //			if ( myDefaultPower_p ) {
@@ -846,6 +875,14 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 				myPower_p->powerAlias = myDefaultPower_p->powerAlias;
 			}
 		}
+		if ( (*this)[theDefaultNetId] && (*this)[theDefaultNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
+			if ( theShortVoltage < (*this)[theDefaultNetId]->simVoltage ) {
+				myPower_p->simCalculationType = DOWN_CALCULATION;
+			} else if ( theShortVoltage > (*this)[theDefaultNetId]->simVoltage ) {
+				myPower_p->simCalculationType = UP_CALCULATION;
+			}
+		}
+
 	}
 	if (myPower_p->minVoltage != UNKNOWN_VOLTAGE && myPower_p->simVoltage != UNKNOWN_VOLTAGE && myPower_p->minVoltage > myPower_p->simVoltage) {
 		cout << "WARNING: MIN > SIM " << myPower_p->minVoltage << " > " << myPower_p->simVoltage << " for " << theCvcDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
@@ -1025,7 +1062,7 @@ voltage_t CPower::RelativeVoltage(CPowerPtrMap & thePowerMacroPtrMap, netStatus_
 
 CInstancePower::CInstancePower(string theDefinition) {
 	theDefinition = trim_(theDefinition);
-	size_t	myAtIndex;
+	//size_t	myAtIndex;
 	size_t	myStringEnd = theDefinition.find_first_of(" \t");  // skip #instance
 	size_t	myStringBegin = theDefinition.find_first_not_of(" \t", myStringEnd);
 	myStringEnd = theDefinition.find_first_of(" \t", myStringBegin);

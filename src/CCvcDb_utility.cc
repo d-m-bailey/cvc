@@ -1232,3 +1232,12 @@ void CCvcDb::RemoveInvalidPower(netId_t theNetId, size_t & theRemovedCount) {
 		}
 	}
 }
+
+calculationType_t CCvcDb::GetCalculationType(CPower * thePower_p, eventQueue_t theQueueType) {
+	switch ( theQueueType ) {
+	case MIN_QUEUE: { return thePower_p->minCalculationType; break; }
+	case SIM_QUEUE: { return thePower_p->simCalculationType; break; }
+	case MAX_QUEUE: { return thePower_p->maxCalculationType; break; }
+	default: return UNKNOWN_CALCULATION;
+	}
+}

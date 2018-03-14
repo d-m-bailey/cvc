@@ -44,7 +44,7 @@ HIST_ENTRY **gHistoryList; //!< readline history
 
 /// \name global constants
 ///@{
-CStatus PMOS_ONLY, NMOS_ONLY, NMOS_PMOS, NO_TYPE;
+CStatus PMOS_ONLY, NMOS_ONLY, NMOS_PMOS, NO_TYPE; //, MIN_CHECK_BITS, MAX_CHECK_BITS;
 set<modelType_t> FUSE_MODELS;
 ///@}
 
@@ -67,6 +67,10 @@ int main(int argc, const char * argv[]) {
 	NMOS_PMOS[NMOS] = true;
 	NMOS_PMOS[PMOS] = true;
 	NO_TYPE = 0;
+//	MIN_CHECK_BITS[NEEDS_MIN_CHECK] = true;
+//	MIN_CHECK_BITS[NEEDS_MIN_CONNECTION] = true;
+//	MAX_CHECK_BITS[NEEDS_MAX_CHECK] = true;
+//	MAX_CHECK_BITS[NEEDS_MAX_CONNECTION] = true;
 	FUSE_MODELS.insert(FUSE_ON);
 	FUSE_MODELS.insert(FUSE_OFF);
 

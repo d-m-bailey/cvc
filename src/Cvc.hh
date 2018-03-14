@@ -24,7 +24,7 @@
 #ifndef CVC_H_
 #define CVC_H_
 
-#define CVC_VERSION "0.12.7"
+#define CVC_VERSION "0.12.8"
 
 extern bool gDebug_cvc;
 extern bool gInterrupted;
@@ -177,7 +177,7 @@ public:
 };
 
 typedef bitset<8> CStatus;
-extern CStatus PMOS_ONLY, NMOS_ONLY, NMOS_PMOS, NO_TYPE;
+extern CStatus PMOS_ONLY, NMOS_ONLY, NMOS_PMOS, NO_TYPE; //, MIN_CHECK_BITS, MAX_CHECK_BITS;
 
 class CStatusVector : public vector<CStatus> {
 public:

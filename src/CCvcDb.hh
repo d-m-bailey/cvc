@@ -342,6 +342,7 @@ public:
 	size_t InstanceDepth(instanceId_t theInstanceId);
 	bool IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId);
 	void RemoveInvalidPower(netId_t theNetId, size_t & theRemovedCount);
+	calculationType_t GetCalculationType(CPower * thePower_p, eventQueue_t theQueueType);
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);
