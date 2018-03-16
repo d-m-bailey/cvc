@@ -76,7 +76,8 @@ public:
 	vector<deviceId_t>& queueArray;
 
 	CEventSubQueue(vector<deviceId_t>& theQueueArray) : queueArray(theQueueArray) {}
-	CEventList& operator[] (eventKey_t theEventKey) { return ( ( *((this->insert(make_pair(theEventKey, CEventList(queueArray)))).first)).second ); }
+	//CEventList& operator[] (eventKey_t theEventKey) { return ( ( *((this->insert(make_pair(theEventKey, CEventList(queueArray)))).first)).second ); }
+	CEventList& operator[] (eventKey_t theEventKey);
 	eventKey_t QueueTime(eventQueue_t theQueueType);
 };
 

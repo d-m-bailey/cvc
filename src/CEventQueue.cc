@@ -91,8 +91,8 @@ void CEventQueue::AddEvent(eventKey_t theEventKey, deviceId_t theDeviceIndex, qu
   }
 
 deviceId_t CEventQueue::GetMainEvent() {
-	deviceId_t myDeviceIndex = mainQueue.begin()->second.front();
-	mainQueue.begin()->second.pop_front();
+	deviceId_t myDeviceIndex = mainQueue.begin()->second.pop_front(); //mainQueue.begin()->second.front();
+	//mainQueue.begin()->second.pop_front();
 	if ( mainQueue.begin()->second.empty() ) {
 		mainQueue.erase(mainQueue.begin());
 	}
@@ -102,8 +102,8 @@ deviceId_t CEventQueue::GetMainEvent() {
 }
 
 deviceId_t CEventQueue::GetDelayEvent() {
-	deviceId_t myDeviceIndex = delayQueue.begin()->second.front();
-	delayQueue.begin()->second.pop_front();
+	deviceId_t myDeviceIndex = delayQueue.begin()->second.pop_front(); //delayQueue.begin()->second.front();
+	//delayQueue.begin()->second.pop_front();
 	if ( delayQueue.begin()->second.empty() ) {
 		delayQueue.erase(delayQueue.begin());
 	}
@@ -167,6 +167,17 @@ void CEventQueue::Print(string theIndentation) {
 	}
 	leakMap.Print(myIndentation);
 	cout << theIndentation << "EventQueue> end" << endl;
+}
+
+CEventList& CEventSubQueue::operator[] (eventKey_t theEventKey) {
+	CEventSubQueue::iterator myItem_it = find(theEventKey);
+	if ( myItem_it == end() ) {
+		pair<CEventSubQueue::iterator, bool> myResult;
+		myResult = insert(make_pair(theEventKey, CEventList(queueArray)));
+		return (myResult.first->second);
+	} else {
+		return (myItem_it->second);
+	}
 }
 
 eventKey_t CEventSubQueue::QueueTime(eventQueue_t theQueueType) {
