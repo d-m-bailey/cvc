@@ -21,6 +21,7 @@ GS: Gate vs source
 GV: Gate vs source error less than Vth
 HH: Hi-Z High
 HL: Hi-Z Low
+HR: High resistance with small leak
 HV: High voltage
 HZ: High-Z input
 IO: I/O related
