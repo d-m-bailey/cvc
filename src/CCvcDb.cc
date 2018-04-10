@@ -228,7 +228,8 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 		} else {
 			if ( theEventQueue.queueType == MIN_QUEUE ) {
 				// TODO: IsUnknown check may not be needed. Checked in calling function
-				if ( netStatus_v[theConnections.sourceId][NEEDS_MIN_CONNECTION] && IsKnownVoltage_(theConnections.drainVoltage) ) {
+				if ( netStatus_v[theConnections.sourceId][NEEDS_MIN_CONNECTION] && IsKnownVoltage_(theConnections.drainVoltage)
+						&& IsVerifiedPower(theConnections.masterDrainNet.finalNetId) ) {
 					voltage_t myMaxVoltage = MaxVoltage(theConnections.sourceId);
 					assert(netVoltagePtr_v[theConnections.sourceId]);
 					if ( theConnections.sourceVoltage > theConnections.drainVoltage && ! ( leakVoltageSet && theConnections.drainPower_p->type[HIZ_BIT] ) ) {
@@ -258,7 +259,8 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						}
 					}
 				}
-				if ( netStatus_v[theConnections.drainId][NEEDS_MIN_CONNECTION] && IsKnownVoltage_(theConnections.sourceVoltage) ) {
+				if ( netStatus_v[theConnections.drainId][NEEDS_MIN_CONNECTION] && IsKnownVoltage_(theConnections.sourceVoltage)
+						&& IsVerifiedPower(theConnections.masterSourceNet.finalNetId) ) {
 					voltage_t myMaxVoltage = MaxVoltage(theConnections.drainId);
 					assert(netVoltagePtr_v[theConnections.drainId]);
 					if ( theConnections.drainVoltage > theConnections.sourceVoltage && ! ( leakVoltageSet && theConnections.sourcePower_p->type[HIZ_BIT] ) ) {
@@ -291,7 +293,8 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 				}
 			}
 			if ( theEventQueue.queueType == MAX_QUEUE ) {
-				if ( netStatus_v[theConnections.sourceId][NEEDS_MAX_CONNECTION] && IsKnownVoltage_(theConnections.drainVoltage) ) {
+				if ( netStatus_v[theConnections.sourceId][NEEDS_MAX_CONNECTION] && IsKnownVoltage_(theConnections.drainVoltage)
+						&& IsVerifiedPower(theConnections.masterDrainNet.finalNetId) ) {
 					voltage_t myMinVoltage = MinVoltage(theConnections.sourceId);
 					assert(netVoltagePtr_v[theConnections.sourceId]);
 					if ( theConnections.sourceVoltage < theConnections.drainVoltage && ! ( leakVoltageSet && theConnections.drainPower_p->type[HIZ_BIT] ) ) {
@@ -321,7 +324,8 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						}
 					}
 				}
-				if ( netStatus_v[theConnections.drainId][NEEDS_MAX_CONNECTION] && IsKnownVoltage_(theConnections.sourceVoltage) ) {
+				if ( netStatus_v[theConnections.drainId][NEEDS_MAX_CONNECTION] && IsKnownVoltage_(theConnections.sourceVoltage)
+						&& IsVerifiedPower(theConnections.masterSourceNet.finalNetId) ) {
 					voltage_t myMinVoltage = MinVoltage(theConnections.drainId);
 					assert(netVoltagePtr_v[theConnections.drainId]);
 					if ( theConnections.drainVoltage < theConnections.sourceVoltage && ! ( leakVoltageSet && theConnections.sourcePower_p->type[HIZ_BIT] ) ) {
@@ -404,10 +408,16 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 		// Unset min checks
 		CStatus myDrainStatus = netStatus_v[theConnections.drainId];
 		CStatus mySourceStatus = netStatus_v[theConnections.sourceId];
+		bool mySourceVerified = ! (mySourceStatus[NEEDS_MIN_CHECK] || mySourceStatus[NEEDS_MIN_CONNECTION]);
+			//|| mySourceStatus[NEEDS_MAX_CHECK] || mySourceStatus[NEEDS_MAX_CONNECTION]);
+		bool myDrainVerified = ! (myDrainStatus[NEEDS_MIN_CHECK] || myDrainStatus[NEEDS_MIN_CONNECTION]);
+			//|| myDrainStatus[NEEDS_MAX_CHECK] || myDrainStatus[NEEDS_MAX_CONNECTION]);
 		if ( ( myDrainStatus[NEEDS_MIN_CHECK] || myDrainStatus[NEEDS_MIN_CONNECTION] )
 				&& theConnections.sourceVoltage != UNKNOWN_VOLTAGE && theConnections.drainVoltage != UNKNOWN_VOLTAGE
+				&& mySourceVerified
 				&& theConnections.drainVoltage > theConnections.sourceVoltage ) {
-			if ( gDebug_cvc ) cout << "DEBUG: Removed min check for net " << theConnections.drainId << endl;
+			if ( gDebug_cvc ) cout << "DEBUG: Removed min check for net " << theConnections.drainId
+					<< "(" << theConnections.drainVoltage << ") from " << theConnections.sourceId << "(" << theConnections.sourceVoltage << ")" << endl;
 			assert(netVoltagePtr_v[theConnections.drainId]);
 			netVoltagePtr_v[theConnections.drainId]->pullDownVoltage = theConnections.sourceVoltage;
 			myDrainStatus[NEEDS_MIN_CHECK] = myDrainStatus[NEEDS_MIN_CONNECTION] = false;
@@ -415,8 +425,10 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 		}
 		if ( ( mySourceStatus[NEEDS_MIN_CHECK] || mySourceStatus[NEEDS_MIN_CONNECTION] )
 				&& theConnections.sourceVoltage != UNKNOWN_VOLTAGE && theConnections.drainVoltage != UNKNOWN_VOLTAGE
+				&& myDrainVerified
 				&& theConnections.sourceVoltage > theConnections.drainVoltage ) {
-			if ( gDebug_cvc ) cout << "DEBUG: Removed min check for net " << theConnections.sourceId << endl;
+			if ( gDebug_cvc ) cout << "DEBUG: Removed min check for net " << theConnections.sourceId
+					<< "(" << theConnections.sourceVoltage << ") from " << theConnections.drainId << "(" << theConnections.drainVoltage << ")" << endl;
 			assert(netVoltagePtr_v[theConnections.sourceId]);
 			netVoltagePtr_v[theConnections.sourceId]->pullDownVoltage = theConnections.drainVoltage;
 			mySourceStatus[NEEDS_MIN_CHECK] = mySourceStatus[NEEDS_MIN_CONNECTION] = false;
@@ -486,10 +498,14 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 		// Unset max checks
 		CStatus myDrainStatus = netStatus_v[theConnections.drainId];
 		CStatus mySourceStatus = netStatus_v[theConnections.sourceId];
+		bool mySourceVerified = ! (mySourceStatus[NEEDS_MAX_CHECK] || mySourceStatus[NEEDS_MAX_CONNECTION]);
+		bool myDrainVerified = ! (myDrainStatus[NEEDS_MAX_CHECK] || myDrainStatus[NEEDS_MAX_CONNECTION]);
 		if ( ( myDrainStatus[NEEDS_MAX_CHECK] || myDrainStatus[NEEDS_MAX_CONNECTION] )
 				&& theConnections.sourceVoltage != UNKNOWN_VOLTAGE && theConnections.drainVoltage != UNKNOWN_VOLTAGE
+				&& mySourceVerified
 				&& theConnections.drainVoltage < theConnections.sourceVoltage ) {
-			if ( gDebug_cvc ) cout << "DEBUG: Removed max check for net " << theConnections.drainId << endl;
+			if ( gDebug_cvc ) cout << "DEBUG: Removed max check for net " << theConnections.drainId
+					<< "(" << theConnections.drainVoltage << ") from " << theConnections.sourceId << "(" << theConnections.sourceVoltage << ")" << endl;
 			assert(netVoltagePtr_v[theConnections.drainId]);
 			netVoltagePtr_v[theConnections.drainId]->pullUpVoltage = theConnections.sourceVoltage;
 			myDrainStatus[NEEDS_MAX_CHECK] = myDrainStatus[NEEDS_MAX_CONNECTION] = false;
@@ -497,8 +513,10 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 		}
 		if ( ( mySourceStatus[NEEDS_MAX_CHECK] || mySourceStatus[NEEDS_MAX_CONNECTION] )
 				&& theConnections.sourceVoltage != UNKNOWN_VOLTAGE && theConnections.drainVoltage != UNKNOWN_VOLTAGE
+				&& myDrainVerified
 				&& theConnections.sourceVoltage < theConnections.drainVoltage ) {
-			if ( gDebug_cvc ) cout << "DEBUG: Removed max check for net " << theConnections.sourceId << endl;
+			if ( gDebug_cvc ) cout << "DEBUG: Removed max check for net " << theConnections.sourceId
+					<< "(" << theConnections.sourceVoltage << ") from " << theConnections.drainId << "(" << theConnections.drainVoltage << ")" << endl;
 			assert(netVoltagePtr_v[theConnections.sourceId]);
 			netVoltagePtr_v[theConnections.sourceId]->pullUpVoltage = theConnections.drainVoltage;
 			mySourceStatus[NEEDS_MAX_CHECK] = mySourceStatus[NEEDS_MAX_CONNECTION] = false;
@@ -931,6 +949,7 @@ string CCvcDb::AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDevice
 	netId_t myTargetNet = ( theDirection == SOURCE_TO_MASTER_DRAIN ) ? theConnections.sourceId : theConnections.drainId;
 	voltage_t myMinTargetVoltage = MinSimVoltage(myTargetNet);
 	voltage_t myMaxTargetVoltage = MaxSimVoltage(myTargetNet);
+	voltage_t myOriginalVoltage = theVoltage;
 	if ( myMinTargetVoltage > myMaxTargetVoltage ) {
 		voltage_t myTrueMinVoltage = myMaxTargetVoltage;
 		myMaxTargetVoltage = myMinTargetVoltage;
@@ -1005,13 +1024,15 @@ string CCvcDb::AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDevice
 	}
 	if ( theVoltage == UNKNOWN_VOLTAGE ) return("");
  	if ( myMinTargetVoltage != UNKNOWN_VOLTAGE && theVoltage < myMinTargetVoltage ) {
-		myCalculation = " Limited sim to min";
- 		if ( thePropagationType != POWER_NETS_ONLY ) ReportSimShort(theDeviceId, theVoltage, myMinTargetVoltage, myCalculation);
+		myCalculation += " Limited sim to min";
+ 		if ( thePropagationType != POWER_NETS_ONLY  && myOriginalVoltage < myMinTargetVoltage ) ReportSimShort(theDeviceId, theVoltage, myMinTargetVoltage, myCalculation);
+ 			// voltage drops in first pass are skipped, only report original voltage limits
 		theVoltage = myMinTargetVoltage;
 	}
 	if ( myMaxTargetVoltage != UNKNOWN_VOLTAGE && theVoltage > myMaxTargetVoltage ) {
-		myCalculation = " Limited sim to max";
-		if ( thePropagationType != POWER_NETS_ONLY ) ReportSimShort(theDeviceId, theVoltage, myMaxTargetVoltage, myCalculation);
+		myCalculation += " Limited sim to max";
+		if ( thePropagationType != POWER_NETS_ONLY && myOriginalVoltage > myMaxTargetVoltage ) ReportSimShort(theDeviceId, theVoltage, myMaxTargetVoltage, myCalculation);
+			// voltage drops in first pass are skipped, only report original voltage limits
 		theVoltage = myMaxTargetVoltage;
 	}
 	return(myCalculation);

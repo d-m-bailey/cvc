@@ -657,7 +657,9 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 		CDevice * myDevice_p = myParent_p->devicePtr_v[device_it - myInstance_p->firstDeviceId];
 		if ( ! IsNmos_(myDevice_p->model_p->type) ) continue;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-		if ( myConnections.maxBulkVoltage == myConnections.minSourceVoltage && myConnections.maxBulkVoltage == myConnections.minDrainVoltage ) continue;
+		if ( myConnections.sourceId == myConnections.drainId && myConnections.sourceId == myConnections.bulkId ) continue;  // ignore drain = source = bulk
+		if ( (myConnections.maxBulkVoltage == myConnections.minSourceVoltage || myConnections.minSourceVoltage == UNKNOWN_VOLTAGE)
+				&& (myConnections.maxBulkVoltage == myConnections.minDrainVoltage || myConnections.minDrainVoltage == UNKNOWN_VOLTAGE) ) continue;
 			// no error if max bulk = min source = min drain
 		bool myErrorFlag = false;
 		if ( myConnections.minBulkPower_p && myConnections.minBulkPower_p->type[HIZ_BIT] ) {
@@ -734,7 +736,7 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking pmos gate vs source errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking nmos source/drain vs bias errors: ");
 //	errorFile << "! Finished" << endl << endl;
 /*
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
@@ -843,7 +845,9 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 		CDevice * myDevice_p = myParent_p->devicePtr_v[device_it - myInstance_p->firstDeviceId];
 		if ( ! IsPmos_(myDevice_p->model_p->type) ) continue;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-		if ( myConnections.minBulkVoltage == myConnections.maxSourceVoltage && myConnections.minBulkVoltage == myConnections.maxDrainVoltage ) continue;
+		if ( myConnections.sourceId == myConnections.drainId && myConnections.sourceId == myConnections.bulkId ) continue;  // ignore drain = source = bulk
+		if ( (myConnections.minBulkVoltage == myConnections.maxSourceVoltage || myConnections.maxSourceVoltage == UNKNOWN_VOLTAGE)
+				&& (myConnections.minBulkVoltage == myConnections.maxDrainVoltage || myConnections.maxDrainVoltage == UNKNOWN_VOLTAGE) ) continue;
 		 	 // no error if min bulk = max source = max drain
 		bool myErrorFlag = false;
 		if ( myConnections.maxBulkPower_p && myConnections.maxBulkPower_p->type[HIZ_BIT] ) {

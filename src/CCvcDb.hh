@@ -327,6 +327,8 @@ public:
 	bool GateEqualsDrain(CConnection& theConnections);
 	inline bool IsFloatingGate(CFullConnection& myConnections) { return (myConnections.minGateVoltage == UNKNOWN_VOLTAGE || myConnections.minGatePower_p->type[HIZ_BIT] ||
 			        myConnections.maxGateVoltage == UNKNOWN_VOLTAGE || myConnections.maxGatePower_p->type[HIZ_BIT]); };
+	inline bool IsVerifiedPower(netId_t theNetId) {return ! (netStatus_v[theNetId][NEEDS_MIN_CHECK] || netStatus_v[theNetId][NEEDS_MIN_CONNECTION]
+	                                                         || netStatus_v[theNetId][NEEDS_MAX_CHECK] || netStatus_v[theNetId][NEEDS_MAX_CONNECTION]); }
 	voltage_t DefaultMinVoltage(CPower * thePower_p);
 	voltage_t DefaultMaxVoltage(CPower * thePower_p);
 	bool HasLeakPath(CFullConnection& theConnections);
