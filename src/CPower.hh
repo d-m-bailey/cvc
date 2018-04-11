@@ -99,6 +99,7 @@ public:
 //	CPower * GetMaxBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
 	void SetPowerAlias(string thePowerString, size_t theAliasStart);
 	bool IsSamePower(CPower * theMatchPower);
+	bool IsValidSubset(CPower * theMatchPower, voltage_t theThreshold);
 	bool IsRelative(CPower * theTestPower_p, bool theDefault);
 	bool IsRelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v, CVirtualNetVector & theTestNet_v, bool theDefault);
 

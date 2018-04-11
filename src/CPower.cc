@@ -262,15 +262,26 @@ void CPower::SetPowerAlias(string thePowerString, size_t theAliasStart) {
 }
 
 bool CPower::IsSamePower(CPower * theMatchPower) {
-	return ( this->type == theMatchPower->type &&
-			this->minVoltage == theMatchPower->minVoltage &&
-			this->simVoltage == theMatchPower->simVoltage &&
-			this->maxVoltage == theMatchPower->maxVoltage &&
-			this->expectedMin == theMatchPower->expectedMin &&
-			this->expectedSim == theMatchPower->expectedSim &&
-			this->expectedMax == theMatchPower->expectedMax &&
-			this->family == theMatchPower->family &&
-			this->relativeFriendly == theMatchPower->relativeFriendly);
+	return ( type == theMatchPower->type &&
+			minVoltage == theMatchPower->minVoltage &&
+			simVoltage == theMatchPower->simVoltage &&
+			maxVoltage == theMatchPower->maxVoltage &&
+			expectedMin == theMatchPower->expectedMin &&
+			expectedSim == theMatchPower->expectedSim &&
+			expectedMax == theMatchPower->expectedMax &&
+			family == theMatchPower->family &&
+			relativeFriendly == theMatchPower->relativeFriendly);
+}
+
+bool CPower::IsValidSubset(CPower * theMatchPower, voltage_t theThreshold) {
+	return ( theMatchPower->type == NO_TYPE &&
+			abs(minVoltage - theMatchPower->minVoltage) <= theThreshold &&
+			abs(simVoltage - theMatchPower->simVoltage) <= theThreshold &&
+			abs(maxVoltage - theMatchPower->maxVoltage) <= theThreshold &&
+			theMatchPower->expectedMin == "" &&
+			theMatchPower->expectedSim == "" &&
+			theMatchPower->expectedMax == "" &&
+			theMatchPower->family == "");
 }
 
 void CPowerFamilyMap::AddFamily(string thePowerString) {

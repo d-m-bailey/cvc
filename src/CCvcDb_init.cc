@@ -210,6 +210,14 @@ CPower * CCvcDb::SetMasterPower(netId_t theFirstNetId, netId_t theSecondNetId, b
 		theSamePowerFlag = true;
 		return NULL;
 	}
+	if ( netVoltagePtr_v[theFirstNetId]->IsValidSubset(netVoltagePtr_v[theSecondNetId], cvcParameters.cvcShortErrorThreshold) ) {
+		theSamePowerFlag = true;
+		return netVoltagePtr_v[theFirstNetId];
+	}
+	if ( netVoltagePtr_v[theSecondNetId]->IsValidSubset(netVoltagePtr_v[theFirstNetId], cvcParameters.cvcShortErrorThreshold) ) {
+		theSamePowerFlag = true;
+		return netVoltagePtr_v[theSecondNetId];
+	}
 	throw EEquivalenceError();
 }
 
@@ -237,13 +245,20 @@ void CCvcDb::MakeEquivalentNets(CNetMap & theNetMap, netId_t theFirstNetId, netI
 	}
 	bool mySamePowerFlag;
 	CPower * myMasterPower_p = SetMasterPower(theFirstNetId, theSecondNetId, mySamePowerFlag);
+	netId_t myMinorNetId = ( netVoltagePtr_v[myGreaterNetId] == myMasterPower_p ) ? myLesserNetId : myGreaterNetId;
 	if ( mySamePowerFlag ) { // skip to short same definition
-		reportFile << endl << "INFO: Short between same power definitions ignored at " << DeviceName(theDeviceId, PRINT_CIRCUIT_ON);
-		reportFile << " net " << NetName(GetEquivalentNet(theFirstNetId), PRINT_CIRCUIT_ON) << " <-> " << NetName(GetEquivalentNet(theSecondNetId), PRINT_CIRCUIT_ON) << endl;
-		return;
+		if ( myMasterPower_p ) {  // ignore near subset
+			reportFile << endl << "INFO: Power definition ignored at " << DeviceName(theDeviceId, PRINT_CIRCUIT_ON) << endl;
+			reportFile << " net " << NetName(GetEquivalentNet(myMinorNetId)) << " (" << netVoltagePtr_v[myMinorNetId]->definition << ")" << endl;
+			reportFile << " shorted to " << NetName(myMasterPower_p->netId) << " (" << netVoltagePtr_v[myMasterPower_p->netId]->definition << ")" << endl;
+		} else {
+			reportFile << endl << "INFO: Short between same power definitions ignored at " << DeviceName(theDeviceId, PRINT_CIRCUIT_ON);
+			reportFile << " net " << NetName(GetEquivalentNet(theFirstNetId), PRINT_CIRCUIT_ON) << " <-> " << NetName(GetEquivalentNet(theSecondNetId), PRINT_CIRCUIT_ON) << endl;
+			return;
+		}
 	}
 	if ( myMasterPower_p ) {
-		netId_t myMinorNetId = ( netVoltagePtr_v[myGreaterNetId] == myMasterPower_p ) ? myLesserNetId : myGreaterNetId;
+//		netId_t myMinorNetId = ( netVoltagePtr_v[myGreaterNetId] == myMasterPower_p ) ? myLesserNetId : myGreaterNetId;
 		netVoltagePtr_v[myMinorNetId] = myMasterPower_p;
 		for ( auto net_pit = theNetMap[myMinorNetId].begin(); net_pit != theNetMap[myMinorNetId].end(); net_pit++ ) {
 			netVoltagePtr_v[*net_pit] = myMasterPower_p;
@@ -982,10 +997,64 @@ returnCode_t CCvcDb::SetModePower() {
 //				logFile << "INFO: Expanded " << myPower_p->powerSignal << " -> " << myExpandedNetName << endl;
 			}
  			if (netVoltagePtr_v[*netId_pit] && myPower_p->definition != netVoltagePtr_v[*netId_pit]->definition ) {
- 				reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"";
- 				reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << netVoltagePtr_v[*netId_pit]->definition;
- 				reportFile << ")\" != \"" << myPower_p->powerSignal << "(" << myPower_p->definition << ")\"" << endl;
- 				myPowerError = true;
+ 				bool myPowerConflict = false;
+ 				if ( myPower_p->expectedMin != "" ) {
+ 					if ( netVoltagePtr_v[*netId_pit]->expectedMin == "" ) {
+ 						logFile << "INFO: Override expectedMin for " << NetName(*netId_pit) << " from " << myPower_p->definition << endl;
+ 						netVoltagePtr_v[*netId_pit]->expectedMin = myPower_p->expectedMin;
+ 					} else if ( netVoltagePtr_v[*netId_pit]->expectedMin != myPower_p->expectedMin ) {
+ 						myPowerConflict = true;
+ 					}
+ 				}
+ 				if ( myPower_p->expectedSim != "" ) {
+ 					if ( netVoltagePtr_v[*netId_pit]->expectedSim == "" ) {
+ 						logFile << "INFO: Override expectedSim for " << NetName(*netId_pit) << " from " << myPower_p->definition << endl;
+ 						netVoltagePtr_v[*netId_pit]->expectedSim = myPower_p->expectedSim;
+ 					} else if ( netVoltagePtr_v[*netId_pit]->expectedSim != myPower_p->expectedSim ) {
+ 						myPowerConflict = true;
+ 					}
+ 				}
+ 				if ( myPower_p->expectedMax != "" ) {
+ 					if ( netVoltagePtr_v[*netId_pit]->expectedMax == "" ) {
+ 						logFile << "INFO: Override expectedMax for " << NetName(*netId_pit) << " from " << myPower_p->definition << endl;
+ 						netVoltagePtr_v[*netId_pit]->expectedMax = myPower_p->expectedMax;
+ 					} else if ( netVoltagePtr_v[*netId_pit]->expectedMax != myPower_p->expectedMax ) {
+ 						myPowerConflict = true;
+ 					}
+ 				}
+ 				if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) {
+ 					if ( netVoltagePtr_v[*netId_pit]->minVoltage == UNKNOWN_VOLTAGE ) {
+ 						logFile << "INFO: Override minVoltage for " << NetName(*netId_pit) << " from " << myPower_p->definition << endl;
+ 						netVoltagePtr_v[*netId_pit]->minVoltage = myPower_p->minVoltage;
+ 					} else if ( netVoltagePtr_v[*netId_pit]->minVoltage != myPower_p->minVoltage ) {
+ 						myPowerConflict = true;
+ 					}
+ 				}
+ 				if ( myPower_p->simVoltage != UNKNOWN_VOLTAGE ) {
+ 					if ( netVoltagePtr_v[*netId_pit]->simVoltage == UNKNOWN_VOLTAGE ) {
+ 						logFile << "INFO: Override simVoltage for " << NetName(*netId_pit) << " from " << myPower_p->definition << endl;
+ 						netVoltagePtr_v[*netId_pit]->simVoltage = myPower_p->simVoltage;
+ 					} else if ( netVoltagePtr_v[*netId_pit]->simVoltage != myPower_p->simVoltage ) {
+ 						myPowerConflict = true;
+ 					}
+ 				}
+ 				if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) {
+ 					if ( netVoltagePtr_v[*netId_pit]->maxVoltage == UNKNOWN_VOLTAGE ) {
+ 						logFile << "INFO: Override maxVoltage for " << NetName(*netId_pit) << " from " << myPower_p->definition << endl;
+ 						netVoltagePtr_v[*netId_pit]->maxVoltage = myPower_p->maxVoltage;
+ 					} else if ( netVoltagePtr_v[*netId_pit]->maxVoltage != myPower_p->maxVoltage ) {
+ 						myPowerConflict = true;
+ 					}
+ 				}
+ 				if ( myPower_p->type != NO_TYPE || myPower_p->family != "" ) {  // can't override power types or families
+ 					myPowerConflict = true;
+ 				}
+ 				if ( myPowerConflict ) {
+ 					reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"";
+ 					reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << netVoltagePtr_v[*netId_pit]->definition;
+ 					reportFile << ")\" != \"" << myPower_p->powerSignal << "(" << myPower_p->definition << ")\"" << endl;
+ 					myPowerError = true;
+ 				}
  			}
 			if ( netId_pit != myNetIdList->begin() ) {
 				myPower_p = new CPower(myPower_p, *netId_pit);
@@ -994,12 +1063,12 @@ returnCode_t CCvcDb::SetModePower() {
 			} else { // add net number to existing power definitions
 				myPower_p->netId = *netId_pit;
 			}
-//			if ( ! myPower_p->type[EXPECTED_ONLY_BIT] ) {
+			if ( ! netVoltagePtr_v[*netId_pit] ) {
 				netVoltagePtr_v[*netId_pit] = myPower_p;
-				if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) netStatus_v[*netId_pit][MIN_POWER] = true;
-				if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) netStatus_v[*netId_pit][MAX_POWER] = true;
-				if ( myPower_p->simVoltage != UNKNOWN_VOLTAGE ) netStatus_v[*netId_pit][SIM_POWER] = true;
-//			}
+			}
+			if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) netStatus_v[*netId_pit][MIN_POWER] = true;
+			if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) netStatus_v[*netId_pit][MAX_POWER] = true;
+			if ( myPower_p->simVoltage != UNKNOWN_VOLTAGE ) netStatus_v[*netId_pit][SIM_POWER] = true;
 		}
 		if ( myNetIdList->empty() ) {
 			reportFile << "ERROR: Could not find net " << myPower_p->powerSignal << endl;
