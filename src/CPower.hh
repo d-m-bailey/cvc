@@ -124,6 +124,8 @@ public:
 		    || netStatus_v[power_p->baseNetId][MAX_POWER] \
      		|| power_p->type[HIZ_BIT] ) )
 #define IsCalculatedVoltage_(power_p) (power_p && ( power_p->type[MIN_CALCULATED_BIT] || power_p->type[SIM_CALCULATED_BIT] || power_p->type[MAX_CALCULATED_BIT] ) )
+#define IsPower_(power_p) (power_p && power_p->type[POWER_BIT])
+#define IsInputOrPower_(power_p) (power_p && ( power_p->type[INPUT_BIT] || power_p->type[POWER_BIT] ) )
 #define IsKnownVoltage_(theVoltage) (theVoltage != UNKNOWN_VOLTAGE)
 
 class CPowerPtrMap : public unordered_map<string, CPower *> {

@@ -420,7 +420,7 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 //					bool myErrorFlag = false;
 		voltage_t myGateSourceDifference = myConnections.minGateVoltage - min(myConnections.minSourceVoltage, myConnections.minSourceVoltage + myDevice_p->model_p->Vth);
 		voltage_t myGateDrainDifference = myConnections.minGateVoltage - min(myConnections.minDrainVoltage, myConnections.minDrainVoltage + myDevice_p->model_p->Vth);
-		voltage_t myMaxVoltageDifference = min(0, myDevice_p->model_p->Vth);;
+		voltage_t myMaxVoltageDifference = min(0, myDevice_p->model_p->Vth);
 		if ( myConnections.CheckTerminalMinVoltages(GATE | SOURCE) &&
 //				myConnections.CheckTerminalMaxVoltages(DRAIN) &&
 //				myConnections.minGateVoltage > min(myConnections.minSourceVoltage, myConnections.minSourceVoltage + myDevice_p->model_p->Vth) &&
@@ -445,19 +445,30 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 		// Skip gates that are always fully on
 		if ( myConnections.CheckTerminalMaxVoltages(SOURCE) ) {
 			if ( myConnections.CheckTerminalMaxVoltages(DRAIN) ) {
-				if ( myConnections.minGateVoltage >= max(myConnections.maxSourceVoltage, myConnections.maxDrainVoltage) ) continue;
+				if ( myConnections.sourceId == myConnections.drainId ) {  // capacitor check
+					if ( IsPower_(netVoltagePtr_v[myConnections.gateId]) && IsPower_(netVoltagePtr_v[myConnections.drainId]) ) continue;  // ignore direct power capacitors
+					if ( ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId])
+							|| ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]) ) continue;  // ignore capacitors connected to non-input/power nets
+				} else {  // non-capacitor check
+					if ( myConnections.minGateVoltage >= max(myConnections.maxSourceVoltage, myConnections.maxDrainVoltage) - cvcParameters.cvcGateErrorThreshold ) continue;
+				}
 			} else {
-				if ( myConnections.minGateVoltage >= myConnections.maxSourceVoltage ) continue;
+				if ( myConnections.minGateVoltage >= myConnections.maxSourceVoltage - cvcParameters.cvcGateErrorThreshold ) continue;
 			}
 		} else if ( myConnections.CheckTerminalMaxVoltages(DRAIN) ) {
-			if ( myConnections.minGateVoltage >= myConnections.maxDrainVoltage ) continue;
+			if ( myConnections.minGateVoltage >= myConnections.maxDrainVoltage - cvcParameters.cvcGateErrorThreshold ) continue;
 		} else {
+			continue;  // ignore devices with no max connections
+		}
+/*
+		// ignore capacitors connected to non-input/power nets
+		if ( myConnections.sourceId == myConnections.drainId &&
+				! ( IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId])
+						&& IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]) ) ) {
+			cout << "DEBUG: ignoring capacitor " << DeviceName(myConnections.deviceId) << endl;
 			continue;
 		}
-		// ignore capacitors connected to non-power nets
-		if ( myConnections.sourceId == myConnections.drainId &&
-				! ( netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId]->type[POWER_BIT] &&
-				netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]->type[POWER_BIT] ) ) continue;
+*/
 		bool myVthFlag = myConnections.minGatePower_p->type[MIN_CALCULATED_BIT]
 				&& ( myConnections.minGateVoltage - myConnections.minSourceVoltage == myDevice_p->model_p->Vth
 						|| myConnections.minGateVoltage - myConnections.minDrainVoltage == myDevice_p->model_p->Vth );
@@ -556,19 +567,30 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 		// Skip gates that are always fully on
 		if ( myConnections.CheckTerminalMinVoltages(SOURCE) ) {
 			if ( myConnections.CheckTerminalMinVoltages(DRAIN) ) {
-				if ( myConnections.maxGateVoltage <= min(myConnections.minSourceVoltage, myConnections.minDrainVoltage) ) continue;
+				if ( myConnections.sourceId == myConnections.drainId ) {  // capacitor check
+					if ( IsPower_(netVoltagePtr_v[myConnections.gateId]) && IsPower_(netVoltagePtr_v[myConnections.drainId]) ) continue;  // ignore direct power capacitors
+					if ( ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId])
+							|| ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]) ) continue;  // ignore capacitors connected to non-input/power nets
+				} else {  // non-capacitor check
+					if ( myConnections.maxGateVoltage <= min(myConnections.minSourceVoltage, myConnections.minDrainVoltage) + cvcParameters.cvcGateErrorThreshold ) continue;
+				}
 			} else {
-				if ( myConnections.maxGateVoltage <= myConnections.minSourceVoltage ) continue;
+				if ( myConnections.maxGateVoltage <= myConnections.minSourceVoltage + cvcParameters.cvcGateErrorThreshold ) continue;
 			}
 		} else if ( myConnections.CheckTerminalMinVoltages(DRAIN) ) {
-			if ( myConnections.maxGateVoltage <= myConnections.minDrainVoltage ) continue;
+			if ( myConnections.maxGateVoltage <= myConnections.minDrainVoltage + cvcParameters.cvcGateErrorThreshold ) continue;
 		} else {
+			continue;  // ignore devices with no min connections
+		}
+/*
+		// ignore capacitors connected to non-input/power nets
+		if ( myConnections.sourceId == myConnections.drainId &&
+				! ( IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId])
+						&& IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]) ) ) {
+			cout << "DEBUG: ignoring capacitor " << DeviceName(myConnections.deviceId) << endl;
 			continue;
 		}
-		// ignore capacitors connected to non-power nets
-		if ( myConnections.sourceId == myConnections.drainId &&
-				! ( netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId]->type[POWER_BIT] &&
-				netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]->type[POWER_BIT] ) ) continue;
+*/
 		bool myVthFlag = myConnections.maxGatePower_p->type[MAX_CALCULATED_BIT]
 			&& ( myConnections.maxGateVoltage - myConnections.maxSourceVoltage == myDevice_p->model_p->Vth
 					|| myConnections.maxGateVoltage - myConnections.maxDrainVoltage == myDevice_p->model_p->Vth );
