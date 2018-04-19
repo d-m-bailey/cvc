@@ -642,6 +642,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				cout << "expandnet|expanddevice|expandinstance<en|ed|ei> name: expand net|device|instance to top level" << endl;
 				cout << "dumpfuse<df> filename: dump fuse to filename" << endl;
 				cout << "dumpanalognets<dan> filename: dump analog nets to filename" << endl;
+				cout << "dumpunknownlogicalnets<duln> filename: dump unknown logical nets to filename" << endl;
 				cout << "traceinverter<ti> name: trace signal as inverter output for name" << endl;
 				cout << "findsubcircuit<fs> subcircuit: list all instances of subcircuit or if regex, subcircuits that match" << endl;
 				cout << "findnet<fn> net: list all nets that match in lower subcircuits." << endl;
@@ -820,12 +821,22 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 			} else if ( myCommand == "dumpanalognets" || myCommand == "dan" ) {
 				if ( myInputStream >> myFileName ) {
 					if ( theCurrentStage > STAGE_START ) {
-						DumpAnalogNets(myFileName);
+						DumpAnalogNets(myFileName, myPrintSubcircuitNameFlag);
 					} else {
 						reportFile << "ERROR: Can only dump analog nets after second stage" << endl;
 					}
 				} else {
 					reportFile << "ERROR: no analog net file name" << endl;
+				}
+			} else if ( myCommand == "dumpunknownlogicalnets" || myCommand == "duln" ) {
+				if ( myInputStream >> myFileName ) {
+					if ( theCurrentStage >= STAGE_FIRST_SIM ) {
+						DumpUnknownLogicalNets(myFileName, myPrintSubcircuitNameFlag);
+					} else {
+						reportFile << "ERROR: Can only dump unknown logical nets after first sim stage" << endl;
+					}
+				} else {
+					reportFile << "ERROR: no unknown logical net file name" << endl;
 				}
 			} else if ( myCommand == "togglename" || myCommand == "n" ) {
 				myPrintSubcircuitNameFlag = ! myPrintSubcircuitNameFlag;
@@ -1010,7 +1021,7 @@ void CCvcDb::DumpFuses(string theFileName) {
 	myDumpFile.close();
 }
 
-void CCvcDb::DumpAnalogNets(string theFileName) {
+void CCvcDb::DumpAnalogNets(string theFileName, bool thePrintCircuitFlag) {
 	ofstream myDumpFile(theFileName);
 	if ( myDumpFile.fail() ) {
 		reportFile << "ERROR: Could not open " << theFileName << endl;
@@ -1022,6 +1033,7 @@ void CCvcDb::DumpAnalogNets(string theFileName) {
 		if ( net_it != GetEquivalentNet(net_it) ) continue;  // skip shorted nets
 		if ( netVoltagePtr_v[net_it]
 		    && ( netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE || netVoltagePtr_v[net_it]->type[POWER_BIT] ) ) continue;  // skip defined sim voltages and power
+/*
 		bool myIsAnalog = false;
 		deviceId_t device_it = firstSource_v[net_it];
 		while ( ! myIsAnalog && device_it != UNKNOWN_DEVICE ) {
@@ -1051,10 +1063,46 @@ void CCvcDb::DumpAnalogNets(string theFileName) {
 			}
 			device_it = nextDrain_v[device_it];
 		}
-		if ( myIsAnalog ) {
-			myDumpFile << NetName(net_it) << endl;
+*/
+		if ( IsAnalogNet(net_it) ) {
+			myDumpFile << NetName(net_it, thePrintCircuitFlag) << endl;
 			myNetCount++;
 		}
+	}
+	reportFile << "total nets written: " << myNetCount << endl;
+	myDumpFile.close();
+}
+
+void CCvcDb::DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag) {
+	ofstream myDumpFile(theFileName);
+	if ( myDumpFile.fail() ) {
+		reportFile << "ERROR: Could not open " << theFileName << endl;
+		return;
+	}
+	reportFile << "Dumping unknown logical nets to " << theFileName << " ... "; cout.flush();
+	vector<bool> myIsLogicalNet_v;
+	myIsLogicalNet_v.resize(netCount, false);
+	size_t myNetCount = 0;
+	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+		if ( net_it != GetEquivalentNet(net_it) ) continue;  // skip shorted nets
+		if ( netVoltagePtr_v[net_it]
+		    && ( netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE || netVoltagePtr_v[net_it]->type[POWER_BIT] ) ) continue;  // skip defined sim voltages and power
+		myIsLogicalNet_v[net_it] = ! IsAnalogNet(net_it);
+	}
+	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+//		cout << "DEBUG: net " << net_it << endl;
+		if ( ! myIsLogicalNet_v[net_it] ) continue;  // skip shorted, defined, and analog nets
+//		cout << "logic - clear" << endl;
+		if ( simNet_v[net_it].finalNetId != net_it ) continue;  // skip known values
+//		cout << "unknown - clear" << endl;
+		if ( inverterNet_v[net_it] != UNKNOWN_NET && inverterNet_v[net_it] >= topCircuit_p->portCount ) continue;  // skip inverter output unless inverter input is chip input
+//		cout << "inverter - clear" << endl;
+		CDeviceCount myDeviceCount(net_it, this);
+//		cout << "pmos " << myDeviceCount.pmosCount << ": nmos " << myDeviceCount.nmosCount << endl;
+		if ( myDeviceCount.pmosCount == 0 || myDeviceCount.nmosCount == 0 ) continue;  // skip non logic output
+//		cout << "cmos - clear" << endl;
+		myDumpFile << NetName(net_it, thePrintCircuitFlag) << endl;
+		myNetCount++;
 	}
 	reportFile << "total nets written: " << myNetCount << endl;
 	myDumpFile.close();

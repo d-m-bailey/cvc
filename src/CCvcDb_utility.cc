@@ -1129,6 +1129,8 @@ size_t CCvcDb::InstanceDepth(instanceId_t theInstanceId) {
 }
 
 bool CCvcDb::IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId) {
+//	cout << "Instance:parent " << theInstanceId << ":" << instancePtr_v[theInstanceId]->parentId << endl;
+	if ( theParentId == 0 ) return true;  // everything is subcircuit of root
 	if ( theInstanceId == theParentId ) return true;
 	if ( instancePtr_v[theInstanceId]->parentId == theParentId ) return true;
 	size_t myCount = 0;
@@ -1138,4 +1140,37 @@ bool CCvcDb::IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId
 		if ( theInstanceId == theParentId ) return true;
 	}
 	return false;
+}
+
+bool CCvcDb::IsAnalogNet(netId_t theNetId) {
+	bool myIsAnalogNet = false;
+	deviceId_t device_it = firstSource_v[theNetId];
+	while ( ! myIsAnalogNet && device_it != UNKNOWN_DEVICE ) {
+		if ( GetEquivalentNet(drainNet_v[device_it]) != theNetId ) {
+			switch( deviceType_v[device_it] ) {
+			case NMOS: case LDDN: case PMOS: case LDDP: {
+				if ( GetEquivalentNet(gateNet_v[device_it]) == theNetId) myIsAnalogNet = true;
+				break;
+			}
+			case RESISTOR: { myIsAnalogNet = true; break; }
+			default: break;
+			}
+		}
+		device_it = nextSource_v[device_it];
+	}
+	device_it = firstDrain_v[theNetId];
+	while ( ! myIsAnalogNet && device_it != UNKNOWN_DEVICE ) {
+		if ( GetEquivalentNet(sourceNet_v[device_it]) != theNetId ) {
+			switch( deviceType_v[device_it] ) {
+			case NMOS: case LDDN: case PMOS: case LDDP: {
+				if ( GetEquivalentNet(gateNet_v[device_it]) == theNetId) myIsAnalogNet = true;
+				break;
+			}
+			case RESISTOR: { myIsAnalogNet = true; break; }
+			default: break;
+			}
+		}
+		device_it = nextDrain_v[device_it];
+	}
+	return (myIsAnalogNet);
 }
