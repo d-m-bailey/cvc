@@ -81,7 +81,7 @@
     height: 15
     type: None
     errorRef: error_id
-    ListItemLabel:
+    SelectabelLabel:
         id: error_id
         index: root.index
         is_selected: False
@@ -140,11 +140,11 @@
             pos: self.pos     
     RecycleView:  # filtered error list
         size_hint_x: 1
-        id: list_id
         selectMode: ""
         selectType: ""
         viewclass: 'SummaryListItem'
         SelectableRecycleBoxLayout:
+            id: list_id
             default_size: None, dp(15)
             default_size_hint: 1, None
             size_hint_y: None

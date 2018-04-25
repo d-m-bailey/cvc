@@ -867,8 +867,8 @@ class SummaryWidget(Widget):
             self.ids.redoButton.text = "Redo"
         if self.filterTextRef.textRef.text:
             self.ids.viewButton.disabled = False
-        if len(self.modePanelRef.tab_list) > 1:
-            self.ids.referenceButton.disabled = False
+##        if len(self.modePanelRef.tab_list) > 1:
+##            self.ids.referenceButton.disabled = False
 
     def SetAllReferences(self, theValue):
         """Set all references selected or unselected.
@@ -900,24 +900,28 @@ class SummaryWidget(Widget):
         """Select all filtered display lines of the current type."""
         myType = self.currentContent.listRef.selectType
         myList = self.currentContent.listRef
-        for index in range(len(myList.data)):
-            myData = myList.data[index]
-            myError = myView.errorRef
-            if not index in myList.selected_nodes and myData.type == myType:
+        for line_it in range(len(myList.data)):
+            myData = myList.data[line_it]
+            #myError = myView.errorRef
+            if not line_it in myList.selected_nodes and myData.type == myType:
+                myList.select_node(line_it)
                 #myView.handle_selection(myError, hold_dispatch=True)
         myList.refresh_view_layout
         self.EnableButtons(myList)
 
     def DeselectAll(self):
         """Unselect all selected filtered display lines."""
-        myView = self.currentContent.listRef
-        #for index in range(len(myView.data)):
+        myList = self.currentContent.listRef
+        for line_it in range(len(myList.data)):
+            myData = myList.data[line_it]
             #myView = myAdapter.get_view(index)
-            #myError = myView.errorRef
+            #myError = myData.errorRef
+            if line_it in myList.selected_nodes:
+                myList.deselect_node(line_it)
             #if myError in myAdapter.selection:
                 #myAdapter.handle_selection(myError, hold_dispatch=True)
-        myView.dispatch('on_selected_nodes')
-        self.EnableButtons(myView)
+        myList.dispatch('on_selected_nodes')
+        self.EnableButtons(myList)
 
     def AddReferenceModes(self, theLayout):
         """Add a selectable mode button for each mode, except for the current mode.
@@ -926,15 +930,15 @@ class SummaryWidget(Widget):
           theLayout: Layout to add mode buttons to.
         """
         theLayout.clear_widgets()
-        myCurrentMode = self.modePanelRef.current_tab.text
-        self.copyPopupRef.baseMode = myCurrentMode
-        for mode_it in self.modePanelRef.tab_list[::-1]:
-            # To get same order as main screen, reverse the order of the list.
-            if mode_it.text == myCurrentMode:  # don't add the copy source.
-                continue
-            myButton = ReferenceModeButton(text=mode_it.text, root=self,
-                                           r=mode_it.r, g=mode_it.g, b=mode_it.b)
-            theLayout.add_widget(myButton)
+##        myCurrentMode = self.modePanelRef.current_tab.text
+##        self.copyPopupRef.baseMode = myCurrentMode
+##        for mode_it in self.modePanelRef.tab_list[::-1]:
+##            # To get same order as main screen, reverse the order of the list.
+##            if mode_it.text == myCurrentMode:  # don't add the copy source.
+##                continue
+##            myButton = ReferenceModeButton(text=mode_it.text, root=self,
+##                                           r=mode_it.r, g=mode_it.g, b=mode_it.b)
+##            theLayout.add_widget(myButton)
         self.EnableReferenceButtons()
 
     def CopyReferences(self):
@@ -949,50 +953,50 @@ class SummaryWidget(Widget):
             if child_it.is_selected:
                 mySelection.append(child_it.text)
         mySourceDisplayList = self.currentContent.report.displayList
-        for child_it in self.modePanelRef.tab_list:
-            if child_it.content.report.modeName not in mySelection:
-                continue
-
-            myTargetDisplayList = child_it.content.report.displayList
-            self._AddUndo(child_it.content, myTargetDisplayList)
-            mySourceIndex = 0
-            myTargetIndex = 0
-            while (mySourceIndex < len(mySourceDisplayList)
-                   and myTargetIndex < len(myTargetDisplayList)):
-                mySourceError = mySourceDisplayList[mySourceIndex]
-                myTargetError = myTargetDisplayList[myTargetIndex]
-                myOrder = CompareErrors(mySourceError, myTargetError)
-                if myOrder == "<":
-                    mySourceIndex += 1
-                    continue
-
-                if myOrder == ">":
-                    myTargetIndex += 1
-                    continue
-
-                if myTargetError['type'] == 'unchecked' and mySourceError['type'] == 'checked':
-                    myUpdateOk = False
-                    if mySourceError['level'] == 'ERROR' and self.copyValues['copy_ERROR']:
-                        myUpdateOk = True
-                    elif mySourceError['level'] == 'Warning' and self.copyValues['copy_Warning']:
-                        myUpdateOk = True
-                    elif mySourceError['level'] == 'Check' and self.copyValues['copy_Check']:
-                        myUpdateOk = True
-                    elif mySourceError['level'] == 'ignore' and self.copyValues['copy_ignore']:
-                        myUpdateOk = True
-                    if myUpdateOk:
-                        myTargetError['type'] = 'uncommitted'
-                        myTargetError['level'] = mySourceError['level']
-                        myTargetError['reference'] = "? " + mySourceError['reference']
-                elif (myTargetError['type'] == 'unmatched'
-                      and mySourceError['type'] == 'comment'
-                      and self.copyValues['copy_comment']):
-                    myTargetError['type'] = 'comment'
-                    myTargetError['level'] = 'unknown'
-                    myTargetError['reference'] = mySourceError['reference']
-                mySourceIndex += 1
-                myTargetIndex += 1
-            child_it.content.report.CountErrors()
+##        for child_it in self.modePanelRef.tab_list:
+##            if child_it.content.report.modeName not in mySelection:
+##                continue
+##
+##            myTargetDisplayList = child_it.content.report.displayList
+##            self._AddUndo(child_it.content, myTargetDisplayList)
+##            mySourceIndex = 0
+##            myTargetIndex = 0
+##            while (mySourceIndex < len(mySourceDisplayList)
+##                   and myTargetIndex < len(myTargetDisplayList)):
+##                mySourceError = mySourceDisplayList[mySourceIndex]
+##                myTargetError = myTargetDisplayList[myTargetIndex]
+##                myOrder = CompareErrors(mySourceError, myTargetError)
+##                if myOrder == "<":
+##                    mySourceIndex += 1
+##                    continue
+##
+##                if myOrder == ">":
+##                    myTargetIndex += 1
+##                    continue
+##
+##                if myTargetError['type'] == 'unchecked' and mySourceError['type'] == 'checked':
+##                    myUpdateOk = False
+##                    if mySourceError['level'] == 'ERROR' and self.copyValues['copy_ERROR']:
+##                        myUpdateOk = True
+##                    elif mySourceError['level'] == 'Warning' and self.copyValues['copy_Warning']:
+##                        myUpdateOk = True
+##                    elif mySourceError['level'] == 'Check' and self.copyValues['copy_Check']:
+##                        myUpdateOk = True
+##                    elif mySourceError['level'] == 'ignore' and self.copyValues['copy_ignore']:
+##                        myUpdateOk = True
+##                    if myUpdateOk:
+##                        myTargetError['type'] = 'uncommitted'
+##                        myTargetError['level'] = mySourceError['level']
+##                        myTargetError['reference'] = "? " + mySourceError['reference']
+##                elif (myTargetError['type'] == 'unmatched'
+##                      and mySourceError['type'] == 'comment'
+##                      and self.copyValues['copy_comment']):
+##                    myTargetError['type'] = 'comment'
+##                    myTargetError['level'] = 'unknown'
+##                    myTargetError['reference'] = mySourceError['reference']
+##                mySourceIndex += 1
+##                myTargetIndex += 1
+##            child_it.content.report.CountErrors()
         self.copyPopupRef.dismiss()
         self.changedFlag = self.autoSaveFlag = True
 
@@ -1146,16 +1150,16 @@ class SummaryWidget(Widget):
         Update uncommitted, unmatched items.
         """
         myDisplayList = {}
-        for header_it in self.modePanelRef.tab_list:
-            myReport = header_it.content.report
-            # Following 2 conditions may cause changes to summary file, so save in undo stacks.
-            if myReport.errorCount['uncommitted'] > 0 and theAutoCommitFlag:
-                self._AddUndo(header_it.content, myReport.displayList)
-            elif myReport.errorCount['unmatched'] > 0 and not theSaveUnmatchedFlag:
-                self._AddUndo(header_it.content, myReport.displayList)
-            self._UpdateDisplayList(header_it.content,
-                                    theAutoCommitFlag, theSaveUnmatchedFlag)
-            myDisplayList[myReport.modeName] = myReport.displayList
+##        for header_it in self.modePanelRef.tab_list:
+##            myReport = header_it.content.report
+##            # Following 2 conditions may cause changes to summary file, so save in undo stacks.
+##            if myReport.errorCount['uncommitted'] > 0 and theAutoCommitFlag:
+##                self._AddUndo(header_it.content, myReport.displayList)
+##            elif myReport.errorCount['unmatched'] > 0 and not theSaveUnmatchedFlag:
+##                self._AddUndo(header_it.content, myReport.displayList)
+##            self._UpdateDisplayList(header_it.content,
+##                                    theAutoCommitFlag, theSaveUnmatchedFlag)
+##            myDisplayList[myReport.modeName] = myReport.displayList
         return myDisplayList
 
     def _Unprinted(self, theIndexes, theDisplayLists):
@@ -1253,13 +1257,13 @@ class SummaryWidget(Widget):
             self.summary.summaryFileName = theFileName
             self.currentContent.RedisplayErrors()
             self.changedFlag = False
-        for header_it in self.modePanelRef.tab_list:
-            header_it.content.report.CountErrors()
-            header_it.content.ids.summaryFileName_id.text = self.summary.summaryFileName
-            if theSaveUnmatchedFlag:  # leading "* " have been removed
-                for display_it in header_it.content.report.displayList:
-                    if display_it['type'] == 'unmatched':  # re-add leading "* " for unmatched
-                        display_it['reference'] = "* " + display_it['reference']
+##        for header_it in self.modePanelRef.tab_list:
+##            header_it.content.report.CountErrors()
+##            header_it.content.ids.summaryFileName_id.text = self.summary.summaryFileName
+##            if theSaveUnmatchedFlag:  # leading "* " have been removed
+##                for display_it in header_it.content.report.displayList:
+##                    if display_it['type'] == 'unmatched':  # re-add leading "* " for unmatched
+##                        display_it['reference'] = "* " + display_it['reference']
         self.autoSaveFlag = False
         self.savePopupRef.dismiss()
         self.confirmSavePopupRef.dismiss()
@@ -1298,21 +1302,21 @@ class SummaryWidget(Widget):
         self._PrintSaveBanner(theFileName,
                               theAutoCommitFlag, theSaveUnmatchedFlag, theAutoSaveFlag)
         self._InitializeSave()
-        myModeList = sorted(self._GetModes(self.modePanelRef.tab_list))
+##        myModeList = sorted(self._GetModes(self.modePanelRef.tab_list))
         myDisplayLists = self._GetDisplayLists(theAutoCommitFlag, theSaveUnmatchedFlag)
         myIndex = {mode_it: 0 for mode_it in myModeList}
-        while self._Unprinted(myIndex, myDisplayLists):
-            myItems = {}
-            for mode_it in myModeList:  # one item from each mode
-                myItems[mode_it] = myDisplayLists[mode_it][myIndex[mode_it]] \
-                                   if myIndex[mode_it] < len(myDisplayLists[mode_it]) else {}
-            myOutputItem = self._GetLeastItem(myItems)
-            (myAppliedModes, myOutputModes) = self._FindOutputModes(myOutputItem, myIndex,
-                                                                    myItems, myModeList)
-            myOutput = "%s:%s" % (myOutputItem['reference'], myOutputItem['data'])
-            self._CheckDiscrepancies(myOutputItem, myOutput, myAppliedModes, theAutoSaveFlag)
-            if myOutputModes:
-                self._OutputSummary(myOutput, myOutputModes, myModeList, mySummaryFile)
+##        while self._Unprinted(myIndex, myDisplayLists):
+##            myItems = {}
+##            for mode_it in myModeList:  # one item from each mode
+##                myItems[mode_it] = myDisplayLists[mode_it][myIndex[mode_it]] \
+##                                   if myIndex[mode_it] < len(myDisplayLists[mode_it]) else {}
+##            myOutputItem = self._GetLeastItem(myItems)
+##            (myAppliedModes, myOutputModes) = self._FindOutputModes(myOutputItem, myIndex,
+##                                                                    myItems, myModeList)
+##            myOutput = "%s:%s" % (myOutputItem['reference'], myOutputItem['data'])
+##            self._CheckDiscrepancies(myOutputItem, myOutput, myAppliedModes, theAutoSaveFlag)
+##            if myOutputModes:
+##                self._OutputSummary(myOutput, myOutputModes, myModeList, mySummaryFile)
         mySummaryFile.close()
         self._FinalizeSave(theFileName, theSaveUnmatchedFlag, theAutoSaveFlag)
 
@@ -1332,8 +1336,8 @@ class SummaryWidget(Widget):
 
         print("Exporting " + os.path.basename(theFileName))
         self._InitializeSave()
-        myModeList = sorted(self._GetModes(self.modePanelRef.tab_list))
-        self._PrintCSVHeader(myExportFile, myModeList)
+##        myModeList = sorted(self._GetModes(self.modePanelRef.tab_list))
+##        self._PrintCSVHeader(myExportFile, myModeList)
         myDisplayLists = self._GetDisplayLists(theAutoCommitFlag=False, theSaveUnmatchedFlag=False)
         myIndex = {mode_it: 0 for mode_it in myModeList}
         myLogRE = re.compile("^(\[.*?\]) (.*?),(.*?) .*(\(.*?\)/[^\s\(]*) ")
