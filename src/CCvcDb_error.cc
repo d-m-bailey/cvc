@@ -445,12 +445,11 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 		// Skip gates that are always fully on
 		if ( myConnections.CheckTerminalMaxVoltages(SOURCE) ) {
 			if ( myConnections.CheckTerminalMaxVoltages(DRAIN) ) {
+				if ( myConnections.minGateVoltage >= max(myConnections.maxSourceVoltage, myConnections.maxDrainVoltage) - cvcParameters.cvcGateErrorThreshold ) continue;
 				if ( myConnections.sourceId == myConnections.drainId ) {  // capacitor check
 					if ( IsPower_(netVoltagePtr_v[myConnections.gateId]) && IsPower_(netVoltagePtr_v[myConnections.drainId]) ) continue;  // ignore direct power capacitors
 					if ( ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId])
 							|| ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]) ) continue;  // ignore capacitors connected to non-input/power nets
-				} else {  // non-capacitor check
-					if ( myConnections.minGateVoltage >= max(myConnections.maxSourceVoltage, myConnections.maxDrainVoltage) - cvcParameters.cvcGateErrorThreshold ) continue;
 				}
 			} else {
 				if ( myConnections.minGateVoltage >= myConnections.maxSourceVoltage - cvcParameters.cvcGateErrorThreshold ) continue;
@@ -567,12 +566,11 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 		// Skip gates that are always fully on
 		if ( myConnections.CheckTerminalMinVoltages(SOURCE) ) {
 			if ( myConnections.CheckTerminalMinVoltages(DRAIN) ) {
+				if ( myConnections.maxGateVoltage <= min(myConnections.minSourceVoltage, myConnections.minDrainVoltage) + cvcParameters.cvcGateErrorThreshold ) continue;
 				if ( myConnections.sourceId == myConnections.drainId ) {  // capacitor check
 					if ( IsPower_(netVoltagePtr_v[myConnections.gateId]) && IsPower_(netVoltagePtr_v[myConnections.drainId]) ) continue;  // ignore direct power capacitors
 					if ( ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId])
 							|| ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]) ) continue;  // ignore capacitors connected to non-input/power nets
-				} else {  // non-capacitor check
-					if ( myConnections.maxGateVoltage <= min(myConnections.minSourceVoltage, myConnections.minDrainVoltage) + cvcParameters.cvcGateErrorThreshold ) continue;
 				}
 			} else {
 				if ( myConnections.maxGateVoltage <= myConnections.minSourceVoltage + cvcParameters.cvcGateErrorThreshold ) continue;
