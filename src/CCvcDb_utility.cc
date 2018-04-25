@@ -71,7 +71,7 @@ voltage_t CCvcDb::MinVoltage(netId_t theNetId, bool theSkipHiZFlag) {
 }
 
 voltage_t CCvcDb::MinSimVoltage(netId_t theNetId) {
-	// limit min value to sim value
+	// limit min value to calculated sim value
 	if ( theNetId != UNKNOWN_NET ) {
 		static CVirtualNet myVirtualNet;
 		assert(theNetId == GetEquivalentNet(theNetId));
@@ -91,8 +91,9 @@ voltage_t CCvcDb::MinSimVoltage(netId_t theNetId) {
 			netId_t myNetId = theNetId;
 			while ( myNetId != minNet_v[myNetId].nextNetId ) {
 				myNetId = minNet_v[myNetId].nextNetId;
-				if ( netVoltagePtr_v[myNetId] && netVoltagePtr_v[myNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
-					return ((myMinVoltage == UNKNOWN_VOLTAGE) ? netVoltagePtr_v[myNetId]->simVoltage : max(netVoltagePtr_v[myNetId]->simVoltage, myMinVoltage));
+				CPower * myPower_p = netVoltagePtr_v[myNetId];
+				if ( myPower_p && myPower_p->type[SIM_CALCULATED_BIT] && myPower_p->simVoltage != UNKNOWN_VOLTAGE ) {
+					return ((myMinVoltage == UNKNOWN_VOLTAGE) ? myPower_p->simVoltage : max(myPower_p->simVoltage, myMinVoltage));
 				}
 			}
 			return myMinVoltage;
@@ -252,7 +253,7 @@ voltage_t CCvcDb::MaxVoltage(netId_t theNetId, bool theSkipHiZFlag) {
 }
 
 voltage_t CCvcDb::MaxSimVoltage(netId_t theNetId) {
-	// limit max value to sim value
+	// limit max value to calculated sim value
 	if ( theNetId != UNKNOWN_NET ) {
 		static CVirtualNet myVirtualNet;
 		assert(theNetId == GetEquivalentNet(theNetId));
@@ -272,8 +273,9 @@ voltage_t CCvcDb::MaxSimVoltage(netId_t theNetId) {
 			netId_t myNetId = theNetId;
 			while ( myNetId != maxNet_v[myNetId].nextNetId ) {
 				myNetId = maxNet_v[myNetId].nextNetId;
-				if ( netVoltagePtr_v[myNetId] && netVoltagePtr_v[myNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
-					return ((myMaxVoltage == UNKNOWN_VOLTAGE) ? netVoltagePtr_v[myNetId]->simVoltage : min(netVoltagePtr_v[myNetId]->simVoltage, myMaxVoltage));
+				CPower * myPower_p = netVoltagePtr_v[myNetId];
+				if ( myPower_p && myPower_p->type[SIM_CALCULATED_BIT] && myPower_p->simVoltage != UNKNOWN_VOLTAGE ) {
+					return ((myMaxVoltage == UNKNOWN_VOLTAGE) ? myPower_p->simVoltage : min(myPower_p->simVoltage, myMaxVoltage));
 				}
 			}
 			return myMaxVoltage;
