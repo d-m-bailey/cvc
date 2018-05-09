@@ -1,7 +1,7 @@
 /*
  * CFixedText.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -28,11 +28,17 @@
 
 CFixedText::CFixedText() {
 	obstack_init(&fixedTextObstack);
+	firstAddress = (text_t) obstack_alloc(&fixedTextObstack, 0);
+}
+
+CFixedText::~CFixedText() {
+	obstack_free(&fixedTextObstack, NULL);
+	obstack_init(&fixedTextObstack);
 }
 
 void CFixedText::Clear() {
-	obstack_free(&fixedTextObstack, NULL);
-	obstack_init(&fixedTextObstack);
+	obstack_free(&fixedTextObstack, firstAddress);
+	fixedTextToAddressMap.clear();
 }
 
 text_t CFixedText::SetTextAddress(const text_t theNewText){
@@ -61,15 +67,15 @@ text_t CFixedText::SetTextAddress(const string theType,	CTextList* theNewTextLis
 		myKeyText += " ";
 		myKeyText += *text_pit;
 	}
-    try {
-    	myTextAddress = this->fixedTextToAddressMap.at(myKeyText);
-    }
-    catch (const out_of_range& oor_exception) {
-            int myNewSize = int(myKeyText.length());
-            myTextAddress = (text_t) obstack_copy0(&(this->fixedTextObstack), (void *) myKeyText.c_str(), myNewSize);
-            size += myNewSize + 1;
-            this->fixedTextToAddressMap[myKeyText] = myTextAddress;
-    }
+	try {
+		myTextAddress = fixedTextToAddressMap.at(myKeyText);
+	}
+	catch (const out_of_range& oor_exception) {
+		int myNewSize = int(myKeyText.length());
+		myTextAddress = (text_t) obstack_copy0(&fixedTextObstack, (void *) myKeyText.c_str(), myNewSize);
+		size += myNewSize + 1;
+		fixedTextToAddressMap[myKeyText] = myTextAddress;
+	}
 	return (myTextAddress);
 }
 

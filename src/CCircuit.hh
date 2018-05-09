@@ -1,7 +1,7 @@
 /*
  * CCircuit.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -31,17 +31,20 @@
 #include "gzstream.h"
 
 class CCircuit {
+	// subcircuit instance/device name to deviceID map
+	static text_t lastDeviceMap;
+	static CTextDeviceIdMap localDeviceIdMap;
+	static text_t lastSubcircuitMap;
+	static CTextDeviceIdMap localSubcircuitIdMap;
 public:
 	text_t name;
 	netId_t	portCount = 0;
 	// local signal to local netID Map
 	CTextNetIdMap localSignalIdMap;
-	// subcircuit instance/device name to deviceID map
-	CTextDeviceIdMap localDeviceIdMap;
 	//Å@temporary list to convert to vector
-	CTextList 	internalSignalList;
+	CTextList	internalSignalList;
 	// local netID to signal name map
-	CTextVector 	internalSignal_v;
+	CTextVector	internalSignal_v;
 	CDevicePtrVector	devicePtr_v;
 	CDevicePtrVector	subcircuitPtr_v;
 	vector<size_t>		deviceErrorCount_v;
@@ -64,6 +67,8 @@ public:
 
 	void AddPortSignalIds(CTextList * thePortList_p);
 	void SetSignalIds(CTextList * theSignalList_p, CNetIdVector & theSignalId_v);
+	deviceId_t GetLocalDeviceId(text_t theName);
+	deviceId_t GetLocalSubcircuitId(text_t theName);
 	void LoadDevices(CDevicePtrList * theDeviceList_p);
 
 	void CountObjectsAndLinkSubcircuits(unordered_map<text_t, CCircuit *> & theCircuitNameMap);

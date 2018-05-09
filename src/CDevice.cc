@@ -1,7 +1,7 @@
 /*
  * CDevice.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -23,6 +23,12 @@
 
 #include "CDevice.hh"
 
+#include "CCircuit.hh"
+
+CDevice::~CDevice() {
+	delete signalList_p;
+}
+
 // Print primitive devices
 void CDevice::Print (CTextVector& theSignalName_v, const string theIndentation) {
 	string myIndentation = theIndentation + " ";
@@ -42,9 +48,9 @@ void CDevice::Print (CTextVector& theSignalName_v, const string theIndentation) 
 
 // Print Subcircuit Devices
 
-void CDevice::Print (CTextVector & theSignalName_v, CTextDeviceIdMap & theSubcircuitIdMap, const string theIndentation) {
+void CDevice::Print (CTextVector & theSignalName_v, deviceId_t theId, const string theIndentation) {
 	string myIndentation = theIndentation + " ";
-	cout << theIndentation << "Instance Name: " << name << ":" << theSubcircuitIdMap[name] << endl;
+	cout << theIndentation << "Instance Name: " << name << ":" << theId << endl;
 	cout << myIndentation << "Master Name: " << masterName;
 	if ( master_p == NULL ) {
 		cout << " ?" << endl;
@@ -67,7 +73,14 @@ void CDevicePtrList::Print (CTextVector& theSignalName_v, const string theIndent
 	cout << theIndentation << myHeading << " end" << endl;
 }
 
-void CDevicePtrVector::Print(CTextVector& theSignalName_v,	const string theIndentation, const string myHeading) {
+CDevicePtrVector::~CDevicePtrVector() {
+	for ( auto device_ppit = begin(); device_ppit != end(); device_ppit++ ) {
+		delete (*device_ppit);
+	}
+	resize(0);
+}
+
+void CDevicePtrVector::Print(CTextVector& theSignalName_v, const string theIndentation, const string myHeading) {
 	if (empty()) {
 		cout << theIndentation << myHeading << " empty" << endl;
 	} else {
@@ -80,14 +93,14 @@ void CDevicePtrVector::Print(CTextVector& theSignalName_v,	const string theInden
 	}
 }
 
-void CDevicePtrVector::Print(CTextVector& theSignalName_v,	CTextDeviceIdMap& theSubcircuitId, const string theIndentation, const string myHeading) {
+void CDevicePtrVector::Print(CTextVector& theSignalName_v, CCircuit * theParent_p, const string theIndentation, const string myHeading) {
 	if (empty()) {
 		cout << theIndentation << myHeading << " empty" << endl;
 	} else {
 		cout << theIndentation << myHeading << " start" << endl;
 		string myIndentation = theIndentation + " ";
 		for (CDevicePtrVector::iterator device_ppit = begin(); device_ppit != end(); ++device_ppit) {
-			(*device_ppit)->Print(theSignalName_v, theSubcircuitId, myIndentation);
+			(*device_ppit)->Print(theSignalName_v, (*device_ppit)->offset, myIndentation);
 		}
 		cout << theIndentation << myHeading << " end" << endl;
 	}

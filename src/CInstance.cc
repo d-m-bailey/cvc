@@ -1,7 +1,7 @@
 /*
  * CInstance.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -71,9 +71,9 @@ void CInstance::AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInsta
 	}
 	myMaster_p->instanceId_v.push_back(theInstanceId);
 
- 	firstSubcircuitId = theCvcDb_p->subcircuitCount;
- 	firstNetId = theCvcDb_p->netCount;
- 	firstDeviceId = theCvcDb_p->deviceCount;
+	firstSubcircuitId = theCvcDb_p->subcircuitCount;
+	firstNetId = theCvcDb_p->netCount;
+	firstDeviceId = theCvcDb_p->deviceCount;
 	parentId = theParentId;
 	master_p = myMaster_p;
 
@@ -117,4 +117,16 @@ void CInstance::Print (const instanceId_t theInstanceId, const string theIndenta
 	}
 	cout << endl;
 }
+
+void CInstancePtrVector::Clear() {
+	for ( auto instance_ppit = begin(); instance_ppit != end(); instance_ppit++ ) {
+		delete (*instance_ppit);
+	}
+	resize(0);
+}
+
+CInstancePtrVector::~CInstancePtrVector() {
+	Clear();
+}
+
 

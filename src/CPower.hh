@@ -1,7 +1,7 @@
 /*
  * CPower.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -82,7 +82,7 @@ public:
 	bool relativeFriendly = true;
 	CSet	relativeSet;
 	bool	printed = false;
-	bool    flagAllShorts = false;
+	bool	flagAllShorts = false;
 
 	CPower();
 	CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModelListMap & theModelListMap);
@@ -119,21 +119,22 @@ public:
 #define PowerDelimiter_(power_p, BIT) ((power_p == NULL || power_p->type[BIT]) ? "=" : "@")
 #define IsDefinedVoltage_(power_p) (power_p && netStatus_v[power_p->baseNetId] && \
 		( netStatus_v[power_p->baseNetId][MIN_POWER] \
-		    || netStatus_v[power_p->baseNetId][SIM_POWER] \
-		    || netStatus_v[power_p->baseNetId][MAX_POWER] \
-     		|| power_p->type[HIZ_BIT] ) )
+			|| netStatus_v[power_p->baseNetId][SIM_POWER] \
+			|| netStatus_v[power_p->baseNetId][MAX_POWER] \
+			|| power_p->type[HIZ_BIT] ) )
 #define IsCalculatedVoltage_(power_p) (power_p && ( power_p->type[MIN_CALCULATED_BIT] || power_p->type[SIM_CALCULATED_BIT] || power_p->type[MAX_CALCULATED_BIT] ) )
 #define IsKnownVoltage_(theVoltage) (theVoltage != UNKNOWN_VOLTAGE)
 
 class CPowerPtrMap : public unordered_map<string, CPower *> {
 public:
+	void Clear();
 	string CalculateExpectedValue(string theEquation, netStatus_t theType, CModelListMap & theModelListMap);
 	voltage_t CalculateVoltage(string theEquation, netStatus_t theType, CModelListMap & theModelListMap);
 };
 
 class CPowerPtrList : public list<CPower *> {
 public:
-	CPowerPtrMap	calculatedPowerPtrMap;
+//	CPowerPtrMap	calculatedPowerPtrMap;
 
 	void Clear();
 	void SetPowerLimits(voltage_t& theMaxPower, voltage_t& theMinPower);

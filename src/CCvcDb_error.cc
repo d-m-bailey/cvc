@@ -1,7 +1,7 @@
 /*
  * CCvcDb_error.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -207,13 +207,13 @@ void CCvcDb::FindOverVoltageErrors(string theCheck, int theErrorIndex) {
 			CDevice * myDevice_p = model_pit->firstDevice_p;
 			string myDisplayParameter;
 			if ( theErrorIndex == OVERVOLTAGE_VBG ) {
-			        myDisplayParameter = " Vbg=" + PrintToleranceParameter(model_pit->maxVbgDefinition, model_pit->maxVbg, VOLTAGE_SCALE);
+				myDisplayParameter = " Vbg=" + PrintToleranceParameter(model_pit->maxVbgDefinition, model_pit->maxVbg, VOLTAGE_SCALE);
 			} else if ( theErrorIndex == OVERVOLTAGE_VBS ) {
-			        myDisplayParameter = " Vbs=" + PrintToleranceParameter(model_pit->maxVbsDefinition, model_pit->maxVbs, VOLTAGE_SCALE);
+				myDisplayParameter = " Vbs=" + PrintToleranceParameter(model_pit->maxVbsDefinition, model_pit->maxVbs, VOLTAGE_SCALE);
 			} else if ( theErrorIndex == OVERVOLTAGE_VDS ) {
-			        myDisplayParameter = " Vds=" + PrintToleranceParameter(model_pit->maxVdsDefinition, model_pit->maxVds, VOLTAGE_SCALE);
+				myDisplayParameter = " Vds=" + PrintToleranceParameter(model_pit->maxVdsDefinition, model_pit->maxVds, VOLTAGE_SCALE);
 			} else if ( theErrorIndex == OVERVOLTAGE_VGS ) {
-			        myDisplayParameter = " Vgs=" + PrintToleranceParameter(model_pit->maxVgsDefinition, model_pit->maxVgs, VOLTAGE_SCALE);
+				myDisplayParameter = " Vgs=" + PrintToleranceParameter(model_pit->maxVgsDefinition, model_pit->maxVgs, VOLTAGE_SCALE);
 			}
 			myDisplayParameter += " " + model_pit->ConditionString();
 			while (myDevice_p) {
@@ -549,8 +549,8 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 					! ( netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId]->type[POWER_BIT] &&
 					netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]->type[POWER_BIT] ) ) continue;
 			bool myVthFlag = myConnections.maxGatePower_p->type[MAX_CALCULATED_BIT]
-			    && ( myConnections.maxGateVoltage - myConnections.maxSourceVoltage == myDevice_p->model_p->Vth
-			    		|| myConnections.maxGateVoltage - myConnections.maxDrainVoltage == myDevice_p->model_p->Vth );
+				&& ( myConnections.maxGateVoltage - myConnections.maxSourceVoltage == myDevice_p->model_p->Vth
+					|| myConnections.maxGateVoltage - myConnections.maxDrainVoltage == myDevice_p->model_p->Vth );
 			if ( myVthFlag && ! cvcParameters.cvcVthGates ) continue;
 			errorCount[PMOS_GATE_SOURCE]++;
 			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
@@ -803,7 +803,7 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 		if ( ! IsPmos_(myDevice_p->model_p->type) ) continue;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 		if ( myConnections.minBulkVoltage == myConnections.maxSourceVoltage && myConnections.minBulkVoltage == myConnections.maxDrainVoltage ) continue;
-		 	 // no error if min bulk = max source = max drain
+			// no error if min bulk = max source = max drain
 		bool myErrorFlag = false;
 		if ( myConnections.maxBulkPower_p && myConnections.maxBulkPower_p->type[HIZ_BIT] ) {
 			if ( myConnections.minSourcePower_p && ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.minSourcePower_p, netVoltagePtr_v, maxNet_v, minNet_v, false) ) {
@@ -1039,10 +1039,10 @@ void CCvcDb::FindForwardBiasDiodes() {
 /*
 				if ( myConnections.maxSourcePower_p->type[HIZ_BIT] ) {
 					if ( ! myConnections.maxSourcePower_p->RelatedPower(myConnections.minDrainPower_p) ) myErrorFlag = true;
- 					if ( ! myConnections.maxSourcePower_p->RelatedPower(myConnections.maxDrainPower_p) ) myErrorFlag = true;
+					if ( ! myConnections.maxSourcePower_p->RelatedPower(myConnections.maxDrainPower_p) ) myErrorFlag = true;
 				} else if ( myConnections.minDrainPower_p->type[HIZ_BIT] ) {
 					if ( ! myConnections.minDrainPower_p->RelatedPower(myConnections.maxSourcePower_p) ) myErrorFlag = true;
- 					if ( ! myConnections.minDrainPower_p->RelatedPower(myConnections.minSourcePower_p) ) myErrorFlag = true;
+					if ( ! myConnections.minDrainPower_p->RelatedPower(myConnections.minSourcePower_p) ) myErrorFlag = true;
 				} else {
 					myErrorFlag = true;
 				}
@@ -1446,7 +1446,7 @@ void CCvcDb::CheckExpectedValues() {
 			if ( (*power_ppit)->expectedSim == "open" ) {
 				if ( ( mySimNetId == UNKNOWN_NET || ! netVoltagePtr_v[mySimNetId] || netVoltagePtr_v[mySimNetId]->simVoltage == UNKNOWN_VOLTAGE ) &&
 						( myMinNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMinNetId] || netVoltagePtr_v[myMinNetId]->minVoltage == UNKNOWN_VOLTAGE || netVoltagePtr_v[myMinNetId]->type[HIZ_BIT] ||
-						  myMaxNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMaxNetId] || netVoltagePtr_v[myMaxNetId]->maxVoltage == UNKNOWN_VOLTAGE || netVoltagePtr_v[myMaxNetId]->type[HIZ_BIT]) ) { // open match
+							myMaxNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMaxNetId] || netVoltagePtr_v[myMaxNetId]->maxVoltage == UNKNOWN_VOLTAGE || netVoltagePtr_v[myMaxNetId]->type[HIZ_BIT]) ) { // open match
 					myExpectedValueFound = true;
 				}
 			} else if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId] && netVoltagePtr_v[mySimNetId]->simVoltage != UNKNOWN_VOLTAGE ) {

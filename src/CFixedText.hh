@@ -1,7 +1,7 @@
 /*
  * CFixedText.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -35,9 +35,11 @@ class CFixedText {
 private:
 	struct obstack fixedTextObstack;
 	int size = 0;
+	text_t firstAddress;
 public:
 	CStringTextMap fixedTextToAddressMap;
 	CFixedText();
+	~CFixedText();
 	inline int Size() {return size;};
 	inline int	Entries() {return fixedTextToAddressMap.size();};
 	void Clear();

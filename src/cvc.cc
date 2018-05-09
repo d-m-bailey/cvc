@@ -1,7 +1,7 @@
 /*
  * cvc.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -82,6 +82,7 @@ catch (exception& e) {
 	gCvcDb->RemoveLock();
 	cout << "unexpected error: " << e.what() << endl;
 }
+	delete gCvcDb;
 }
 
 /// \file Coding guidelines:

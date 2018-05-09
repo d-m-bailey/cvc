@@ -1,7 +1,7 @@
 /*
  * CModel.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -288,7 +288,7 @@ void CModelListMap::AddModel(string theParameterString) {
 			}
 		}
 		catch (const out_of_range& oor_exception) {
-			(*this)[myModelKey] = *(new CModelList);
+			//(*this)[myModelKey] = *(new CModelList);
 			(*this)[myModelKey].push_back(myNewModel);
 			(*this)[myModelKey].Vth = myNewModel.Vth;
 		}

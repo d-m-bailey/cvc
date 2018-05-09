@@ -1,7 +1,7 @@
 /*
  * CCvcDb-utility.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -672,7 +672,7 @@ void CCvcDb::MapDeviceSourceDrainNets(deviceId_t theDeviceId, CFullConnection& t
 
 void CCvcDb::MapDeviceNets(CInstance * theInstance_p, CDevice * theDevice_p, CFullConnection& theConnections) {
 	theConnections.device_p = theDevice_p;
-	theConnections.deviceId = theInstance_p->firstDeviceId + theDevice_p->parent_p->localDeviceIdMap[theDevice_p->name];
+	theConnections.deviceId = theInstance_p->firstDeviceId + theDevice_p->offset;
 	SetConnections_(theConnections, theConnections.deviceId);
 	switch (theDevice_p->model_p->type) {
 		case NMOS: case PMOS: case LDDN: case LDDP: {
@@ -885,9 +885,9 @@ bool CCvcDb::HasActiveConnection(netId_t theNetId) {
 }
 
 voltage_t CCvcDb::DefaultMinVoltage(CPower * thePower_p) {
-    if ( thePower_p->defaultMinNet == UNKNOWN_NET ) {
+	if ( thePower_p->defaultMinNet == UNKNOWN_NET ) {
 		return(UNKNOWN_VOLTAGE);
-    } else {
+	} else {
 		netId_t myMinNet = minNet_v[thePower_p->defaultMinNet].finalNetId;
 		if ( netVoltagePtr_v[myMinNet] && netVoltagePtr_v[myMinNet]->minVoltage != UNKNOWN_VOLTAGE ) {
 			return(netVoltagePtr_v[myMinNet]->minVoltage);
@@ -898,13 +898,13 @@ voltage_t CCvcDb::DefaultMinVoltage(CPower * thePower_p) {
 		//assert(netVoltagePtr_v[myMinNet]);
 		//assert(netVoltagePtr_v[myMinNet]->minVoltage != UNKNOWN_VOLTAGE);
 		//return(netVoltagePtr_v[myMinNet]->minVoltage);
-    }
+	}
 }
 
 voltage_t CCvcDb::DefaultMaxVoltage(CPower * thePower_p) {
-    if ( thePower_p->defaultMaxNet == UNKNOWN_NET ) {
+	if ( thePower_p->defaultMaxNet == UNKNOWN_NET ) {
 		return(UNKNOWN_VOLTAGE);
-    } else {
+	} else {
 		netId_t myMaxNet = maxNet_v[thePower_p->defaultMaxNet].finalNetId;
 		if ( netVoltagePtr_v[myMaxNet] && netVoltagePtr_v[myMaxNet]->maxVoltage != UNKNOWN_VOLTAGE ) {
 			return(netVoltagePtr_v[myMaxNet]->maxVoltage);
@@ -915,83 +915,83 @@ voltage_t CCvcDb::DefaultMaxVoltage(CPower * thePower_p) {
 		//assert(netVoltagePtr_v[myMaxNet]);
 		//assert(netVoltagePtr_v[myMaxNet]->maxVoltage != UNKNOWN_VOLTAGE);
 		//return(netVoltagePtr_v[myMaxNet]->maxVoltage);
-    }
+	}
 }
 
 bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
-	 if ( theConnections.minSourcePower_p ) {
-		 if ( ! theConnections.minSourcePower_p->active[MIN_ACTIVE] ) return false;
-		 if ( theConnections.maxDrainPower_p && theConnections.minSourcePower_p->type[HIZ_BIT] ) {
-			 if ( theConnections.drainId == maxNet_v[theConnections.drainId].nextNetId && theConnections.maxDrainVoltage == UNKNOWN_VOLTAGE ) return false;
-//			 if ( theConnections.maxDrainPower_p->type[HIZ_BIT] ) return false;
-			 return ! theConnections.minSourcePower_p->IsRelatedPower(theConnections.maxDrainPower_p, netVoltagePtr_v, minNet_v, maxNet_v, false);
-		 }
-	 }
-	 if ( theConnections.minDrainPower_p ) {
-		 if ( ! theConnections.minDrainPower_p->active[MIN_ACTIVE] ) return false;
-		 if ( theConnections.maxSourcePower_p && theConnections.minDrainPower_p->type[HIZ_BIT] ) {
-			 if ( theConnections.sourceId == maxNet_v[theConnections.sourceId].nextNetId && theConnections.maxSourceVoltage == UNKNOWN_VOLTAGE ) return false;
-//			 if ( theConnections.maxSourcePower_p->type[HIZ_BIT] ) return false;
-			 return ! theConnections.minDrainPower_p->IsRelatedPower(theConnections.maxSourcePower_p, netVoltagePtr_v, minNet_v, maxNet_v, false);
-		 }
-	 }
-	 if ( theConnections.maxSourcePower_p ) {
-		 if ( ! theConnections.maxSourcePower_p->active[MAX_ACTIVE] ) return false;
-		 if ( theConnections.minDrainPower_p && theConnections.maxSourcePower_p->type[HIZ_BIT] ) {
-			 if ( theConnections.drainId == minNet_v[theConnections.drainId].nextNetId && theConnections.minDrainVoltage == UNKNOWN_VOLTAGE ) return false;
-//			 if ( theConnections.minDrainPower_p->type[HIZ_BIT] ) return false;
-			 return ! theConnections.maxSourcePower_p->IsRelatedPower(theConnections.minDrainPower_p, netVoltagePtr_v, maxNet_v, minNet_v, false);
-		 }
-	 }
-	 if ( theConnections.maxDrainPower_p ) {
-		 if ( ! theConnections.maxDrainPower_p->active[MAX_ACTIVE] ) return false;
-		 if ( theConnections.minSourcePower_p && theConnections.maxDrainPower_p->type[HIZ_BIT] ) {
-			 if ( theConnections.sourceId == minNet_v[theConnections.sourceId].nextNetId && theConnections.minSourceVoltage == UNKNOWN_VOLTAGE ) return false;
-//			 if ( theConnections.minSourcePower_p->type[HIZ_BIT] ) return false;
-			 return ! theConnections.maxDrainPower_p->IsRelatedPower(theConnections.minSourcePower_p, netVoltagePtr_v, maxNet_v, minNet_v, false);
-		 }
-	 }
-	 if ( theConnections.simSourcePower_p && theConnections.simSourcePower_p->defaultSimNet == theConnections.drainId ) return false;  // ignore leaks to own calculated voltage
-	 if ( theConnections.simDrainPower_p && theConnections.simDrainPower_p->defaultSimNet == theConnections.sourceId ) return false;  // ignore leaks to own calculated voltage
-	 netId_t myMinSourceNet = minNet_v[theConnections.sourceId].nextNetId;
-	 netId_t myMaxSourceNet = maxNet_v[theConnections.sourceId].nextNetId;
-	 netId_t myMinDrainNet = minNet_v[theConnections.drainId].nextNetId;
-	 netId_t myMaxDrainNet = maxNet_v[theConnections.drainId].nextNetId;
-	 CPower * myPower_p = netVoltagePtr_v[theConnections.sourceId];
-	 if ( myPower_p ) {
-		 if ( myPower_p->type[MIN_CALCULATED_BIT] && myPower_p->defaultMinNet != UNKNOWN_NET ) myMinSourceNet = myPower_p->defaultMinNet;
-		 if ( myPower_p->type[MAX_CALCULATED_BIT] && myPower_p->defaultMaxNet != UNKNOWN_NET ) myMaxSourceNet = myPower_p->defaultMaxNet;
-	 }
-	 myPower_p = netVoltagePtr_v[theConnections.drainId];
-	 if ( myPower_p ) {
-		 if ( myPower_p->type[MIN_CALCULATED_BIT] && myPower_p->defaultMinNet != UNKNOWN_NET ) myMinDrainNet = myPower_p->defaultMinNet;
-		 if ( myPower_p->type[MAX_CALCULATED_BIT] && myPower_p->defaultMaxNet != UNKNOWN_NET ) myMaxDrainNet = myPower_p->defaultMaxNet;
-	 }
-	 if ( (myMinSourceNet == theConnections.drainId || theConnections.minSourceVoltage == UNKNOWN_VOLTAGE)
-			 && (myMaxSourceNet == theConnections.drainId || theConnections.maxSourceVoltage == UNKNOWN_VOLTAGE) ) return false;  // min/max path same or non-existant
-//			 && connectionCount_v[theConnections.sourceId].gateCount == 0) return false;  // min/max path same with no gate connections
-	 if ( (myMinDrainNet == theConnections.sourceId || theConnections.minDrainVoltage == UNKNOWN_VOLTAGE)
-		 	 && (myMaxDrainNet == theConnections.sourceId || theConnections.maxDrainVoltage == UNKNOWN_VOLTAGE) ) return false;  // min/max path same with no gate connections
-//			 && connectionCount_v[theConnections.drainId].gateCount == 0) return false;  // min/max path same with no gate connections
-     voltage_t myMinSourceVoltage = theConnections.minSourceVoltage;
-     if ( theConnections.minSourcePower_p && theConnections.minSourcePower_p->type[MIN_CALCULATED_BIT] ) {
-    	 myMinSourceVoltage = DefaultMinVoltage(theConnections.minSourcePower_p);
-     }
-     voltage_t myMaxSourceVoltage = theConnections.maxSourceVoltage;
-     if ( theConnections.maxSourcePower_p && theConnections.maxSourcePower_p->type[MAX_CALCULATED_BIT] ) {
-    	 myMaxSourceVoltage = DefaultMaxVoltage(theConnections.maxSourcePower_p);
-     }
-     voltage_t myMinDrainVoltage = theConnections.minDrainVoltage;
-     if ( theConnections.minDrainPower_p && theConnections.minDrainPower_p->type[MIN_CALCULATED_BIT] ) {
-    	 myMinDrainVoltage = DefaultMinVoltage(theConnections.minDrainPower_p);
-     }
-     voltage_t myMaxDrainVoltage = theConnections.maxDrainVoltage;
-     if ( theConnections.maxDrainPower_p && theConnections.maxDrainPower_p->type[MAX_CALCULATED_BIT] ) {
-    	 myMaxDrainVoltage = DefaultMaxVoltage(theConnections.maxDrainPower_p);
-     }
-     if ( myMinSourceVoltage != UNKNOWN_VOLTAGE && myMaxDrainVoltage != UNKNOWN_VOLTAGE && myMinSourceVoltage < myMaxDrainVoltage ) return true;
-     if ( myMaxSourceVoltage != UNKNOWN_VOLTAGE && myMinDrainVoltage != UNKNOWN_VOLTAGE && myMaxSourceVoltage > myMinDrainVoltage ) return true;
-	 return false;
+	if ( theConnections.minSourcePower_p ) {
+		if ( ! theConnections.minSourcePower_p->active[MIN_ACTIVE] ) return false;
+		if ( theConnections.maxDrainPower_p && theConnections.minSourcePower_p->type[HIZ_BIT] ) {
+			if ( theConnections.drainId == maxNet_v[theConnections.drainId].nextNetId && theConnections.maxDrainVoltage == UNKNOWN_VOLTAGE ) return false;
+//			if ( theConnections.maxDrainPower_p->type[HIZ_BIT] ) return false;
+			return ! theConnections.minSourcePower_p->IsRelatedPower(theConnections.maxDrainPower_p, netVoltagePtr_v, minNet_v, maxNet_v, false);
+		}
+	}
+	if ( theConnections.minDrainPower_p ) {
+		if ( ! theConnections.minDrainPower_p->active[MIN_ACTIVE] ) return false;
+		if ( theConnections.maxSourcePower_p && theConnections.minDrainPower_p->type[HIZ_BIT] ) {
+			if ( theConnections.sourceId == maxNet_v[theConnections.sourceId].nextNetId && theConnections.maxSourceVoltage == UNKNOWN_VOLTAGE ) return false;
+//			if ( theConnections.maxSourcePower_p->type[HIZ_BIT] ) return false;
+			return ! theConnections.minDrainPower_p->IsRelatedPower(theConnections.maxSourcePower_p, netVoltagePtr_v, minNet_v, maxNet_v, false);
+		}
+	}
+	if ( theConnections.maxSourcePower_p ) {
+		if ( ! theConnections.maxSourcePower_p->active[MAX_ACTIVE] ) return false;
+		if ( theConnections.minDrainPower_p && theConnections.maxSourcePower_p->type[HIZ_BIT] ) {
+			if ( theConnections.drainId == minNet_v[theConnections.drainId].nextNetId && theConnections.minDrainVoltage == UNKNOWN_VOLTAGE ) return false;
+//			if ( theConnections.minDrainPower_p->type[HIZ_BIT] ) return false;
+			return ! theConnections.maxSourcePower_p->IsRelatedPower(theConnections.minDrainPower_p, netVoltagePtr_v, maxNet_v, minNet_v, false);
+		}
+	}
+	if ( theConnections.maxDrainPower_p ) {
+		if ( ! theConnections.maxDrainPower_p->active[MAX_ACTIVE] ) return false;
+		if ( theConnections.minSourcePower_p && theConnections.maxDrainPower_p->type[HIZ_BIT] ) {
+			if ( theConnections.sourceId == minNet_v[theConnections.sourceId].nextNetId && theConnections.minSourceVoltage == UNKNOWN_VOLTAGE ) return false;
+//			if ( theConnections.minSourcePower_p->type[HIZ_BIT] ) return false;
+			return ! theConnections.maxDrainPower_p->IsRelatedPower(theConnections.minSourcePower_p, netVoltagePtr_v, maxNet_v, minNet_v, false);
+		}
+	}
+	if ( theConnections.simSourcePower_p && theConnections.simSourcePower_p->defaultSimNet == theConnections.drainId ) return false;  // ignore leaks to own calculated voltage
+	if ( theConnections.simDrainPower_p && theConnections.simDrainPower_p->defaultSimNet == theConnections.sourceId ) return false;  // ignore leaks to own calculated voltage
+	netId_t myMinSourceNet = minNet_v[theConnections.sourceId].nextNetId;
+	netId_t myMaxSourceNet = maxNet_v[theConnections.sourceId].nextNetId;
+	netId_t myMinDrainNet = minNet_v[theConnections.drainId].nextNetId;
+	netId_t myMaxDrainNet = maxNet_v[theConnections.drainId].nextNetId;
+	CPower * myPower_p = netVoltagePtr_v[theConnections.sourceId];
+	if ( myPower_p ) {
+		if ( myPower_p->type[MIN_CALCULATED_BIT] && myPower_p->defaultMinNet != UNKNOWN_NET ) myMinSourceNet = myPower_p->defaultMinNet;
+		if ( myPower_p->type[MAX_CALCULATED_BIT] && myPower_p->defaultMaxNet != UNKNOWN_NET ) myMaxSourceNet = myPower_p->defaultMaxNet;
+	}
+	myPower_p = netVoltagePtr_v[theConnections.drainId];
+	if ( myPower_p ) {
+		if ( myPower_p->type[MIN_CALCULATED_BIT] && myPower_p->defaultMinNet != UNKNOWN_NET ) myMinDrainNet = myPower_p->defaultMinNet;
+		if ( myPower_p->type[MAX_CALCULATED_BIT] && myPower_p->defaultMaxNet != UNKNOWN_NET ) myMaxDrainNet = myPower_p->defaultMaxNet;
+	}
+	if ( (myMinSourceNet == theConnections.drainId || theConnections.minSourceVoltage == UNKNOWN_VOLTAGE)
+			&& (myMaxSourceNet == theConnections.drainId || theConnections.maxSourceVoltage == UNKNOWN_VOLTAGE) ) return false;  // min/max path same or non-existant
+//			&& connectionCount_v[theConnections.sourceId].gateCount == 0) return false;  // min/max path same with no gate connections
+	if ( (myMinDrainNet == theConnections.sourceId || theConnections.minDrainVoltage == UNKNOWN_VOLTAGE)
+			&& (myMaxDrainNet == theConnections.sourceId || theConnections.maxDrainVoltage == UNKNOWN_VOLTAGE) ) return false;  // min/max path same with no gate connections
+//			&& connectionCount_v[theConnections.drainId].gateCount == 0) return false;  // min/max path same with no gate connections
+	voltage_t myMinSourceVoltage = theConnections.minSourceVoltage;
+	if ( theConnections.minSourcePower_p && theConnections.minSourcePower_p->type[MIN_CALCULATED_BIT] ) {
+		myMinSourceVoltage = DefaultMinVoltage(theConnections.minSourcePower_p);
+	}
+	voltage_t myMaxSourceVoltage = theConnections.maxSourceVoltage;
+	if ( theConnections.maxSourcePower_p && theConnections.maxSourcePower_p->type[MAX_CALCULATED_BIT] ) {
+		myMaxSourceVoltage = DefaultMaxVoltage(theConnections.maxSourcePower_p);
+	}
+	voltage_t myMinDrainVoltage = theConnections.minDrainVoltage;
+	if ( theConnections.minDrainPower_p && theConnections.minDrainPower_p->type[MIN_CALCULATED_BIT] ) {
+		myMinDrainVoltage = DefaultMinVoltage(theConnections.minDrainPower_p);
+	}
+	voltage_t myMaxDrainVoltage = theConnections.maxDrainVoltage;
+	if ( theConnections.maxDrainPower_p && theConnections.maxDrainPower_p->type[MAX_CALCULATED_BIT] ) {
+		myMaxDrainVoltage = DefaultMaxVoltage(theConnections.maxDrainPower_p);
+	}
+	if ( myMinSourceVoltage != UNKNOWN_VOLTAGE && myMaxDrainVoltage != UNKNOWN_VOLTAGE && myMinSourceVoltage < myMaxDrainVoltage ) return true;
+	if ( myMaxSourceVoltage != UNKNOWN_VOLTAGE && myMinDrainVoltage != UNKNOWN_VOLTAGE && myMaxSourceVoltage > myMinDrainVoltage ) return true;
+	return false;
 }
 
 size_t CCvcDb::IncrementDeviceError(deviceId_t theDeviceId) {
@@ -1170,4 +1170,23 @@ deviceId_t CCvcDb::GetSeriesConnectedDevice(deviceId_t theDeviceId, netId_t theN
 		}
 	}
 	return(myReturnDevice);
+}
+
+void CCvcDb::Cleanup() {
+	int myDeleteCount = 0;
+	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+		if ( leakVoltagePtr_v[net_it] && netVoltagePtr_v[net_it] != leakVoltagePtr_v[net_it] ) {  // unique leak power deleted here
+			delete leakVoltagePtr_v[net_it];
+			myDeleteCount++;
+		}
+		if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->powerSignal.empty() ) {  // calculated power deleted here
+			delete netVoltagePtr_v[net_it];
+			myDeleteCount++;
+		}
+	}
+	if ( gDebug_cvc ) cout << "DEBUG: Deleted " << myDeleteCount << " power objects" << endl;
+	cvcParameters.cvcPowerPtrList.Clear();  // defined power deleted here
+	cvcParameters.cvcExpectedLevelPtrList.Clear();
+	cvcParameters.cvcPowerMacroPtrMap.Clear();
+	cvcParameters.cvcModelListMap.Clear();
 }

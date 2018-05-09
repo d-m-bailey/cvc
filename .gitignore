@@ -1,3 +1,8 @@
+.cproject
+.project
+Debug
+default.cvcrc
+Doxyfile
 Makefile
 Makefile.in
 */Makefile
@@ -9,12 +14,14 @@ aclocal.m4
 autom4te.cache
 bin
 compile
-cvc-*
 depcomp
 install-sh
 missing
 po
 m4
+release
 share
 stamp-h1
+test
 ylwrap
+src_py/__pycache__

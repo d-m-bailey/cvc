@@ -1,7 +1,7 @@
 /*
  * CCvcDb_print.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -1161,6 +1161,7 @@ void CCvcDb::PrintErrorTotals() {
 //	errorFile.open(theErrorFileName);
 //}
 
+/*
 void CCvcDb::PrintShortedNets(string theShortFileName) {
 	cout << "CVC: Printing shorted nets to " << theShortFileName << " ..." << endl;
 	ogzstream	shortFile(theShortFileName);
@@ -1174,6 +1175,7 @@ void CCvcDb::PrintShortedNets(string theShortFileName) {
 		//changed to include sim paths
 		mySimNet = simNet_v[GetEquivalentNet(net_it)].nextNetId;
 		myResistance = simNet_v[GetEquivalentNet(net_it)].resistance;
+*/
 		/*
 		mySimNet = GetEquivalentNet(net_it);
 		myResistance = 0;
@@ -1182,6 +1184,7 @@ void CCvcDb::PrintShortedNets(string theShortFileName) {
 			mySimNet = simNet_v[mySimNet].nextNetId;
 		}
 		*/
+/*
 		if ( net_it == mySimNet && ! netVoltagePtr_v[net_it] ) continue;
 		if ( net_it != mySimNet ) shortFile << net_it << "->";
 		shortFile << mySimNet;
@@ -1205,6 +1208,7 @@ void CCvcDb::PrintShortedNets(string theShortFileName) {
 			short_v[net_it].second = "";
 		}
 		shortFile << endl;
+*/
 /*
 // short file format
 0@1200		<- power definition
@@ -1274,10 +1278,12 @@ void CCvcDb::PrintShortedNets(string theShortFileName) {
 		}
 		shortFile << endl;
 */
+/*
 	}
 	shortFile.close();
 	isValidShortData = true;
 }
+*/
 
 string CCvcDb::NetVoltageSuffix(string theDelimiter, string theVoltage, resistance_t theResistance, string theLeakVoltage) {
 	if ( theVoltage == "???" && theLeakVoltage.empty() ) return ("");

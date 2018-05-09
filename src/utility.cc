@@ -1,7 +1,7 @@
 /*
  * utility.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -103,12 +103,12 @@ std::string RemoveCellNames(std::string thePath) {
 }
 
 char * CurrentTime() {
-	  time_t rawtime;
-	  struct tm * timeinfo;
+	time_t rawtime;
+	struct tm * timeinfo;
 
-	  time ( &rawtime );
-	  timeinfo = localtime ( &rawtime );
-	  return ( asctime (timeinfo) );
+	time ( &rawtime );
+	timeinfo = localtime ( &rawtime );
+	return ( asctime (timeinfo) );
 }
 
 std::list<string> * ParseEquation(std::string theEquation, std::string theDelimiters) {

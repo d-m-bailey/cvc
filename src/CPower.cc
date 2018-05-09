@@ -1,7 +1,7 @@
 /*
  * CPower.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -61,7 +61,7 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 	// VSS 0.0	<- power definition min=sim=max=0.0
 	// VDD 1.2	<- power definition min=sim=max=1.2
 	// VBB -0.5	<- power definition min=sim=max=-0.5
-	// A1 min@0.0 sim@0.6 max@1.2 	<- input/output/internal signal min/sim/max.
+	// A1 min@0.0 sim@0.6 max@1.2 <- input/output/internal signal min/sim/max.
 	//									missing values are calculated.
 	// O1 min@0.0 expect@1.2 max@1.2 <- input/output/internal signal min/max.
 	//									sim value is calculated and checked against expect.
@@ -281,9 +281,9 @@ void CPowerFamilyMap::AddFamily(string thePowerString) {
 	string myRelativeName;
 	size_t	myStringBegin = thePowerString.find_first_not_of(" \t");
 	size_t	myStringEnd = thePowerString.find_first_of(" \t", myStringBegin);
-    assert(thePowerString.substr(myStringBegin, myStringEnd - myStringBegin) == "family");
-    myStringBegin = thePowerString.find_first_not_of(" \t", myStringEnd);
-    myStringEnd = thePowerString.find_first_of(" \t", myStringBegin);
+	assert(thePowerString.substr(myStringBegin, myStringEnd - myStringBegin) == "family");
+	myStringBegin = thePowerString.find_first_not_of(" \t", myStringEnd);
+	myStringEnd = thePowerString.find_first_of(" \t", myStringBegin);
 	myFamilyName = thePowerString.substr(myStringBegin, myStringEnd - myStringBegin);
 	while (myStringEnd < thePowerString.length()) {
 		myStringBegin = thePowerString.find_first_not_of(", \t", myStringEnd);
@@ -492,31 +492,31 @@ bool CPower::RelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVolta
 		}
 		myMinPower_p = theNetVoltagePtr_v[myNetId];
 	}
-    if ( defaultMinNet != UNKNOWN_NET ) {
-    	assert(defaultMinNet != UNKNOWN_NET);
+	if ( defaultMinNet != UNKNOWN_NET ) {
+		assert(defaultMinNet != UNKNOWN_NET);
 		myIsRelatedCalculation &= ((baseMinId == theTestPower_p->netId) || (baseMinId == theTestPower_p->baseMinId) || (defaultMinNet == theTestPower_p->defaultMinNet));
-    }
-    if ( theTestPower_p->baseMinId != UNKNOWN_NET ) {
-    	assert(theTestPower_p->defaultMinNet != UNKNOWN_NET);
+	}
+	if ( theTestPower_p->baseMinId != UNKNOWN_NET ) {
+		assert(theTestPower_p->defaultMinNet != UNKNOWN_NET);
 		myIsRelatedCalculation &= ((theTestPower_p->baseMinId == netId) || (theTestPower_p->baseMinId == baseMinId) || (theTestPower_p->defaultMinNet == defaultMinNet));
-    }
-    if ( baseSimId != UNKNOWN_NET ) {
-    	assert(defaultSimNet != UNKNOWN_NET);
+	}
+	if ( baseSimId != UNKNOWN_NET ) {
+		assert(defaultSimNet != UNKNOWN_NET);
 		myIsRelatedCalculation &= ((baseSimId == theTestPower_p->netId) || (baseSimId == theTestPower_p->baseSimId) || (defaultSimNet == theTestPower_p->defaultSimNet));
-    }
-    if ( theTestPower_p->baseSimId != UNKNOWN_NET ) {
-    	assert(theTestPower_p->defaultSimNet != UNKNOWN_NET);
+	}
+	if ( theTestPower_p->baseSimId != UNKNOWN_NET ) {
+		assert(theTestPower_p->defaultSimNet != UNKNOWN_NET);
 		myIsRelatedCalculation &= ((theTestPower_p->baseSimId == netId) || (theTestPower_p->baseSimId == baseSimId) || (theTestPower_p->defaultSimNet == defaultSimNet));
-    }
-    if ( baseMaxId != UNKNOWN_NET ) {
-    	assert(defaultMaxNet != UNKNOWN_NET);
+	}
+	if ( baseMaxId != UNKNOWN_NET ) {
+		assert(defaultMaxNet != UNKNOWN_NET);
 		myIsRelatedCalculation &= ((baseMaxId == theTestPower_p->netId) || (baseMaxId == theTestPower_p->baseSimId) || (defaultMaxNet == theTestPower_p->defaultMaxNet));
-    }
-    if ( theTestPower_p->baseMaxId != UNKNOWN_NET ) {
-    	assert(theTestPower_p->defaultMaxNet != UNKNOWN_NET);
+	}
+	if ( theTestPower_p->baseMaxId != UNKNOWN_NET ) {
+		assert(theTestPower_p->defaultMaxNet != UNKNOWN_NET);
 		myIsRelatedCalculation &= ((theTestPower_p->baseMaxId == netId) || (theTestPower_p->baseMaxId == baseMaxId) || (theTestPower_p->defaultMaxNet == defaultMaxNet));
-    }
-    if ( ! myIsRelatedCalculation ) return false;
+	}
+	if ( ! myIsRelatedCalculation ) return false;
 	if ( family != "" ) {
 		if ( relativeFriendly ) {
 			if ( relativeSet.count(theTestPower_p->powerSignal) == 0 ) return false;
@@ -611,11 +611,18 @@ voltage_t CPowerPtrVector::SimVoltage(netId_t theNetId) {
 }
 
 void CPowerPtrList::Clear() {
-	calculatedPowerPtrMap.clear();
+//	calculatedPowerPtrMap.clear();
 
 	while ( ! empty() ) {
 		delete front();
 		pop_front();
+	}
+}
+
+void CPowerPtrMap::Clear() {
+	while ( ! empty() ) {
+		delete begin()->second;
+		erase(begin());
 	}
 }
 

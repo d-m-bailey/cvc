@@ -1,7 +1,7 @@
 /*
  * CCvcDb.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -57,9 +57,9 @@ public:
 	CCircuitPtrList	cvcCircuitList;
 
 	CCircuit *	topCircuit_p;
-	CShortVector	short_v;
+	//CShortVector	short_v;
 
-	vector<CInstance *> instancePtr_v;
+	CInstancePtrVector instancePtr_v;
 
 	// parent instance.	 offset from first in instance to find name, etc.
 	// [*] = instance
@@ -168,12 +168,19 @@ public:
 	string lockFile;
 	string reportPrefix;
 
+	typedef struct mos_data {
+		netId_t gate;
+		netId_t source;
+		deviceId_t id;
+	} mosData_t;
+
 	// CCvcDb_main.cc
 	/// Main Loop: Verify circuits using settings in each verification resource file.
 	void VerifyCircuitForAllModes(int argc, const char * argv[]);
 
 	// CCvcDb-init.cc
 	CCvcDb(int argc, const char * argv[]);
+	~CCvcDb();
 	void CountObjectsAndLinkSubcircuits();
 
 	void AssignGlobalIDs();
@@ -209,6 +216,9 @@ public:
 	bool IsSCRCLogicNet(netId_t theNetId);
 	bool IsSCRCPower(CPower * thePower_p);
 	bool SetLatchPower();
+	void FindLatchDevices(netId_t theNetId, mosData_t theNmosData_v[], mosData_t thePmosData_v[], int & theNmosCount, int & thePmosCount,
+		voltage_t theMinVoltage, voltage_t theMaxVoltage,
+		CDeviceIdVector & theFirstDrain_v, CDeviceIdVector & theNextDrain_v, CNetIdVector & theSourceNet_v);
 	bool IsOppositeLogic(netId_t theFirstNet, netId_t theSecondNet);
 
 	// error
@@ -322,7 +332,7 @@ public:
 	bool EqualMasterNets(CVirtualNetVector& theVirtualNet_v, netId_t theFirstNetId, netId_t theSecondNetId);
 	bool GateEqualsDrain(CConnection& theConnections);
 	inline bool IsFloatingGate(CFullConnection& myConnections) { return (myConnections.minGateVoltage == UNKNOWN_VOLTAGE || myConnections.minGatePower_p->type[HIZ_BIT] ||
-			        myConnections.maxGateVoltage == UNKNOWN_VOLTAGE || myConnections.maxGatePower_p->type[HIZ_BIT]); };
+				myConnections.maxGateVoltage == UNKNOWN_VOLTAGE || myConnections.maxGatePower_p->type[HIZ_BIT]); };
 	voltage_t DefaultMinVoltage(CPower * thePower_p);
 	voltage_t DefaultMaxVoltage(CPower * thePower_p);
 	bool HasLeakPath(CFullConnection& theConnections);
@@ -338,6 +348,7 @@ public:
 	size_t InstanceDepth(instanceId_t theInstanceId);
 	bool IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId);
 	deviceId_t GetSeriesConnectedDevice(deviceId_t theDeviceId, netId_t theNetId);
+	void Cleanup();
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);
@@ -388,7 +399,7 @@ public:
 	void PrintMaxTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile);
 	void PrintSimTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile);
 	void PrintErrorTotals();
-	void PrintShortedNets(string theShortFileName);
+	//void PrintShortedNets(string theShortFileName);
 	string NetVoltageSuffix(string theDelimiter, string theVoltage, resistance_t theResistance, string theLeakVoltage = "");
 	void PrintResistorOverflow(netId_t theNet, ofstream& theOutputFile);
 
@@ -404,7 +415,7 @@ public:
 	void PrintNets(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag, bool theIsValidPowerFlag);
 	void PrintDevices(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag, bool theIsValidModelFlag);
 	void PrintInstances(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag);
-	void ReadShorts(string theShortFileName);
+	//void ReadShorts(string theShortFileName);
 	netId_t FindNet(instanceId_t theCurrentInstanceId, string theNetName, bool theDisplayErrorFlag = true);
 	deviceId_t FindDevice(instanceId_t theCurrentInstanceId, string theDeviceName);
 	returnCode_t InteractiveCvc(int theCurrentStage);
