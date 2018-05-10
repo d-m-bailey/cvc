@@ -369,10 +369,10 @@ returnCode_t CCvcParameters::LoadPower() {
 			} else {
 				CPower * myPowerPtr = new CPower(myInput, cvcPowerMacroPtrMap, cvcModelListMap);
 				if ( ! (myPowerPtr->expectedMin.empty() && myPowerPtr->expectedSim.empty() && myPowerPtr->expectedMax.empty()) ) {
-					cvcExpectedLevelPtrList.push_back(myPowerPtr);
+					cvcExpectedLevelPtrList.push_back(new CPower(*myPowerPtr));  // duplicate CPower
 				}
 				if (myPowerPtr->type != NO_TYPE || myPowerPtr->minVoltage != UNKNOWN_VOLTAGE || myPowerPtr->simVoltage != UNKNOWN_VOLTAGE || myPowerPtr->maxVoltage != UNKNOWN_VOLTAGE) {
-					cvcPowerPtrList.push_back(myPowerPtr);
+					cvcPowerPtrList.push_back(new CPower(*myPowerPtr));  // duplicate CPower
 				}
 				if ( myAutoMacroFlag ) {
 					myMacroName = myPowerPtr->powerSignal;
@@ -383,6 +383,7 @@ returnCode_t CCvcParameters::LoadPower() {
 				} else {
 					myMacroName = "?";
 				}
+				delete myPowerPtr;
 			}
 			if ( myMacroName.find_first_of("(<[}/*@+-") > myMacroName.length() && isalpha(myMacroName[0]) ) { // no special characters in macro names
 				if ( cvcPowerMacroPtrMap.count(myMacroName) > 0 ) throw EPowerError("duplicate macro name: " + myMacroName);
