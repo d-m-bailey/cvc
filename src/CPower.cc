@@ -619,6 +619,22 @@ void CPowerPtrList::Clear() {
 	}
 }
 
+void CPowerPtrList::Clear(CPowerPtrVector & theLeakVoltage_v, CPowerPtrVector & theNetVoltage_v, netId_t theNetCount) {
+	while ( ! empty() ) {
+		netId_t myNetId = front()->netId;
+		if ( myNetId != UNKNOWN_NET && theNetCount > 0 ) {
+			if ( theLeakVoltage_v[myNetId] && theLeakVoltage_v[myNetId] == front() ) {
+				theLeakVoltage_v[myNetId] = NULL;
+			}
+			if ( theNetVoltage_v[myNetId] && theNetVoltage_v[myNetId] == front() ) {
+				theNetVoltage_v[myNetId] = NULL;
+			}
+		}
+		delete front();
+		pop_front();
+	}
+}
+
 void CPowerPtrMap::Clear() {
 	while ( ! empty() ) {
 		delete begin()->second;

@@ -33,7 +33,7 @@ CFixedText::CFixedText() {
 
 CFixedText::~CFixedText() {
 	obstack_free(&fixedTextObstack, NULL);
-	obstack_init(&fixedTextObstack);
+	//obstack_init(&fixedTextObstack);
 }
 
 void CFixedText::Clear() {

@@ -86,6 +86,7 @@ public:
 
 class CTextModelPtrMap : public unordered_map<text_t, CModel *> {
 public:
+	CTextModelPtrMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 class CModelListMap : public map<string, CModelList> {

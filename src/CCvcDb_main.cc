@@ -100,6 +100,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 				reportFile << "WARNING: unsupported devices in netlist" << endl;
 			}
 			cvcParameters.SaveDatabaseParameters();
+			reportFile << "Cdl fixed data size " << cvcCircuitList.cdlText.Size() << endl;
 			reportFile << PrintProgress(&lastSnapshot, "CDL ") << endl;
 			CountObjectsAndLinkSubcircuits();
 			AssignGlobalIDs();

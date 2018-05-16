@@ -30,6 +30,8 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <sys/stat.h>
+#include <sys/mman.h>
 
 #include "CCircuit.hh"
 #include "CConnection.hh"
@@ -1030,6 +1032,25 @@ void CCvcDb::SaveInitialVoltages() {
 //	initialMinNet_v = minNet_v;
 //	initialMaxNet_v = maxNet_v;
 	cout << "Saving simulation voltages..." << endl;
+	/*
+	FILE* myInitialSimNetFile = tmpfile();
+
+	CBaseVirtualNetVector myInitialSimNet_v(simNet_v);
+	fwrite(myInitialSimNet_v.data(), sizeof(myInitialSimNet_v[0]), myInitialSimNet_v.size(), myInitialSimNetFile);
+	CBaseVirtualNet * myMappedSimNet = (CBaseVirtualNet *) mmap(NULL, sizeof(myInitialSimNet_v[0]) * myInitialSimNet_v.size(), PROT_READ, MAP_PRIVATE, fileno(myInitialSimNetFile), 0);
+	if ( myMappedSimNet == MAP_FAILED ) {
+		cout << "ERROR: Could not map initialSimNet_v" << endl;
+	} else {
+		initialSimNet_v()
+		for ( netId_t net_it = 0; net_it < myInitialSimNet_v.size(); net_it++ ) {
+			if ( ! ( myInitialSimNet_v[net_it].nextNetId == initialSimNet_v[net_it].nextNetId
+					&& myInitialSimNet_v[net_it].resistance == initialSimNet_v[net_it].resistance) ) {
+				cout << "DEBUG: initial sim net mismatch at net " << net_it << endl;
+			}
+		}
+	}
+	fclose(myInitialSimNetFile);
+	*/
 	initialSimNet_v(simNet_v);
 	initialVoltagePtr_v = netVoltagePtr_v;
 }
@@ -1173,19 +1194,19 @@ deviceId_t CCvcDb::GetSeriesConnectedDevice(deviceId_t theDeviceId, netId_t theN
 }
 
 void CCvcDb::Cleanup() {
+	cvcParameters.cvcPowerPtrList.Clear(leakVoltagePtr_v, netVoltagePtr_v, netCount);  // defined power deleted here
 	int myDeleteCount = 0;
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 		if ( leakVoltagePtr_v[net_it] && netVoltagePtr_v[net_it] != leakVoltagePtr_v[net_it] ) {  // unique leak power deleted here
 			delete leakVoltagePtr_v[net_it];
 			myDeleteCount++;
 		}
-		if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->powerSignal.empty() ) {  // calculated power deleted here
+		if ( netVoltagePtr_v[net_it] ) {  // calculated power deleted here
 			delete netVoltagePtr_v[net_it];
 			myDeleteCount++;
 		}
 	}
 	if ( gDebug_cvc ) cout << "DEBUG: Deleted " << myDeleteCount << " power objects" << endl;
-	cvcParameters.cvcPowerPtrList.Clear();  // defined power deleted here
 	cvcParameters.cvcExpectedLevelPtrList.Clear();
 	cvcParameters.cvcPowerMacroPtrMap.Clear();
 	cvcParameters.cvcModelListMap.Clear();

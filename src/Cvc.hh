@@ -24,7 +24,7 @@
 #ifndef CVC_H_
 #define CVC_H_
 
-#define CVC_VERSION "0.14.4"
+#define CVC_VERSION "0.14.5"
 
 extern bool gDebug_cvc;
 extern bool gInterrupted;
@@ -143,25 +143,31 @@ public:
 	text_t BiasNet(CFixedText & theCdlText);
 };
 
+#define DEFAULT_LOAD_FACTOR    2.0
+
 class CTextResistanceMap : public unordered_map<text_t, resistance_t> {
 public:
+	CTextResistanceMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 class CTextNetIdMap : public unordered_map<text_t, netId_t> {
 public:
+	CTextNetIdMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 class CTextDeviceIdMap : public unordered_map<text_t, deviceId_t> {
 public:
-
+	CTextDeviceIdMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 class CTextInstanceIdMap : public unordered_map<text_t, instanceId_t> {
 public:
+	CTextInstanceIdMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 class CStringTextMap : public unordered_map<string, text_t> {
 public:
+	CStringTextMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 class CNetIdVector : public vector<netId_t> {

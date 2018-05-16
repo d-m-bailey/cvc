@@ -44,6 +44,7 @@ public:
 
 class CNetMap : public unordered_map<netId_t, forward_list<netId_t>> {
 public:
+	CNetMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 class CCvcDb {

@@ -41,7 +41,7 @@ public:
 	netId_t	portCount = 0;
 	// local signal to local netID Map
 	CTextNetIdMap localSignalIdMap;
-	//Å@temporary list to convert to vector
+	// temporary list to convert to vector
 	CTextList	internalSignalList;
 	// local netID to signal name map
 	CTextVector	internalSignal_v;
@@ -80,7 +80,7 @@ public:
 
 class CTextCircuitPtrMap : public unordered_map<text_t, CCircuit *> {
 public:
-
+	CTextCircuitPtrMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 class CCircuitPtrList : public list<CCircuit *> {

@@ -41,8 +41,8 @@ enum activeType_t { MIN_ACTIVE=0, MAX_ACTIVE, MIN_IGNORE, MAX_IGNORE };
 
 class CPowerFamilyMap : public unordered_map<string, unordered_set<string>> {
 public:
+	CPowerFamilyMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 	void AddFamily(string thePowerString);
-
 };
 
 class CPowerPtrMap; // forward definition
@@ -127,16 +127,20 @@ public:
 
 class CPowerPtrMap : public unordered_map<string, CPower *> {
 public:
+	CPowerPtrMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 	void Clear();
 	string CalculateExpectedValue(string theEquation, netStatus_t theType, CModelListMap & theModelListMap);
 	voltage_t CalculateVoltage(string theEquation, netStatus_t theType, CModelListMap & theModelListMap);
 };
+
+class CPowerPtrVector;  // forward definition
 
 class CPowerPtrList : public list<CPower *> {
 public:
 //	CPowerPtrMap	calculatedPowerPtrMap;
 
 	void Clear();
+	void Clear(CPowerPtrVector & theLeakVoltage_v, CPowerPtrVector & theNetVoltage_v, netId_t theNetCount);
 	void SetPowerLimits(voltage_t& theMaxPower, voltage_t& theMinPower);
 //	CPower * FindCalculatedPower(CEventQueue& theEventQueue, CPower * theCurrentPower_p, voltage_t theShortVoltage, string theNetName);
 //	CPower * FindCalculatedPower(CEventQueue& theEventQueue, CPower * theCurrentPower_p, voltage_t theShortVoltage, netId_t theNetId, netId_t theDefaultNetId, CCvcDb * theCvcDb);

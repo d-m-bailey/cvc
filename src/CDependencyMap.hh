@@ -28,6 +28,7 @@
 
 class CDependencyMap : public unordered_map<netId_t, list<netId_t>> {
 public:
+	CDependencyMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 #endif /* CDEPENDENCYMAP_HH_ */
