@@ -930,13 +930,22 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal) {
 			if ( ! myUnmatchedInstance.empty() ) {
 				myNetName = myUnmatchedInstance + HIERARCHY_DELIMITER + myNetName;
 			}
-			regex mySearchPattern(FuzzyFilter(myNetName));
+			string myFuzzyFilter = FuzzyFilter(myNetName);
+			regex mySearchPattern(myFuzzyFilter);
 			netId_t myNetId;
+			bool myExactMatch = true;
+			bool myFuzzySearch = (myFuzzyFilter.find_first_of("^$.*+?()[]{}|\\") < myFuzzyFilter.npos);
+			text_t mySignalText;
+			try {
+				mySignalText = cvcCircuitList.cdlText.GetTextAddress(myNetName);
+			}
+			catch (const out_of_range& oor_exception) {
+				myExactMatch = false;
+			}
 			for (auto instanceId_pit = mySearchInstanceIdList.begin(); instanceId_pit != mySearchInstanceIdList.end(); instanceId_pit++) {
 				CTextNetIdMap * mySignalIdMap_p = &(instancePtr_v[*instanceId_pit]->master_p->localSignalIdMap);
 				for ( auto signalIdPair_pit = mySignalIdMap_p->begin(); signalIdPair_pit != mySignalIdMap_p->end(); signalIdPair_pit++ ) {
-					try { // exact match
-						text_t mySignalText = cvcCircuitList.cdlText.GetTextAddress(myNetName);
+					if ( myExactMatch ) { // exact match
 						if ( signalIdPair_pit->first == mySignalText ) {
 							myNetId = instancePtr_v[*instanceId_pit]->localToGlobalNetId_v[signalIdPair_pit->second];
 //							if ( myCheckTopPort && *instanceId_pit == 0 && myNetId >= topCircuit_p->portCount ) throw out_of_range("requires leading '/'"); // top signals that are not ports posing as ports
@@ -946,9 +955,7 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal) {
 							myNetIdSet_p->insert(myNetId);
 							myFoundNetMatch = true;
 						}
-	//					myLocalNetId = instancePtr_v[*instanceId_pit]->master_p->localSignalIdMap.at(cvcCircuitList.cdlText.GetTextAddress(myNetName));
-					}
-					catch (const out_of_range& oor_exception) { // check for regex match
+					} else if ( myFuzzySearch ) {
 						if ( regex_match(signalIdPair_pit->first, mySearchPattern) ) {
 							myNetId = instancePtr_v[*instanceId_pit]->localToGlobalNetId_v[signalIdPair_pit->second];
 //							if ( myCheckTopPort && *instanceId_pit == 0 && myNetId >= topCircuit_p->portCount ) throw out_of_range("requires leading '/'"); // top signals that are not ports posing as ports
