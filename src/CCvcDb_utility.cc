@@ -1022,47 +1022,16 @@ list<string> * CCvcDb::SplitHierarchy(string theFullPath) {
 void CCvcDb::SaveMinMaxLeakVoltages() {
 	leakVoltageSet = true;
 	cout << "Saving min/max voltages..." << endl;
-	minLeakNet_v(minNet_v);
-	maxLeakNet_v(maxNet_v);
+	minLeakNet_v = minNet_v;
+	maxLeakNet_v = maxNet_v;
 	leakVoltagePtr_v = netVoltagePtr_v;
 }
 
 void CCvcDb::SaveInitialVoltages() {
-// use minLeak/maxLeak as initial vectors
-//	initialMinNet_v = minNet_v;
-//	initialMaxNet_v = maxNet_v;
 	cout << "Saving simulation voltages..." << endl;
-	/*
-	FILE* myInitialSimNetFile = tmpfile();
-
-	CBaseVirtualNetVector myInitialSimNet_v(simNet_v);
-	fwrite(myInitialSimNet_v.data(), sizeof(myInitialSimNet_v[0]), myInitialSimNet_v.size(), myInitialSimNetFile);
-	CBaseVirtualNet * myMappedSimNet = (CBaseVirtualNet *) mmap(NULL, sizeof(myInitialSimNet_v[0]) * myInitialSimNet_v.size(), PROT_READ, MAP_PRIVATE, fileno(myInitialSimNetFile), 0);
-	if ( myMappedSimNet == MAP_FAILED ) {
-		cout << "ERROR: Could not map initialSimNet_v" << endl;
-	} else {
-		initialSimNet_v()
-		for ( netId_t net_it = 0; net_it < myInitialSimNet_v.size(); net_it++ ) {
-			if ( ! ( myInitialSimNet_v[net_it].nextNetId == initialSimNet_v[net_it].nextNetId
-					&& myInitialSimNet_v[net_it].resistance == initialSimNet_v[net_it].resistance) ) {
-				cout << "DEBUG: initial sim net mismatch at net " << net_it << endl;
-			}
-		}
-	}
-	fclose(myInitialSimNetFile);
-	*/
-	initialSimNet_v(simNet_v);
+	initialSimNet_v = simNet_v;
 	initialVoltagePtr_v = netVoltagePtr_v;
 }
-
-/*
-void CCvcDb::SaveLogicVoltages() {
-	logicMinNet_v = minNet_v;
-	logicMaxNet_v = maxNet_v;
-	logicSimNet_v = simNet_v;
-	logicVoltagePtr_v = netVoltagePtr_v;
-}
-*/
 
 list<string> * CCvcDb::ExpandBusNet(string theBusName) {
 	list<string> * myNetList = new(list<string>);

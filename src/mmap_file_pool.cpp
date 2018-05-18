@@ -1,3 +1,24 @@
+/*
+ * This code is (c) 2012 Johannes Thoma
+ *
+ * modified 2018 for tmpfile by D. Mitch Bailey
+ *
+ * This file is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this file.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * You can download original source from https://github.com/johannesthoma/mmap_allocator.git
+ */
+
 #include "mmap_file_pool.h"
 #include "mmap_exception.h"
 #include <stdio.h>
@@ -79,9 +100,11 @@ namespace mmap_allocator_namespace {
 	
 	void *mmapped_file::open_and_mmap_file(std::string filename, enum access_mode access_mode, off_t offset, size_t length, bool map_whole_file, bool allow_remap)
 	{
+		/* Unspecified filename opens temporary file.
 		if (filename.c_str()[0] == '\0') {
 			throw mmap_allocator_exception("mmap_allocator not correctly initialized: filename is empty.");
 		}
+		*/
 		int mode;
 		int prot;
 		int mmap_mode = 0;
@@ -104,8 +127,14 @@ namespace mmap_allocator_namespace {
 		default: throw mmap_allocator_exception("Internal error"); break;
 		}
 
+		FILE * myTemporaryFile;
 		if (fd == -1) {
-			fd = open(filename.c_str(), mode);
+			if ( filename.empty() ) {
+				myTemporaryFile = tmpfile();
+				fd = fileno(myTemporaryFile);
+			} else {
+				fd = open(filename.c_str(), mode);
+			}
 			if (fd < 0) {
 				if (get_verbosity() > 0) {
 					perror("open");

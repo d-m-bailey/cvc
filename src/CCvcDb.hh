@@ -99,12 +99,12 @@ public:
 	CVirtualNetVector	maxNet_v;
 //	CVirtualNetVector	initialMaxNet_v;
 //	CVirtualNetVector	initialMinNet_v;
-	CBaseVirtualNetVector	initialSimNet_v;
+	CVirtualNetMappedVector	initialSimNet_v;
 //	CVirtualNetVector	logicMaxNet_v;
 //	CVirtualNetVector	logicMinNet_v;
 //	CVirtualNetVector	logicSimNet_v;
-	CVirtualLeakNetVector	maxLeakNet_v;
-	CVirtualLeakNetVector	minLeakNet_v;
+	CVirtualNetMappedVector	maxLeakNet_v;
+	CVirtualNetMappedVector	minLeakNet_v;
 //	CVirtualNetVector	fixedMaxNet_v;
 //	CVirtualNetVector	fixedMinNet_v;
 //	CVirtualNetVector	fixedSimNet_v;

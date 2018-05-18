@@ -34,6 +34,7 @@
 #include <csignal>
 #include <sys/stat.h>
 #include <regex>
+#include "mmappable_vector.h"
 
 extern CCvcDb * gCvcDb;
 extern int gContinueCount;
@@ -64,6 +65,9 @@ CCvcDb::CCvcDb(int argc, const char * argv[]) :
 		minNet_v(MIN_CALCULATED_BIT),
 		simNet_v(SIM_CALCULATED_BIT),
 		maxNet_v(MAX_CALCULATED_BIT),
+		initialSimNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_PRIVATE, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
+		maxLeakNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_PRIVATE, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
+		minLeakNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_PRIVATE, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
 		maxEventQueue(MAX_QUEUE, MAX_INACTIVE, MAX_PENDING, maxNet_v, netVoltagePtr_v),
 		minEventQueue(MIN_QUEUE, MIN_INACTIVE, MIN_PENDING, minNet_v, netVoltagePtr_v),
 		simEventQueue(SIM_QUEUE, SIM_INACTIVE, SIM_PENDING, simNet_v, netVoltagePtr_v),
@@ -1303,7 +1307,7 @@ bool CCvcDb::SetLatchPower() {
 		string myPmosPowerName;
 		string myPmosPowerAlias;
 		deviceId_t mySampleNmos = UNKNOWN_DEVICE;
-		deviceId_t mySamplePmos = UNKNOWN_DEVICE;
+//		deviceId_t mySamplePmos = UNKNOWN_DEVICE;
 		for ( int mos_it = 0; mos_it < myNmosCount-1; mos_it++ ) {
 			if ( ! netVoltagePtr_v[myNmosData_v[mos_it].source] || netVoltagePtr_v[myNmosData_v[mos_it].source]->simVoltage == UNKNOWN_VOLTAGE ) continue;  // skip non power
 			voltage_t myVoltage = netVoltagePtr_v[myNmosData_v[mos_it].source]->simVoltage;
@@ -1328,7 +1332,7 @@ bool CCvcDb::SetLatchPower() {
 					myPmosVoltage = myVoltage;
 					myPmosPowerName = NetName(myPmosData_v[mos_it].source);
 					myPmosPowerAlias = netVoltagePtr_v[myPmosData_v[mos_it].source]->powerAlias;
-					mySamplePmos = myPmosData_v[mos_it].id;
+//					mySamplePmos = myPmosData_v[mos_it].id;
 				}
 			}
 		}

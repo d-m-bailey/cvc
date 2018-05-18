@@ -195,7 +195,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 				&& InteractiveCvc(STAGE_FIRST_SIM) == SKIP ) continue;
 		SaveInitialVoltages();
 		if ( gDebug_cvc ) {
-			PrintAllVirtualNets<CVirtualLeakNetVector>(
+			PrintAllVirtualNets<CVirtualNetMappedVector>(
 					minLeakNet_v, simNet_v, maxLeakNet_v, "(1)");
 		}
 

@@ -880,13 +880,13 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 						reportFile << endl;
 						if ( theCurrentStage >= STAGE_COMPLETE ) {
 							if ( minLeakNet_v[myEquivalentNetId].nextNetId != myNetId )
-								PrintVirtualNet<CVirtualLeakNetVector>(minLeakNet_v, myNetId, "Initial min path", reportFile);
+								PrintVirtualNet<CVirtualNetMappedVector>(minLeakNet_v, myNetId, "Initial min path", reportFile);
 							if ( maxLeakNet_v[myEquivalentNetId].nextNetId != myNetId )
-								PrintVirtualNet<CVirtualLeakNetVector>(maxLeakNet_v, myNetId, "Initial max path", reportFile);
+								PrintVirtualNet<CVirtualNetMappedVector>(maxLeakNet_v, myNetId, "Initial max path", reportFile);
 						}
 						if ( theCurrentStage >= STAGE_SECOND_SIM ) {
 							if ( initialSimNet_v[myEquivalentNetId].nextNetId != myNetId )
-								PrintVirtualNet<CBaseVirtualNetVector>(initialSimNet_v, myNetId, "Initial sim path", reportFile);
+								PrintVirtualNet<CVirtualNetMappedVector>(initialSimNet_v, myNetId, "Initial sim path", reportFile);
 	/* 3pass
 							if ( logicMinNet_v[myNetId].nextNetId != myNetId )
 								PrintVirtualNet(logicMinNet_v, myNetId, "Logic min path", cout);

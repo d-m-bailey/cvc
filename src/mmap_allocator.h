@@ -1,3 +1,24 @@
+/*
+ * This code is (c) 2012 Johannes Thoma
+ *
+ * modified 2018 by D. Mitch Bailey
+ *
+ * This file is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this file.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * You can download original source from https://github.com/johannesthoma/mmap_allocator.git
+ */
+
 #ifndef _MMAP_ALLOCATOR_H
 #define _MMAP_ALLOCATOR_H
 
@@ -11,8 +32,10 @@
 
 namespace mmap_allocator_namespace
 {
-	template <typename T, typename A>
-        class mmappable_vector;
+	template <typename T>
+	class mmap_allocator;  // required forward declaration for following default
+	template <typename T, typename A = mmap_allocator<T> >
+	class mmappable_vector;
 
 	template <typename T> 
 	class mmap_allocator: public std::allocator<T>
