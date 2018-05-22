@@ -132,6 +132,7 @@ namespace mmap_allocator_namespace {
 			if ( filename.empty() ) {
 				myTemporaryFile = tmpfile();
 				fd = fileno(myTemporaryFile);
+				ftruncate(fd, 1);  // can not mmap empty file, so create small buffer
 			} else {
 				fd = open(filename.c_str(), mode);
 			}
@@ -145,20 +146,20 @@ namespace mmap_allocator_namespace {
 		}
 		if (map_whole_file) {
 			offset_to_map = 0;
-			length_to_map = filesize(fd, filename);
+			length_to_map = ( filename.empty() ) ? 1 : filesize(fd, filename);
 		} else {
 			offset_to_map = ALIGN_TO_PAGE(offset);
 			length_to_map = UPPER_ALIGN_TO_PAGE(length);
-		}
 
-		if (offset_to_map == offset_mapped && length_to_map == size_mapped) {
-			reference_count++;
-			return ((char*)memory_area)+offset-offset_mapped;
-		}
-		if (offset_to_map >= offset_mapped && length_to_map + offset_to_map - offset_mapped <= size_mapped)
-		{
-			reference_count++;
-			return ((char*)memory_area)+offset-offset_mapped;
+			if (offset_to_map == offset_mapped && length_to_map == size_mapped) {
+				reference_count++;
+				return ((char*)memory_area)+offset-offset_mapped;
+			}
+			if (offset_to_map >= offset_mapped && length_to_map + offset_to_map - offset_mapped <= size_mapped)
+			{
+				reference_count++;
+				return ((char*)memory_area)+offset-offset_mapped;
+			}
 		}
 		
 		if (memory_area != NULL) {
@@ -169,7 +170,6 @@ namespace mmap_allocator_namespace {
 				throw mmap_allocator_exception("Error in munmap file "+filename);
 			}
 		}
-
 		memory_area = mmap(address_to_map, length_to_map, prot, mmap_mode, fd, offset_to_map);
 		if (address_to_map != NULL && !allow_remap && memory_area != MAP_FAILED && memory_area != address_to_map) {
 			if (munmap(memory_area, length_to_map) < 0) {

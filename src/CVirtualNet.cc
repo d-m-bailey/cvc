@@ -121,8 +121,8 @@ CVirtualLeakNetVector& CVirtualLeakNetVector::operator() (CVirtualNetVector& the
 }
 */
 
-CVirtualNetMappedVector::CVirtualNetMappedVector(mmap_allocator<CVirtualNet> theAllocator) {
-	mmappable_vector<CVirtualNet>(A);
+CVirtualNetMappedVector::CVirtualNetMappedVector(mmap_allocator<CVirtualNet> theAllocator) :
+	mmappable_vector(theAllocator) {
 }
 
 void CVirtualNetMappedVector::operator= (CVirtualNetVector& theSourceVector) {

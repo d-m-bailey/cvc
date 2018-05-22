@@ -623,10 +623,10 @@ void CPowerPtrList::Clear(CPowerPtrVector & theLeakVoltage_v, CPowerPtrVector & 
 	while ( ! empty() ) {
 		netId_t myNetId = front()->netId;
 		if ( myNetId != UNKNOWN_NET && theNetCount > 0 ) {
-			if ( theLeakVoltage_v[myNetId] && theLeakVoltage_v[myNetId] == front() ) {
+			if ( theLeakVoltage_v.size() > myNetId && theLeakVoltage_v[myNetId] && theLeakVoltage_v[myNetId] == front() ) {
 				theLeakVoltage_v[myNetId] = NULL;
 			}
-			if ( theNetVoltage_v[myNetId] && theNetVoltage_v[myNetId] == front() ) {
+			if ( theNetVoltage_v.size() > myNetId && theNetVoltage_v[myNetId] && theNetVoltage_v[myNetId] == front() ) {
 				theNetVoltage_v[myNetId] = NULL;
 			}
 		}
