@@ -24,6 +24,7 @@
 #include "CCvcParameters.hh"
 
 #include "wordexp.h"
+#include "gzstream.h"
 
 /*
 CCvcParameters::CCvcParameters() {
@@ -350,7 +351,7 @@ void CCvcParameters::AddTestPower() {
 */
 
 returnCode_t CCvcParameters::LoadPower() {
-	ifstream myPowerFile(cvcPowerFilename);
+	igzstream myPowerFile(cvcPowerFilename);
 	cvcPowerPtrList.Clear();
 	cvcExpectedLevelPtrList.Clear();
 	cvcPowerFamilyMap.clear();
