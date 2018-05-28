@@ -68,6 +68,11 @@ public:
 //	CInstanceIdVector	subcircuitParent;
 	CInstanceIdVector	deviceParent_v;
 
+	// [net] = offset
+	vector<uintmax_t> firstDeviceIndex_v;
+	// [offset] = device
+	CDeviceIdVector connectedDevice_v;
+
 	// [device] = device
 	CDeviceIdVector	nextSource_v;
 	CDeviceIdVector	nextGate_v;
@@ -146,6 +151,7 @@ public:
 	uintmax_t	deviceCount;
 	uintmax_t	subcircuitCount;
 	uintmax_t	netCount;
+	uintmax_t	netDeviceCount;  // unique net-device connections (max = net * device)
 
 	unsigned int	lineLength = 0;
 
@@ -190,7 +196,9 @@ public:
 	netId_t MasterPowerNet(netId_t theFirstNetId, netId_t theSecondNetId);
 	void MakeEquivalentNets(CNetMap & theNetMap, netId_t theFirstNetId, netId_t theSecondNetId, deviceId_t theDeviceId);
 	void SetEquivalentNets();
+	void AddConnectedDevice(netId_t theNet, deviceId_t theDevice, deviceId_t theCount);
 	void LinkDevices();
+	void CheckConnectedDeviceVector(CDeviceIdVector& theDeviceCounts);
 	returnCode_t SetDeviceModels();
 	void DumpConnectionList(string theHeading, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v);
 

@@ -24,7 +24,7 @@
 #ifndef CVC_H_
 #define CVC_H_
 
-#define CVC_VERSION "0.14.7"
+#define CVC_VERSION "0.14.8"
 
 extern bool gDebug_cvc;
 extern bool gInterrupted;
@@ -85,6 +85,13 @@ void ResetVector (T& theVector, uintmax_t theSize) {
 
 template <class T>
 void ResetVector (T& theVector, uintmax_t theSize, uintmax_t theDefault) {
+	theVector.clear();
+	theVector.reserve(theSize);
+	theVector.resize(theSize, theDefault);
+}
+
+template <typename T>
+void ResetVector (vector<T>& theVector, uintmax_t theSize, uintmax_t theDefault) {
 	theVector.clear();
 	theVector.reserve(theSize);
 	theVector.resize(theSize, theDefault);

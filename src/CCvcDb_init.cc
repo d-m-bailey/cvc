@@ -405,6 +405,16 @@ void CCvcDb::SetEquivalentNets() {
 	isFixedEquivalentNet = true;
 }
 
+void CCvcDb::AddConnectedDevice(netId_t theNet, deviceId_t theDevice, deviceId_t theCount) {
+	uintmax_t myIndex = firstDeviceIndex_v[theNet];
+	while ( connectedDevice_v[myIndex] != UNKNOWN_DEVICE ) myIndex++;
+	if ( myIndex - firstDeviceIndex_v[theNet] >= theCount ) {
+		cout << "DEBUG: net " << theNet << " first " << firstDeviceIndex_v[theNet] << " current " << myIndex << endl;
+	}
+	cout << "DEBUG: Adding net " << theNet << " for device " << theDevice << " at offset " << myIndex << endl;
+	connectedDevice_v[myIndex] = theDevice;
+}
+
 void CCvcDb::LinkDevices() {
 	reportFile << "CVC: Linking devices..." << endl;
 	ResetVector<CDeviceIdVector>(firstSource_v, netCount, UNKNOWN_DEVICE);
@@ -427,6 +437,12 @@ void CCvcDb::LinkDevices() {
 	instanceId_t myInstanceCount = 0;
 	deviceId_t myPrintCount = 0;
 	register netId_t mySourceNet, myDrainNet, myGateNet, myBulkNet;
+	CDeviceIdVector myDeviceCounts;
+	ResetVector<CDeviceIdVector>(myDeviceCounts, deviceCount, 0);
+	CDeviceIdVector myFirstDevice;
+	ResetVector<CDeviceIdVector>(myFirstDevice, netCount, UNKNOWN_DEVICE);
+	CDeviceIdVector myLastDevice;
+	ResetVector<CDeviceIdVector>(myLastDevice, netCount, 0);
 	for (CCircuitPtrList::iterator circuit_ppit = cvcCircuitList.begin(); circuit_ppit != cvcCircuitList.end(); circuit_ppit++) {
 		CCircuit * myCircuit_p = *circuit_ppit;
 		if ( myCircuit_p->linked ) {
@@ -472,6 +488,7 @@ void CCvcDb::LinkDevices() {
 							connectionCount_v[mySourceNet].sourceCount++;
 							connectionCount_v[mySourceNet].sourceDrainType[myDeviceType] = true;
 							myDrainNet = drainNet_v[myDeviceId];
+							assert(myDrainNet != mySourceNet);
 							if ( myDrainNet != mySourceNet ) { // avoid double counting mos caps and inactive res
 								if ( firstDrain_v[myDrainNet] != UNKNOWN_DEVICE ) nextDrain_v[myDeviceId] = firstDrain_v[myDrainNet];
 								firstDrain_v[myDrainNet] = myDeviceId;
@@ -481,9 +498,11 @@ void CCvcDb::LinkDevices() {
 							break; }
 						case SWITCH_ON: {
 //							MakeEquivalentNets(mySourceId, myDrainId);
+							continue;
 							break; }
 						case BIPOLAR:	case DIODE:	case SWITCH_OFF: case CAPACITOR: {
 							IgnoreDevice(myDeviceId);
+							continue;
 							break; }
 						default: {
 //							cout << "ERROR: Unknown model type in LinkDevices" << endl;
@@ -491,11 +510,109 @@ void CCvcDb::LinkDevices() {
 							throw EUnknownModel();
 						}
 					}
+					if ( myGateNet != UNKNOWN_NET ) {
+						myDeviceCounts[myGateNet]++;
+						if ( myFirstDevice[myGateNet] > myDeviceId ) myFirstDevice[myGateNet] = myDeviceId;
+						if ( myLastDevice[myGateNet] < myDeviceId ) myLastDevice[myGateNet] = myDeviceId;
+					}
+					if ( mySourceNet != UNKNOWN_NET && mySourceNet != myGateNet) {
+						myDeviceCounts[mySourceNet]++;
+						if ( myFirstDevice[mySourceNet] > myDeviceId  ) myFirstDevice[mySourceNet] = myDeviceId;
+						if ( myLastDevice[mySourceNet] < myDeviceId ) myLastDevice[mySourceNet] = myDeviceId;
+					}
+					if ( myDrainNet != UNKNOWN_NET && myDrainNet != myGateNet && myDrainNet != mySourceNet ) {
+						myDeviceCounts[myDrainNet]++;
+						if ( myFirstDevice[myDrainNet] > myDeviceId  ) myFirstDevice[myDrainNet] = myDeviceId;
+						if ( myLastDevice[myDrainNet] < myDeviceId ) myLastDevice[myDrainNet] = myDeviceId;
+					}
+					if ( myBulkNet != UNKNOWN_NET && myBulkNet != myGateNet && mySourceNet != myBulkNet && myDrainNet != myBulkNet && deviceType_v[myDeviceId] != RESISTOR ) {
+						myDeviceCounts[myBulkNet]++;
+						if ( myFirstDevice[myBulkNet] > myDeviceId  ) myFirstDevice[myBulkNet] = myDeviceId;
+						if ( myLastDevice[myBulkNet] < myDeviceId ) myLastDevice[myBulkNet] = myDeviceId;
+					}
 				}
 			}
 		}
 	}
+	netDeviceCount = 0;
+	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+		if ( myDeviceCounts[net_it] == 0 ) continue;
+		cout << "net " << net_it << " expected at " << netDeviceCount << " for " << myDeviceCounts[net_it] << endl;
+		netDeviceCount += myDeviceCounts[net_it];
+		netId_t myNextIndex = net_it + 1;
+		while ( myNextIndex < netCount && myFirstDevice[myNextIndex] == UNKNOWN_DEVICE ) {
+			myNextIndex++;
+		}
+		if ( myNextIndex < netCount && myLastDevice[net_it] < myFirstDevice[myNextIndex] ) {
+			netDeviceCount++;
+		}
+	}
+	cout << "DEBUG: finished analysis. reserving " << netDeviceCount << endl;
+	ResetVector<uintmax_t>(firstDeviceIndex_v, netCount, UNKNOWN_DEVICE);  // extra last element is for empty nets
+	int myIndex = 0;
+	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+		if ( myDeviceCounts[net_it] == 0 ) {
+			firstDeviceIndex_v[net_it] = netDeviceCount;  // last element is unknown device
+			continue;
+		} else {
+			firstDeviceIndex_v[net_it] = myIndex;
+		}
+		netId_t myNextIndex = net_it + 1;
+		while ( myNextIndex < netCount && myFirstDevice[myNextIndex] == UNKNOWN_DEVICE ) {
+			myNextIndex++;
+		}
+		if ( myNextIndex < netCount && myLastDevice[net_it] < myFirstDevice[myNextIndex] ) {
+			myIndex ++;  // leaves unknown device before net device
+		}
+		myIndex += myDeviceCounts[net_it];
+	}
+	ResetVector<CDeviceIdVector>(connectedDevice_v, netDeviceCount + 1, UNKNOWN_DEVICE);  // extra last element is for empty nets
+	cout << "DEBUG: allocated vectors" << endl;
+	for ( deviceId_t device_it = 0; device_it < deviceCount; device_it++ ) {
+		switch (deviceType_v[device_it]) {
+			case SWITCH_ON:	case BIPOLAR:	case DIODE:	case SWITCH_OFF: case CAPACITOR:
+				continue;
+				break;
+			default:
+				break;
+		}
+		myGateNet = gateNet_v[device_it];
+		myBulkNet = bulkNet_v[device_it];
+		mySourceNet = sourceNet_v[device_it];
+		myDrainNet = drainNet_v[device_it];
+		if ( mySourceNet == myDrainNet ) continue;
+		if ( myGateNet != UNKNOWN_NET ) {
+//			assert(connectedDeviceVector_v[myGateNet].size() <= connectedDeviceVector_v[myGateNet].capacity());
+			AddConnectedDevice(myGateNet, device_it, myDeviceCounts[myGateNet]);
+		}
+		if ( mySourceNet != UNKNOWN_NET && mySourceNet != myGateNet ) {
+			AddConnectedDevice(mySourceNet, device_it, myDeviceCounts[mySourceNet]);
+		}
+		if ( myDrainNet != UNKNOWN_NET && myDrainNet != myGateNet && myDrainNet != mySourceNet ) {
+			AddConnectedDevice(myDrainNet, device_it, myDeviceCounts[myDrainNet]);
+		}
+		if ( myBulkNet != UNKNOWN_NET && myBulkNet != myGateNet && mySourceNet != myBulkNet && myDrainNet != myBulkNet && deviceType_v[device_it] != RESISTOR ) {
+			AddConnectedDevice(myBulkNet, device_it, myDeviceCounts[myBulkNet]);
+		}
+	}
+	CheckConnectedDeviceVector(myDeviceCounts);
 	cout << endl;
+}
+
+void CCvcDb::CheckConnectedDeviceVector(CDeviceIdVector& theDeviceCounts){
+	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+		cout << "DEBUG: net " << net_it << " starting at " << firstDeviceIndex_v[net_it] << " connected to " << theDeviceCounts[net_it] << " devices: ";
+		for ( uintmax_t myIndex = firstDeviceIndex_v[net_it];
+				myIndex < netDeviceCount && connectedDevice_v[myIndex] != UNKNOWN_DEVICE;
+				myIndex++ ) {
+			cout << connectedDevice_v[myIndex] << " ";
+			if ( connectedDevice_v[myIndex] >= connectedDevice_v[myIndex+1] ) break;
+		}
+		cout << endl;
+	}
+	for ( uintmax_t index_it = 0; index_it <= netDeviceCount; index_it++ ) {
+		cout << "index " << index_it << " device " << connectedDevice_v[index_it] << endl;
+	}
 }
 
 returnCode_t CCvcDb::SetDeviceModels() {
