@@ -28,6 +28,43 @@
 CDeviceCount::CDeviceCount(netId_t theNetId, CCvcDb * theCvcDb_p, instanceId_t theInstanceId) {
 // count devices attached to theNet
 	netId = theNetId;
+	uintmax_t index_it = theCvcDb_p->firstDeviceIndex_v[theNetId];
+	do {
+		deviceId_t device_it = theCvcDb_p->connectedDevice_v[index_it];
+		if ( theCvcDb_p->IsSubcircuitOf(theCvcDb_p->deviceParent_v[device_it], theInstanceId) ) {
+			switch( theCvcDb_p->deviceType_v[device_it] ) {
+			case NMOS:
+			case LDDN: {
+				if ( theCvcDb_p->sourceNet_v[device_it] == theNetId || theCvcDb_p->drainNet_v[device_it] == theNetId ) nmosCount++;
+				if ( theCvcDb_p->gateNet_v[device_it] == theNetId ) nmosGateCount++;
+				if ( theCvcDb_p->bulkNet_v[device_it] == theNetId ) nmosBulkCount++;
+				break;
+			}
+			case PMOS:
+			case LDDP: {
+				if ( theCvcDb_p->sourceNet_v[device_it] == theNetId || theCvcDb_p->drainNet_v[device_it] == theNetId ) pmosCount++;
+				if ( theCvcDb_p->gateNet_v[device_it] == theNetId ) pmosGateCount++;
+				if ( theCvcDb_p->bulkNet_v[device_it] == theNetId ) pmosBulkCount++;
+				break;
+			}
+			case RESISTOR: {
+				if ( theCvcDb_p->sourceNet_v[device_it] == theNetId || theCvcDb_p->drainNet_v[device_it] == theNetId ) resistorCount++;
+				break;
+			}
+			case CAPACITOR: {
+				if ( theCvcDb_p->sourceNet_v[device_it] == theNetId || theCvcDb_p->drainNet_v[device_it] == theNetId ) capacitorCount++;
+				break;
+			}
+			case DIODE: {
+				if ( theCvcDb_p->sourceNet_v[device_it] == theNetId || theCvcDb_p->drainNet_v[device_it] == theNetId ) diodeCount++;
+				break;
+			}
+			default: break;
+			}
+		}
+		index_it++;
+	} while (theCvcDb_p->connectedDevice_v[index_it-1] > theCvcDb_p->connectedDevice_v[index_it]);
+	/*
 	for ( auto device_it = theCvcDb_p->firstSource_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theCvcDb_p->nextSource_v[device_it] ) {
 		if ( theCvcDb_p->IsSubcircuitOf(theCvcDb_p->deviceParent_v[device_it], theInstanceId) ) {
 			switch( theCvcDb_p->deviceType_v[device_it] ) {
@@ -78,6 +115,7 @@ CDeviceCount::CDeviceCount(netId_t theNetId, CCvcDb * theCvcDb_p, instanceId_t t
 			}
 		}
 	}
+	*/
 }
 
 void CDeviceCount::Print(CCvcDb * theCvcDb_p) {

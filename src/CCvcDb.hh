@@ -196,9 +196,12 @@ public:
 	netId_t MasterPowerNet(netId_t theFirstNetId, netId_t theSecondNetId);
 	void MakeEquivalentNets(CNetMap & theNetMap, netId_t theFirstNetId, netId_t theSecondNetId, deviceId_t theDeviceId);
 	void SetEquivalentNets();
+	uintmax_t FindNextOpenIndex(uintmax_t theFirst, deviceId_t theLast);
 	void AddConnectedDevice(netId_t theNet, deviceId_t theDevice, deviceId_t theCount);
 	void LinkDevices();
 	void CheckConnectedDeviceVector(CDeviceIdVector& theDeviceCounts);
+	void CheckConnectedDeviceVector();
+	void PrintConnectedDeviceVector();
 	returnCode_t SetDeviceModels();
 	void DumpConnectionList(string theHeading, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v);
 
@@ -207,6 +210,8 @@ public:
 	void MergeConnectionListByTerminals(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId,
 			CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, CNetIdVector& theTerminal_v);
 	deviceId_t RecountConnections(netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v);
+	uintmax_t CountNetConnections(netId_t theNetId);
+	void MergeConnectionLists2(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId);
 	void MergeConnectionLists(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId);
 //	void ResetMosFuse();
 	void OverrideFuses();
@@ -276,6 +281,7 @@ public:
 	bool IsOffMos(eventQueue_t theQueueType, deviceId_t theDeviceId, CConnection& theConnections, voltage_t theVoltage);
 	void EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, eventKey_t theEventKey);
 	void EnqueueAttachedDevices(CEventQueue& theEventQueue, netId_t theNetId, eventKey_t theEventKey);
+	void EnqueueAttachedDevices2(CEventQueue& theEventQueue, netId_t theNetId, eventKey_t theEventKey, int theTerminals = (GATE | SOURCE | DRAIN));
 	void PropagateMinMaxVoltages(CEventQueue& theEventQueue);
 	bool CheckEstimateDependency(CDependencyMap& theDependencyMap, size_t theEstimateType, list<netId_t>& theDependencyList);
 	void CheckEstimateDependencies();
@@ -288,6 +294,7 @@ public:
 
 	void EnqueueAttachedResistorsByTerminal(CEventQueue& theEventQueue, netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, eventKey_t theEventKey, queuePosition_t theQueuePosition);
 	void EnqueueAttachedResistors(CEventQueue& theEventQueue, netId_t theNetId, eventKey_t theEventKey, queuePosition_t theQueuePosition);
+	void EnqueueAttachedResistors2(CEventQueue& theEventQueue, netId_t theNetId, eventKey_t theEventKey, queuePosition_t theQueuePosition);
 	bool CheckConnectionReroute(CEventQueue& theEventQueue, CConnection& theConnections, shortDirection_t theDirection);
 	bool IsPriorityDevice(CEventQueue& theEventQueue, modelType_t theModel);
 	void AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, CConnection& theConnections);
