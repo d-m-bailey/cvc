@@ -97,6 +97,37 @@ namespace mmap_allocator_namespace {
 			(inode == other.inode && access_mode == other.access_mode && device < other.device);
 			
 	}
+
+	void mmapped_file::remmap_file_for_read()
+	{
+		if ( msync(memory_area, size_mapped, MS_SYNC) < 0 ) {
+			if (get_verbosity() > 0) {
+				perror("msync");
+			}
+			throw mmap_allocator_exception("Error in remmap(msync)");
+		}
+		if ( munmap(memory_area, size_mapped) < 0) {
+			if (get_verbosity() > 0) {
+				perror("munmap");
+			}
+			throw mmap_allocator_exception("Error in remmap(munmap)");
+		}
+		if ( fd == -1 )
+			throw mmap_allocator_exception("Error in remmap(fd)");
+
+		void *last_address = memory_area;
+		memory_area = mmap(last_address, size_mapped, PROT_READ, MAP_SHARED | MAP_NORESERVE, fd, 0);
+		if (memory_area == MAP_FAILED) {
+			if (get_verbosity() > 0) {
+				perror("mmap");
+			}
+			throw mmap_allocator_exception("Error in remmap(mmap)");
+		}
+		if ( memory_area != last_address ) {
+			throw mmap_allocator_exception("Error in remmap(moved)");
+		}
+		madvise(memory_area, size_mapped, MADV_RANDOM | MADV_DONTNEED);
+	}
 	
 	void *mmapped_file::open_and_mmap_file(std::string filename, enum access_mode access_mode, off_t offset, size_t length, bool map_whole_file, bool allow_remap)
 	{
@@ -116,8 +147,8 @@ namespace mmap_allocator_namespace {
 			address_to_map = memory_area;
 
 	/* do not use MAP_FIXED, since that may invalidate other memory
-           areas in the process, such as shared libraries, which would 
-           lead to a mystic Segfault. */
+	   areas in the process, such as shared libraries, which would 
+	   lead to a mystic Segfault. */
 
 		}
 		switch (access_mode) {
@@ -132,7 +163,7 @@ namespace mmap_allocator_namespace {
 			if ( filename.empty() ) {
 				myTemporaryFile = tmpfile();
 				fd = fileno(myTemporaryFile);
-				ftruncate(fd, 1);  // can not mmap empty file, so create small buffer
+				ftruncate(fd, length);  // can not mmap empty file, so create it
 			} else {
 				fd = open(filename.c_str(), mode);
 			}
@@ -146,20 +177,20 @@ namespace mmap_allocator_namespace {
 		}
 		if (map_whole_file) {
 			offset_to_map = 0;
-			length_to_map = ( filename.empty() ) ? 1 : filesize(fd, filename);
+			length_to_map = ( filename.empty() ) ? length : filesize(fd, filename);
 		} else {
 			offset_to_map = ALIGN_TO_PAGE(offset);
 			length_to_map = UPPER_ALIGN_TO_PAGE(length);
+		}
 
-			if (offset_to_map == offset_mapped && length_to_map == size_mapped) {
-				reference_count++;
-				return ((char*)memory_area)+offset-offset_mapped;
-			}
-			if (offset_to_map >= offset_mapped && length_to_map + offset_to_map - offset_mapped <= size_mapped)
-			{
-				reference_count++;
-				return ((char*)memory_area)+offset-offset_mapped;
-			}
+		if (offset_to_map == offset_mapped && length_to_map == size_mapped) {
+			reference_count++;
+			return ((char*)memory_area)+offset-offset_mapped;
+		}
+		if (offset_to_map >= offset_mapped && length_to_map + offset_to_map - offset_mapped <= size_mapped)
+		{
+			reference_count++;
+			return ((char*)memory_area)+offset-offset_mapped;
 		}
 		
 		if (memory_area != NULL) {

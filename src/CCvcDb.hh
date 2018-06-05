@@ -210,7 +210,7 @@ public:
 	void MergeConnectionListByTerminals(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId,
 			CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, CNetIdVector& theTerminal_v);
 	deviceId_t RecountConnections(netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v);
-	uintmax_t CountNetConnections(netId_t theNetId);
+	uintmax_t CountDeviceConnections(netId_t theNetId);
 	void MergeConnectionLists2(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId);
 	void MergeConnectionLists(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId);
 //	void ResetMosFuse();

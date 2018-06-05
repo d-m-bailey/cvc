@@ -65,9 +65,9 @@ CCvcDb::CCvcDb(int argc, const char * argv[]) :
 		minNet_v(MIN_CALCULATED_BIT),
 		simNet_v(SIM_CALCULATED_BIT),
 		maxNet_v(MAX_CALCULATED_BIT),
-		initialSimNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_PRIVATE, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
-		maxLeakNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_PRIVATE, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
-		minLeakNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_PRIVATE, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
+		initialSimNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_SHARED, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
+		maxLeakNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_SHARED, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
+		minLeakNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_SHARED, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
 		maxEventQueue(MAX_QUEUE, MAX_INACTIVE, MAX_PENDING, maxNet_v, netVoltagePtr_v),
 		minEventQueue(MIN_QUEUE, MIN_INACTIVE, MIN_PENDING, minNet_v, netVoltagePtr_v),
 		simEventQueue(SIM_QUEUE, SIM_INACTIVE, SIM_PENDING, simNet_v, netVoltagePtr_v),
@@ -634,7 +634,7 @@ void CCvcDb::CheckConnectedDeviceVector(CDeviceIdVector& theDeviceCounts){
 
 void CCvcDb::CheckConnectedDeviceVector(){
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
-		cout << "DEBUG: net " << net_it << " starting at " << firstDeviceIndex_v[net_it] << " connected to " << CountNetConnections(net_it) << " devices: ";
+		cout << "DEBUG: net " << net_it << " starting at " << firstDeviceIndex_v[net_it] << " connected to " << CountDeviceConnections(net_it) << " devices: ";
 		for ( uintmax_t myIndex = firstDeviceIndex_v[net_it]; myIndex < netDeviceCount;	myIndex++ ) {
 			cout << connectedDevice_v[myIndex] << " ";
 			if ( connectedDevice_v[myIndex] < connectedDevice_v[myIndex+1] ) break;
@@ -863,7 +863,7 @@ deviceId_t CCvcDb::RecountConnections(netId_t theNetId, CDeviceIdVector& theFirs
 	return myCount;
 }
 
-uintmax_t CCvcDb::CountNetConnections(netId_t theNetId) {
+uintmax_t CCvcDb::CountDeviceConnections(netId_t theNetId) {
 	uintmax_t myOffset = firstDeviceIndex_v[theNetId];
 	if ( connectedDevice_v[myOffset] != UNKNOWN_DEVICE ) {
 		do {
@@ -874,115 +874,101 @@ uintmax_t CCvcDb::CountNetConnections(netId_t theNetId) {
 }
 
 void CCvcDb::MergeConnectionLists2(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId) {
-	uintmax_t myFromNetCount = CountNetConnections(theFromNet);
-	uintmax_t myToNetCount = CountNetConnections(theToNet);
+	uintmax_t myFromDeviceCount = CountDeviceConnections(theFromNet);
+	uintmax_t myToDeviceCount = CountDeviceConnections(theToNet);
 	uintmax_t myMoveOrigin, myMoveLength;
 	intmax_t myShift;
 	uintmax_t myFromIndex = 0;
 	uintmax_t myOldToIndex;
+	if ( myFromDeviceCount == 1 && myToDeviceCount == 1 ) {
+		assert(connectedDevice_v[firstDeviceIndex_v[theFromNet]] == theIgnoreDeviceId && connectedDevice_v[firstDeviceIndex_v[theToNet]] == theIgnoreDeviceId);
+		connectedDevice_v[firstDeviceIndex_v[theFromNet]] = UNKNOWN_DEVICE;
+		firstDeviceIndex_v[theFromNet] = netDeviceCount;
+		connectedDevice_v[firstDeviceIndex_v[theToNet]] = UNKNOWN_DEVICE;
+		firstDeviceIndex_v[theToNet] = netDeviceCount;
+		return;
+	}
 	if ( theFromNet < theToNet ) {
-		myMoveOrigin = firstDeviceIndex_v[theFromNet] + myFromNetCount;
-		myShift = - (myFromNetCount - 1);
+		myMoveOrigin = firstDeviceIndex_v[theFromNet] + myFromDeviceCount;
+		myShift = - (myFromDeviceCount - 1);
 		myMoveLength = firstDeviceIndex_v[theToNet] - myMoveOrigin;
 		myOldToIndex = firstDeviceIndex_v[theToNet];
 	} else {
 		myMoveOrigin = firstDeviceIndex_v[theToNet];
-		myShift = myFromNetCount - 1;
+		myShift = myFromDeviceCount - 1;
 		myMoveLength = firstDeviceIndex_v[theFromNet] - myMoveOrigin;
 		myOldToIndex = firstDeviceIndex_v[theToNet] + myShift;
 	}
-//	cout << "Merging net " << theFromNet << " to " << theToNet << " ignoring device " << theIgnoreDeviceId << endl;
-//	cout << "origin " << myMoveOrigin << "; shift " << myShift << "; length " << myMoveLength << endl;
-//	cout << "DEBUG: before move " << endl;
-//	PrintConnectedDeviceVector();
-	deviceId_t * myFromDevices = (deviceId_t *) malloc(sizeof(deviceId_t) * myFromNetCount);
-	assert(myFromDevices);
-//	cout << "DEBUG: finished malloc" << endl;
-	memcpy((void*)myFromDevices, (void*)&connectedDevice_v[firstDeviceIndex_v[theFromNet]], sizeof(deviceId_t) * myFromNetCount);  // save to temporary buffer
-//	for ( uintmax_t index_it = 0; index_it < myFromNetCount; index_it++ ) {
-//		cout << "DEBUG: from " << myFromNets[index_it] << "@" << index_it << endl;
-//	}
-//	cout << "DEBUG: finished copy" << endl;
-	if ( myMoveLength > 0 ) {
-		memmove((void*)&connectedDevice_v[myMoveOrigin + myShift], (void*)&connectedDevice_v[myMoveOrigin], sizeof(deviceId_t) * myMoveLength);
-	}
-//	cout << "DEBUG: finished move" << endl;
-//	if ( theFromNet < theToNet ) {  // adjust indices in the interval
-	for (uintmax_t index_it = min(theFromNet, theToNet) + 1; index_it <= max(theFromNet, theToNet); index_it++) {
-		if ( firstDeviceIndex_v[index_it] != netDeviceCount ) {
-			firstDeviceIndex_v[index_it] += myShift;
+	deviceId_t myFirstFromDevice = connectedDevice_v[firstDeviceIndex_v[theFromNet]];
+	deviceId_t * myFromDevices;
+	if ( myShift != 0 ) {
+	//	cout << "Merging net " << theFromNet << " to " << theToNet << " ignoring device " << theIgnoreDeviceId << endl;
+	//	cout << "origin " << myMoveOrigin << "; shift " << myShift << "; length " << myMoveLength << endl;
+	//	cout << "DEBUG: before move " << endl;
+	//	PrintConnectedDeviceVector();
+		myFromDevices = (deviceId_t *) malloc(sizeof(deviceId_t) * myFromDeviceCount);
+		assert(myFromDevices);
+		memcpy((void*)myFromDevices, (void*)&connectedDevice_v[firstDeviceIndex_v[theFromNet]], sizeof(deviceId_t) * myFromDeviceCount);  // save to temporary buffer
+		if ( myMoveLength > 0 ) {
+			memmove((void*)&connectedDevice_v[myMoveOrigin + myShift], (void*)&connectedDevice_v[myMoveOrigin], sizeof(deviceId_t) * myMoveLength);
+		}
+		for (uintmax_t index_it = min(theFromNet, theToNet) + 1; index_it <= max(theFromNet, theToNet); index_it++) {
+			if ( firstDeviceIndex_v[index_it] != netDeviceCount ) {
+				firstDeviceIndex_v[index_it] += myShift;
+			}
 		}
 	}
-//		connectedDevice_v[firstDeviceIndex_v[theFromNet]] = UNKNOWN_DEVICE;  // from < to, first from set to unknown
-//	} else {
-//		for (uintmax_t index_it = theToNet + 1; index_it <= theFromNet; index_it++) {
-//			if ( firstDeviceIndex_v[index_it] != netDeviceCount ) {
-//				firstDeviceIndex_v[index_it] += myShift;
-//			}
-//		}
-//		connectedDevice_v[firstDeviceIndex_v[theFromNet] + myFromNetCount - 1] = UNKNOWN_DEVICE;  // to < from, last from set to unknown
-//	}
-	connectedDevice_v[firstDeviceIndex_v[theFromNet]] = UNKNOWN_DEVICE;
-	firstDeviceIndex_v[theFromNet] = netDeviceCount;
-	uintmax_t myLastToIndex = myOldToIndex + myToNetCount;
-	if ( connectedDevice_v[myOldToIndex] == connectedDevice_v[myFromIndex] && connectedDevice_v[myOldToIndex] == theIgnoreDeviceId ) {  // if first to device is ignored, terminate previous list and increment start index
-//		cout << "DEBUG: first unknown at " << firstDeviceIndex_v[theToNet] << endl;
+	uintmax_t myLastToIndex = myOldToIndex + myToDeviceCount;
+	if ( connectedDevice_v[myOldToIndex] == myFirstFromDevice && myFirstFromDevice == theIgnoreDeviceId ) {  // if first to device is ignored, terminate previous list and increment start index
 		connectedDevice_v[firstDeviceIndex_v[theToNet]] = UNKNOWN_DEVICE;
 		firstDeviceIndex_v[theToNet]++;
+		myOldToIndex++;
 	}
+	connectedDevice_v[firstDeviceIndex_v[theFromNet]] = UNKNOWN_DEVICE;
+	firstDeviceIndex_v[theFromNet] = netDeviceCount;
 	uintmax_t offset_it = firstDeviceIndex_v[theToNet];
-//	cout << "DEBUG: new to index " << firstDeviceIndex_v[theToNet] << endl;
-	while ( myFromIndex < myFromNetCount && myOldToIndex < myLastToIndex ) {
-		if ( connectedDevice_v[myOldToIndex] > myFromDevices[myFromIndex] ) {
-//			cout << "DEBUG: merge index " << offset_it << " to list " << connectedDevice_v[myOldToIndex] << "@" << myOldToIndex << endl;
-			connectedDevice_v[offset_it] = connectedDevice_v[myOldToIndex];
-			myOldToIndex++;
-		} else if ( connectedDevice_v[myOldToIndex] < myFromDevices[myFromIndex] ) {
-//			cout << "DEBUG: merge index " << offset_it << " from list " << myFromDevices[myFromIndex] << "@" << myFromIndex << endl;
+	if ( myShift != 0 ) {
+		while ( myFromIndex < myFromDeviceCount && myOldToIndex < myLastToIndex ) {
+			if ( connectedDevice_v[myOldToIndex] > myFromDevices[myFromIndex] ) {
+				connectedDevice_v[offset_it] = connectedDevice_v[myOldToIndex];
+				myOldToIndex++;
+			} else if ( connectedDevice_v[myOldToIndex] < myFromDevices[myFromIndex] ) {
+				connectedDevice_v[offset_it] = myFromDevices[myFromIndex];
+				myFromIndex++;
+			} else {  // connectedDevice_v[myOldToIndex] == myFromDevices[myFromIndex]
+				connectedDevice_v[offset_it] = connectedDevice_v[myOldToIndex];
+				myOldToIndex++;
+				myFromIndex++;
+			}
+			if ( connectedDevice_v[offset_it] != theIgnoreDeviceId ) {
+				offset_it++;
+			}
+		}
+		while ( myFromIndex < myFromDeviceCount ) {
 			connectedDevice_v[offset_it] = myFromDevices[myFromIndex];
 			myFromIndex++;
-		} else {  // connectedDevice_v[myOldToIndex] == myFromDevices[myFromIndex]
-//			cout << "DEBUG: merge index " << offset_it << " both lists " << connectedDevice_v[myOldToIndex] << "@" << myFromIndex << "+" << connectedDevice_v[myOldToIndex] << endl;
-			connectedDevice_v[offset_it] = connectedDevice_v[myOldToIndex];
-			myOldToIndex++;
-			myFromIndex++;
-		}
-		if ( connectedDevice_v[offset_it] != theIgnoreDeviceId ) {
-			offset_it++;
-		} else {
-//			cout << "DEBUG: skipping ignore device at " << offset_it << endl;
-		}
-	}
-	while ( myFromIndex < myFromNetCount ) {
-//		cout << "DEBUG: merge index " << offset_it << " from list " << myFromDevices[myFromIndex] << "@" << myFromIndex << endl;
-		connectedDevice_v[offset_it] = myFromDevices[myFromIndex];
-		myFromIndex++;
-		if ( connectedDevice_v[offset_it] != theIgnoreDeviceId ) {
-			offset_it++;
-		} else {
-//			cout << "DEBUG: skipping ignore device at " << offset_it << endl;
+			if ( connectedDevice_v[offset_it] != theIgnoreDeviceId ) {
+				offset_it++;
+			}
 		}
 	}
 	while ( myOldToIndex < myLastToIndex ) {
-//		cout << "DEBUG: merge index " << offset_it << " to list " << connectedDevice_v[myOldToIndex] << "@" << myOldToIndex << endl;
 		connectedDevice_v[offset_it] = connectedDevice_v[myOldToIndex];
 		myOldToIndex++;
 		if ( connectedDevice_v[offset_it] != theIgnoreDeviceId ) {
 			offset_it++;
-		} else {
-//			cout << "DEBUG: skipping ignore device at " << offset_it << endl;
 		}
 	}
-	if ( offset_it < myLastToIndex || connectedDevice_v[offset_it] == theIgnoreDeviceId ) {  // terminate list if last device is ignored
-//		cout << "DEBUG: last unknown at " << offset_it << endl;
+	if ( offset_it < myLastToIndex ) {  // terminate list if last device is ignored
 		connectedDevice_v[offset_it] = UNKNOWN_DEVICE;
 	}
 //	PrintConnectedDeviceVector();
-//	cout << "DEBUG: final offset " << offset_it << endl;
-	assert(offset_it < firstDeviceIndex_v[theToNet] + myFromNetCount + myToNetCount);
+	assert(offset_it < firstDeviceIndex_v[theToNet] + myFromDeviceCount + myToDeviceCount);
 //	connectedDevice_v[offset_it] = UNKNOWN_DEVICE;
 //	cout << "DEBUG: after move " << endl;
-	free(myFromDevices);
+	if ( myShift != 0 ) {
+		free(myFromDevices);
+	}
 }
 
 void CCvcDb::MergeConnectionLists(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId) {
