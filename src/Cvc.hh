@@ -24,7 +24,7 @@
 #ifndef CVC_H_
 #define CVC_H_
 
-#define CVC_VERSION "0.14.9.2"
+#define CVC_VERSION "0.14.9.3"
 
 extern bool gDebug_cvc;
 extern bool gInterrupted;
@@ -182,6 +182,10 @@ public:
 };
 
 class CDeviceIdVector : public vector<deviceId_t> {
+public:
+};
+
+class CDeviceOffsetVector : public vector<uintmax_t> {
 public:
 };
 

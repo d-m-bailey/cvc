@@ -1180,3 +1180,23 @@ void CCvcDb::Cleanup() {
 	cvcParameters.cvcPowerMacroPtrMap.Clear();
 	cvcParameters.cvcModelListMap.Clear();
 }
+
+void CCvcDb::AddConnectedDevices(netId_t theNetId, list<deviceId_t>& thePmosToCheck, list<deviceId_t>& theNmosToCheck, list<deviceId_t>& theResistorToCheck, int theTerminalType) {
+	uintmax_t index_it = firstDeviceIndex_v[theNetId];
+	do {
+		deviceId_t device_it = connectedDevice_v[index_it++];
+		if ( device_it != UNKNOWN_DEVICE && HasRelevantConnection(device_it, theNetId, theTerminalType) ) {
+			switch (deviceType_v[device_it]) {
+				case NMOS:
+				case LDDN: { theNmosToCheck.push_back(device_it); break; }
+				case PMOS:
+				case LDDP: { thePmosToCheck.push_back(device_it); break; }
+				case RESISTOR:
+				case FUSE_ON:
+				case FUSE_OFF: { theResistorToCheck.push_back(device_it); break; }
+				default: { break; }
+			}
+		}
+	} while ( connectedDevice_v[index_it-1] > connectedDevice_v[index_it] );
+}
+

@@ -59,8 +59,8 @@ public:
 
 };
 
-void AddConnectedDevices(netId_t theNetId, list<deviceId_t>& myPmosToCheck,	list<deviceId_t>& myNmosToCheck,
-		list<deviceId_t>& myResistorToCheck, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, vector<modelType_t>& theDeviceType_v );
+//void AddConnectedDevices(netId_t theNetId, list<deviceId_t>& myPmosToCheck,	list<deviceId_t>& myNmosToCheck,
+//		list<deviceId_t>& myResistorToCheck, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, vector<modelType_t>& theDeviceType_v );
 
 class CFullConnection {
 public:

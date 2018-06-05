@@ -382,25 +382,6 @@ void AddTerminalConnections(deviceId_t theFirstDevice, list<deviceId_t>& myPmosT
 }
 */
 
-void AddConnectedDevices(netId_t theNetId, list<deviceId_t>& myPmosToCheck,	list<deviceId_t>& myNmosToCheck,
-		list<deviceId_t>& myResistorToCheck, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, vector<modelType_t>& theDeviceType_v ) {
-		for ( deviceId_t device_it = theFirstDevice_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theNextDevice_v[device_it] ) {
-//			if ( theCheckedDevices.count(device_it) == 0 ) {
-//				theCheckedDevices.insert(device_it);
-				switch (theDeviceType_v[device_it]) {
-					case NMOS:
-					case LDDN: { myNmosToCheck.push_back(device_it); break; }
-					case PMOS:
-					case LDDP: { myPmosToCheck.push_back(device_it); break; }
-					case RESISTOR:
-					case FUSE_ON:
-					case FUSE_OFF: { myResistorToCheck.push_back(device_it); break; }
-					default: { break; }
-				}
-//			}
-		}
-}
-
 bool CFullConnection::IsPossibleHiZ(CCvcDb * theCvcDb) {
 	const int myCheckLimit = 10;
 	set<netId_t> myCheckedNets;
@@ -411,22 +392,22 @@ bool CFullConnection::IsPossibleHiZ(CCvcDb * theCvcDb) {
 	list<deviceId_t> myResistorToCheck;
 	set<long> myPmosInputs;
 	set<long> myNmosInputs;
-	if ( theCvcDb->connectionCount_v[this->gateId].SourceDrainCount() > myCheckLimit ) return(false);
-	myNetsToCheck.push_back(this->gateId);
-	AddConnectedDevices(this->gateId, myPmosToCheck, myNmosToCheck, myResistorToCheck, theCvcDb->firstSource_v, theCvcDb->nextSource_v, theCvcDb->deviceType_v);
-	AddConnectedDevices(this->gateId, myPmosToCheck, myNmosToCheck, myResistorToCheck, theCvcDb->firstDrain_v, theCvcDb->nextDrain_v, theCvcDb->deviceType_v);
+	if ( theCvcDb->connectionCount_v[gateId].SourceDrainCount() > myCheckLimit ) return(false);
+	myNetsToCheck.push_back(gateId);
+	theCvcDb->AddConnectedDevices(gateId, myPmosToCheck, myNmosToCheck, myResistorToCheck, (SOURCE | DRAIN));
+//	AddConnectedDevices(gateId, myPmosToCheck, myNmosToCheck, myResistorToCheck, theCvcDb->firstDrain_v, theCvcDb->nextDrain_v, theCvcDb->deviceType_v);
 	if ( myResistorToCheck.size() > 0 || myNmosToCheck.size() != 1 || myPmosToCheck.size() != 1 ) return(false);
-	for ( netId_t net_it = theCvcDb->maxNet_v[this->gateId].nextNetId; net_it != theCvcDb->maxNet_v[this->gateId].finalNetId; net_it = theCvcDb->maxNet_v[net_it].nextNetId ) {
+	for ( netId_t net_it = theCvcDb->maxNet_v[gateId].nextNetId; net_it != theCvcDb->maxNet_v[gateId].finalNetId; net_it = theCvcDb->maxNet_v[net_it].nextNetId ) {
 		CConnectionCount myCounts = theCvcDb->connectionCount_v[net_it];
 		if ( myCounts.SourceDrainCount() != 2 || myCounts.sourceDrainType != PMOS_ONLY ) return false;
-		AddConnectedDevices(net_it, myPmosToCheck, myNmosToCheck, myResistorToCheck, theCvcDb->firstSource_v, theCvcDb->nextSource_v, theCvcDb->deviceType_v);
-		AddConnectedDevices(net_it, myPmosToCheck, myNmosToCheck, myResistorToCheck, theCvcDb->firstDrain_v, theCvcDb->nextDrain_v, theCvcDb->deviceType_v);
+		theCvcDb->AddConnectedDevices(net_it, myPmosToCheck, myNmosToCheck, myResistorToCheck, (SOURCE | DRAIN));
+//		theCvcDb->AddConnectedDevices(net_it, myPmosToCheck, myNmosToCheck, myResistorToCheck, theCvcDb->firstDrain_v, theCvcDb->nextDrain_v, theCvcDb->deviceType_v);
 	}
-	for ( netId_t net_it = theCvcDb->minNet_v[this->gateId].nextNetId; net_it != theCvcDb->minNet_v[this->gateId].finalNetId; net_it = theCvcDb->minNet_v[net_it].nextNetId ) {
+	for ( netId_t net_it = theCvcDb->minNet_v[gateId].nextNetId; net_it != theCvcDb->minNet_v[gateId].finalNetId; net_it = theCvcDb->minNet_v[net_it].nextNetId ) {
 		CConnectionCount myCounts = theCvcDb->connectionCount_v[net_it];
 		if ( myCounts.SourceDrainCount() != 2 || myCounts.sourceDrainType != NMOS_ONLY ) return false;
-		AddConnectedDevices(net_it, myPmosToCheck, myNmosToCheck, myResistorToCheck, theCvcDb->firstSource_v, theCvcDb->nextSource_v, theCvcDb->deviceType_v);
-		AddConnectedDevices(net_it, myPmosToCheck, myNmosToCheck, myResistorToCheck, theCvcDb->firstDrain_v, theCvcDb->nextDrain_v, theCvcDb->deviceType_v);
+		theCvcDb->AddConnectedDevices(net_it, myPmosToCheck, myNmosToCheck, myResistorToCheck, (SOURCE | DRAIN));
+//		theCvcDb->AddConnectedDevices(net_it, myPmosToCheck, myNmosToCheck, myResistorToCheck, theCvcDb->firstDrain_v, theCvcDb->nextDrain_v, theCvcDb->deviceType_v);
 	}
 	netId_t myGateNet;
 //	cout << "Pmos gates to check:";

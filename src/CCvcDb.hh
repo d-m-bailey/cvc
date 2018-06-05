@@ -69,7 +69,7 @@ public:
 	CInstanceIdVector	deviceParent_v;
 
 	// [net] = offset
-	vector<uintmax_t> firstDeviceIndex_v;
+	CDeviceOffsetVector firstDeviceIndex_v;
 	// [offset] = device
 	CDeviceIdVector connectedDevice_v;
 
@@ -365,6 +365,7 @@ public:
 	bool IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId);
 	deviceId_t GetSeriesConnectedDevice(deviceId_t theDeviceId, netId_t theNetId);
 	void Cleanup();
+	void AddConnectedDevices(netId_t theNetId, list<deviceId_t>& thePmosToCheck, list<deviceId_t>& theNmosToCheck, list<deviceId_t>& theResistorToCheck, int theTerminalType);
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);
@@ -551,5 +552,11 @@ void CCvcDb::PrintAllVirtualNets(TVirtualNetVector& theMinNet_v, CVirtualNetVect
 		)
 
 #define ExceedsLeakLimit_(theLeakCurrent) (rint(((theLeakCurrent) - cvcParameters.cvcLeakLimit) * 1e9) / 1e9 > 0)
+
+#define HasRelevantConnection(theDevice, theNet, theTerminalType) ( \
+	(((theTerminalType) & SOURCE) && sourceNet_v[theDevice] == (theNet)) \
+	|| (((theTerminalType) & DRAIN) && drainNet_v[theDevice] == (theNet)) \
+	|| (((theTerminalType) & GATE) && gateNet_v[theDevice] == (theNet)) \
+	|| (((theTerminalType) & BULK) && bulkNet_v[theDevice] == (theNet)) )
 
 #endif /* CCVCDB_HH_ */
