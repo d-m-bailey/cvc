@@ -434,14 +434,14 @@ void CCvcDb::AddConnectedDevice(netId_t theNet, deviceId_t theDevice, deviceId_t
 
 void CCvcDb::LinkDevices() {
 	reportFile << "CVC: Linking devices..." << endl;
-	ResetVector<CDeviceIdVector>(firstSource_v, netCount, UNKNOWN_DEVICE);
-	ResetVector<CDeviceIdVector>(firstGate_v, netCount, UNKNOWN_DEVICE);
-	ResetVector<CDeviceIdVector>(firstDrain_v, netCount, UNKNOWN_DEVICE);
-	ResetVector<CDeviceIdVector>(firstBulk_v, netCount, UNKNOWN_DEVICE);
-	ResetVector<CDeviceIdVector>(nextSource_v, deviceCount, UNKNOWN_DEVICE);
-	ResetVector<CDeviceIdVector>(nextGate_v, deviceCount, UNKNOWN_DEVICE);
-	ResetVector<CDeviceIdVector>(nextDrain_v, deviceCount, UNKNOWN_DEVICE);
-	ResetVector<CDeviceIdVector>(nextBulk_v, deviceCount, UNKNOWN_DEVICE);
+//	ResetVector<CDeviceIdVector>(firstSource_v, netCount, UNKNOWN_DEVICE);
+//	ResetVector<CDeviceIdVector>(firstGate_v, netCount, UNKNOWN_DEVICE);
+//	ResetVector<CDeviceIdVector>(firstDrain_v, netCount, UNKNOWN_DEVICE);
+//	ResetVector<CDeviceIdVector>(firstBulk_v, netCount, UNKNOWN_DEVICE);
+//	ResetVector<CDeviceIdVector>(nextSource_v, deviceCount, UNKNOWN_DEVICE);
+//	ResetVector<CDeviceIdVector>(nextGate_v, deviceCount, UNKNOWN_DEVICE);
+//	ResetVector<CDeviceIdVector>(nextDrain_v, deviceCount, UNKNOWN_DEVICE);
+//	ResetVector<CDeviceIdVector>(nextBulk_v, deviceCount, UNKNOWN_DEVICE);
 	ResetVector<CNetIdVector>(sourceNet_v, deviceCount, UNKNOWN_NET);
 	ResetVector<CNetIdVector>(drainNet_v, deviceCount, UNKNOWN_NET);
 	ResetVector<CNetIdVector>(gateNet_v, deviceCount, UNKNOWN_NET);
@@ -487,12 +487,12 @@ void CCvcDb::LinkDevices() {
 					}
 					switch (deviceType_v[myDeviceId]) {
 						case NMOS: case PMOS: case LDDN: case LDDP: {
-							if ( firstGate_v[myGateNet] != UNKNOWN_DEVICE ) nextGate_v[myDeviceId] = firstGate_v[myGateNet];
-							firstGate_v[myGateNet] = myDeviceId;
+//							if ( firstGate_v[myGateNet] != UNKNOWN_DEVICE ) nextGate_v[myDeviceId] = firstGate_v[myGateNet];
+//							firstGate_v[myGateNet] = myDeviceId;
 							connectionCount_v[myGateNet].gateCount++;
 							if ( myBulkNet != UNKNOWN_NET ) {
-								if ( firstBulk_v[myBulkNet] != UNKNOWN_DEVICE ) nextBulk_v[myDeviceId] = firstBulk_v[myBulkNet];
-								firstBulk_v[myBulkNet] = myDeviceId;
+//								if ( firstBulk_v[myBulkNet] != UNKNOWN_DEVICE ) nextBulk_v[myDeviceId] = firstBulk_v[myBulkNet];
+//								firstBulk_v[myBulkNet] = myDeviceId;
 								connectionCount_v[myBulkNet].bulkCount++;
 							}
 						}
@@ -501,14 +501,14 @@ void CCvcDb::LinkDevices() {
 							modelType_t myDeviceType = deviceType_v[myDeviceId];
 							if ( IsNmos_(myDeviceType) ) myDeviceType = NMOS; // LDDN -> NMOS
 							if ( IsPmos_(myDeviceType) ) myDeviceType = PMOS; // LDDP -> PMOS
-							if ( firstSource_v[mySourceNet] != UNKNOWN_DEVICE ) nextSource_v[myDeviceId] = firstSource_v[mySourceNet];
-							firstSource_v[mySourceNet] = myDeviceId;
+//							if ( firstSource_v[mySourceNet] != UNKNOWN_DEVICE ) nextSource_v[myDeviceId] = firstSource_v[mySourceNet];
+//							firstSource_v[mySourceNet] = myDeviceId;
 							connectionCount_v[mySourceNet].sourceCount++;
 							connectionCount_v[mySourceNet].sourceDrainType[myDeviceType] = true;
 							assert(myDrainNet != mySourceNet);
 							if ( myDrainNet != mySourceNet ) { // avoid double counting mos caps and inactive res
-								if ( firstDrain_v[myDrainNet] != UNKNOWN_DEVICE ) nextDrain_v[myDeviceId] = firstDrain_v[myDrainNet];
-								firstDrain_v[myDrainNet] = myDeviceId;
+//								if ( firstDrain_v[myDrainNet] != UNKNOWN_DEVICE ) nextDrain_v[myDeviceId] = firstDrain_v[myDrainNet];
+//								firstDrain_v[myDrainNet] = myDeviceId;
 								connectionCount_v[myDrainNet].drainCount++;
 								connectionCount_v[myDrainNet].sourceDrainType[myDeviceType] = true;
 							}
@@ -800,6 +800,17 @@ void CCvcDb::ShortNonconductingResistor(netId_t theNetId) {
 
 deviceId_t CCvcDb::FindUniqueSourceDrainConnectedDevice(netId_t theNetId) {
 	deviceId_t myResultDeviceId = UNKNOWN_DEVICE;
+	uintmax_t index_it = firstDeviceIndex_v[theNetId];
+	do {
+		deviceId_t device_it = connectedDevice_v[index_it++];
+		if ( device_it != UNKNOWN_DEVICE && HasRelevantConnection(device_it, theNetId, (SOURCE | DRAIN)) ) {
+			if ( deviceType_v[device_it] == RESISTOR && ! deviceStatus_v[device_it][SIM_INACTIVE] ) {
+				if ( myResultDeviceId != UNKNOWN_DEVICE ) throw EDatabaseError("FindUniqueSourceDrainConnectedDevice: " + NetName(theNetId));
+				myResultDeviceId = device_it;
+			}
+		}
+	} while (connectedDevice_v[index_it-1] > connectedDevice_v[index_it]);
+/*
 	for ( deviceId_t device_it = firstSource_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {
 		if ( deviceType_v[device_it] == RESISTOR && ! deviceStatus_v[device_it][SIM_INACTIVE] ) {
 			if ( myResultDeviceId != UNKNOWN_DEVICE ) throw EDatabaseError("FindUniqueSourceDrainConnectedDevice: " + NetName(theNetId));
@@ -812,6 +823,7 @@ deviceId_t CCvcDb::FindUniqueSourceDrainConnectedDevice(netId_t theNetId) {
 			myResultDeviceId = device_it;
 		}
 	}
+*/
 	return myResultDeviceId;
 }
 
@@ -848,13 +860,29 @@ void CCvcDb::DumpConnectionList(string theHeading, CDeviceIdVector& theFirstDevi
 
 void CCvcDb::DumpConnectionLists(string theHeading) {
 	cout << "Connection list dump " << theHeading << endl;
+	cout << "Changed to firstDeviceIndex_v, connectedDevice_v" << endl;
+/*
 	DumpConnectionList(" Gate connections", firstGate_v, nextGate_v);
 	DumpConnectionList(" Source connections", firstSource_v, nextSource_v);
 	DumpConnectionList(" Drain connections", firstDrain_v, nextDrain_v);
 	DumpConnectionList(" Bulk connections", firstBulk_v, nextBulk_v);
+*/
 	cout << "Connection list dump end" << endl;
 }
 
+deviceId_t CCvcDb::RecountConnections(netId_t theNetId, int theTerminal) {
+	deviceId_t myCount = 0;
+	uintmax_t index_it = firstDeviceIndex_v[theNetId];
+	do {
+		deviceId_t device_it = connectedDevice_v[index_it++];
+		if ( device_it != UNKNOWN_DEVICE && HasRelevantConnection(device_it, theNetId, theTerminal) ) {
+			myCount++;
+		}
+	} while (connectedDevice_v[index_it-1] > connectedDevice_v[index_it]);
+	return myCount;
+}
+
+/*
 deviceId_t CCvcDb::RecountConnections(netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v) {
 	deviceId_t myCount = 0;
 	for ( deviceId_t device_it = theFirstDevice_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theNextDevice_v[device_it] ) {
@@ -862,6 +890,7 @@ deviceId_t CCvcDb::RecountConnections(netId_t theNetId, CDeviceIdVector& theFirs
 	}
 	return myCount;
 }
+*/
 
 uintmax_t CCvcDb::CountDeviceConnections(netId_t theNetId) {
 	uintmax_t myOffset = firstDeviceIndex_v[theNetId];
@@ -871,6 +900,17 @@ uintmax_t CCvcDb::CountDeviceConnections(netId_t theNetId) {
 		} while ( connectedDevice_v[myOffset] < connectedDevice_v[myOffset-1] );
 	}
 	return ( myOffset - firstDeviceIndex_v[theNetId] );
+}
+
+void CCvcDb::ReconnectDevices(netId_t theFromNet, netId_t theToNet) {
+	uintmax_t index_it = firstDeviceIndex_v[theFromNet];
+	do {
+		deviceId_t device_it = connectedDevice_v[index_it++];
+		if ( sourceNet_v[device_it] == theFromNet ) sourceNet_v[device_it] = theToNet;
+		if ( drainNet_v[device_it] == theFromNet ) drainNet_v[device_it] = theToNet;
+		if ( gateNet_v[device_it] == theFromNet ) gateNet_v[device_it] = theToNet;
+		if ( bulkNet_v[device_it] == theFromNet ) bulkNet_v[device_it] = theToNet;
+	} while (connectedDevice_v[index_it-1] > connectedDevice_v[index_it]);
 }
 
 void CCvcDb::MergeConnectionLists2(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId) {
@@ -888,6 +928,7 @@ void CCvcDb::MergeConnectionLists2(netId_t theFromNet, netId_t theToNet, deviceI
 		firstDeviceIndex_v[theToNet] = netDeviceCount;
 		return;
 	}
+	ReconnectDevices(theFromNet, theToNet);
 	if ( theFromNet < theToNet ) {
 		myMoveOrigin = firstDeviceIndex_v[theFromNet] + myFromDeviceCount;
 		myShift = - (myFromDeviceCount - 1);
@@ -976,19 +1017,23 @@ void CCvcDb::MergeConnectionLists(netId_t theFromNet, netId_t theToNet, deviceId
 	if ( myCallCount == 0 ) {
 //		DumpConnectionLists(to_string<int>(myCallCount++));
 	}
-	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstGate_v, nextGate_v, gateNet_v);
-	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstSource_v, nextSource_v, sourceNet_v);
-	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstDrain_v, nextDrain_v, drainNet_v);
-	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstBulk_v, nextBulk_v, bulkNet_v);
+//	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstGate_v, nextGate_v, gateNet_v);
+//	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstSource_v, nextSource_v, sourceNet_v);
+//	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstDrain_v, nextDrain_v, drainNet_v);
+//	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstBulk_v, nextBulk_v, bulkNet_v);
 	// Source/drain counts handled in calling routine
-	connectionCount_v[theFromNet].gateCount = RecountConnections(theFromNet, firstGate_v, nextGate_v);
+//	connectionCount_v[theFromNet].gateCount = RecountConnections(theFromNet, GATE);
+	connectionCount_v[theFromNet].gateCount = 0;
 //	connectionCount_v[theFromNet].sourceCount = RecountConnections(theFromNet, firstSource_v, nextSource_v);
 //	connectionCount_v[theFromNet].drainCount = RecountConnections(theFromNet, firstDrain_v, nextDrain_v);
-	connectionCount_v[theFromNet].bulkCount = RecountConnections(theFromNet, firstBulk_v, nextBulk_v);
-	connectionCount_v[theToNet].gateCount = RecountConnections(theToNet, firstGate_v, nextGate_v);
+//	connectionCount_v[theFromNet].bulkCount = RecountConnections(theFromNet, BULK);
+	connectionCount_v[theFromNet].bulkCount = 0;
+	assert(connectionCount_v[theFromNet].sourceCount == 0);
+	assert(connectionCount_v[theFromNet].drainCount == 0);
+	connectionCount_v[theToNet].gateCount = RecountConnections(theToNet, GATE);
 //	connectionCount_v[theToNet].sourceCount = RecountConnections(theToNet, firstSource_v, nextSource_v);
 //	connectionCount_v[theToNet].drainCount = RecountConnections(theToNet, firstDrain_v, nextDrain_v);
-	connectionCount_v[theToNet].bulkCount = RecountConnections(theToNet, firstBulk_v, nextBulk_v);
+	connectionCount_v[theToNet].bulkCount = RecountConnections(theToNet, BULK);
 	connectionCount_v[theToNet].sourceDrainType |= connectionCount_v[theFromNet].sourceDrainType;
 //	DumpConnectionLists(to_string<int>(myCallCount++));
 }
@@ -1029,8 +1074,8 @@ void CCvcDb::ShortNonConductingResistor(deviceId_t theDeviceId, netId_t theFirst
 	minNet_v.Set(theFirstNet, theSecondNet, 1, ++minNet_v.lastUpdate);
 	simNet_v.Set(theFirstNet, theSecondNet, 1, ++simNet_v.lastUpdate);
 	maxNet_v.Set(theFirstNet, theSecondNet, 1, ++maxNet_v.lastUpdate);
-	MergeConnectionLists(theFirstNet, theSecondNet, theDeviceId);
 	MergeConnectionLists2(theFirstNet, theSecondNet, theDeviceId);
+	MergeConnectionLists(theFirstNet, theSecondNet, theDeviceId);
 	assert(connectionCount_v[theFirstNet].SourceDrainCount() == 0);
 	// propagate
 //	cout << "Debug: connectedDeviceVector after" << endl;
@@ -1072,6 +1117,7 @@ void CCvcDb::ShortNonConductingResistors() {
 			}
 		}
 	}
+//	CheckConnectedDeviceVector();
 }
 
 set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal) {
@@ -1371,8 +1417,8 @@ void CCvcDb::SetSCRCPower() {
 		if ( (*power_ppit)->type[HIZ_BIT] ) {
 			// Check for power switches.
 			netId_t myNetId = (*power_ppit)->netId;
-			(void) SetSCRCGatePower(myNetId, firstDrain_v, nextDrain_v, sourceNet_v, mySCRCSignalCount, mySCRCIgnoreCount, true);
-			(void) SetSCRCGatePower(myNetId, firstSource_v, nextSource_v, drainNet_v, mySCRCSignalCount, mySCRCIgnoreCount, true);
+			(void) SetSCRCGatePower(myNetId, mySCRCSignalCount, mySCRCIgnoreCount, true);
+//			(void) SetSCRCGatePower(myNetId, firstSource_v, nextSource_v, drainNet_v, mySCRCSignalCount, mySCRCIgnoreCount, true);
 //			for ( auto device_it = firstDrain_v[myNetId]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
 //				if ( ! IsMos_(deviceType_v[device_it]) ) continue;  // Only process mosfets.
 //				CPower * mySourcePower_p = netVoltagePtr_v[sourceNet_v[device_it]];
@@ -1409,8 +1455,8 @@ void CCvcDb::SetSCRCPower() {
 	for ( size_t net_it = 0; net_it < netCount; net_it++ ) {
 		if ( IsSCRCLogicNet(net_it) ) {
 			size_t myAttemptCount = 0;
-			myAttemptCount += SetSCRCGatePower(net_it, firstDrain_v, nextDrain_v, sourceNet_v, mySCRCSignalCount, mySCRCIgnoreCount, false);
-			myAttemptCount += SetSCRCGatePower(net_it, firstSource_v, nextSource_v, drainNet_v, mySCRCSignalCount, mySCRCIgnoreCount, false);
+			myAttemptCount += SetSCRCGatePower(net_it, mySCRCSignalCount, mySCRCIgnoreCount, false);
+//			myAttemptCount += SetSCRCGatePower(net_it, firstSource_v, nextSource_v, drainNet_v, mySCRCSignalCount, mySCRCIgnoreCount, false);
 			if ( myAttemptCount == 0 ) {  // Could not set any gate nets, so set net directly
 				voltage_t myExpectedVoltage = IsSCRCPower(netVoltagePtr_v[minNet_v[net_it].finalNetId]) ?
 						netVoltagePtr_v[maxNet_v[net_it].finalNetId]->maxVoltage : netVoltagePtr_v[minNet_v[net_it].finalNetId]->minVoltage;
@@ -1450,6 +1496,40 @@ void CCvcDb::SetSCRCPower() {
 	reportFile << "Set " << mySCRCSignalCount << " inverter signals." << " Ignored " << mySCRCIgnoreCount << " signals." << endl;
 }
 
+size_t CCvcDb::SetSCRCGatePower(netId_t theNetId, size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount, bool theNoCheckFlag) {
+	CPower * mySourcePower_p = netVoltagePtr_v[theNetId];
+	size_t myAttemptCount = 0;
+	uintmax_t index_it = firstDeviceIndex_v[theNetId];
+	do {
+		deviceId_t device_it = connectedDevice_v[index_it++];
+		if ( device_it != UNKNOWN_DEVICE && HasRelevantConnection(device_it, theNetId, (SOURCE | DRAIN)) ) {
+			if ( ! IsMos_(deviceType_v[device_it]) ) continue;  // Only process mosfets.
+			netId_t myDrainNet = (drainNet_v[device_it] == theNetId) ? sourceNet_v[device_it] : drainNet_v[device_it];
+			CPower * myDrainPower_p = netVoltagePtr_v[myDrainNet];
+			if ( ! myDrainPower_p ) continue;  // ignore non-power nets
+			if ( theNoCheckFlag && mySourcePower_p->IsRelatedPower(myDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, false) ) continue;  // ignore relatives
+			if ( myDrainPower_p->type[POWER_BIT] && (theNoCheckFlag || IsSCRCPower(myDrainPower_p)) ) {  // Mosfet bridges power nets.
+				SetSCRCParentPower(theNetId, device_it, IsPmos_(deviceType_v[device_it]), theSCRCSignalCount, theSCRCIgnoreCount);
+				myAttemptCount++;
+			}
+		}
+	} while (connectedDevice_v[index_it-1] > connectedDevice_v[index_it]);
+/*
+	for ( auto device_it = theFirstSource_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theNextSource_v[device_it] ) {
+		if ( ! IsMos_(deviceType_v[device_it]) ) continue;  // Only process mosfets.
+		CPower * myDrainPower_p = netVoltagePtr_v[theDrain_v[device_it]];
+		if ( ! myDrainPower_p ) continue;  // ignore non-power nets
+		if ( theNoCheckFlag && mySourcePower_p->IsRelatedPower(myDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, false) ) continue;  // ignore relatives
+		if ( myDrainPower_p->type[POWER_BIT] && (theNoCheckFlag || IsSCRCPower(myDrainPower_p)) ) {  // Mosfet bridges power nets.
+			SetSCRCParentPower(theNetId, device_it, IsPmos_(deviceType_v[device_it]), theSCRCSignalCount, theSCRCIgnoreCount);
+			myAttemptCount++;
+		}
+	}
+*/
+	return (myAttemptCount);
+}
+
+/*
 size_t CCvcDb::SetSCRCGatePower(netId_t theNetId, CDeviceIdVector & theFirstSource_v, CDeviceIdVector & theNextSource_v, CNetIdVector & theDrain_v,
 		size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount, bool theNoCheckFlag) {
 	CPower * mySourcePower_p = netVoltagePtr_v[theNetId];
@@ -1466,6 +1546,7 @@ size_t CCvcDb::SetSCRCGatePower(netId_t theNetId, CDeviceIdVector & theFirstSour
 	}
 	return (myAttemptCount);
 }
+*/
 
 void CCvcDb::SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool theExpectedHighInput, size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount) {
 	netId_t myParentNet = gateNet_v[theDeviceId];
@@ -1561,10 +1642,9 @@ bool CCvcDb::SetLatchPower() {
 		if ( myMaxVoltage == UNKNOWN_VOLTAGE ) myMaxVoltage = myMinVoltage;
 		mosData_t myNmosData_v[MAX_LATCH_DEVICE_COUNT];
 		mosData_t myPmosData_v[MAX_LATCH_DEVICE_COUNT];
-		FindLatchDevices(net_it, myNmosData_v, myPmosData_v, myNmosCount, myPmosCount, myMinVoltage, myMaxVoltage,
-			firstDrain_v, nextDrain_v, sourceNet_v);
-		FindLatchDevices(net_it, myNmosData_v, myPmosData_v, myNmosCount, myPmosCount, myMinVoltage, myMaxVoltage,
-			firstSource_v, nextSource_v, drainNet_v);
+		FindLatchDevices(net_it, myNmosData_v, myPmosData_v, myNmosCount, myPmosCount, myMinVoltage, myMaxVoltage);
+//		FindLatchDevices(net_it, myNmosData_v, myPmosData_v, myNmosCount, myPmosCount, myMinVoltage, myMaxVoltage,
+//			firstSource_v, nextSource_v, drainNet_v);
 		voltage_t myNmosVoltage = UNKNOWN_VOLTAGE;
 		voltage_t myPmosVoltage = UNKNOWN_VOLTAGE;
 		string myNmosPowerName;
@@ -1643,59 +1723,63 @@ bool CCvcDb::SetLatchPower() {
 }
 
 void CCvcDb::FindLatchDevices(netId_t theNetId, mosData_t theNmosData_v[], mosData_t thePmosData_v[], int & theNmosCount, int & thePmosCount,
-	voltage_t theMinVoltage, voltage_t theMaxVoltage,
-	CDeviceIdVector & theFirstDrain_v, CDeviceIdVector & theNextDrain_v, CNetIdVector & theSourceNet_v) {
-	for ( deviceId_t device_it = theFirstDrain_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theNextDrain_v[device_it] ) {
-		if ( theSourceNet_v[device_it] == gateNet_v[device_it] && netVoltagePtr_v[theSourceNet_v[device_it]] ) continue; // skip ESD mos
-		netId_t mySource = simNet_v[theSourceNet_v[device_it]].finalNetId;
-		netId_t myGate = simNet_v[gateNet_v[device_it]].finalNetId;
-		voltage_t myGateVoltage = UNKNOWN_VOLTAGE;
-		if ( netVoltagePtr_v[myGate] && ! netVoltagePtr_v[myGate]->type[SIM_CALCULATED_BIT] ) {
-			myGateVoltage = netVoltagePtr_v[myGate]->simVoltage;
-		}
-		if ( IsNmos_(deviceType_v[device_it]) ) {
-			if ( myGateVoltage == UNKNOWN_VOLTAGE ) {
-				theNmosData_v[theNmosCount].source = mySource;
-				theNmosData_v[theNmosCount].gate = myGate;
-				theNmosData_v[theNmosCount].id = device_it;
-				theNmosCount++;
-			} else if ( myGateVoltage >= theMaxVoltage ) {  // device is on (assumes maxVoltage turns on nmos)
-				deviceId_t myNextDevice = GetSeriesConnectedDevice(device_it, mySource);
-				if ( myNextDevice != UNKNOWN_DEVICE ) {
-					// this section uses the instance sourceNet_v
-					if ( simNet_v[sourceNet_v[myNextDevice]].finalNetId == mySource ) {
-						theNmosData_v[theNmosCount].source = simNet_v[drainNet_v[myNextDevice]].finalNetId;
-					} else {
-						theNmosData_v[theNmosCount].source = simNet_v[sourceNet_v[myNextDevice]].finalNetId;
-					}
-					theNmosData_v[theNmosCount].gate = simNet_v[gateNet_v[myNextDevice]].finalNetId;
-					theNmosData_v[theNmosCount].id = myNextDevice;
+	voltage_t theMinVoltage, voltage_t theMaxVoltage) {
+	uintmax_t index_it = firstDeviceIndex_v[theNetId];
+	do {
+		deviceId_t device_it = connectedDevice_v[index_it++];
+		if ( device_it != UNKNOWN_DEVICE && HasRelevantConnection(device_it, theNetId, (SOURCE | DRAIN)) ) {
+			netId_t mySource = (sourceNet_v[device_it] == theNetId) ? drainNet_v[device_it] : sourceNet_v[device_it];
+			if ( mySource == gateNet_v[device_it] && netVoltagePtr_v[mySource] ) continue; // skip ESD mos
+			mySource = simNet_v[mySource].finalNetId;
+			netId_t myGate = simNet_v[gateNet_v[device_it]].finalNetId;
+			voltage_t myGateVoltage = UNKNOWN_VOLTAGE;
+			if ( netVoltagePtr_v[myGate] && ! netVoltagePtr_v[myGate]->type[SIM_CALCULATED_BIT] ) {
+				myGateVoltage = netVoltagePtr_v[myGate]->simVoltage;
+			}
+			if ( IsNmos_(deviceType_v[device_it]) ) {
+				if ( myGateVoltage == UNKNOWN_VOLTAGE ) {
+					theNmosData_v[theNmosCount].source = mySource;
+					theNmosData_v[theNmosCount].gate = myGate;
+					theNmosData_v[theNmosCount].id = device_it;
 					theNmosCount++;
-				}
-			}
-		}
-		if ( IsPmos_(deviceType_v[device_it]) ) {
-			if ( myGateVoltage == UNKNOWN_VOLTAGE ) {
-				thePmosData_v[thePmosCount].source = mySource;
-				thePmosData_v[thePmosCount].gate = myGate;
-				thePmosData_v[thePmosCount].id = device_it;
-				thePmosCount++;
-			} else if ( myGateVoltage <= theMinVoltage ) {  // device is on (assumes minVoltage turns on pmos)
-				deviceId_t myNextDevice = GetSeriesConnectedDevice(device_it, mySource);
-				if ( myNextDevice != UNKNOWN_DEVICE ) {
-					// this section uses the instance sourceNet_v
-					if ( simNet_v[sourceNet_v[myNextDevice]].finalNetId == mySource ) {
-						thePmosData_v[thePmosCount].source = simNet_v[drainNet_v[myNextDevice]].finalNetId;
-					} else {
-						thePmosData_v[thePmosCount].source = simNet_v[sourceNet_v[myNextDevice]].finalNetId;
+				} else if ( myGateVoltage >= theMaxVoltage ) {  // device is on (assumes maxVoltage turns on nmos)
+					deviceId_t myNextDevice = GetSeriesConnectedDevice(device_it, mySource);
+					if ( myNextDevice != UNKNOWN_DEVICE ) {
+						// this section uses the instance sourceNet_v
+						if ( simNet_v[sourceNet_v[myNextDevice]].finalNetId == mySource ) {
+							theNmosData_v[theNmosCount].source = simNet_v[drainNet_v[myNextDevice]].finalNetId;
+						} else {
+							theNmosData_v[theNmosCount].source = simNet_v[sourceNet_v[myNextDevice]].finalNetId;
+						}
+						theNmosData_v[theNmosCount].gate = simNet_v[gateNet_v[myNextDevice]].finalNetId;
+						theNmosData_v[theNmosCount].id = myNextDevice;
+						theNmosCount++;
 					}
-					thePmosData_v[thePmosCount].gate = simNet_v[gateNet_v[myNextDevice]].finalNetId;
-					thePmosData_v[thePmosCount].id = myNextDevice;
+				}
+			}
+			if ( IsPmos_(deviceType_v[device_it]) ) {
+				if ( myGateVoltage == UNKNOWN_VOLTAGE ) {
+					thePmosData_v[thePmosCount].source = mySource;
+					thePmosData_v[thePmosCount].gate = myGate;
+					thePmosData_v[thePmosCount].id = device_it;
 					thePmosCount++;
+				} else if ( myGateVoltage <= theMinVoltage ) {  // device is on (assumes minVoltage turns on pmos)
+					deviceId_t myNextDevice = GetSeriesConnectedDevice(device_it, mySource);
+					if ( myNextDevice != UNKNOWN_DEVICE ) {
+						// this section uses the instance sourceNet_v
+						if ( simNet_v[sourceNet_v[myNextDevice]].finalNetId == mySource ) {
+							thePmosData_v[thePmosCount].source = simNet_v[drainNet_v[myNextDevice]].finalNetId;
+						} else {
+							thePmosData_v[thePmosCount].source = simNet_v[sourceNet_v[myNextDevice]].finalNetId;
+						}
+						thePmosData_v[thePmosCount].gate = simNet_v[gateNet_v[myNextDevice]].finalNetId;
+						thePmosData_v[thePmosCount].id = myNextDevice;
+						thePmosCount++;
+					}
 				}
 			}
 		}
-	}
+	} while ( connectedDevice_v[index_it-1] > connectedDevice_v[index_it] );
 }
 
 bool CCvcDb::IsOppositeLogic(netId_t theFirstNet, netId_t theSecondNet) {

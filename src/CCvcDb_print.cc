@@ -336,6 +336,20 @@ void CCvcDb::PrintSourceDrainConnections(CStatus& theConnectionStatus, string th
 	cout << endl;
 }
 
+void CCvcDb::PrintConnections(deviceId_t theDeviceCount, netId_t theNetId, int theTerminal, string theIndentation, string theHeading) {
+	if ( theDeviceCount == 0 ) return;
+	cout << theIndentation << theHeading << "(" << theDeviceCount << ")>";
+	uintmax_t index_it = firstDeviceIndex_v[theNetId];
+	do {
+		deviceId_t device_it = connectedDevice_v[index_it++];
+		if ( device_it != UNKNOWN_DEVICE && HasRelevantConnection(device_it, theNetId, theTerminal) ) {
+			cout << " " << device_it;
+		}
+	} while (connectedDevice_v[index_it-1] > connectedDevice_v[index_it]);
+	cout << endl;
+}
+
+/*
 void CCvcDb::PrintConnections(deviceId_t theDeviceCount, deviceId_t theDeviceId, CDeviceIdVector& theNextDevice_v, string theIndentation, string theHeading) {
 	cout << theIndentation << theHeading << "(" << theDeviceCount << ")>";
 	while (theDeviceId != UNKNOWN_DEVICE ) {
@@ -344,6 +358,7 @@ void CCvcDb::PrintConnections(deviceId_t theDeviceCount, deviceId_t theDeviceId,
 	}
 	cout << endl;
 }
+*/
 
 string CCvcDb::StatusString(const CStatus& theStatus) {
 	string myStatus = "";
@@ -417,12 +432,14 @@ void CCvcDb::Print(const string theIndentation, const string theHeading) {
 //				netVoltagePtr_v[net_it]->Print(cout, myIndentation + "  ");
 //			}
 		}
-		if ( firstSource_v[net_it] != UNKNOWN_DEVICE ) PrintConnections(connectionCount_v[net_it].sourceCount, firstSource_v[net_it], nextSource_v, myIndentation + "  ", "SourceConnections");
-		if ( firstDrain_v[net_it] != UNKNOWN_DEVICE ) PrintConnections(connectionCount_v[net_it].drainCount, firstDrain_v[net_it], nextDrain_v, myIndentation + "  ", "DrainConnections");
-		if ( firstGate_v[net_it] != UNKNOWN_DEVICE ) PrintConnections(connectionCount_v[net_it].gateCount, firstGate_v[net_it], nextGate_v, myIndentation + "  ", "GateConnections");
-		if ( firstBulk_v[net_it] != UNKNOWN_DEVICE ) PrintConnections(connectionCount_v[net_it].bulkCount, firstBulk_v[net_it], nextBulk_v, myIndentation + "  ", "BulkConnections");
-		if ( connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount > 0 ) {
-			PrintSourceDrainConnections(connectionCount_v[net_it].sourceDrainType, myIndentation + "  ");
+		if ( firstDeviceIndex_v[net_it] != netDeviceCount ) {
+			PrintConnections(connectionCount_v[net_it].sourceCount, net_it, SOURCE, myIndentation + "  ", "SourceConnections");
+			PrintConnections(connectionCount_v[net_it].drainCount, net_it, DRAIN, myIndentation + "  ", "DrainConnections");
+			PrintConnections(connectionCount_v[net_it].gateCount, net_it, GATE, myIndentation + "  ", "GateConnections");
+			PrintConnections(connectionCount_v[net_it].bulkCount, net_it, BULK, myIndentation + "  ", "BulkConnections");
+			if ( connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount > 0 ) {
+				PrintSourceDrainConnections(connectionCount_v[net_it].sourceDrainType, myIndentation + "  ");
+			}
 		}
 	}
 	cout << myIndentation << "NetList> end" << endl << endl;

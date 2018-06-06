@@ -607,6 +607,16 @@ bool CCvcDb::IsOffMos(eventQueue_t theQueueType, deviceId_t theDeviceId, CConnec
 
 bool CCvcDb::LastNmosConnection(deviceStatus_t thePendingBit, netId_t theNetId) {
 	int myConnectionCount = 0;
+	uintmax_t index_it = firstDeviceIndex_v[theNetId];
+	do {
+		deviceId_t device_it = connectedDevice_v[index_it++];
+		if ( device_it != UNKNOWN_DEVICE && HasRelevantConnection(device_it, theNetId, (SOURCE | DRAIN)) ) {
+			if ( IsNmos_(deviceType_v[device_it]) && deviceStatus_v[device_it][thePendingBit] ) {
+				if ( ++myConnectionCount > 1 ) return false;
+			}
+		}
+	} while (connectedDevice_v[index_it-1] > connectedDevice_v[index_it]);
+/*
 	for ( deviceId_t device_it = firstSource_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {
 		if ( IsNmos_(deviceType_v[device_it]) && deviceStatus_v[device_it][thePendingBit] ) {
 			if ( ++myConnectionCount > 1 ) return false;
@@ -617,11 +627,22 @@ bool CCvcDb::LastNmosConnection(deviceStatus_t thePendingBit, netId_t theNetId) 
 			if ( ++myConnectionCount > 1 ) return false;
 		}
 	}
+*/
 	return ( myConnectionCount < 2 );
 }
 
 bool CCvcDb::LastPmosConnection(deviceStatus_t thePendingBit, netId_t theNetId) {
 	int myConnectionCount = 0;
+	uintmax_t index_it = firstDeviceIndex_v[theNetId];
+	do {
+		deviceId_t device_it = connectedDevice_v[index_it++];
+		if ( device_it != UNKNOWN_DEVICE && HasRelevantConnection(device_it, theNetId, (SOURCE | DRAIN)) ) {
+			if ( IsPmos_(deviceType_v[device_it]) && deviceStatus_v[device_it][thePendingBit] ) {
+				if ( ++myConnectionCount > 1 ) return false;
+			}
+		}
+	} while (connectedDevice_v[index_it-1] > connectedDevice_v[index_it]);
+/*
 	for ( deviceId_t device_it = firstSource_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {
 		if ( IsPmos_(deviceType_v[device_it]) && deviceStatus_v[device_it][thePendingBit] ) {
 			if ( ++myConnectionCount > 1 ) return false;
@@ -632,6 +653,7 @@ bool CCvcDb::LastPmosConnection(deviceStatus_t thePendingBit, netId_t theNetId) 
 			if ( ++myConnectionCount > 1 ) return false;
 		}
 	}
+*/
 	return ( myConnectionCount < 2 );
 }
 
@@ -1425,10 +1447,12 @@ void CCvcDb::EnqueueAttachedResistors2(CEventQueue& theEventQueue, netId_t theNe
 	} while ( connectedDevice_v[index_it] > connectedDevice_v[index_it+1] );
 }
 
+/*
 void CCvcDb::EnqueueAttachedResistors(CEventQueue& theEventQueue, netId_t theNetId, eventKey_t theEventKey, queuePosition_t theQueuePosition) {
 	EnqueueAttachedResistorsByTerminal(theEventQueue, theNetId, firstSource_v, nextSource_v, theEventKey, theQueuePosition);
 	EnqueueAttachedResistorsByTerminal(theEventQueue, theNetId, firstDrain_v, nextDrain_v, theEventKey, theQueuePosition);
 }
+*/
 
 void CCvcDb::ShiftVirtualNets(CEventQueue& theEventQueue, netId_t theNewNetId, CVirtualNet& theLastVirtualNet, resistance_t theSourceResistance, resistance_t theDrainResistance) {
 	netId_t myNetId;
@@ -1467,7 +1491,7 @@ void CCvcDb::ShiftVirtualNets(CEventQueue& theEventQueue, netId_t theNewNetId, C
 //		RecalculateFinalResistance(theEventQueue, theNewNetId);
 	}
 }
-
+/*
 void CCvcDb::RecalculateFinalResistance(CEventQueue& theEventQueue, netId_t theNetId, bool theRecursingFlag) {
 	netId_t mySourceId, myDrainId;
 //	resistance_t myResistance;
@@ -1519,7 +1543,7 @@ void CCvcDb::RecalculateFinalResistance(CEventQueue& theEventQueue, netId_t theN
 		}
 	}
 }
-
+*/
 void CCvcDb::ShortNets(CEventQueue& theEventQueue, deviceId_t theDeviceId, CConnection& theConnections, shortDirection_t theDirection) {
 //	CheckSourceDrain(theEventQueue.queueType, theConnections, theDirection);
 	if ( theDirection == DRAIN_TO_MASTER_SOURCE ) {
@@ -2035,6 +2059,7 @@ void CCvcDb::CalculateResistorVoltage(netId_t theNetId, voltage_t theMinVoltage,
 	}
 }
 
+/*
 void CCvcDb::PropagateResistorCalculations(netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v) {
 	CFullConnection myConnections;
 	for ( deviceId_t device_it = theFirstDevice_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theNextDevice_v[device_it] ) {
@@ -2055,6 +2080,30 @@ void CCvcDb::PropagateResistorCalculations(netId_t theNetId, CDeviceIdVector& th
 		}
 	}
 }
+*/
+
+void CCvcDb::PropagateResistorCalculations2(netId_t theNetId, int theTerminals) {
+	CFullConnection myConnections;
+	uintmax_t index_it = firstDeviceIndex_v[theNetId];
+	do {
+		deviceId_t device_it = connectedDevice_v[index_it++];
+		if ( deviceType_v[device_it] == RESISTOR ) {
+			MapDeviceNets(device_it, myConnections);
+			if ( netVoltagePtr_v[myConnections.drainId] == NULL ) {
+				cvcParameters.cvcPowerPtrList.push_back(new CPower(myConnections.drainId));
+				netVoltagePtr_v[myConnections.drainId] = cvcParameters.cvcPowerPtrList.back();
+				netVoltagePtr_v[myConnections.drainId]->type[RESISTOR_BIT] = true;
+				netVoltagePtr_v[myConnections.drainId]->powerSignal = "resistor";
+			}
+			if ( netVoltagePtr_v[myConnections.sourceId] == NULL ) {
+				cvcParameters.cvcPowerPtrList.push_back(new CPower(myConnections.sourceId));
+				netVoltagePtr_v[myConnections.sourceId] = cvcParameters.cvcPowerPtrList.back();
+				netVoltagePtr_v[myConnections.sourceId]->type[RESISTOR_BIT] = true;
+				netVoltagePtr_v[myConnections.sourceId]->powerSignal = "resistor";
+			}
+		}
+	} while (connectedDevice_v[index_it-1] > connectedDevice_v[index_it]);
+}
 
 void CCvcDb::CalculateResistorVoltages() {
 	CFullConnection myConnections;
@@ -2064,8 +2113,9 @@ void CCvcDb::CalculateResistorVoltages() {
 		if ( (*power_ppit)->type[RESISTOR_BIT] ) { // && (*power_ppit)->simVoltage == UNKNOWN_VOLTAGE ) {
 			netId_t myPowerNet = (*power_ppit)->netId;
 			if ( myPowerNet != UNKNOWN_NET && netVoltagePtr_v[myPowerNet] == *power_ppit ) { // process only used power nodes (ununsed power kept in powerPtrList)
-				PropagateResistorCalculations(myPowerNet, firstSource_v, nextSource_v);
-				PropagateResistorCalculations(myPowerNet, firstDrain_v, nextDrain_v);
+				PropagateResistorCalculations2(myPowerNet, (SOURCE | DRAIN));
+//				PropagateResistorCalculations(myPowerNet, firstSource_v, nextSource_v);
+//				PropagateResistorCalculations(myPowerNet, firstDrain_v, nextDrain_v);
 			}
 		}
 	}
@@ -2221,6 +2271,16 @@ void CCvcDb::SetTrivialMinMaxPower() {
 			if ( connectionCount_v[net_it].sourceDrainType[NMOS] && connectionCount_v[net_it].sourceDrainType[PMOS] ) {
 				myNmos = UNKNOWN_DEVICE;
 				myPmos = UNKNOWN_DEVICE;
+				uintmax_t index_it = firstDeviceIndex_v[net_it];
+				do {
+					deviceId_t device_it = connectedDevice_v[index_it++];
+					if ( device_it != UNKNOWN_DEVICE && HasRelevantConnection(device_it, net_it, (SOURCE | DRAIN)) ) {
+						if ( sourceNet_v[device_it] == gateNet_v[device_it] || drainNet_v[device_it] == gateNet_v[device_it] ) continue; // skip mos diodes
+						if ( IsNmos_(deviceType_v[device_it]) ) myNmos = device_it;
+						if ( IsPmos_(deviceType_v[device_it]) ) myPmos = device_it;
+					}
+				} while (connectedDevice_v[index_it-1] > connectedDevice_v[index_it]);
+/*
 				for ( deviceId_t device_it = firstDrain_v[net_it]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
 					if ( sourceNet_v[device_it] == gateNet_v[device_it] ) continue; // skip mos diodes
 					if ( IsNmos_(deviceType_v[device_it]) ) myNmos = device_it;
@@ -2231,6 +2291,7 @@ void CCvcDb::SetTrivialMinMaxPower() {
 					if ( IsNmos_(deviceType_v[device_it]) ) myNmos = device_it;
 					if ( IsPmos_(deviceType_v[device_it]) ) myPmos = device_it;
 				}
+*/
 				if ( myNmos == UNKNOWN_DEVICE ) continue;
 				if ( myPmos == UNKNOWN_DEVICE ) continue;
 				if ( deviceStatus_v[myNmos][MIN_INACTIVE] ) continue;
@@ -2962,10 +3023,10 @@ void CCvcDb::CheckConnections() {
 					|| ( myPower_p->simVoltage == UNKNOWN_VOLTAGE
 						&& ( myPower_p->minVoltage == UNKNOWN_VOLTAGE || myPower_p->maxVoltage == UNKNOWN_VOLTAGE ) ) ) {  // no error for missing bias if min/max defined.
 				reportFile << "WARNING: missing bias (" << connectionCount_v[net_it].bulkCount << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
-				reportFile << " at " << DeviceName(firstBulk_v[net_it], PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF) << endl;
+				reportFile << " at " << DeviceName(GetFirstDevice(net_it, BULK), PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF) << endl;
 			} else if ( IsCalculatedVoltage_(myPower_p) ) {
 				reportFile << "WARNING: calculated bias (" << connectionCount_v[net_it].bulkCount << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
-				reportFile << " at " << DeviceName(firstBulk_v[net_it], PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF)
+				reportFile << " at " << DeviceName(GetFirstDevice(net_it, BULK), PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF)
 						<< (myPower_p->type[MIN_CALCULATED_BIT] ? " 1|" : " 0|")
 						<< (myPower_p->type[SIM_CALCULATED_BIT] ? "1|" : "0|")
 						<< (myPower_p->type[MAX_CALCULATED_BIT] ? "1" : "0") <<	endl;

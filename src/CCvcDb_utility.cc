@@ -876,16 +876,6 @@ bool CCvcDb::PathCrosses(CVirtualNetVector& theSearchVector, netId_t theSearchNe
 	return false;
 }
 
-bool CCvcDb::HasActiveConnection(netId_t theNetId) {
-	for ( deviceId_t device_it = firstSource_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {
-		if ( deviceStatus_v[device_it][SIM_INACTIVE] == false ) return true;
-	}
-	for ( deviceId_t device_it = firstDrain_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
-		if ( deviceStatus_v[device_it][SIM_INACTIVE] == false ) return true;
-	}
-	return false;
-}
-
 voltage_t CCvcDb::DefaultMinVoltage(CPower * thePower_p) {
 	if ( thePower_p->defaultMinNet == UNKNOWN_NET ) {
 		return(UNKNOWN_VOLTAGE);
@@ -996,6 +986,25 @@ bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
 	return false;
 }
 
+bool CCvcDb::HasActiveConnections(netId_t theNetId) {
+	uintmax_t index_it = firstDeviceIndex_v[theNetId];
+	do {
+		deviceId_t device_it = connectedDevice_v[index_it++];
+		if ( device_it != UNKNOWN_DEVICE && HasRelevantConnection(device_it, theNetId, (SOURCE | DRAIN)) ) {
+			if ( deviceStatus_v[device_it][SIM_INACTIVE] == false ) return true;
+		}
+	} while (connectedDevice_v[index_it-1] > connectedDevice_v[index_it]);
+/*
+	for ( deviceId_t device_it = firstSource_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {
+		if ( deviceStatus_v[device_it][SIM_INACTIVE] == false ) return true;
+	}
+	for ( deviceId_t device_it = firstDrain_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
+		if ( deviceStatus_v[device_it][SIM_INACTIVE] == false ) return true;
+	}
+*/
+	return false;
+}
+
 size_t CCvcDb::IncrementDeviceError(deviceId_t theDeviceId) {
 	CInstance * myInstance_p = instancePtr_v[deviceParent_v[theDeviceId]];
 	CCircuit * myParent_p = myInstance_p->master_p;
@@ -1097,16 +1106,6 @@ bool CCvcDb::IsDerivedFromFloating(CVirtualNetVector& theVirtualNet_v, netId_t t
 	return( netVoltagePtr_v[myVirtualNet.finalNetId] && netVoltagePtr_v[myVirtualNet.finalNetId]->type[HIZ_BIT] );
 }
 
-bool CCvcDb::HasActiveConnections(netId_t theNetId) {
-	for ( deviceId_t device_it = firstSource_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {
-		if ( ! deviceStatus_v[device_it][SIM_INACTIVE] ) return true;
-	}
-	for ( deviceId_t device_it = firstDrain_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
-		if ( ! deviceStatus_v[device_it][SIM_INACTIVE] ) return true;
-	}
-	return false;
-}
-
 size_t CCvcDb::InstanceDepth(instanceId_t theInstanceId) {
 	size_t myDepth = 0;
 	while ( theInstanceId != 0 ) {
@@ -1133,6 +1132,24 @@ bool CCvcDb::IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId
 deviceId_t CCvcDb::GetSeriesConnectedDevice(deviceId_t theDeviceId, netId_t theNetId) {
 	modelType_t myDeviceType = deviceType_v[theDeviceId];
 	deviceId_t myReturnDevice = UNKNOWN_DEVICE;
+	uintmax_t index_it = firstDeviceIndex_v[theNetId];
+	do {
+		deviceId_t device_it = connectedDevice_v[index_it++];
+		if ( device_it != UNKNOWN_DEVICE && HasRelevantConnection(device_it, theNetId, (SOURCE | DRAIN)) ) {
+			switch ( deviceType_v[device_it] ) {
+				case SWITCH_OFF: case FUSE_OFF: case CAPACITOR: case DIODE: case BIPOLAR: {
+					break;
+				}
+				default: {
+					if ( theDeviceId == device_it ) continue;
+					if ( deviceType_v[device_it] != myDeviceType ) return UNKNOWN_DEVICE;  // different type
+					if ( myReturnDevice != UNKNOWN_DEVICE ) return UNKNOWN_DEVICE;  // more than one
+					myReturnDevice = device_it;
+				}
+		}
+		}
+	} while(connectedDevice_v[index_it-1] > connectedDevice_v[index_it]);
+/*
 	for ( deviceId_t device_it = firstDrain_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
 		switch ( deviceType_v[device_it] ) {
 		case SWITCH_OFF: case FUSE_OFF: case CAPACITOR: case DIODE: case BIPOLAR: {
@@ -1159,6 +1176,7 @@ deviceId_t CCvcDb::GetSeriesConnectedDevice(deviceId_t theDeviceId, netId_t theN
 		}
 		}
 	}
+*/
 	return(myReturnDevice);
 }
 
@@ -1200,3 +1218,13 @@ void CCvcDb::AddConnectedDevices(netId_t theNetId, list<deviceId_t>& thePmosToCh
 	} while ( connectedDevice_v[index_it-1] > connectedDevice_v[index_it] );
 }
 
+deviceId_t CCvcDb::GetFirstDevice(netId_t theNetId, int theTerminal) {
+	uintmax_t index_it = firstDeviceIndex_v[theNetId];
+	do {
+		deviceId_t device_it = connectedDevice_v[index_it++];
+		if ( device_it != UNKNOWN_DEVICE && HasRelevantConnection(device_it, theNetId, theTerminal) ) {
+			return device_it;
+		}
+	} while ( connectedDevice_v[index_it-1] > connectedDevice_v[index_it] );
+	return UNKNOWN_DEVICE;
+}

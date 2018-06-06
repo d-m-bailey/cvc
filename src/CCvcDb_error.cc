@@ -1373,51 +1373,60 @@ void CCvcDb::FindFloatingInputErrors() {
 	bool myFloatingFlag;
 	for (netId_t net_it = 0; net_it < netCount; net_it++) {
 		if ( connectionCount_v[net_it].gateCount > 0 ) { // skips subordinate nets. only equivalent master nets have counts
-			if ( firstGate_v[net_it] == UNKNOWN_DEVICE ) continue;
-			MapDeviceNets(firstGate_v[net_it], myConnections);
+			deviceId_t myDeviceId = GetFirstDevice(net_it, GATE);
+			if ( myDeviceId == UNKNOWN_DEVICE ) continue;
+			MapDeviceNets(myDeviceId, myConnections);
 			if ( myConnections.simGateVoltage != UNKNOWN_VOLTAGE ) continue;  // skip known voltages
 			myFloatingFlag = IsFloatingGate(myConnections);
 			if ( myFloatingFlag || myConnections.IsPossibleHiZ(this) ) {
-				for ( deviceId_t device_it = firstGate_v[net_it]; device_it != UNKNOWN_DEVICE; device_it = nextGate_v[device_it] ) {
-					MapDeviceNets(device_it, myConnections);
-					bool myHasLeakPath = HasLeakPath(myConnections);
-					if ( myFloatingFlag ) {
-						deviceStatus_v[device_it][SIM_INACTIVE] = true;  // ignore true floating input gates (not possible floating)
-					}
-					if ( myHasLeakPath || connectionCount_v[net_it].SourceDrainCount() == 0 ) { // physically floating gates too
-//						CCircuit * myParent_p = instancePtr_v[deviceParent_v[device_it]]->master_p;
-						errorCount[HIZ_INPUT]++;
-						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-							if ( ! myHasLeakPath ) errorFile << "* No leak path" << endl;
-							if ( ! myFloatingFlag ) errorFile << "* Tri-state input" << endl;
-							PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
-							errorFile << endl;
+				uintmax_t index_it = firstDeviceIndex_v[net_it];
+				do {
+					deviceId_t device_it = connectedDevice_v[index_it++];
+					if ( device_it != UNKNOWN_DEVICE && HasRelevantConnection(device_it, net_it, GATE) ) {
+						MapDeviceNets(device_it, myConnections);
+						bool myHasLeakPath = HasLeakPath(myConnections);
+						if ( myFloatingFlag ) {
+							deviceStatus_v[device_it][SIM_INACTIVE] = true;  // ignore true floating input gates (not possible floating)
+						}
+						if ( myHasLeakPath || connectionCount_v[net_it].SourceDrainCount() == 0 ) { // physically floating gates too
+							errorCount[HIZ_INPUT]++;
+							if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
+								if ( ! myHasLeakPath ) errorFile << "* No leak path" << endl;
+								if ( ! myFloatingFlag ) errorFile << "* Tri-state input" << endl;
+								PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
+								errorFile << endl;
+							}
 						}
 					}
-				}
+				} while ( connectedDevice_v[index_it-1] > connectedDevice_v[index_it] );
 			}
 		}
 	}
 	for (netId_t net_it = 0; net_it < netCount; net_it++) {  // second pass to catch floating nets caused by floating nets
 		if ( connectionCount_v[net_it].gateCount > 0 ) { // skips subordinate nets. only equivalent master nets have counts
-			if ( firstGate_v[net_it] == UNKNOWN_DEVICE ) continue;
+			deviceId_t myDeviceId = GetFirstDevice(net_it, GATE);
+			if ( myDeviceId == UNKNOWN_DEVICE ) continue;
 			if ( SimVoltage(net_it) != UNKNOWN_VOLTAGE || (netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->type[INPUT_BIT]) ) continue;
 			if ( HasActiveConnections(net_it) ) continue;
-			MapDeviceNets(firstGate_v[net_it], myConnections);
+			MapDeviceNets(myDeviceId, myConnections);
 			if ( IsFloatingGate(myConnections) ) continue;  // Already processed previously
-			for ( deviceId_t device_it = firstGate_v[net_it]; device_it != UNKNOWN_DEVICE; device_it = nextGate_v[device_it] ) {
-				MapDeviceNets(device_it, myConnections);
-				bool myHasLeakPath = HasLeakPath(myConnections);
-				if ( myHasLeakPath ) {
-	//						CCircuit * myParent_p = instancePtr_v[deviceParent_v[device_it]]->master_p;
-					errorCount[HIZ_INPUT]++;
-					if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-						errorFile << "* Secondary HI-Z error" << endl;
-						PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
-						errorFile << endl;
+			uintmax_t index_it = firstDeviceIndex_v[net_it];
+			do {
+				deviceId_t device_it = connectedDevice_v[index_it++];
+				if ( device_it != UNKNOWN_DEVICE && HasRelevantConnection(device_it, net_it, GATE) ) {
+					MapDeviceNets(device_it, myConnections);
+					bool myHasLeakPath = HasLeakPath(myConnections);
+					if ( myHasLeakPath ) {
+		//						CCircuit * myParent_p = instancePtr_v[deviceParent_v[device_it]]->master_p;
+						errorCount[HIZ_INPUT]++;
+						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
+							errorFile << "* Secondary HI-Z error" << endl;
+							PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
+							errorFile << endl;
+						}
 					}
 				}
-			}
+			} while ( connectedDevice_v[index_it-1] > connectedDevice_v[index_it] );
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);

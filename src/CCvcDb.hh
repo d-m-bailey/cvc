@@ -73,17 +73,17 @@ public:
 	// [offset] = device
 	CDeviceIdVector connectedDevice_v;
 
-	// [device] = device
-	CDeviceIdVector	nextSource_v;
-	CDeviceIdVector	nextGate_v;
-	CDeviceIdVector	nextDrain_v;
-	CDeviceIdVector	nextBulk_v;
-
-	// [net] = device
-	CDeviceIdVector	firstSource_v;
-	CDeviceIdVector	firstGate_v;
-	CDeviceIdVector	firstDrain_v;
-	CDeviceIdVector	firstBulk_v;
+//	// [device] = device
+//	CDeviceIdVector	nextSource_v;
+//	CDeviceIdVector	nextGate_v;
+//	CDeviceIdVector	nextDrain_v;
+//	CDeviceIdVector	nextBulk_v;
+//
+//	// [net] = device
+//	CDeviceIdVector	firstSource_v;
+//	CDeviceIdVector	firstGate_v;
+//	CDeviceIdVector	firstDrain_v;
+//	CDeviceIdVector	firstBulk_v;
 
 	// [device] = net
 	CNetIdVector	sourceNet_v;
@@ -209,8 +209,10 @@ public:
 
 	void MergeConnectionListByTerminals(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId,
 			CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, CNetIdVector& theTerminal_v);
-	deviceId_t RecountConnections(netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v);
+	deviceId_t RecountConnections(netId_t theNetId, int theTerminal);
+//	deviceId_t RecountConnections(netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v);
 	uintmax_t CountDeviceConnections(netId_t theNetId);
+	void ReconnectDevices(netId_t theFromNet, netId_t theToNet);
 	void MergeConnectionLists2(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId);
 	void MergeConnectionLists(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId);
 //	void ResetMosFuse();
@@ -224,15 +226,13 @@ public:
 	bool LockReport(bool theInteractiveFlag);
 	void RemoveLock();
 	void SetSCRCPower();
-	size_t SetSCRCGatePower(netId_t theNetId, CDeviceIdVector & theFirstSource_v, CDeviceIdVector & theNextSource_v, CNetIdVector & theDrain_v,
-			size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount, bool theNoCheckFlag);
+	size_t SetSCRCGatePower(netId_t theNetId, size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount, bool theNoCheckFlag);
 	void SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool theExpectedHighInput, size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount);
 	bool IsSCRCLogicNet(netId_t theNetId);
 	bool IsSCRCPower(CPower * thePower_p);
 	bool SetLatchPower();
 	void FindLatchDevices(netId_t theNetId, mosData_t theNmosData_v[], mosData_t thePmosData_v[], int & theNmosCount, int & thePmosCount,
-		voltage_t theMinVoltage, voltage_t theMaxVoltage,
-		CDeviceIdVector & theFirstDrain_v, CDeviceIdVector & theNextDrain_v, CNetIdVector & theSourceNet_v);
+		voltage_t theMinVoltage, voltage_t theMaxVoltage);
 	bool IsOppositeLogic(netId_t theFirstNet, netId_t theSecondNet);
 
 	// error
@@ -307,6 +307,7 @@ public:
 	void CalculateResistorVoltage(netId_t theNetId, voltage_t theMinVoltage, resistance_t theMinResistance,
 			voltage_t theMaxVoltage, resistance_t theMaxResistance );
 	void PropagateResistorCalculations(netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v);
+	void PropagateResistorCalculations2(netId_t theNetId, int theTerminals);
 	void CalculateResistorVoltages();
 	void SetResistorVoltagesByPower();
 	void ResetMinMaxPower();
@@ -356,7 +357,7 @@ public:
 	void CheckConnections();
 	bool PathContains(CVirtualNetVector& theSearchVector, netId_t theSearchNet, netId_t theTargetNet);
 	bool PathCrosses(CVirtualNetVector& theSearchVector, netId_t theSearchNet, CVirtualNetVector& theTargetVector, netId_t theTargetNet);
-	bool HasActiveConnection(netId_t theNet);
+//	bool HasActiveConnection(netId_t theNet);
 	size_t IncrementDeviceError(deviceId_t theDeviceId);
 	eventKey_t SimKey(eventKey_t theCurrentKey, resistance_t theIncrement);
 	bool IsDerivedFromFloating(CVirtualNetVector& theVirtualNet_v, netId_t theNetId);
@@ -366,6 +367,7 @@ public:
 	deviceId_t GetSeriesConnectedDevice(deviceId_t theDeviceId, netId_t theNetId);
 	void Cleanup();
 	void AddConnectedDevices(netId_t theNetId, list<deviceId_t>& thePmosToCheck, list<deviceId_t>& theNmosToCheck, list<deviceId_t>& theResistorToCheck, int theTerminalType);
+	deviceId_t GetFirstDevice(netId_t theNetId, int theTerminal);
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);
@@ -384,7 +386,7 @@ public:
 	void PrintNewCdlLine(const text_t theData, ostream & theOutput = cout);
 	void PrintNewCdlLine(const char theData, ostream & theOutput = cout);
 	void PrintSourceDrainConnections(CStatus& theConnectionStatus, string theIndentation);
-	void PrintConnections(deviceId_t theDeviceCount, deviceId_t theDeviceId, CDeviceIdVector& theNextDeviceId_v, string theIndentation = "", string theHeading = "Connections>");
+	void PrintConnections(deviceId_t theDeviceCount, netId_t theNetId, int theTerminal, string theIndentation = "", string theHeading = "Connections>");
 
 	void PrintCdlLine(const string theData, ostream & theOutput = cout, const unsigned int theMaxLength = 80);
 	void PrintCdlLine(const char * theData, ostream & theOutput = cout, const unsigned int theMaxLength = 80);
