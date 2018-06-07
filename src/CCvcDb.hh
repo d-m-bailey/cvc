@@ -196,7 +196,7 @@ public:
 	netId_t MasterPowerNet(netId_t theFirstNetId, netId_t theSecondNetId);
 	void MakeEquivalentNets(CNetMap & theNetMap, netId_t theFirstNetId, netId_t theSecondNetId, deviceId_t theDeviceId);
 	void SetEquivalentNets();
-	uintmax_t FindNextOpenIndex(uintmax_t theFirst, deviceId_t theLast);
+	uintmax_t FindNextOpenIndex(uintmax_t theFirst, uintmax_t theLast);
 	void AddConnectedDevice(netId_t theNet, deviceId_t theDevice, deviceId_t theCount);
 	void LinkDevices();
 	void CheckConnectedDeviceVector(CDeviceIdVector& theDeviceCounts);
@@ -212,7 +212,7 @@ public:
 	deviceId_t RecountConnections(netId_t theNetId, int theTerminal);
 //	deviceId_t RecountConnections(netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v);
 	uintmax_t CountDeviceConnections(netId_t theNetId);
-	void ReconnectDevices(netId_t theFromNet, netId_t theToNet);
+	void ReconnectDevices(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDevice);
 	void MergeConnectionLists2(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId);
 	void MergeConnectionLists(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId);
 //	void ResetMosFuse();
