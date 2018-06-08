@@ -641,7 +641,7 @@ void CCvcDb::CheckConnectedDeviceVector(){
 		}
 		cout << endl;
 	}
-//	PrintConnectedDeviceVector();
+	PrintConnectedDeviceVector();
 }
 
 void CCvcDb::PrintConnectedDeviceVector(){
@@ -917,7 +917,7 @@ inline void CCvcDb::ReconnectDevices(netId_t theFromNet, netId_t theToNet, devic
 void CCvcDb::MergeConnectionLists2(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId) {
 	uintmax_t myFromDeviceCount = CountDeviceConnections(theFromNet);
 //	uintmax_t myToDeviceCount = CountDeviceConnections(theToNet);
-	uintmax_t myMoveOrigin, myMoveLength;
+	uintmax_t myMoveOriginIndex, myMoveLength;
 	intmax_t myShift;
 	uintmax_t myFromIndex = 0;
 	uintmax_t myOldToIndex;
@@ -933,28 +933,57 @@ void CCvcDb::MergeConnectionLists2(netId_t theFromNet, netId_t theToNet, deviceI
 		ReconnectDevices(theFromNet, theToNet, theIgnoreDeviceId);
 	}
 	if ( theFromNet < theToNet ) {
-		myMoveOrigin = firstDeviceIndex_v[theFromNet] + myFromDeviceCount;
+		myMoveOriginIndex = firstDeviceIndex_v[theFromNet] + myFromDeviceCount;
 		myShift = - (myFromDeviceCount - 1);
-		myMoveLength = firstDeviceIndex_v[theToNet] - myMoveOrigin;
+		myMoveLength = firstDeviceIndex_v[theToNet] - myMoveOriginIndex;
 		myOldToIndex = firstDeviceIndex_v[theToNet];
 	} else {
-		myMoveOrigin = firstDeviceIndex_v[theToNet];
+		myMoveOriginIndex = firstDeviceIndex_v[theToNet];
 		myShift = myFromDeviceCount - 1;
-		myMoveLength = firstDeviceIndex_v[theFromNet] - myMoveOrigin;
+		myMoveLength = firstDeviceIndex_v[theFromNet] - myMoveOriginIndex;
 		myOldToIndex = firstDeviceIndex_v[theToNet] + myShift;
 	}
 	deviceId_t myFirstFromDevice = connectedDevice_v[firstDeviceIndex_v[theFromNet]];
-	deviceId_t * myFromDevices;
+//	deviceId_t * myFromDevices;
 //	cout << "Merging net " << theFromNet << " to " << theToNet << " ignoring device " << theIgnoreDeviceId << endl;
 //	cout << "origin " << myMoveOrigin << "; shift " << myShift << "; length " << myMoveLength << endl;
 	if ( myShift != 0 ) {
 	//	cout << "DEBUG: before move " << endl;
 	//	PrintConnectedDeviceVector();
+		temporaryDevice_v.reserve(myFromDeviceCount);
+		CDeviceIdVector::iterator myFromDevice_it = connectedDevice_v.begin() + firstDeviceIndex_v[theFromNet];
+		CDeviceIdVector::iterator myCopyDevice_it = temporaryDevice_v.begin();
+		for ( int copy_it = myFromDeviceCount; copy_it > 0; copy_it-- ) {
+			*myCopyDevice_it++ = *myFromDevice_it++;
+		}
+/*
+		for ( int i = 0; i < myFromDeviceCount; i++ ){
+			cout << "Debug: offset " << i << " temp " << temporaryDevice_v[i] << " original " << connectedDevice_v[firstDeviceIndex_v[theFromNet]+i] << endl;
+			assert(temporaryDevice_v[i] == connectedDevice_v[firstDeviceIndex_v[theFromNet]+i]);
+		}
+*/
+		/*
 		myFromDevices = (deviceId_t *) malloc(sizeof(deviceId_t) * myFromDeviceCount);
 		assert(myFromDevices);
 		memcpy((void*)myFromDevices, (void*)&connectedDevice_v[firstDeviceIndex_v[theFromNet]], sizeof(deviceId_t) * myFromDeviceCount);  // save to temporary buffer
-		if ( myMoveLength > 0 ) {
-			memmove((void*)&connectedDevice_v[myMoveOrigin + myShift], (void*)&connectedDevice_v[myMoveOrigin], sizeof(deviceId_t) * myMoveLength);
+		*/
+		if ( myShift != 0 ) {
+			CDeviceIdVector::iterator myMoveOrigin, myMoveDestination;
+			if ( myShift > 0 ) {
+				myMoveOrigin = connectedDevice_v.begin() + myMoveOriginIndex + myMoveLength - 1;
+				myMoveDestination = myMoveOrigin + myShift;
+				for ( int move_it = myMoveLength; move_it > 0; move_it-- ) {
+					*myMoveDestination-- = *myMoveOrigin--;
+				}
+			} else {
+				myMoveOrigin = connectedDevice_v.begin() + myMoveOriginIndex;
+				myMoveDestination = myMoveOrigin + myShift;
+				for ( int move_it = myMoveLength; move_it > 0; move_it-- ) {
+					*myMoveDestination++ = *myMoveOrigin++;
+				}
+			}
+
+//			memmove((void*)&connectedDevice_v[myMoveOriginIndex + myShift], (void*)&connectedDevice_v[myMoveOriginIndex], sizeof(deviceId_t) * myMoveLength);
 		}
 		for (uintmax_t index_it = min(theFromNet, theToNet) + 1; index_it <= max(theFromNet, theToNet); index_it++) {
 			if ( firstDeviceIndex_v[index_it] != netDeviceCount ) {
@@ -975,12 +1004,12 @@ void CCvcDb::MergeConnectionLists2(netId_t theFromNet, netId_t theToNet, deviceI
 	uintmax_t offset_it = firstDeviceIndex_v[theToNet];
 	if ( myShift != 0 ) {
 		while ( myFromIndex < myFromDeviceCount && connectedDevice_v[myOldToIndex] <= myLastToDevice ) {
-			if ( connectedDevice_v[myOldToIndex] > myFromDevices[myFromIndex] ) {
+			if ( connectedDevice_v[myOldToIndex] > temporaryDevice_v[myFromIndex] ) {
 				connectedDevice_v[offset_it] = connectedDevice_v[myOldToIndex];
 				myLastToDevice = connectedDevice_v[myOldToIndex];
 				myOldToIndex++;
-			} else if ( connectedDevice_v[myOldToIndex] < myFromDevices[myFromIndex] ) {
-				connectedDevice_v[offset_it] = myFromDevices[myFromIndex];
+			} else if ( connectedDevice_v[myOldToIndex] < temporaryDevice_v[myFromIndex] ) {
+				connectedDevice_v[offset_it] = temporaryDevice_v[myFromIndex];
 				myFromIndex++;
 			} else {  // connectedDevice_v[myOldToIndex] == myFromDevices[myFromIndex]
 				connectedDevice_v[offset_it] = connectedDevice_v[myOldToIndex];
@@ -993,7 +1022,7 @@ void CCvcDb::MergeConnectionLists2(netId_t theFromNet, netId_t theToNet, deviceI
 			}
 		}
 		while ( myFromIndex < myFromDeviceCount ) {
-			connectedDevice_v[offset_it] = myFromDevices[myFromIndex];
+			connectedDevice_v[offset_it] = temporaryDevice_v[myFromIndex];
 			myFromIndex++;
 			if ( connectedDevice_v[offset_it] != theIgnoreDeviceId ) {
 				offset_it++;
@@ -1015,9 +1044,11 @@ void CCvcDb::MergeConnectionLists2(netId_t theFromNet, netId_t theToNet, deviceI
 	assert(offset_it <= myOldToIndex );
 //	connectedDevice_v[offset_it] = UNKNOWN_DEVICE;
 //	cout << "DEBUG: after move " << endl;
+/*
 	if ( myShift != 0 ) {
 		free(myFromDevices);
 	}
+*/
 }
 
 void CCvcDb::MergeConnectionLists(netId_t theFromNet, netId_t theToNet, deviceId_t theIgnoreDeviceId) {
@@ -1043,15 +1074,22 @@ void CCvcDb::MergeConnectionLists(netId_t theFromNet, netId_t theToNet, deviceId
 //	connectionCount_v[theToNet].drainCount = RecountConnections(theToNet, firstDrain_v, nextDrain_v);
 	connectionCount_v[theToNet].bulkCount = RecountConnections(theToNet, BULK);
 	connectionCount_v[theToNet].sourceDrainType |= connectionCount_v[theFromNet].sourceDrainType;
+/*
+	if ( firstDeviceIndex_v[theToNet] != netDeviceCount && connectionCount_v[theToNet].gateCount == 0 && connectionCount_v[theToNet].sourceCount == 0
+			&& connectionCount_v[theToNet].drainCount == 0 && connectionCount_v[theToNet].bulkCount == 0 ) {
+		cout << "DEBUG: device count mismatch " << theToNet << endl;
+	}
+*/
 //	DumpConnectionLists(to_string<int>(myCallCount++));
 }
 
 void CCvcDb::ShortNonConductingResistor(deviceId_t theDeviceId, netId_t theFirstNet, netId_t theSecondNet, shortDirection_t theDirection) {
 	static int displayCount = 0;
 	if ( displayCount-- <= 0 ) {
-		displayCount = 1000000;
+		displayCount = 1000;
 		cout << "."; cout.flush();
 	}
+	shortCount++;
 /*
 	minNet_v.Set(theFirstNet, theSecondNet, 0);
 	simNet_v.Set(theFirstNet, theSecondNet, 0);
@@ -1130,7 +1168,10 @@ void CCvcDb::ShortNonConductingResistors() {
 			}
 		}
 	}
+	CDeviceIdVector().swap(temporaryDevice_v);  // release memory
 //	CheckConnectedDeviceVector();
+	reportFile << endl;
+	reportFile << "INFO: shorted " << shortCount << " non-conducting resistors" << endl;
 	reportFile << endl;
 }
 

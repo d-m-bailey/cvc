@@ -72,6 +72,8 @@ public:
 	CDeviceOffsetVector firstDeviceIndex_v;
 	// [offset] = device
 	CDeviceIdVector connectedDevice_v;
+	// [offset] = device
+	CDeviceIdVector temporaryDevice_v;
 
 //	// [device] = device
 //	CDeviceIdVector	nextSource_v;
@@ -152,6 +154,7 @@ public:
 	uintmax_t	subcircuitCount;
 	uintmax_t	netCount;
 	uintmax_t	netDeviceCount;  // unique net-device connections (max = net * device)
+	uintmax_t	shortCount;  // number of non-conducting resistors shorted
 
 	unsigned int	lineLength = 0;
 
