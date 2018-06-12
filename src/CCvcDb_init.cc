@@ -410,11 +410,11 @@ void CCvcDb::LinkDevices() {
 	ResetVector<CDeviceIdVector>(firstSource_v, netCount, UNKNOWN_DEVICE);
 	ResetVector<CDeviceIdVector>(firstGate_v, netCount, UNKNOWN_DEVICE);
 	ResetVector<CDeviceIdVector>(firstDrain_v, netCount, UNKNOWN_DEVICE);
-	ResetVector<CDeviceIdVector>(firstBulk_v, netCount, UNKNOWN_DEVICE);
+//	ResetVector<CDeviceIdVector>(firstBulk_v, netCount, UNKNOWN_DEVICE);
 	ResetVector<CDeviceIdVector>(nextSource_v, deviceCount, UNKNOWN_DEVICE);
 	ResetVector<CDeviceIdVector>(nextGate_v, deviceCount, UNKNOWN_DEVICE);
 	ResetVector<CDeviceIdVector>(nextDrain_v, deviceCount, UNKNOWN_DEVICE);
-	ResetVector<CDeviceIdVector>(nextBulk_v, deviceCount, UNKNOWN_DEVICE);
+//	ResetVector<CDeviceIdVector>(nextBulk_v, deviceCount, UNKNOWN_DEVICE);
 	ResetVector<CNetIdVector>(sourceNet_v, deviceCount, UNKNOWN_NET);
 	ResetVector<CNetIdVector>(drainNet_v, deviceCount, UNKNOWN_NET);
 	ResetVector<CNetIdVector>(gateNet_v, deviceCount, UNKNOWN_NET);
@@ -455,11 +455,13 @@ void CCvcDb::LinkDevices() {
 							firstGate_v[myGateNet] = myDeviceId;
 							connectionCount_v[myGateNet].gateCount++;
 							myBulkNet = bulkNet_v[myDeviceId];
+/*
 							if ( myBulkNet != UNKNOWN_NET ) {
 								if ( firstBulk_v[myBulkNet] != UNKNOWN_DEVICE ) nextBulk_v[myDeviceId] = firstBulk_v[myBulkNet];
 								firstBulk_v[myBulkNet] = myDeviceId;
 								connectionCount_v[myBulkNet].bulkCount++;
 							}
+*/
 						}
 						//continues
 						case FUSE_ON: case FUSE_OFF: case RESISTOR: {
@@ -472,12 +474,13 @@ void CCvcDb::LinkDevices() {
 							connectionCount_v[mySourceNet].sourceCount++;
 							connectionCount_v[mySourceNet].sourceDrainType[myDeviceType] = true;
 							myDrainNet = drainNet_v[myDeviceId];
-							if ( myDrainNet != mySourceNet ) { // avoid double counting mos caps and inactive res
-								if ( firstDrain_v[myDrainNet] != UNKNOWN_DEVICE ) nextDrain_v[myDeviceId] = firstDrain_v[myDrainNet];
-								firstDrain_v[myDrainNet] = myDeviceId;
-								connectionCount_v[myDrainNet].drainCount++;
-								connectionCount_v[myDrainNet].sourceDrainType[myDeviceType] = true;
-							}
+//							if ( myDrainNet != mySourceNet ) { // avoid double counting mos caps and inactive res
+							assert(myDrainNet != mySourceNet);  // previously ignored
+							if ( firstDrain_v[myDrainNet] != UNKNOWN_DEVICE ) nextDrain_v[myDeviceId] = firstDrain_v[myDrainNet];
+							firstDrain_v[myDrainNet] = myDeviceId;
+							connectionCount_v[myDrainNet].drainCount++;
+							connectionCount_v[myDrainNet].sourceDrainType[myDeviceType] = true;
+//							}
 							break; }
 						case SWITCH_ON: {
 //							MakeEquivalentNets(mySourceId, myDrainId);
@@ -699,7 +702,7 @@ void CCvcDb::DumpConnectionLists(string theHeading) {
 	DumpConnectionList(" Gate connections", firstGate_v, nextGate_v);
 	DumpConnectionList(" Source connections", firstSource_v, nextSource_v);
 	DumpConnectionList(" Drain connections", firstDrain_v, nextDrain_v);
-	DumpConnectionList(" Bulk connections", firstBulk_v, nextBulk_v);
+//	DumpConnectionList(" Bulk connections", firstBulk_v, nextBulk_v);
 	cout << "Connection list dump end" << endl;
 }
 
@@ -719,16 +722,16 @@ void CCvcDb::MergeConnectionLists(netId_t theFromNet, netId_t theToNet, deviceId
 	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstGate_v, nextGate_v, gateNet_v);
 	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstSource_v, nextSource_v, sourceNet_v);
 	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstDrain_v, nextDrain_v, drainNet_v);
-	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstBulk_v, nextBulk_v, bulkNet_v);
+//	MergeConnectionListByTerminals(theFromNet, theToNet, theIgnoreDeviceId, firstBulk_v, nextBulk_v, bulkNet_v);
 	// Source/drain counts handled in calling routine
 	connectionCount_v[theFromNet].gateCount = RecountConnections(theFromNet, firstGate_v, nextGate_v);
 //	connectionCount_v[theFromNet].sourceCount = RecountConnections(theFromNet, firstSource_v, nextSource_v);
 //	connectionCount_v[theFromNet].drainCount = RecountConnections(theFromNet, firstDrain_v, nextDrain_v);
-	connectionCount_v[theFromNet].bulkCount = RecountConnections(theFromNet, firstBulk_v, nextBulk_v);
+//	connectionCount_v[theFromNet].bulkCount = RecountConnections(theFromNet, firstBulk_v, nextBulk_v);
 	connectionCount_v[theToNet].gateCount = RecountConnections(theToNet, firstGate_v, nextGate_v);
 //	connectionCount_v[theToNet].sourceCount = RecountConnections(theToNet, firstSource_v, nextSource_v);
 //	connectionCount_v[theToNet].drainCount = RecountConnections(theToNet, firstDrain_v, nextDrain_v);
-	connectionCount_v[theToNet].bulkCount = RecountConnections(theToNet, firstBulk_v, nextBulk_v);
+//	connectionCount_v[theToNet].bulkCount = RecountConnections(theToNet, firstBulk_v, nextBulk_v);
 	connectionCount_v[theToNet].sourceDrainType |= connectionCount_v[theFromNet].sourceDrainType;
 //	DumpConnectionLists(to_string<int>(myCallCount++));
 }

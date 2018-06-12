@@ -53,13 +53,6 @@ public:
 	static netId_t powerCount;
 
 	netId_t powerId; // unique for each power net. used in leak detection
-	string	powerSignal; // power name from power file (possibly bus or cell level net)
-	string	powerAlias; // name used to represent this power definition (/VSS -> VSS, /X1/VDDA -> VDDA)
-	CStatus	type;
-	CStatus active;
-	voltage_t	minVoltage = UNKNOWN_VOLTAGE;
-	voltage_t	simVoltage = UNKNOWN_VOLTAGE;
-	voltage_t	maxVoltage = UNKNOWN_VOLTAGE;
 	netId_t netId = UNKNOWN_NET; // netId for this power definition
 	// default nets are the nets that are used if the calculated voltage is invalid
 	// the base from which voltages have been calculated
@@ -68,20 +61,27 @@ public:
 	netId_t	defaultMinNet = UNKNOWN_NET;
 	netId_t	defaultSimNet = UNKNOWN_NET;
 	netId_t	defaultMaxNet = UNKNOWN_NET;
+	voltage_t	minVoltage = UNKNOWN_VOLTAGE;
+	voltage_t	simVoltage = UNKNOWN_VOLTAGE;
+	voltage_t	maxVoltage = UNKNOWN_VOLTAGE;
+	voltage_t pullDownVoltage = UNKNOWN_VOLTAGE;
+	voltage_t pullUpVoltage = UNKNOWN_VOLTAGE;
+	string	powerSignal; // power name from power file (possibly bus or cell level net)
+	string	powerAlias; // name used to represent this power definition (/VSS -> VSS, /X1/VDDA -> VDDA)
 	string	expectedSim = "";
 	string	expectedMin = "";
 	string	expectedMax = "";
-	voltage_t pullDownVoltage = UNKNOWN_VOLTAGE;
-	voltage_t pullUpVoltage = UNKNOWN_VOLTAGE;
 	// base of calculations for calculated nets
 //	netId_t	baseMinId = UNKNOWN_NET;
 //	netId_t	baseSimId = UNKNOWN_NET;
 //	netId_t	baseMaxId = UNKNOWN_NET;
 	string	family = "";
 	string	definition = "";
-	bool relativeFriendly = true;
+	CStatus	type;
+	CStatus active;
 	CSet	relativeSet;
-	bool	printed = false;
+	bool 	relativeFriendly = true;
+//	bool	printed = false;
 	bool	flagAllShorts = false;
 
 	CPower();

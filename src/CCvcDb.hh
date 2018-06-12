@@ -72,13 +72,13 @@ public:
 	CDeviceIdVector	nextSource_v;
 	CDeviceIdVector	nextGate_v;
 	CDeviceIdVector	nextDrain_v;
-	CDeviceIdVector	nextBulk_v;
+//	CDeviceIdVector	nextBulk_v;
 
 	// [net] = device
 	CDeviceIdVector	firstSource_v;
 	CDeviceIdVector	firstGate_v;
 	CDeviceIdVector	firstDrain_v;
-	CDeviceIdVector	firstBulk_v;
+//	CDeviceIdVector	firstBulk_v;
 
 	// [device] = net
 	CNetIdVector	sourceNet_v;
@@ -350,6 +350,7 @@ public:
 	bool IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId);
 	deviceId_t GetSeriesConnectedDevice(deviceId_t theDeviceId, netId_t theNetId);
 	void Cleanup();
+	deviceId_t CountBulkConnections(netId_t theNetId);
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);
@@ -369,6 +370,7 @@ public:
 	void PrintNewCdlLine(const char theData, ostream & theOutput = cout);
 	void PrintSourceDrainConnections(CStatus& theConnectionStatus, string theIndentation);
 	void PrintConnections(deviceId_t theDeviceCount, deviceId_t theDeviceId, CDeviceIdVector& theNextDeviceId_v, string theIndentation = "", string theHeading = "Connections>");
+	void PrintBulkConnections(netId_t theNetId, string theIndentation, string theHeading);
 
 	void PrintCdlLine(const string theData, ostream & theOutput = cout, const unsigned int theMaxLength = 80);
 	void PrintCdlLine(const char * theData, ostream & theOutput = cout, const unsigned int theMaxLength = 80);
@@ -403,6 +405,7 @@ public:
 	//void PrintShortedNets(string theShortFileName);
 	string NetVoltageSuffix(string theDelimiter, string theVoltage, resistance_t theResistance, string theLeakVoltage = "");
 	void PrintResistorOverflow(netId_t theNet, ofstream& theOutputFile);
+	void PrintClassSizes();
 
 	// CCvcDb-interactive
 	void FindInstances(string theSubcircuit, bool thePrintCircuitFlag);

@@ -36,7 +36,6 @@ public:
 	CTextList * signalList_p;
 	CNetIdVector signalId_v;
 	CCircuit * parent_p;
-	deviceId_t offset;  // offset in circuit (devices and subcircuit instances counted separately)
 
 	union {
 		CCircuit * master_p;  // for subcircuits
@@ -48,6 +47,7 @@ public:
 	};
 	text_t parameters;
 //	resistance_t	cvcResistance = INFINITE_RESISTANCE;
+	deviceId_t offset;  // offset in circuit (devices and subcircuit instances counted separately)
 	bool	sourceDrainSet = false;
 	bool	sourceDrainSwapOk = true;
 

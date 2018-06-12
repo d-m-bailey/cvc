@@ -345,6 +345,23 @@ void CCvcDb::PrintConnections(deviceId_t theDeviceCount, deviceId_t theDeviceId,
 	cout << endl;
 }
 
+void CCvcDb::PrintBulkConnections(netId_t theNetId, string theIndentation, string theHeading) {
+	// debug function. not optimized.
+	deviceId_t myDeviceCount = 0;
+	for ( deviceId_t device_it = 0; device_it < deviceCount; device_it++ ) {
+		if ( bulkNet_v[device_it] == theNetId ) {
+			myDeviceCount++;
+		}
+	}
+	cout << theIndentation << theHeading << "(" << myDeviceCount << ")>";
+	for ( deviceId_t device_it = 0; device_it < deviceCount; device_it++ ) {
+		if ( bulkNet_v[device_it] == theNetId ) {
+			cout << " " << device_it;
+		}
+	}
+	cout << endl;
+}
+
 string CCvcDb::StatusString(const CStatus& theStatus) {
 	string myStatus = "";
 	for (size_t bit_it = 0; bit_it < theStatus.size(); bit_it++) {
@@ -407,6 +424,12 @@ void CCvcDb::Print(const string theIndentation, const string theHeading) {
 	}
 	cout << myIndentation << "InstanceList> end" << endl << endl;
 	cout << myIndentation << "NetList> start" << endl;
+	vector<deviceId_t> myBulkCount;
+	ResetVector<vector<deviceId_t>>(myBulkCount, netCount, 0);
+	for (deviceId_t device_it = 0; device_it < deviceCount; device_it++) {
+		if ( bulkNet_v[device_it] == UNKNOWN_DEVICE ) continue;
+		myBulkCount[bulkNet_v[device_it]]++;
+	}
 	for (netId_t net_it = 0; net_it < netCount; net_it++) {
 		cout << myIndentation + " Net " << net_it << ":" << NetName(net_it) << endl;
 		if ( netVoltagePtr_v[net_it] ) {
@@ -420,7 +443,8 @@ void CCvcDb::Print(const string theIndentation, const string theHeading) {
 		if ( firstSource_v[net_it] != UNKNOWN_DEVICE ) PrintConnections(connectionCount_v[net_it].sourceCount, firstSource_v[net_it], nextSource_v, myIndentation + "  ", "SourceConnections");
 		if ( firstDrain_v[net_it] != UNKNOWN_DEVICE ) PrintConnections(connectionCount_v[net_it].drainCount, firstDrain_v[net_it], nextDrain_v, myIndentation + "  ", "DrainConnections");
 		if ( firstGate_v[net_it] != UNKNOWN_DEVICE ) PrintConnections(connectionCount_v[net_it].gateCount, firstGate_v[net_it], nextGate_v, myIndentation + "  ", "GateConnections");
-		if ( firstBulk_v[net_it] != UNKNOWN_DEVICE ) PrintConnections(connectionCount_v[net_it].bulkCount, firstBulk_v[net_it], nextBulk_v, myIndentation + "  ", "BulkConnections");
+		if ( myBulkCount[net_it] > 0 ) PrintBulkConnections(net_it, myIndentation + "  ", "BulkConnections");
+//		if ( firstBulk_v[net_it] != UNKNOWN_DEVICE ) PrintConnections(connectionCount_v[net_it].bulkCount, firstBulk_v[net_it], nextBulk_v, myIndentation + "  ", "BulkConnections");
 		if ( connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount > 0 ) {
 			PrintSourceDrainConnections(connectionCount_v[net_it].sourceDrainType, myIndentation + "  ");
 		}
@@ -1293,4 +1317,69 @@ string CCvcDb::NetVoltageSuffix(string theDelimiter, string theVoltage, resistan
 
 void CCvcDb::PrintResistorOverflow(netId_t theNet, ofstream& theOutputFile) {
 	theOutputFile << "WARNING: resistance exceeded 1G ohm at " << NetName(theNet, PRINT_CIRCUIT_ON) << endl;
+}
+
+void CCvcDb::PrintClassSizes() {
+	cout << "CBaseVirtualNet " << sizeof(class CBaseVirtualNet) << endl;
+//	cout << "CBaseVirtualNetVector " << sizeof(class CBaseVirtualNetVector) << endl;
+//	cout << "CCdlParserDriver " << sizeof(class CCdlParserDriver) << endl;
+	cout << "CCdlText " << sizeof(class CCdlText) << endl;
+	cout << "CCircuit " << sizeof(class CCircuit) << endl;
+	cout << "CCircuitPtrList " << sizeof(class CCircuitPtrList) << endl;
+	cout << "CCondition " << sizeof(class CCondition) << endl;
+	cout << "CConditionPtrList " << sizeof(class CConditionPtrList) << endl;
+	cout << "CConnection " << sizeof(class CConnection) << endl;
+	cout << "CConnectionCount " << sizeof(class CConnectionCount) << endl;
+	cout << "CConnectionCountVector " << sizeof(class CConnectionCountVector) << endl;
+	cout << "CCvcDb " << sizeof(class CCvcDb) << endl;
+	cout << "CCvcParameters " << sizeof(class CCvcParameters) << endl;
+	cout << "CDependencyMap " << sizeof(class CDependencyMap) << endl;
+	cout << "CDevice " << sizeof(class CDevice) << endl;
+	cout << "CDeviceCount " << sizeof(class CDeviceCount) << endl;
+	cout << "CDeviceIdVector " << sizeof(class CDeviceIdVector) << endl;
+	cout << "CDevicePtrList " << sizeof(class CDevicePtrList) << endl;
+	cout << "CDevicePtrVector " << sizeof(class CDevicePtrVector) << endl;
+	cout << "CEventList " << sizeof(class CEventList) << endl;
+	cout << "CEventQueue " << sizeof(class CEventQueue) << endl;
+	cout << "CEventSubQueue " << sizeof(class CEventSubQueue) << endl;
+	cout << "CFixedText " << sizeof(class CFixedText) << endl;
+	cout << "CFullConnection " << sizeof(class CFullConnection) << endl;
+	cout << "CHierList " << sizeof(class CHierList) << endl;
+	cout << "CInstance " << sizeof(class CInstance) << endl;
+	cout << "CInstanceIdVector " << sizeof(class CInstanceIdVector) << endl;
+	cout << "CInstancePtrVector " << sizeof(class CInstancePtrVector) << endl;
+	cout << "CLeakList " << sizeof(class CLeakList) << endl;
+	cout << "CLeakMap " << sizeof(class CLeakMap) << endl;
+	cout << "CModel " << sizeof(class CModel) << endl;
+	cout << "CModeList " << sizeof(class CModeList) << endl;
+	cout << "CModelList " << sizeof(class CModelList) << endl;
+	cout << "CModelListMap " << sizeof(class CModelListMap) << endl;
+	cout << "CNetIdVector " << sizeof(class CNetIdVector) << endl;
+	cout << "CNetList " << sizeof(class CNetList) << endl;
+	cout << "CNetMap " << sizeof(class CNetMap) << endl;
+	cout << "CNormalValue " << sizeof(class CNormalValue) << endl;
+	cout << "CParameterMap " << sizeof(class CParameterMap) << endl;
+	cout << "CPower " << sizeof(class CPower) << endl;
+	cout << "CPowerFamilyMap " << sizeof(class CPowerFamilyMap) << endl;
+	cout << "CPowerPtrList " << sizeof(class CPowerPtrList) << endl;
+	cout << "CPowerPtrMap " << sizeof(class CPowerPtrMap) << endl;
+	cout << "CPowerPtrVector " << sizeof(class CPowerPtrVector) << endl;
+	cout << "CSet " << sizeof(class CSet) << endl;
+	cout << "CShortVector " << sizeof(class CShortVector) << endl;
+	cout << "CStatusVector " << sizeof(class CStatusVector) << endl;
+	cout << "CStringList " << sizeof(class CStringList) << endl;
+	cout << "CStringTextMap " << sizeof(class CStringTextMap) << endl;
+	cout << "CTextCircuitPtrMap " << sizeof(class CTextCircuitPtrMap) << endl;
+	cout << "CTextDeviceIdMap " << sizeof(class CTextDeviceIdMap) << endl;
+	cout << "CTextInstanceIdMap " << sizeof(class CTextInstanceIdMap) << endl;
+	cout << "CTextList " << sizeof(class CTextList) << endl;
+	cout << "CTextModelPtrMap " << sizeof(class CTextModelPtrMap) << endl;
+	cout << "CTextNetIdMap " << sizeof(class CTextNetIdMap) << endl;
+	cout << "CTextResistanceMap " << sizeof(class CTextResistanceMap) << endl;
+	cout << "CTextVector " << sizeof(class CTextVector) << endl;
+//	cout << "CVirtualLeakNet " << sizeof(class CVirtualLeakNet) << endl;
+//	cout << "CVirtualLeakNetVector " << sizeof(class CVirtualLeakNetVector) << endl;
+	cout << "CVirtualNet " << sizeof(class CVirtualNet) << endl;
+	cout << "CVirtualNetMappedVector " << sizeof(class CVirtualNetMappedVector) << endl;
+	cout << "CVirtualNetVector " << sizeof(class CVirtualNetVector) << endl;
 }

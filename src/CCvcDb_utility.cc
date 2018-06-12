@@ -1180,3 +1180,13 @@ void CCvcDb::Cleanup() {
 	cvcParameters.cvcPowerMacroPtrMap.Clear();
 	cvcParameters.cvcModelListMap.Clear();
 }
+
+deviceId_t CCvcDb::CountBulkConnections(netId_t theNetId) {
+	deviceId_t myDeviceCount = 0;
+	for (deviceId_t device_it = 0; device_it < deviceCount; device_it++) {
+		if ( bulkNet_v[device_it] == theNetId ) {
+			myDeviceCount++;
+		}
+	}
+	return myDeviceCount;
+}

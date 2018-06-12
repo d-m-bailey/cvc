@@ -67,6 +67,7 @@ CDeviceCount::CDeviceCount(netId_t theNetId, CCvcDb * theCvcDb_p, instanceId_t t
 			}
 		}
 	}
+/*
 	for ( auto device_it = theCvcDb_p->firstBulk_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theCvcDb_p->nextBulk_v[device_it] ) {
 		if ( theCvcDb_p->IsSubcircuitOf(theCvcDb_p->deviceParent_v[device_it], theInstanceId) ) {
 			switch( theCvcDb_p->deviceType_v[device_it] ) {
@@ -78,6 +79,7 @@ CDeviceCount::CDeviceCount(netId_t theNetId, CCvcDb * theCvcDb_p, instanceId_t t
 			}
 		}
 	}
+*/
 }
 
 void CDeviceCount::Print(CCvcDb * theCvcDb_p) {
@@ -86,6 +88,6 @@ void CDeviceCount::Print(CCvcDb * theCvcDb_p) {
 	cout << "NMOS: " << nmosCount << "; PMOS: " << pmosCount << "; RESISTOR: " << resistorCount << "; CAPACITOR: " << capacitorCount << "; DIODE: " << diodeCount << endl;
 	cout << "Gate counts" << endl;
 	cout << "NMOS: " << nmosGateCount << "; PMOS: " << pmosGateCount << endl;
-	cout << "Bulk counts" << endl;
-	cout << "NMOS: " << nmosBulkCount << "; PMOS: " << pmosBulkCount << endl;
+//	cout << "Bulk counts" << endl;
+//	cout << "NMOS: " << nmosBulkCount << "; PMOS: " << pmosBulkCount << endl;
 }

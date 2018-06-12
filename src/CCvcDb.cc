@@ -1904,8 +1904,9 @@ void CCvcDb::CalculateResistorVoltages() {
 		}
 	}
 	netId_t myLastPowerNet;
+	vector<bool> myPrintedPower(netCount, false);
 	for (auto power_ppit = cvcParameters.cvcPowerPtrList.begin(); power_ppit != cvcParameters.cvcPowerPtrList.end(); power_ppit++) {
-		if ( (*power_ppit)->type[RESISTOR_BIT] && IsCalculatedVoltage_((*power_ppit)) && ! (*power_ppit)->printed ) {
+		if ( (*power_ppit)->type[RESISTOR_BIT] && IsCalculatedVoltage_((*power_ppit)) && ! myPrintedPower[(*power_ppit)->netId] ) {
 			netId_t myPowerNet = (*power_ppit)->netId;
 			if ( netVoltagePtr_v[myPowerNet]->simVoltage == UNKNOWN_VOLTAGE ) {
 				logFile << "WARNING: Could not calculate explicit resistor voltage for " << NetName((*power_ppit)->netId, PRINT_CIRCUIT_ON) << endl;
@@ -1918,7 +1919,7 @@ void CCvcDb::CalculateResistorVoltages() {
 				}
 				do {
 					logFile << "INFO: Resistor voltage calculation " << calculatedResistanceInfo_v[myPowerNet] << endl;
-					netVoltagePtr_v[myPowerNet]->printed = true;
+					myPrintedPower[(*power_ppit)->netId] = true;
 					myLastPowerNet = myPowerNet;
 					myPowerNet = maxNet_v[myPowerNet].nextNetId;
 					minNet_v[myLastPowerNet].nextNetId = maxNet_v[myLastPowerNet].nextNetId = myLastPowerNet;
@@ -2752,8 +2753,20 @@ void CCvcDb::SetSimPower(propagation_t thePropagationType) {
 void CCvcDb::CheckConnections() {
 //	resistance_t myResistance;
 	static CVirtualNet myVirtualNet;
+	vector<deviceId_t> myBulkCount;
+	vector<deviceId_t> myBulkDevice;
+	ResetVector<vector<deviceId_t>>(myBulkCount, netCount, 0);
+	ResetVector<vector<deviceId_t>>(myBulkDevice, netCount, UNKNOWN_DEVICE);
+	for (deviceId_t device_it = 0; device_it < deviceCount; device_it++) {
+		if ( bulkNet_v[device_it] == UNKNOWN_DEVICE ) continue;
+		if ( myBulkCount[bulkNet_v[device_it]] == 0) {
+			myBulkDevice[bulkNet_v[device_it]] = device_it;
+		}
+		myBulkCount[bulkNet_v[device_it]]++;
+	}
 	for (netId_t net_it = 0; net_it < netCount; net_it++) {
-		if ( connectionCount_v[net_it].bulkCount > 0 && connectionCount_v[net_it].bulkCount >= connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount ) {
+//		if ( connectionCount_v[net_it].bulkCount > 0 && connectionCount_v[net_it].bulkCount >= connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount ) {
+		if ( myBulkCount[net_it] > 0 && myBulkCount[net_it] >= connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount ) {
 			// skips subordinate nets because only equivalent masters have counts.
 			// may have problems with moscaps, because one device has both source and drain connection.
 			myVirtualNet(simNet_v, net_it);
@@ -2761,15 +2774,15 @@ void CCvcDb::CheckConnections() {
 			CPower * myPower_p = netVoltagePtr_v[myVirtualNet.finalNetId];
 //			myResistance = SimResistance(net_it);
 			if ( myVirtualNet.finalResistance > 1000000 && myVirtualNet.finalResistance != INFINITE_RESISTANCE ) {
-				reportFile << "WARNING: high res bias (" << connectionCount_v[net_it].bulkCount << ") " << NetName(net_it, PRINT_CIRCUIT_ON) << " r=" << myVirtualNet.finalResistance << endl;
+				reportFile << "WARNING: high res bias (" << myBulkCount[net_it] << ") " << NetName(net_it, PRINT_CIRCUIT_ON) << " r=" << myVirtualNet.finalResistance << endl;
 			} else if ( ! myPower_p
 					|| ( myPower_p->simVoltage == UNKNOWN_VOLTAGE
 						&& ( myPower_p->minVoltage == UNKNOWN_VOLTAGE || myPower_p->maxVoltage == UNKNOWN_VOLTAGE ) ) ) {  // no error for missing bias if min/max defined.
-				reportFile << "WARNING: missing bias (" << connectionCount_v[net_it].bulkCount << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
-				reportFile << " at " << DeviceName(firstBulk_v[net_it], PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF) << endl;
+				reportFile << "WARNING: missing bias (" << myBulkCount[net_it] << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
+				reportFile << " at " << DeviceName(myBulkDevice[net_it], PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF) << endl;
 			} else if ( IsCalculatedVoltage_(myPower_p) ) {
-				reportFile << "WARNING: calculated bias (" << connectionCount_v[net_it].bulkCount << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
-				reportFile << " at " << DeviceName(firstBulk_v[net_it], PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF)
+				reportFile << "WARNING: calculated bias (" << myBulkCount[net_it] << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
+				reportFile << " at " << DeviceName(myBulkDevice[net_it], PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF)
 						<< (myPower_p->type[MIN_CALCULATED_BIT] ? " 1|" : " 0|")
 						<< (myPower_p->type[SIM_CALCULATED_BIT] ? "1|" : "0|")
 						<< (myPower_p->type[MAX_CALCULATED_BIT] ? "1" : "0") <<	endl;

@@ -38,7 +38,6 @@ class CCircuit {
 	static CTextDeviceIdMap localSubcircuitIdMap;
 public:
 	text_t name;
-	netId_t	portCount = 0;
 	// local signal to local netID Map
 	CTextNetIdMap localSignalIdMap;
 	// temporary list to convert to vector
@@ -47,21 +46,21 @@ public:
 	CTextVector	internalSignal_v;
 	CDevicePtrVector	devicePtr_v;
 	CDevicePtrVector	subcircuitPtr_v;
-	vector<size_t>		deviceErrorCount_v;
-
-	// total items for this circuit and all subcircuits
-	uintmax_t	netCount = 0;
-	uintmax_t	deviceCount = 0;
-	// the number of children
-	uintmax_t	subcircuitCount = 0;
-	// the number of instantiations
-	uintmax_t	instanceCount = 0;
-
+	vector<deviceId_t>		deviceErrorCount_v;
 	CInstanceIdVector instanceId_v;
-	bool	linked = false;
 
-	deviceId_t		errorCount = 0;
-	deviceId_t		warningCount = 0;
+	netId_t	portCount = 0;
+	// total items for this circuit and all subcircuits
+	netId_t	netCount = 0;
+	deviceId_t	deviceCount = 0;
+	// the number of children
+	instanceId_t	subcircuitCount = 0;
+	// the number of instantiations
+	instanceId_t	instanceCount = 0;
+
+//	deviceId_t		errorCount = 0;
+//	deviceId_t		warningCount = 0;
+	bool	linked = false;
 
 	inline netId_t	LocalNetCount() { return ( localSignalIdMap.size() - portCount); }
 

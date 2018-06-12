@@ -865,7 +865,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 							reportFile << " connections: gate " << connectionCount_v[myEquivalentNetId].gateCount;
 							reportFile << " source " << connectionCount_v[myEquivalentNetId].sourceCount;
 							reportFile << " drain " << connectionCount_v[myEquivalentNetId].drainCount;
-							reportFile << " bulk " << connectionCount_v[myEquivalentNetId].bulkCount << endl;
+							reportFile << " bulk " << CountBulkConnections(myEquivalentNetId) << endl;
 						}
 						string mySimpleName = NetName(myEquivalentNetId, PRINT_CIRCUIT_OFF);
 						if ( leakVoltageSet && leakVoltagePtr_v[myEquivalentNetId] && leakVoltagePtr_v[myEquivalentNetId] != netVoltagePtr_v[myEquivalentNetId] ) {

@@ -70,6 +70,7 @@ int main(int argc, const char * argv[]) {
 try {
 	using_history();
 	gCvcDb = new CCvcDb(argc, argv);
+	if ( gDebug_cvc ) gCvcDb->PrintClassSizes();
 	gCvcDb->VerifyCircuitForAllModes(argc, argv);
 }
 catch (EFatalError& e) {
