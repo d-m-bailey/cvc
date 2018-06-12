@@ -2753,20 +2753,21 @@ void CCvcDb::SetSimPower(propagation_t thePropagationType) {
 void CCvcDb::CheckConnections() {
 //	resistance_t myResistance;
 	static CVirtualNet myVirtualNet;
-	vector<deviceId_t> myBulkCount;
-	vector<deviceId_t> myBulkDevice;
-	ResetVector<vector<deviceId_t>>(myBulkCount, netCount, 0);
-	ResetVector<vector<deviceId_t>>(myBulkDevice, netCount, UNKNOWN_DEVICE);
+	unordered_map<netId_t, pair<deviceId_t, deviceId_t>> myBulkCount;
+//	vector<deviceId_t> myBulkCount;
+//	vector<deviceId_t> myBulkDevice;
+//	ResetVector<vector<deviceId_t>>(myBulkCount, netCount, 0);
+//	ResetVector<vector<deviceId_t>>(myBulkDevice, netCount, UNKNOWN_DEVICE);
 	for (deviceId_t device_it = 0; device_it < deviceCount; device_it++) {
-		if ( bulkNet_v[device_it] == UNKNOWN_DEVICE ) continue;
-		if ( myBulkCount[bulkNet_v[device_it]] == 0) {
-			myBulkDevice[bulkNet_v[device_it]] = device_it;
+		if ( bulkNet_v[device_it] == UNKNOWN_NET ) continue;
+//		myBulkCount[bulkNet_v[device_it]].first++;
+		if ( myBulkCount[bulkNet_v[device_it]].first++ == 0 ) {
+			myBulkCount[bulkNet_v[device_it]].second = device_it;
 		}
-		myBulkCount[bulkNet_v[device_it]]++;
 	}
 	for (netId_t net_it = 0; net_it < netCount; net_it++) {
 //		if ( connectionCount_v[net_it].bulkCount > 0 && connectionCount_v[net_it].bulkCount >= connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount ) {
-		if ( myBulkCount[net_it] > 0 && myBulkCount[net_it] >= connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount ) {
+		if ( myBulkCount.count(net_it) > 0 && myBulkCount[net_it].first >= connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount ) {
 			// skips subordinate nets because only equivalent masters have counts.
 			// may have problems with moscaps, because one device has both source and drain connection.
 			myVirtualNet(simNet_v, net_it);
@@ -2774,15 +2775,15 @@ void CCvcDb::CheckConnections() {
 			CPower * myPower_p = netVoltagePtr_v[myVirtualNet.finalNetId];
 //			myResistance = SimResistance(net_it);
 			if ( myVirtualNet.finalResistance > 1000000 && myVirtualNet.finalResistance != INFINITE_RESISTANCE ) {
-				reportFile << "WARNING: high res bias (" << myBulkCount[net_it] << ") " << NetName(net_it, PRINT_CIRCUIT_ON) << " r=" << myVirtualNet.finalResistance << endl;
+				reportFile << "WARNING: high res bias (" << myBulkCount[net_it].first << ") " << NetName(net_it, PRINT_CIRCUIT_ON) << " r=" << myVirtualNet.finalResistance << endl;
 			} else if ( ! myPower_p
 					|| ( myPower_p->simVoltage == UNKNOWN_VOLTAGE
 						&& ( myPower_p->minVoltage == UNKNOWN_VOLTAGE || myPower_p->maxVoltage == UNKNOWN_VOLTAGE ) ) ) {  // no error for missing bias if min/max defined.
-				reportFile << "WARNING: missing bias (" << myBulkCount[net_it] << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
-				reportFile << " at " << DeviceName(myBulkDevice[net_it], PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF) << endl;
+				reportFile << "WARNING: missing bias (" << myBulkCount[net_it].first << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
+				reportFile << " at " << DeviceName(myBulkCount[net_it].second, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF) << endl;
 			} else if ( IsCalculatedVoltage_(myPower_p) ) {
-				reportFile << "WARNING: calculated bias (" << myBulkCount[net_it] << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
-				reportFile << " at " << DeviceName(myBulkDevice[net_it], PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF)
+				reportFile << "WARNING: calculated bias (" << myBulkCount[net_it].first << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
+				reportFile << " at " << DeviceName(myBulkCount[net_it].second, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF)
 						<< (myPower_p->type[MIN_CALCULATED_BIT] ? " 1|" : " 0|")
 						<< (myPower_p->type[SIM_CALCULATED_BIT] ? "1|" : "0|")
 						<< (myPower_p->type[MAX_CALCULATED_BIT] ? "1" : "0") <<	endl;
