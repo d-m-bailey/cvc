@@ -58,16 +58,17 @@ public:
 			return memory_area;
 		}
 
+		void remmap_file_for_read();
 		void* open_and_mmap_file(std::string fname, enum access_mode access_mode, off_t offset, size_t length, bool map_whole_file, bool allow_remap);
 		bool munmap_and_close_file(void);
 
 private:
 		friend class mmap_file_pool;
 
-                int fd;
-                void *memory_area;
-                size_t size_mapped;
-                off_t offset_mapped;
+		int fd;
+		void *memory_area;
+		size_t size_mapped;
+		off_t offset_mapped;
 		int reference_count;
 	};
 

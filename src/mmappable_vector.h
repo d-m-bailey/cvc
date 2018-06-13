@@ -130,6 +130,20 @@ public:
 #endif
 		}
 
+		void remmap_file_for_read()
+		{
+#ifdef __GNUC__
+#if __GNUC__ == 3
+			A *the_allocator = static_cast<A*>(&(this->Base::_M_impl));
+#else
+			A *the_allocator = &Base::_M_get_Tp_allocator();
+#endif
+#else
+#error "Not GNU C++, please either implement me or use GCC"
+#endif
+			the_allocator->private_file.remmap_file_for_read();
+		}
+
 private:
 		void _M_set_finish(size_t n)
 		{

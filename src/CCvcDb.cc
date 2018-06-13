@@ -215,10 +215,11 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 	} else {
 		if ( theEventQueue.queueType == SIM_QUEUE ) {
 			if ( deviceType_v[theDeviceId] != FUSE_OFF ) {
+				// TODO: should do relative check and/or alias check
 				if ( theConnections.sourcePower_p->type[HIZ_BIT] && theConnections.sourcePower_p->relativeFriendly
-						&& theConnections.sourcePower_p->family == theConnections.drainPower_p->powerSignal ) return;
+						&& theConnections.sourcePower_p->family() == theConnections.drainPower_p->powerSignal ) return;
 				if ( theConnections.drainPower_p->type[HIZ_BIT] && theConnections.drainPower_p->relativeFriendly
-						&& theConnections.drainPower_p->family == theConnections.sourcePower_p->powerSignal ) return;
+						&& theConnections.drainPower_p->family() == theConnections.sourcePower_p->powerSignal ) return;
 				ReportShort(theDeviceId);
 			}
 		} else {
@@ -349,7 +350,7 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 				}
 			}
 			// TODO: family check not correct. need to check for relatives
-			if ( theConnections.sourcePower_p->family != theConnections.drainPower_p->family ) {
+			if ( theConnections.sourcePower_p->family() != theConnections.drainPower_p->family() ) {
 				if (gDebug_cvc) cout << "adding leak" << endl;
 				theEventQueue.AddLeak(theDeviceId, theConnections);
 			}

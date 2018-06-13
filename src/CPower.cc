@@ -30,7 +30,14 @@ netId_t CPower::powerCount = 0;
 
 CPower::CPower() {
 	powerId = powerCount++;
+}
 
+CPower::CPower(CPower * thePower_p) {
+	// Similar to byte-wise copy, but duplicates extraData;
+	*this = *thePower_p;
+	if ( extraData ) {
+		extraData = new CExtraPowerData(*(thePower_p->extraData));
+	}
 }
 
 CPower::CPower(CPower * thePower_p, netId_t theNetId) {
@@ -42,10 +49,13 @@ CPower::CPower(CPower * thePower_p, netId_t theNetId) {
 	minVoltage = thePower_p->minVoltage;
 	maxVoltage = thePower_p->maxVoltage;
 	simVoltage = thePower_p->simVoltage;
-	expectedSim = thePower_p->expectedSim;
-	expectedMin = thePower_p->expectedMin;
-	expectedMax = thePower_p->expectedMax;
-	family = thePower_p->family;
+	if ( thePower_p->extraData ) {
+		extraData = new CExtraPowerData;
+		extraData->expectedSim = thePower_p->expectedSim();
+		extraData->expectedMin = thePower_p->expectedMin();
+		extraData->expectedMax = thePower_p->expectedMax();
+		extraData->family = thePower_p->family();
+	}
 	relativeFriendly = thePower_p->relativeFriendly;
 	relativeSet = thePower_p->relativeSet;
 	type = thePower_p->type;
@@ -105,11 +115,21 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 			if ( myParameterName == "min" ) minVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, MIN_POWER, theModelListMap);
 			if ( myParameterName == "max" ) maxVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, MAX_POWER, theModelListMap);
 			if ( myParameterName == "sim" ) simVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, SIM_POWER, theModelListMap);
-			if ( myParameterName == "expectMin" ) expectedMin = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, MIN_POWER, theModelListMap);
-			if ( myParameterName == "expectMax" ) expectedMax = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, MAX_POWER, theModelListMap);
-			if ( myParameterName == "expectSim" ) expectedSim = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, SIM_POWER, theModelListMap);
+			if ( myParameterName == "expectMin" ) {
+				if ( ! extraData ) extraData = new CExtraPowerData;
+				extraData->expectedMin = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, MIN_POWER, theModelListMap);
+			}
+			if ( myParameterName == "expectMax" ) {
+				if ( ! extraData ) extraData = new CExtraPowerData;
+				extraData->expectedMax = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, MAX_POWER, theModelListMap);
+			}
+			if ( myParameterName == "expectSim" ) {
+				if ( ! extraData ) extraData = new CExtraPowerData;
+				extraData->expectedSim = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, SIM_POWER, theModelListMap);
+			}
 			if ( myParameterName == "permit" || myParameterName == "prohibit" ) {
-				family = myParameterValue;
+				if ( ! extraData ) extraData = new CExtraPowerData;
+				extraData->family = myParameterValue;
 				relativeFriendly = ( myParameterName == "permit" ) ? true : false;
 			}
 			definition += " " + myParameterName + "@" + myParameterValue;
@@ -142,10 +162,13 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 				minVoltage = thePowerMacroPtrMap[myParameterName]->minVoltage;
 				maxVoltage = thePowerMacroPtrMap[myParameterName]->maxVoltage;
 				simVoltage = thePowerMacroPtrMap[myParameterName]->simVoltage;
-				expectedMin = thePowerMacroPtrMap[myParameterName]->expectedMin;
-				expectedMax = thePowerMacroPtrMap[myParameterName]->expectedMax;
-				expectedSim = thePowerMacroPtrMap[myParameterName]->expectedSim;
-				family = thePowerMacroPtrMap[myParameterName]->family;
+				if ( thePowerMacroPtrMap[myParameterName]->extraData ) {
+					if (! extraData) extraData = new CExtraPowerData;
+					extraData->expectedMin = thePowerMacroPtrMap[myParameterName]->expectedMin();
+					extraData->expectedMax = thePowerMacroPtrMap[myParameterName]->expectedMax();
+					extraData->expectedSim = thePowerMacroPtrMap[myParameterName]->expectedSim();
+					extraData->family = thePowerMacroPtrMap[myParameterName]->family();
+				}
 				relativeFriendly = thePowerMacroPtrMap[myParameterName]->relativeFriendly;
 				type[HIZ_BIT] = thePowerMacroPtrMap[myParameterName]->type[HIZ_BIT];
 				powerAlias = myParameterName;
@@ -163,7 +186,8 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 //		type[EXPECTED_ONLY_BIT] = true;
 //	}
 	if ( type[HIZ_BIT] ) {
-		if ( family.empty() ) family = "cvc-none";
+		if ( ! extraData ) extraData = new CExtraPowerData;
+		if ( family().empty() ) extraData->family = "cvc-none";
 	}
 }
 
@@ -243,6 +267,10 @@ CPower::CPower(netId_t theNetId, voltage_t theMinVoltage, voltage_t theSimVoltag
 //	type[MAX_CALCULATED_BIT] = true;
 }
 
+CPower::~CPower() {
+	if ( extraData ) free(extraData);
+}
+
 void CPower::SetPowerAlias(string thePowerString, size_t theAliasStart) {
 	size_t myLastHierarchy = powerSignal.find_last_of(HIERARCHY_DELIMITER);
 	if ( theAliasStart < thePowerString.length() ) {
@@ -262,15 +290,15 @@ void CPower::SetPowerAlias(string thePowerString, size_t theAliasStart) {
 }
 
 bool CPower::IsSamePower(CPower * theMatchPower) {
-	return ( this->type == theMatchPower->type &&
-			this->minVoltage == theMatchPower->minVoltage &&
-			this->simVoltage == theMatchPower->simVoltage &&
-			this->maxVoltage == theMatchPower->maxVoltage &&
-			this->expectedMin == theMatchPower->expectedMin &&
-			this->expectedSim == theMatchPower->expectedSim &&
-			this->expectedMax == theMatchPower->expectedMax &&
-			this->family == theMatchPower->family &&
-			this->relativeFriendly == theMatchPower->relativeFriendly);
+	return ( type == theMatchPower->type &&
+			minVoltage == theMatchPower->minVoltage &&
+			simVoltage == theMatchPower->simVoltage &&
+			maxVoltage == theMatchPower->maxVoltage &&
+			expectedMin() == theMatchPower->expectedMin() &&
+			expectedSim() == theMatchPower->expectedSim() &&
+			expectedMax() == theMatchPower->expectedMax() &&
+			family() == theMatchPower->family() &&
+			relativeFriendly == theMatchPower->relativeFriendly);
 }
 
 void CPowerFamilyMap::AddFamily(string thePowerString) {
@@ -580,15 +608,15 @@ string CPower::StandardDefinition() {
 		if ( simVoltage != UNKNOWN_VOLTAGE ) myDefinition << " sim" << (type[SIM_CALCULATED_BIT] ? "=" : "@") << PrintParameter(simVoltage, VOLTAGE_SCALE);
 		if ( maxVoltage != UNKNOWN_VOLTAGE ) myDefinition << " max" << (type[MAX_CALCULATED_BIT] ? "=" : "@") << PrintParameter(maxVoltage, VOLTAGE_SCALE);
 	}
-	if ( ! expectedMin.empty() ) myDefinition << " expectMin@" << expectedMin;
-	if ( ! expectedSim.empty() ) myDefinition << " expectSim@" << expectedSim;
-	if ( ! expectedMax.empty() ) myDefinition << " expectMax@" << expectedMax;
+	if ( ! expectedMin().empty() ) myDefinition << " expectMin@" << expectedMin();
+	if ( ! expectedSim().empty() ) myDefinition << " expectSim@" << expectedSim();
+	if ( ! expectedMax().empty() ) myDefinition << " expectMax@" << expectedMax();
 	if ( type[HIZ_BIT] ) myDefinition << " open";
 	if ( type[INPUT_BIT] ) myDefinition << " input";
 	if ( type[POWER_BIT] ) myDefinition << " power";
 	if ( type[RESISTOR_BIT] ) myDefinition << " resistor";
 //	if ( family != "" ) myDefinition << " Family:" << family << "(" << relativeSet.size() << " relatives)";
-	if ( ! family.empty() ) myDefinition << (relativeFriendly ? " permit@" : " prohibit@") << family;
+	if ( ! family().empty() ) myDefinition << (relativeFriendly ? " permit@" : " prohibit@") << family();
 	return(myDefinition.str());
 }
 
@@ -812,7 +840,9 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 */
 	if ( (*this)[theDefaultNetId] && (*this)[theDefaultNetId]->type[HIZ_BIT] ) {
 		myPower_p->type[HIZ_BIT] = true;
-		myPower_p->family = (*this)[theDefaultNetId]->family;
+		if ( (*this)[theDefaultNetId]->extraData ) {
+			myPower_p->family() = (*this)[theDefaultNetId]->family();
+		}
 		myPower_p->relativeFriendly = (*this)[theDefaultNetId]->relativeFriendly;
 		myPower_p->relativeSet = (*this)[theDefaultNetId]->relativeSet;
 //		myPower_p->defaultMinNet = theDefaultNetId;
@@ -919,7 +949,7 @@ void CPowerPtrList::SetFamilies(CPowerFamilyMap & thePowerFamilyMap) {
 	size_t	myStringBegin;
 	size_t	myStringEnd;
 	for ( CPowerPtrList::iterator powerPtr_ppit = begin(); powerPtr_ppit != end(); powerPtr_ppit++ ) {
-		myFamilyList = (*powerPtr_ppit)->family;
+		myFamilyList = (*powerPtr_ppit)->family();
 		if ( ! myFamilyList.empty() ) {
 			myStringBegin = myFamilyList.find_first_not_of(",", 0);
 			myStringEnd = myFamilyList.find_first_of(",", myStringBegin);
@@ -942,14 +972,14 @@ string CPower::PowerDefinition() {
 	if ( minVoltage != UNKNOWN_VOLTAGE ) myPowerDefinition += " min" + ( ((type[MIN_CALCULATED_BIT]) ? "=" : "@") + to_string<voltage_t>(minVoltage));
 	if ( simVoltage != UNKNOWN_VOLTAGE ) myPowerDefinition += " sim" + ( ((type[SIM_CALCULATED_BIT]) ? "=" : "@") + to_string<voltage_t>(simVoltage));
 	if ( maxVoltage != UNKNOWN_VOLTAGE ) myPowerDefinition += " max" + ( ((type[MAX_CALCULATED_BIT]) ? "=" : "@") + to_string<voltage_t>(maxVoltage));
-	if ( ! expectedMin.empty() ) myPowerDefinition += " min?" + expectedMin;
-	if ( ! expectedSim.empty() ) myPowerDefinition += " sim?" + expectedSim;
-	if ( ! expectedMax.empty() ) myPowerDefinition += " max?" + expectedMax;
+	if ( ! expectedMin().empty() ) myPowerDefinition += " min?" + expectedMin();
+	if ( ! expectedSim().empty() ) myPowerDefinition += " sim?" + expectedSim();
+	if ( ! expectedMax().empty() ) myPowerDefinition += " max?" + expectedMax();
 	if ( type[HIZ_BIT] ) myPowerDefinition += " open";
 	if ( type[INPUT_BIT] ) myPowerDefinition += " input";
 	if ( type[RESISTOR_BIT] ) myPowerDefinition += " resistor";
 //	if ( definition != "" ) myPowerDefinition += " '" + definition + "'";
-	if ( ! family.empty() ) myPowerDefinition += " '" + family + ((relativeFriendly) ? " allowed'" : " prohibited'");
+	if ( ! family().empty() ) myPowerDefinition += " '" + family() + ((relativeFriendly) ? " allowed'" : " prohibited'");
 	return myPowerDefinition;
 }
 
@@ -1021,7 +1051,7 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 }
 
 voltage_t CPower::RelativeVoltage(CPowerPtrMap & thePowerMacroPtrMap, netStatus_t theType, CModelListMap & theModelListMap) {
-	if ( family.empty() ) return UNKNOWN_VOLTAGE;
+	if ( ! extraData || family().empty() ) return UNKNOWN_VOLTAGE;
 	try {
 		return thePowerMacroPtrMap.CalculateVoltage(*(relativeSet.begin()), theType, theModelListMap);
 	}

@@ -48,6 +48,14 @@ public:
 class CPowerPtrMap; // forward definition
 class CPowerPtrVector; // forward definition
 
+class CExtraPowerData {
+public:
+	string	expectedSim = "";
+	string	expectedMin = "";
+	string	expectedMax = "";
+	string	family = "";
+};
+
 class CPower {
 public:
 	static netId_t powerCount;
@@ -68,15 +76,16 @@ public:
 	voltage_t pullUpVoltage = UNKNOWN_VOLTAGE;
 	string	powerSignal; // power name from power file (possibly bus or cell level net)
 	string	powerAlias; // name used to represent this power definition (/VSS -> VSS, /X1/VDDA -> VDDA)
-	string	expectedSim = "";
-	string	expectedMin = "";
-	string	expectedMax = "";
+//	string	expectedSim = "";
+//	string	expectedMin = "";
+//	string	expectedMax = "";
 	// base of calculations for calculated nets
 //	netId_t	baseMinId = UNKNOWN_NET;
 //	netId_t	baseSimId = UNKNOWN_NET;
 //	netId_t	baseMaxId = UNKNOWN_NET;
-	string	family = "";
+//	string	family = "";
 	string	definition = "";
+	CExtraPowerData * extraData = NULL;
 	CStatus	type;
 	CStatus active;
 	CSet	relativeSet;
@@ -86,13 +95,19 @@ public:
 
 	CPower();
 	CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModelListMap & theModelListMap);
+	CPower(CPower * thePower_p);
 	CPower(CPower * thePower_p, netId_t theNetId);
 	CPower(netId_t theNetId);
 	CPower(netId_t theNetId, voltage_t theSimVoltage);
 	CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, netId_t theMinNet, netId_t theMaxNet, string theCalculation);
 //	CPower(voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage);
 	CPower(netId_t theNetId, voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage, netId_t theDefaultMinNet, netId_t theDefaultSimNet, netId_t theDefaultMaxNet);
+	~CPower();
 
+	string expectedSim() { return (( extraData ) ? extraData->expectedSim : ""); };
+	string expectedMin() { return (( extraData ) ? extraData->expectedMin : ""); };
+	string expectedMax() { return (( extraData ) ? extraData->expectedMax : ""); };
+	string family() { return (( extraData ) ? extraData->family : ""); };
 	CPower * GetBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
 //	CPower * GetMinBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
 //	CPower * GetSimBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);

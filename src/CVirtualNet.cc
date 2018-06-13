@@ -128,6 +128,7 @@ CVirtualNetMappedVector::CVirtualNetMappedVector(mmap_allocator<CVirtualNet> the
 void CVirtualNetMappedVector::operator= (CVirtualNetVector& theSourceVector) {
 	mmap_file(theSourceVector.size());
 	assign(theSourceVector.begin(), theSourceVector.end());
+	remmap_file_for_read();
 }
 
 void CVirtualNetVector::Set(netId_t theNetId, netId_t theNextNet, resistance_t theResistance, eventKey_t theTime) {

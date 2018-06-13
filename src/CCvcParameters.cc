@@ -368,11 +368,11 @@ returnCode_t CCvcParameters::LoadPower() {
 				}
 			} else {
 				CPower * myPowerPtr = new CPower(myInput, cvcPowerMacroPtrMap, cvcModelListMap);
-				if ( ! (myPowerPtr->expectedMin.empty() && myPowerPtr->expectedSim.empty() && myPowerPtr->expectedMax.empty()) ) {
-					cvcExpectedLevelPtrList.push_back(new CPower(*myPowerPtr));  // duplicate CPower
+				if ( ! (myPowerPtr->expectedMin().empty() && myPowerPtr->expectedSim().empty() && myPowerPtr->expectedMax().empty()) ) {
+					cvcExpectedLevelPtrList.push_back(new CPower(myPowerPtr));  // duplicate CPower (not a bit-wise copy)
 				}
 				if (myPowerPtr->type != NO_TYPE || myPowerPtr->minVoltage != UNKNOWN_VOLTAGE || myPowerPtr->simVoltage != UNKNOWN_VOLTAGE || myPowerPtr->maxVoltage != UNKNOWN_VOLTAGE) {
-					cvcPowerPtrList.push_back(new CPower(*myPowerPtr));  // duplicate CPower
+					cvcPowerPtrList.push_back(new CPower(myPowerPtr));  // duplicate CPower (not a bit-wise copy)
 				}
 				if ( myAutoMacroFlag ) {
 					myMacroName = myPowerPtr->powerSignal;
@@ -408,7 +408,7 @@ returnCode_t CCvcParameters::LoadPower() {
 
 void CCvcParameters::SetHiZPropagation() {
 	for ( auto power_ppit = cvcPowerPtrList.begin(); power_ppit != cvcPowerPtrList.end(); power_ppit++ ) {
-		if ( (*power_ppit)->type[HIZ_BIT] && ! (*power_ppit)->family.empty() ) {
+		if ( (*power_ppit)->type[HIZ_BIT] && ! (*power_ppit)->family().empty() ) {
 			if ( (*power_ppit)->RelativeVoltage(cvcPowerMacroPtrMap, MIN_POWER, cvcModelListMap) == (*power_ppit)->minVoltage ) {
 				(*power_ppit)->active[MIN_IGNORE] = true;
 			}
