@@ -27,8 +27,11 @@
 
 
 CFixedText::CFixedText() {
+	const char myDummy[] = "";
 	obstack_init(&fixedTextObstack);
 	firstAddress = (text_t) obstack_alloc(&fixedTextObstack, 0);
+	obstack_copy0(&(fixedTextObstack), (void *) myDummy, 0);  // first string is null string
+	size = 1;
 }
 
 CFixedText::~CFixedText() {
@@ -37,8 +40,11 @@ CFixedText::~CFixedText() {
 }
 
 void CFixedText::Clear() {
+	const char myDummy[] = "";
 	obstack_free(&fixedTextObstack, firstAddress);
 	fixedTextToAddressMap.clear();
+	obstack_copy0(&(fixedTextObstack), (void *) myDummy, 0);  // first string is null string
+	size = 1;
 }
 
 text_t CFixedText::SetTextAddress(const text_t theNewText){

@@ -43,6 +43,7 @@ public:
 	inline int Size() {return size;};
 	inline int	Entries() {return fixedTextToAddressMap.size();};
 	void Clear();
+	text_t BlankTextAddress() {return firstAddress;};
 	text_t SetTextAddress(const text_t theText);
 	text_t SetTextAddress(const string theType, CTextList* theNewTextList);
 	text_t GetTextAddress(const text_t theText);

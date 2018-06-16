@@ -1829,7 +1829,8 @@ void CCvcDb::CalculateResistorVoltage(netId_t theNetId, voltage_t theMinVoltage,
 		myPower_p->type[MIN_CALCULATED_BIT] = true;
 	//	myPower_p->type[SIM_CALCULATED_BIT] = true;
 		myPower_p->type[MAX_CALCULATED_BIT] = true;
-		myPower_p->definition += " calculation=> " + myCalculation;
+		string myDefinition = myPower_p->definition + (" calculation=> " + myCalculation);
+		myPower_p->definition = CPower::powerDefinitionText.SetTextAddress((text_t)myDefinition.c_str());
 //		cvcParameters.cvcPowerPtrList.push_back(new CPower(theNetId, NetName(theNetId), myNewVoltage, minNet_v[theNetId].finalNetId, maxNet_v[theNetId].finalNetId, myCalculation));
 //		netVoltagePtr_v[theNetId] = cvcParameters.cvcPowerPtrList.back();
 		myPower_p->type[RESISTOR_BIT] = true;
@@ -2640,16 +2641,17 @@ void CCvcDb::ResetMinMaxPower() {
 		if ( myVoltage_p == NULL ) continue; // skips subordinate nets
 		if ( isFixedSimNet && myVoltage_p->simVoltage != UNKNOWN_VOLTAGE ) {
 			// default min/max voltages are not calculated. meaning there is no path to source voltage.
+			string myDefinition = myVoltage_p->definition;
 			if ( myVoltage_p->minVoltage == UNKNOWN_VOLTAGE ) {
 				if ( leakVoltagePtr_v[net_it] && leakVoltagePtr_v[net_it]->minVoltage != UNKNOWN_VOLTAGE
 						&& leakVoltagePtr_v[net_it]->minVoltage > myVoltage_p->simVoltage ) {
 					myVoltage_p->minVoltage = leakVoltagePtr_v[net_it]->minVoltage;
 					myVoltage_p->defaultMinNet = leakVoltagePtr_v[net_it]->defaultMinNet;
-					myVoltage_p->definition += " min=leak";
+					myDefinition += " min=leak";
 				} else {
 					myVoltage_p->minVoltage = myVoltage_p->simVoltage;
 					myVoltage_p->defaultMinNet = UNKNOWN_NET;
-					myVoltage_p->definition += " min=sim";
+					myDefinition += " min=sim";
 				}
 				myVoltage_p->active[MIN_ACTIVE] = true;
 //				myVoltage_p->baseMinId = myVoltage_p->baseSimId;
@@ -2660,11 +2662,11 @@ void CCvcDb::ResetMinMaxPower() {
 						&& leakVoltagePtr_v[net_it]->maxVoltage < myVoltage_p->simVoltage ) {
 					myVoltage_p->maxVoltage = leakVoltagePtr_v[net_it]->maxVoltage;
 					myVoltage_p->defaultMaxNet = UNKNOWN_NET;
-					myVoltage_p->definition += " max=leak";
+					myDefinition += " max=leak";
 				} else {
 					myVoltage_p->maxVoltage = myVoltage_p->simVoltage;
 					myVoltage_p->defaultMaxNet = UNKNOWN_NET;
-					myVoltage_p->definition += " max=sim";
+					myDefinition += " max=sim";
 				}
 				myVoltage_p->active[MAX_ACTIVE] = true;
 //				myVoltage_p->baseMaxId = myVoltage_p->baseSimId;
@@ -2676,6 +2678,7 @@ void CCvcDb::ResetMinMaxPower() {
 			if ( myVoltage_p->active[MAX_ACTIVE] && myVoltage_p->maxVoltage < myVoltage_p->simVoltage ) {
 				reportFile << "WARNING: MAX < SIM " << myVoltage_p->maxVoltage << " < " << myVoltage_p->simVoltage << " for " << NetName(net_it, PRINT_CIRCUIT_ON) << endl;
 			}
+			myVoltage_p->definition = CPower::powerDefinitionText.SetTextAddress((text_t)myDefinition.c_str());
 /*
 			if ( IsCalculatedVoltage_(myVoltage_p) ) {
 				myVoltage_p->type[SIM_CALCULATED_BIT] = true;

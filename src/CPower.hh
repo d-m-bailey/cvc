@@ -54,11 +54,17 @@ public:
 	string	expectedMin = "";
 	string	expectedMax = "";
 	string	family = "";
+	CSet	relativeSet;
+//	voltage_t pullDownVoltage = UNKNOWN_VOLTAGE;
+//	voltage_t pullUpVoltage = UNKNOWN_VOLTAGE;
+	string	powerSignal; // power name from power file (possibly bus or cell level net)
+	string	powerAlias; // name used to represent this power definition (/VSS -> VSS, /X1/VDDA -> VDDA)
 };
 
 class CPower {
 public:
 	static netId_t powerCount;
+	static CFixedText powerDefinitionText;
 
 	netId_t powerId; // unique for each power net. used in leak detection
 	netId_t netId = UNKNOWN_NET; // netId for this power definition
@@ -84,11 +90,12 @@ public:
 //	netId_t	baseSimId = UNKNOWN_NET;
 //	netId_t	baseMaxId = UNKNOWN_NET;
 //	string	family = "";
-	string	definition = "";
+	text_t definition;  // must be initialized in constructor
+//	string	definition = "";
 	CExtraPowerData * extraData = NULL;
 	CStatus	type;
 	CStatus active;
-	CSet	relativeSet;
+//	CSet	relativeSet;
 	bool 	relativeFriendly = true;
 //	bool	printed = false;
 	bool	flagAllShorts = false;
@@ -98,7 +105,7 @@ public:
 	CPower(CPower * thePower_p);
 	CPower(CPower * thePower_p, netId_t theNetId);
 	CPower(netId_t theNetId);
-	CPower(netId_t theNetId, voltage_t theSimVoltage);
+	CPower(netId_t theNetId, voltage_t theSimVoltage, bool theCreateExtraData = false);
 	CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, netId_t theMinNet, netId_t theMaxNet, string theCalculation);
 //	CPower(voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage);
 	CPower(netId_t theNetId, voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage, netId_t theDefaultMinNet, netId_t theDefaultSimNet, netId_t theDefaultMaxNet);
@@ -108,6 +115,11 @@ public:
 	string expectedMin() { return (( extraData ) ? extraData->expectedMin : ""); };
 	string expectedMax() { return (( extraData ) ? extraData->expectedMax : ""); };
 	string family() { return (( extraData ) ? extraData->family : ""); };
+//	CSet	relativeSet() { return (( extraData ) ? extraData->relativeSet : ""); };
+//	voltage_t pullDownVoltage() { return (( extraData ) ? extraData->pullDownVoltage : UNKNOWN_VOLTAGE); };
+//	voltage_t pullUpVoltage() { return (( extraData ) ? extraData->pullDownVoltage : UNKNOWN_VOLTAGE); };
+//	string powerSignal() { return (( extraData ) ? extraData->powerSignal : ""); };
+//	string powerAlias() { return (( extraData ) ? extraData->powerAlias : ""); };
 	CPower * GetBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
 //	CPower * GetMinBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
 //	CPower * GetSimBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);

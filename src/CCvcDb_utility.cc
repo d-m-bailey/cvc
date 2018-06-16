@@ -1181,6 +1181,7 @@ void CCvcDb::Cleanup() {
 			myDeleteCount++;
 		}
 	}
+	CPower::powerDefinitionText.Clear();
 	if ( gDebug_cvc ) cout << "DEBUG: Deleted " << myDeleteCount << " power objects" << endl;
 	cvcParameters.cvcExpectedLevelPtrList.Clear();
 	cvcParameters.cvcPowerMacroPtrMap.Clear();

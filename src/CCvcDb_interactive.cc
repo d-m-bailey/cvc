@@ -254,8 +254,8 @@ string CCvcDb::ShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag) {
 		} else {
 			myShortString += " defined as ";
 		}
-		if ( netVoltagePtr_v[theNetId]->definition != myStandardDefinition ) {
-			myShortString += netVoltagePtr_v[theNetId]->definition + " => ";
+		if ( string(netVoltagePtr_v[theNetId]->definition) != myStandardDefinition ) {
+			myShortString = myShortString + netVoltagePtr_v[theNetId]->definition + " => ";
 		}
 		myShortString += myStandardDefinition;
 	}
@@ -277,8 +277,8 @@ string CCvcDb::LeakShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag
 		} else {
 				myShortString += " defined as ";
 		}
-		if ( leakVoltagePtr_v[theNetId]->definition != myStandardDefinition ) {
-				myShortString += leakVoltagePtr_v[theNetId]->definition + " => ";
+		if ( string(leakVoltagePtr_v[theNetId]->definition) != myStandardDefinition ) {
+				myShortString = myShortString + leakVoltagePtr_v[theNetId]->definition + " => ";
 		}
 		myShortString += myStandardDefinition;
 	}
@@ -1070,7 +1070,7 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 		netId_t myGlobalNetId = GetEquivalentNet(myInstance_p->localToGlobalNetId_v[net_it]);
 		CPower * myPower_p = netVoltagePtr_v[myGlobalNetId];
 		if ( myPower_p && ! myPower_p->powerSignal.empty() ) {
-			string myDefinition = myPower_p->definition.substr(0, myPower_p->definition.find(" calculation=>"));
+			string myDefinition = string(myPower_p->definition).substr(0, string(myPower_p->definition).find(" calculation=>"));
 			myPowerFile << mySignals_v[net_it] << myDefinition << endl;
 		} else {
 			CDeviceCount myDeviceCounts(myGlobalNetId, this, theInstanceId);

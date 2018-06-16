@@ -27,9 +27,11 @@
 #include "CCvcDb.hh"
 
 netId_t CPower::powerCount = 0;
+CFixedText CPower::powerDefinitionText;
 
 CPower::CPower() {
 	powerId = powerCount++;
+	definition = CPower::powerDefinitionText.BlankTextAddress();
 }
 
 CPower::CPower(CPower * thePower_p) {
@@ -55,9 +57,9 @@ CPower::CPower(CPower * thePower_p, netId_t theNetId) {
 		extraData->expectedMin = thePower_p->expectedMin();
 		extraData->expectedMax = thePower_p->expectedMax();
 		extraData->family = thePower_p->family();
+		extraData->relativeSet = thePower_p->extraData->relativeSet;
 	}
 	relativeFriendly = thePower_p->relativeFriendly;
-	relativeSet = thePower_p->relativeSet;
 	type = thePower_p->type;
 	definition = thePower_p->definition;
 	active = thePower_p->active;
@@ -104,6 +106,7 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 	size_t myAliasBegin = thePowerString.find(ALIAS_DELIMITER);
 	powerSignal = thePowerString.substr(myStringBegin, min(myStringEnd, myAliasBegin));
 //	definition = thePowerString.substr(thePowerString.find_first_not_of(" \t", myStringEnd));
+	string myDefinition = "";
 	while (myStringEnd < thePowerString.length()) {
 		myStringBegin = thePowerString.find_first_not_of(" \t", myStringEnd);
 		myStringEnd = thePowerString.find_first_of(" \t", myStringBegin);
@@ -132,10 +135,10 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 				extraData->family = myParameterValue;
 				relativeFriendly = ( myParameterName == "permit" ) ? true : false;
 			}
-			definition += " " + myParameterName + "@" + myParameterValue;
+			myDefinition += " " + myParameterName + "@" + myParameterValue;
 		} else {
 			myParameterName = thePowerString.substr(myStringBegin, myStringEnd - myStringBegin);
-			definition += " " + myParameterName;
+			myDefinition += " " + myParameterName;
 //			cout << "parameter '" << myParameterName << "'" << endl;
 			if ( myParameterName == "input" ) {
 				type[INPUT_BIT] = true;
@@ -185,9 +188,10 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 //			( expectedSim != "" || expectedMin != "" || expectedMax != "" )) {
 //		type[EXPECTED_ONLY_BIT] = true;
 //	}
+	definition = CPower::powerDefinitionText.SetTextAddress((text_t)myDefinition.c_str());
 	if ( type[HIZ_BIT] ) {
 		if ( ! extraData ) extraData = new CExtraPowerData;
-		if ( family().empty() ) extraData->family = "cvc-none";
+		if ( extraData->family.empty() ) extraData->family = "cvc-none";
 	}
 }
 
@@ -203,9 +207,10 @@ CPower::CPower(netId_t theNetId) {
 //	type[MIN_CALCULATED_BIT] = true;
 //	type[SIM_CALCULATED_BIT] = true;
 //	type[MAX_CALCULATED_BIT] = true;
+	definition = CPower::powerDefinitionText.BlankTextAddress();
 }
 
-CPower::CPower(netId_t theNetId, voltage_t theSimVoltage) {
+CPower::CPower(netId_t theNetId, voltage_t theSimVoltage, bool theCreateExtraData) {
 	// for set sim level to thePowerNetId
 	powerId = powerCount++;
 //	powerSignal = "theNetName"; // TODO: Check literal
@@ -218,6 +223,8 @@ CPower::CPower(netId_t theNetId, voltage_t theSimVoltage) {
 //	type[SIM_CALCULATED_BIT] = true;
 //	type[MAX_CALCULATED_BIT] = true;
 	flagAllShorts = true;
+	definition = CPower::powerDefinitionText.BlankTextAddress();
+	if ( theCreateExtraData ) extraData = new CExtraPowerData;
 }
 
 CPower::CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, netId_t theMinNet, netId_t theMaxNet, string theCalculation) {
@@ -234,7 +241,8 @@ CPower::CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, net
 	type[MIN_CALCULATED_BIT] = true;
 //	type[SIM_CALCULATED_BIT] = true;
 	type[MAX_CALCULATED_BIT] = true;
-	definition = definition + " calculation=> " + theCalculation;
+	string myDefinition = definition + (" calculation=> " + theCalculation);
+	definition = CPower::powerDefinitionText.SetTextAddress((text_t)myDefinition.c_str());
 }
 
 /*
@@ -261,6 +269,7 @@ CPower::CPower(netId_t theNetId, voltage_t theMinVoltage, voltage_t theSimVoltag
 	defaultSimNet = theDefaultSimNet;
 	defaultMaxNet = theDefaultMaxNet;
 	netId = theNetId;
+	definition = CPower::powerDefinitionText.BlankTextAddress();
 	// type set in calling routine
 //	type[MIN_CALCULATED_BIT] = true;
 //	type[SIM_CALCULATED_BIT] = true;
@@ -391,15 +400,18 @@ CPower * CPower::GetMaxBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualN
 
 */
 bool CPower::IsRelative(CPower * theTestPower_p, bool theDefault) {
-	if ( relativeSet.empty() && theTestPower_p->relativeSet.empty() ) return theDefault;
+	CSet emptySet;
+	CSet & myRelativeSet = (extraData) ? extraData->relativeSet : emptySet;
+	CSet & myTestRelativeSet = (theTestPower_p->extraData) ? theTestPower_p->extraData->relativeSet : emptySet;
+	if ( myRelativeSet.empty() && myTestRelativeSet.empty() ) return theDefault;
 	bool myFriend = false, myEnemy = false, myTestFriend = false, myTestEnemy = false;
 	bool myHasFriends = false, myHasEnemies = false, myTestHasFriends = false, myTestHasEnemies = false;
 
-	if ( ! relativeSet.empty() ) {
-		bool myRelation = ( relativeSet.count(theTestPower_p->powerSignal)
-				|| relativeSet.count(theTestPower_p->powerAlias)
-				|| ( ! theTestPower_p->relativeSet.empty()
-						&& relativeSet.Intersects(theTestPower_p->relativeSet) ) );
+	if ( ! myRelativeSet.empty() ) {
+		bool myRelation = ( myRelativeSet.count(theTestPower_p->powerSignal)
+				|| myRelativeSet.count(theTestPower_p->powerAlias)
+				|| ( ! myTestRelativeSet.empty()
+						&& myRelativeSet.Intersects(myTestRelativeSet) ) );
 		if ( relativeFriendly ) {
 			myHasFriends = true;
 			myFriend = myRelation;
@@ -408,11 +420,11 @@ bool CPower::IsRelative(CPower * theTestPower_p, bool theDefault) {
 			myEnemy = myRelation;
 		}
 	}
-	if ( ! theTestPower_p->relativeSet.empty() ) {
-		bool myRelation = ( theTestPower_p->relativeSet.count(powerSignal)
-				|| theTestPower_p->relativeSet.count(powerAlias)
-				|| ( ! relativeSet.empty()
-						&& theTestPower_p->relativeSet.Intersects(relativeSet) ) );
+	if ( ! myTestRelativeSet.empty() ) {
+		bool myRelation = ( myTestRelativeSet.count(powerSignal)
+				|| myTestRelativeSet.count(powerAlias)
+				|| ( ! myRelativeSet.empty()
+						&& myTestRelativeSet.Intersects(myRelativeSet) ) );
 		if ( theTestPower_p->relativeFriendly ) {
 			myTestHasFriends = true;
 			myTestFriend = myRelation;
@@ -590,10 +602,10 @@ void CPower::Print(ostream & theLogFile, string theIndentation, string theRealPo
 //	if ( family != "" ) myDefinition << " Family:" << family << "(" << relativeSet.size() << " relatives)";
 	if ( family != "" ) myDefinition << (relativeFriendly ? " permit@" : " prohibit@") << family;
 */
-	if ( ! definition.empty() ) {
+//	if ( ! definition.empty() ) {
 		theLogFile << definition; // for defined voltages
-	}
-	if ( ! myDefinition.empty() && myDefinition != definition ) {
+//	}
+	if ( ! myDefinition.empty() && myDefinition != string(definition) ) {
 		theLogFile << (IsCalculatedVoltage_(this) ? " =>" : " ->") << myDefinition;
 	}
 	theLogFile << endl;
@@ -841,10 +853,11 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 	if ( (*this)[theDefaultNetId] && (*this)[theDefaultNetId]->type[HIZ_BIT] ) {
 		myPower_p->type[HIZ_BIT] = true;
 		if ( (*this)[theDefaultNetId]->extraData ) {
-			myPower_p->family() = (*this)[theDefaultNetId]->family();
+			if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+			myPower_p->extraData->family = (*this)[theDefaultNetId]->family();
+			myPower_p->extraData->relativeSet = (*this)[theDefaultNetId]->extraData->relativeSet;
 		}
 		myPower_p->relativeFriendly = (*this)[theDefaultNetId]->relativeFriendly;
-		myPower_p->relativeSet = (*this)[theDefaultNetId]->relativeSet;
 //		myPower_p->defaultMinNet = theDefaultNetId;
 //		myPower_p->type[MIN_CALCULATED_BIT] = true;
 //		myPower_p->defaultMaxNet = theDefaultNetId;
@@ -906,8 +919,8 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 	if (myPower_p->maxVoltage != UNKNOWN_VOLTAGE && myPower_p->simVoltage != UNKNOWN_VOLTAGE && myPower_p->maxVoltage < myPower_p->simVoltage) {
 		cout << "WARNING: MAX < SIM " << myPower_p->maxVoltage << " < " << myPower_p->simVoltage << " for " << theCvcDb_p->NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
 	}
-	if ( myPower_p->definition.empty() ) {
-		myPower_p->definition = theCalculation;
+	if ( myPower_p->definition[0] == '\0' ) {
+		myPower_p->definition = CPower::powerDefinitionText.SetTextAddress((text_t)theCalculation.c_str());
 	}
 	if (gDebug_cvc) cout << "INFO: Calculated voltage at net " << myPower_p->netId << " default Min/Sim/Max: " << myPower_p->defaultMinNet << "/"
 			<< myPower_p->defaultSimNet << "/" << myPower_p->defaultMaxNet << endl;
@@ -953,12 +966,13 @@ void CPowerPtrList::SetFamilies(CPowerFamilyMap & thePowerFamilyMap) {
 		if ( ! myFamilyList.empty() ) {
 			myStringBegin = myFamilyList.find_first_not_of(",", 0);
 			myStringEnd = myFamilyList.find_first_of(",", myStringBegin);
+			if ( ! (*powerPtr_ppit)->extraData ) (*powerPtr_ppit)->extraData = new CExtraPowerData;
 			while (myStringBegin < myFamilyList.length()) {
 				myRelativeName = myFamilyList.substr(myStringBegin, myStringEnd - myStringBegin);
 				if ( thePowerFamilyMap.count(myRelativeName) > 0 ) {
-					(*powerPtr_ppit)->relativeSet.insert(thePowerFamilyMap[myRelativeName].begin(), thePowerFamilyMap[myRelativeName].end());
+					(*powerPtr_ppit)->extraData->relativeSet.insert(thePowerFamilyMap[myRelativeName].begin(), thePowerFamilyMap[myRelativeName].end());
 				} else {
-					(*powerPtr_ppit)->relativeSet.insert(myRelativeName);
+					(*powerPtr_ppit)->extraData->relativeSet.insert(myRelativeName);
 				}
 				myStringBegin = myFamilyList.find_first_not_of(",", myStringEnd);
 				myStringEnd = myFamilyList.find_first_of(",", myStringBegin);
@@ -1051,9 +1065,9 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 }
 
 voltage_t CPower::RelativeVoltage(CPowerPtrMap & thePowerMacroPtrMap, netStatus_t theType, CModelListMap & theModelListMap) {
-	if ( ! extraData || family().empty() ) return UNKNOWN_VOLTAGE;
+	if ( ! extraData || extraData->family.empty() ) return UNKNOWN_VOLTAGE;
 	try {
-		return thePowerMacroPtrMap.CalculateVoltage(*(relativeSet.begin()), theType, theModelListMap);
+		return thePowerMacroPtrMap.CalculateVoltage(*(extraData->relativeSet.begin()), theType, theModelListMap);
 	}
 	catch (...) {
 		return UNKNOWN_VOLTAGE;

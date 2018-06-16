@@ -1019,7 +1019,7 @@ returnCode_t CCvcDb::SetModePower() {
 		power_ppit++;
 		delete myNetIdList;
 	}
-	unordered_map<netId_t, string> myExpectedLevelDefinitionMap;
+	unordered_map<netId_t, text_t> myExpectedLevelDefinitionMap;
 	power_ppit = cvcParameters.cvcExpectedLevelPtrList.begin();
 	while( power_ppit != cvcParameters.cvcExpectedLevelPtrList.end() ) {
 		CPower * myPower_p = *power_ppit;
