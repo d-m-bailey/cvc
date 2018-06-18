@@ -1167,15 +1167,15 @@ void CCvcDb::Cleanup() {
 	int myDeleteCount = 0;
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 		if ( leakVoltagePtr_v.size() > net_it && leakVoltagePtr_v[net_it] && netVoltagePtr_v[net_it] != leakVoltagePtr_v[net_it] ) {  // unique leak power deleted here
-			if ( leakVoltagePtr_v[net_it]->extraData != NULL ) {
-				cout << "DEBUG: extra data at net " << net_it << endl;
+			if ( leakVoltagePtr_v[net_it]->extraData ) {
+				if ( gDebug_cvc ) cout << "DEBUG: extra data at net " << net_it << endl;
 			}
 			delete leakVoltagePtr_v[net_it];
 			myDeleteCount++;
 		}
 		if ( netVoltagePtr_v.size() > net_it && netVoltagePtr_v[net_it] ) {  // calculated power deleted here
-			if ( netVoltagePtr_v[net_it]->extraData != NULL ) {
-				cout << "DEBUG: extra data at net " << net_it << endl;
+			if ( netVoltagePtr_v[net_it]->extraData ) {
+				if ( gDebug_cvc ) cout << "DEBUG: extra data at net " << net_it << endl;
 			}
 			delete netVoltagePtr_v[net_it];
 			myDeleteCount++;

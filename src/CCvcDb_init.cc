@@ -39,6 +39,9 @@
 extern CCvcDb * gCvcDb;
 extern int gContinueCount;
 
+char SCRC_FORCED_TEXT[] = "SCRC forced";
+char SCRC_EXPECTED_TEXT[] = "SCRC expected";
+
 void interrupt_handler(int signum) {
 	if ( gInteractive_cvc ) {
 		if ( gContinueCount > 0 ) {
@@ -579,7 +582,7 @@ void CCvcDb::ResetMosFuse() {
 */
 
 void CCvcDb::OverrideFuses() {
-	if ( cvcParameters.cvcFuseFilename.empty() ) return;
+	if ( IsEmpty(cvcParameters.cvcFuseFilename) ) return;
 	ifstream myFuseFile(cvcParameters.cvcFuseFilename);
 	if ( myFuseFile.fail() ) {
 //		cout << "ABORT: Could not open fuse file: " << cvcParameters.cvcFuseFilename << endl;
@@ -827,7 +830,7 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal) {
 			if ( (*hierarchy_pit).empty() ) {
 				mySearchInstanceIdList.push_front(0);
 			} else if ( hierarchy_pit->substr(0,2) == "*(" && hierarchy_pit->substr(hierarchy_pit->size() - 1, 1) == ")" ) { // circuit search
-				if ( ! myUnmatchedInstance.empty() ) throw out_of_range("invalid hierarchy: " + myUnmatchedInstance + HIERARCHY_DELIMITER + *hierarchy_pit ); // no circuit searches with pending hierarchy
+				if ( ! IsEmpty(myUnmatchedInstance) ) throw out_of_range("invalid hierarchy: " + myUnmatchedInstance + HIERARCHY_DELIMITER + *hierarchy_pit ); // no circuit searches with pending hierarchy
 				string myCellName = thePowerSignal.substr(2, hierarchy_pit->size() - 3);
 				regex mySearchPattern(FuzzyFilter(myCellName));
 				bool myFoundMatch = false;
@@ -877,7 +880,7 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal) {
 				if ( ! myFoundMatch ) throw out_of_range("invalid signal: missing circuit " + myCellName);
 			} else { // instance search
 				if ( mySearchInstanceIdList.empty() ) throw out_of_range("invalid hierarchy: " + *hierarchy_pit); // no relative path searches
-				if ( ! myUnmatchedInstance.empty() ) {
+				if ( ! IsEmpty(myUnmatchedInstance) ) {
 					myInstanceName = myUnmatchedInstance + HIERARCHY_DELIMITER + *hierarchy_pit;
 				} else {
 					myInstanceName = *hierarchy_pit;
@@ -986,16 +989,16 @@ returnCode_t CCvcDb::SetModePower() {
 	CPowerPtrList::iterator power_ppit = cvcParameters.cvcPowerPtrList.begin();
 	while( power_ppit != cvcParameters.cvcPowerPtrList.end() ) {
 		CPower * myPower_p = *power_ppit;
-		set<netId_t> * myNetIdList = FindNetIds(myPower_p->powerSignal); // expands buses and hierarchy
+		set<netId_t> * myNetIdList = FindNetIds(string(myPower_p->powerSignal())); // expands buses and hierarchy
 		for (auto netId_pit = myNetIdList->begin(); netId_pit != myNetIdList->end(); netId_pit++) {
 			string myExpandedNetName = NetName(*netId_pit);
-			if ( myPower_p->powerSignal != myExpandedNetName ) {
+			if ( string(myPower_p->powerSignal()) != myExpandedNetName ) {
 //				logFile << "INFO: Expanded " << myPower_p->powerSignal << " -> " << myExpandedNetName << endl;
 			}
 			if (netVoltagePtr_v[*netId_pit] && myPower_p->definition != netVoltagePtr_v[*netId_pit]->definition ) {
 				reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"";
-				reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << netVoltagePtr_v[*netId_pit]->definition;
-				reportFile << ")\" != \"" << myPower_p->powerSignal << "(" << myPower_p->definition << ")\"" << endl;
+				reportFile << netVoltagePtr_v[*netId_pit]->powerSignal() << "(" << netVoltagePtr_v[*netId_pit]->definition;
+				reportFile << ")\" != \"" << myPower_p->powerSignal() << "(" << myPower_p->definition << ")\"" << endl;
 				myPowerError = true;
 			}
 			if ( netId_pit != myNetIdList->begin() ) {
@@ -1013,7 +1016,7 @@ returnCode_t CCvcDb::SetModePower() {
 //			}
 		}
 		if ( myNetIdList->empty() ) {
-			reportFile << "ERROR: Could not find net " << myPower_p->powerSignal << endl;
+			reportFile << "ERROR: Could not find net " << myPower_p->powerSignal() << endl;
 			myPowerError = true;
 		}
 		power_ppit++;
@@ -1023,21 +1026,21 @@ returnCode_t CCvcDb::SetModePower() {
 	power_ppit = cvcParameters.cvcExpectedLevelPtrList.begin();
 	while( power_ppit != cvcParameters.cvcExpectedLevelPtrList.end() ) {
 		CPower * myPower_p = *power_ppit;
-		set<netId_t> * myNetIdList = FindNetIds(myPower_p->powerSignal); // expands buses and hierarchy
+		set<netId_t> * myNetIdList = FindNetIds(string(myPower_p->powerSignal())); // expands buses and hierarchy
 		for (auto netId_pit = myNetIdList->begin(); netId_pit != myNetIdList->end(); netId_pit++) {
 			string myExpandedNetName = NetName(*netId_pit);
-			if ( myPower_p->powerSignal != myExpandedNetName ) {
+			if ( myPower_p->powerSignal() != myExpandedNetName ) {
 //				logFile << "INFO: Expanded " << myPower_p->powerSignal << " -> " << myExpandedNetName << endl;
 			}
 			if (netVoltagePtr_v[*netId_pit] && myPower_p->definition != netVoltagePtr_v[*netId_pit]->definition ) {
 				reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"";
-				reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << netVoltagePtr_v[*netId_pit]->definition;
-				reportFile << ")\" != \"" << myPower_p->powerSignal << "(" << myPower_p->definition << ")\"" << endl;
+				reportFile << netVoltagePtr_v[*netId_pit]->powerSignal() << "(" << netVoltagePtr_v[*netId_pit]->definition;
+				reportFile << ")\" != \"" << myPower_p->powerSignal() << "(" << myPower_p->definition << ")\"" << endl;
 				myPowerError = true;
 			} else if ( myExpectedLevelDefinitionMap.count(*netId_pit) > 0 && myPower_p->definition != myExpectedLevelDefinitionMap[*netId_pit] ) {
 				reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"";
-				reportFile << netVoltagePtr_v[*netId_pit]->powerSignal << "(" << myExpectedLevelDefinitionMap[*netId_pit];
-				reportFile << ")\" != \"" << myPower_p->powerSignal << "(" << myPower_p->definition << ")\"" << endl;
+				reportFile << netVoltagePtr_v[*netId_pit]->powerSignal() << "(" << myExpectedLevelDefinitionMap[*netId_pit];
+				reportFile << ")\" != \"" << myPower_p->powerSignal() << "(" << myPower_p->definition << ")\"" << endl;
 				myPowerError = true;
 			}
 			if ( netId_pit != myNetIdList->begin() ) {
@@ -1050,7 +1053,7 @@ returnCode_t CCvcDb::SetModePower() {
 			myExpectedLevelDefinitionMap[*netId_pit] = myPower_p->definition;
 		}
 		if ( myNetIdList->empty() ) {
-			reportFile << "ERROR: Could not find net " << myPower_p->powerSignal << endl;
+			reportFile << "ERROR: Could not find net " << myPower_p->powerSignal() << endl;
 			myPowerError = true;
 		}
 		power_ppit++;
@@ -1086,7 +1089,7 @@ bool CCvcDb::LockReport(bool theInteractiveFlag) {
 }
 
 void CCvcDb::RemoveLock() {
-	if ( ! lockFile.empty() ) {
+	if ( ! IsEmpty(lockFile) ) {
 		int myStatus;
 //		string myCommand = "rmdir " + lockFile;
 //		cout << myCommand << endl;
@@ -1153,8 +1156,8 @@ void CCvcDb::SetSCRCPower() {
 				voltage_t myExpectedVoltage = IsSCRCPower(netVoltagePtr_v[minNet_v[net_it].finalNetId]) ?
 						netVoltagePtr_v[maxNet_v[net_it].finalNetId]->maxVoltage : netVoltagePtr_v[minNet_v[net_it].finalNetId]->minVoltage;
 				logFile << "Forcing net " << NetName(net_it) << " to " << PrintVoltage(myExpectedVoltage) << endl;
-				netVoltagePtr_v[net_it] = new CPower(net_it, myExpectedVoltage);
-				netVoltagePtr_v[net_it]->powerSignal = "SCRC forced";
+				netVoltagePtr_v[net_it] = new CPower(net_it, myExpectedVoltage, true);
+				netVoltagePtr_v[net_it]->extraData->powerSignal = CPower::powerDefinitionText.SetTextAddress(SCRC_FORCED_TEXT);
 				cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it]);
 				mySCRCSignalCount++;
 			}
@@ -1238,8 +1241,8 @@ void CCvcDb::SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool t
 			theSCRCIgnoreCount++;
 		} else if ( netVoltagePtr_v[myParentNet] == NULL ) {
 			logFile << "Setting net " << NetName(myParentNet) << " to " << PrintVoltage(myExpectedVoltage) << " for " << NetName(gateNet_v[theDeviceId]) << endl;
-			netVoltagePtr_v[myParentNet] = new CPower(myParentNet, myExpectedVoltage);
-			netVoltagePtr_v[myParentNet]->powerSignal = "SCRC expected";
+			netVoltagePtr_v[myParentNet] = new CPower(myParentNet, myExpectedVoltage, true);
+			netVoltagePtr_v[myParentNet]->extraData->powerSignal = CPower::powerDefinitionText.SetTextAddress(SCRC_EXPECTED_TEXT);
 			cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[myParentNet]);
 			theSCRCSignalCount++;
 		} else if ( netVoltagePtr_v[myParentNet]->simVoltage != myExpectedVoltage ) {
@@ -1306,9 +1309,9 @@ bool CCvcDb::SetLatchPower() {
 		voltage_t myNmosVoltage = UNKNOWN_VOLTAGE;
 		voltage_t myPmosVoltage = UNKNOWN_VOLTAGE;
 		string myNmosPowerName;
-		string myNmosPowerAlias;
+		text_t myNmosPowerAlias;
 		string myPmosPowerName;
-		string myPmosPowerAlias;
+		text_t myPmosPowerAlias;
 		deviceId_t mySampleNmos = UNKNOWN_DEVICE;
 //		deviceId_t mySamplePmos = UNKNOWN_DEVICE;
 		for ( int mos_it = 0; mos_it < myNmosCount-1; mos_it++ ) {
@@ -1320,7 +1323,7 @@ bool CCvcDb::SetLatchPower() {
 				if ( myVoltage == myNextVoltage && IsOppositeLogic(myNmosData_v[mos_it].gate, myNmosData_v[nextMos_it].gate) ) {  // same source, opposite gate
 					myNmosVoltage = myVoltage;
 					myNmosPowerName = NetName(myNmosData_v[mos_it].source);
-					myNmosPowerAlias = netVoltagePtr_v[myNmosData_v[mos_it].source]->powerAlias;
+					myNmosPowerAlias = netVoltagePtr_v[myNmosData_v[mos_it].source]->powerAlias();
 					mySampleNmos = myNmosData_v[mos_it].id;
 				}
 			}
@@ -1334,7 +1337,7 @@ bool CCvcDb::SetLatchPower() {
 				if ( myVoltage == myNextVoltage && IsOppositeLogic(myPmosData_v[mos_it].gate, myPmosData_v[nextMos_it].gate) ) {  // same source, opposite gate
 					myPmosVoltage = myVoltage;
 					myPmosPowerName = NetName(myPmosData_v[mos_it].source);
-					myPmosPowerAlias = netVoltagePtr_v[myPmosData_v[mos_it].source]->powerAlias;
+					myPmosPowerAlias = netVoltagePtr_v[myPmosData_v[mos_it].source]->powerAlias();
 //					mySamplePmos = myPmosData_v[mos_it].id;
 				}
 			}
@@ -1355,9 +1358,9 @@ bool CCvcDb::SetLatchPower() {
 				assert(netVoltagePtr_v[net_it]->simVoltage == UNKNOWN_VOLTAGE);
 				netVoltagePtr_v[net_it]->simVoltage = myNmosVoltage;
 			} else {
-				netVoltagePtr_v[net_it] = new CPower(net_it, myNmosVoltage);
-				netVoltagePtr_v[net_it]->powerSignal = myNmosPowerAlias;
-				netVoltagePtr_v[net_it]->powerAlias = myNmosPowerAlias;
+				netVoltagePtr_v[net_it] = new CPower(net_it, myNmosVoltage, true);
+				netVoltagePtr_v[net_it]->extraData->powerSignal = myNmosPowerAlias;
+				netVoltagePtr_v[net_it]->extraData->powerAlias = myNmosPowerAlias;
 				cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it]);
 			}
 			myLatchCount++;
@@ -1367,9 +1370,9 @@ bool CCvcDb::SetLatchPower() {
 				assert(netVoltagePtr_v[net_it]->simVoltage == UNKNOWN_VOLTAGE);
 				netVoltagePtr_v[net_it]->simVoltage = myPmosVoltage;
 			} else {
-				netVoltagePtr_v[net_it] = new CPower(net_it, myPmosVoltage);
-				netVoltagePtr_v[net_it]->powerSignal = myPmosPowerAlias;
-				netVoltagePtr_v[net_it]->powerAlias = myPmosPowerAlias;
+				netVoltagePtr_v[net_it] = new CPower(net_it, myPmosVoltage, true);
+				netVoltagePtr_v[net_it]->extraData->powerSignal = myPmosPowerAlias;
+				netVoltagePtr_v[net_it]->extraData->powerAlias = myPmosPowerAlias;
 				cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it]);
 			}
 			myLatchCount++;

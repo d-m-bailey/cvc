@@ -132,7 +132,7 @@ void CCvcDb::SetOutputFiles(string theReportFilename) {
 string CCvcDb::NetAlias(netId_t theNetId, bool thePrintCircuitFlag) {
 	string myAlias = "";
 	CPower * myPower_p = netVoltagePtr_v[theNetId];
-	if ( myPower_p && ! myPower_p->powerAlias.empty() && myPower_p->powerAlias != myPower_p->powerSignal ) myAlias = "~>" + myPower_p->powerAlias;
+	if ( myPower_p && ! IsEmpty(myPower_p->powerAlias()) && myPower_p->powerAlias() != myPower_p->powerSignal() ) myAlias = "~>" + string(myPower_p->powerAlias());
 	return (thePrintCircuitFlag) ? myAlias : "";
 }
 
@@ -372,31 +372,32 @@ string CCvcDb::StatusString(const CStatus& theStatus) {
 
 void CCvcDb::PrintPowerList(ostream & theOutputFile, string theHeading, string theIndentation) {
 	theOutputFile << theIndentation << theHeading << "> filename " << cvcParameters.cvcPowerFilename << endl;
-	string myRealPowerName, myLastPowerSignal = "";
+	string myRealPowerName;
+	text_t myLastPowerSignal = NULL;
 	for (CPowerPtrList::iterator power_ppit = cvcParameters.cvcPowerPtrList.begin(); power_ppit != cvcParameters.cvcPowerPtrList.end(); power_ppit++) {
-		if ( (*power_ppit)->powerSignal.empty() ) continue; // skip resistor definitions
+		if ( IsEmpty((*power_ppit)->powerSignal()) ) continue; // skip resistor definitions
 		myRealPowerName = NetName((*power_ppit)->netId);
-		if ( myLastPowerSignal != (*power_ppit)->powerSignal && myRealPowerName != (*power_ppit)->powerSignal ) {
+		if ( myLastPowerSignal != (*power_ppit)->powerSignal() && myRealPowerName != string((*power_ppit)->powerSignal()) ) {
 			string myAlias = "";
-			if ( ! (*power_ppit)->powerAlias.empty() && (*power_ppit)->powerSignal != (*power_ppit)->powerAlias ) {
-				myAlias = ALIAS_DELIMITER + (*power_ppit)->powerAlias;
+			if ( ! IsEmpty((*power_ppit)->powerAlias()) && string((*power_ppit)->powerSignal()) != (*power_ppit)->powerAlias() ) {
+				myAlias = ALIAS_DELIMITER + string((*power_ppit)->powerAlias());
 			}
-			theOutputFile << (*power_ppit)->powerSignal << myAlias << (*power_ppit)->definition << endl;
+			theOutputFile << (*power_ppit)->powerSignal() << myAlias << (*power_ppit)->definition << endl;
 		}
-		myLastPowerSignal = (*power_ppit)->powerSignal;
+		myLastPowerSignal = (*power_ppit)->powerSignal();
 		(*power_ppit)->Print(theOutputFile, theIndentation + " ", myRealPowerName);
 	}
-	myLastPowerSignal = "";
+	myLastPowerSignal = NULL;
 	for (auto power_ppit = cvcParameters.cvcExpectedLevelPtrList.begin(); power_ppit != cvcParameters.cvcExpectedLevelPtrList.end(); power_ppit++) {
 		myRealPowerName = NetName((*power_ppit)->netId);
-		if ( myLastPowerSignal != (*power_ppit)->powerSignal && myRealPowerName != (*power_ppit)->powerSignal ) {
+		if ( myLastPowerSignal != (*power_ppit)->powerSignal() && myRealPowerName != string((*power_ppit)->powerSignal()) ) {
 			string myAlias = "";
-			if ( ! (*power_ppit)->powerAlias.empty() && (*power_ppit)->powerSignal != (*power_ppit)->powerAlias ) {
-				myAlias = ALIAS_DELIMITER + (*power_ppit)->powerAlias;
+			if ( ! IsEmpty((*power_ppit)->powerAlias()) && (*power_ppit)->powerSignal() != (*power_ppit)->powerAlias() ) {
+				myAlias = ALIAS_DELIMITER + string((*power_ppit)->powerAlias());
 			}
-			theOutputFile << (*power_ppit)->powerSignal << myAlias << (*power_ppit)->definition << endl;
+			theOutputFile << (*power_ppit)->powerSignal() << myAlias << (*power_ppit)->definition << endl;
 		}
-		myLastPowerSignal = (*power_ppit)->powerSignal;
+		myLastPowerSignal = (*power_ppit)->powerSignal();
 		(*power_ppit)->Print(theOutputFile, theIndentation + " ", myRealPowerName);
 	}
 	theOutputFile << theIndentation << "> macros" << endl;
@@ -1310,8 +1311,8 @@ void CCvcDb::PrintShortedNets(string theShortFileName) {
 */
 
 string CCvcDb::NetVoltageSuffix(string theDelimiter, string theVoltage, resistance_t theResistance, string theLeakVoltage) {
-	if ( theVoltage == "???" && theLeakVoltage.empty() ) return ("");
-	if ( ! theLeakVoltage.empty() ) theLeakVoltage = "(" + theLeakVoltage + ")";
+	if ( theVoltage == "???" && IsEmpty(theLeakVoltage) ) return ("");
+	if ( ! IsEmpty(theLeakVoltage) ) theLeakVoltage = "(" + theLeakVoltage + ")";
 	return ( theDelimiter + theVoltage + theLeakVoltage + " r=" + to_string<resistance_t>(theResistance));
 }
 

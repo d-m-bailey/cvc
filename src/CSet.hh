@@ -26,7 +26,7 @@
 
 #include "Cvc.hh"
 
-class CSet : public unordered_set<string> {
+class CSet : public unordered_set<text_t> {
 public:
 	bool Intersects(CSet & theOtherSet);
 };

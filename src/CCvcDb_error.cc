@@ -234,7 +234,7 @@ void CCvcDb::FindOverVoltageErrors(string theCheck, int theErrorIndex) {
 					}
 					if ( model_pit->maxVbg != UNKNOWN_VOLTAGE ) {
 					}
-					if ( ! myErrorExplanation.empty() ) {
+					if ( ! IsEmpty(myErrorExplanation) ) {
 						errorCount[theErrorIndex]++;
 						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
 							errorFile << myErrorExplanation + myDisplayParameter << endl;;
@@ -1435,7 +1435,7 @@ void CCvcDb::CheckExpectedValues() {
 	for (auto power_ppit = cvcParameters.cvcExpectedLevelPtrList.begin(); power_ppit != cvcParameters.cvcExpectedLevelPtrList.end(); power_ppit++) {
 		size_t myLastErrorCount = errorCount[EXPECTED_VOLTAGE];
 		myNetId = GetEquivalentNet((*power_ppit)->netId);
-		if ( ! (*power_ppit)->expectedSim().empty() ) {
+		if ( ! IsEmpty((*power_ppit)->expectedSim()) ) {
 			mySimNet(simNet_v, myNetId);
 			mySimNetId = mySimNet.finalNetId;
 			myExpectedValueFound = false;
@@ -1454,7 +1454,7 @@ void CCvcDb::CheckExpectedValues() {
 					myExpectedValueFound = true;
 				} else if ( (*power_ppit)->expectedSim() == NetName(mySimNetId) ) { // name match
 					myExpectedValueFound = true;
-				} else if ( (*power_ppit)->expectedSim() == netVoltagePtr_v[mySimNetId]->powerAlias ) { // alias match
+				} else if ( (*power_ppit)->expectedSim() == string(netVoltagePtr_v[mySimNetId]->powerAlias()) ) { // alias match
 					myExpectedValueFound = true;
 				}
 			}
@@ -1483,7 +1483,7 @@ void CCvcDb::CheckExpectedValues() {
 				}
 			}
 		}
-		if ( ! (*power_ppit)->expectedMin().empty() ) {
+		if ( ! IsEmpty((*power_ppit)->expectedMin()) ) {
 			myMinNet(minNet_v, myNetId);
 			myMinNetId = myMinNet.finalNetId;
 			myExpectedValueFound = false;
@@ -1498,7 +1498,7 @@ void CCvcDb::CheckExpectedValues() {
 					myExpectedValueFound = true;
 				} else if ( (*power_ppit)->expectedMin() == NetName(myMinNetId) ) { // name match
 					myExpectedValueFound = true;
-				} else if ( (*power_ppit)->expectedMin() == netVoltagePtr_v[myMinNetId]->powerAlias ) { // alias match
+				} else if ( (*power_ppit)->expectedMin() == string(netVoltagePtr_v[myMinNetId]->powerAlias()) ) { // alias match
 					myExpectedValueFound = true;
 				}
 			}
@@ -1512,7 +1512,7 @@ void CCvcDb::CheckExpectedValues() {
 				}
 			}
 		}
-		if ( ! (*power_ppit)->expectedMax().empty() ) {
+		if ( ! IsEmpty((*power_ppit)->expectedMax()) ) {
 			myMaxNet(maxNet_v, myNetId);
 			myMaxNetId = myMaxNet.finalNetId;
 			myExpectedValueFound = false;
@@ -1527,7 +1527,7 @@ void CCvcDb::CheckExpectedValues() {
 					myExpectedValueFound = true;
 				} else if ( (*power_ppit)->expectedMax() == NetName(myMaxNetId) ) { // name match
 					myExpectedValueFound = true;
-				} else if ( (*power_ppit)->expectedMax() == netVoltagePtr_v[myMaxNetId]->powerAlias ) { // alias match
+				} else if ( (*power_ppit)->expectedMax() == string(netVoltagePtr_v[myMaxNetId]->powerAlias()) ) { // alias match
 					myExpectedValueFound = true;
 				}
 			}

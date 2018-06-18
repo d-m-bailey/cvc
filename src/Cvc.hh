@@ -24,7 +24,7 @@
 #ifndef CVC_H_
 #define CVC_H_
 
-#define CVC_VERSION "0.14.7.3"
+#define CVC_VERSION "0.14.7.4"
 
 extern bool gDebug_cvc;
 extern bool gInterrupted;
@@ -62,7 +62,6 @@ extern char vv_suffix[], vv_trailer[];
 #include <iomanip>
 #include <set>
 #include <regex>
-#include "utility.h"
 
 #include "sys/resource.h"
 
@@ -70,6 +69,7 @@ using namespace std;
 
 typedef char * text_t;
 
+#include "utility.h"
 #include "CvcMaps.hh"
 #include "CCvcExceptions.hh"
 // #include "SFHash.hh"
@@ -205,6 +205,11 @@ class CHierList {
 class CStringList {
 
 };
+
+template<typename T1, typename T2>
+T1 min(T1 a, T2 b) {return ((a < (T1)b) ? a : (T1) b);}
+template<typename T1, typename T2>
+T1 max(T1 a, T2 b) {return ((a > (T1)b) ? a : (T1) b);}
 
 enum returnCode_t {UNKNOWN_RETURN_CODE=0, OK, SKIP, FAIL};
 

@@ -223,7 +223,7 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 			cvcLogicDiodes = strcasecmp(myBuffer, "true") == 0;
 		}
 	}
-	if ( ! theReportPrefix.empty() ) {
+	if ( ! IsEmpty(theReportPrefix) ) {
 		cvcReportName = theReportPrefix + "-" + cvcReportName;
 	}
 /*
@@ -368,14 +368,14 @@ returnCode_t CCvcParameters::LoadPower() {
 				}
 			} else {
 				CPower * myPowerPtr = new CPower(myInput, cvcPowerMacroPtrMap, cvcModelListMap);
-				if ( ! (myPowerPtr->expectedMin().empty() && myPowerPtr->expectedSim().empty() && myPowerPtr->expectedMax().empty()) ) {
+				if ( ! (IsEmpty(myPowerPtr->expectedMin()) && IsEmpty(myPowerPtr->expectedSim()) && IsEmpty(myPowerPtr->expectedMax())) ) {
 					cvcExpectedLevelPtrList.push_back(new CPower(myPowerPtr));  // duplicate CPower (not a bit-wise copy)
 				}
 				if (myPowerPtr->type != NO_TYPE || myPowerPtr->minVoltage != UNKNOWN_VOLTAGE || myPowerPtr->simVoltage != UNKNOWN_VOLTAGE || myPowerPtr->maxVoltage != UNKNOWN_VOLTAGE) {
 					cvcPowerPtrList.push_back(new CPower(myPowerPtr));  // duplicate CPower (not a bit-wise copy)
 				}
 				if ( myAutoMacroFlag ) {
-					myMacroName = myPowerPtr->powerSignal;
+					myMacroName = string(myPowerPtr->powerSignal());
 					if ( myMacroName[0] == '/' ) { // macros for top level nets that are not ports
 						myMacroName = myMacroName.substr(1);
 					}
@@ -408,7 +408,7 @@ returnCode_t CCvcParameters::LoadPower() {
 
 void CCvcParameters::SetHiZPropagation() {
 	for ( auto power_ppit = cvcPowerPtrList.begin(); power_ppit != cvcPowerPtrList.end(); power_ppit++ ) {
-		if ( (*power_ppit)->type[HIZ_BIT] && ! (*power_ppit)->family().empty() ) {
+		if ( (*power_ppit)->type[HIZ_BIT] && ! IsEmpty((*power_ppit)->family()) ) {
 			if ( (*power_ppit)->RelativeVoltage(cvcPowerMacroPtrMap, MIN_POWER, cvcModelListMap) == (*power_ppit)->minVoltage ) {
 				(*power_ppit)->active[MIN_IGNORE] = true;
 			}

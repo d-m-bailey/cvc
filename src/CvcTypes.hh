@@ -40,7 +40,7 @@ typedef uint32_t netId_t;
 typedef uint32_t deviceId_t;
 typedef uint32_t instanceId_t;
 
-typedef int32_t	voltage_t;
+typedef int16_t	voltage_t;
 typedef uint32_t resistance_t;
 typedef int32_t eventKey_t;
 
@@ -49,8 +49,8 @@ typedef int32_t eventKey_t;
 #define MAX_RESISTANCE ((UINT32_MAX >> 2) - 1)
 
 #define VOLTAGE_SCALE 1000
-#define MAX_VOLTAGE (INT32_MAX - 1)
-#define MIN_VOLTAGE (INT32_MIN + 1)
+#define MAX_VOLTAGE (INT16_MAX - 1)
+#define MIN_VOLTAGE (INT16_MIN + 1)
 
 #define MIN_EVENT_TIME (INT32_MIN)
 #define MAX_EVENT_TIME (INT32_MAX)
@@ -64,7 +64,7 @@ typedef int32_t eventKey_t;
 #define UNKNOWN_DEVICE UINT32_MAX
 #define UNKNOWN_INSTANCE UINT32_MAX
 
-#define UNKNOWN_VOLTAGE (INT32_MAX)
+#define UNKNOWN_VOLTAGE (INT16_MAX)
 
 #define DEFAULT_MOS_RESISTANCE "L/W*7000"
 #define DEFAULT_RESISTANCE "R"

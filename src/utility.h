@@ -70,5 +70,7 @@ std::string RegexErrorString(std::regex_constants::error_type theErrorCode);
 
 std::string FuzzyFilter(std::string theFilter);
 bool IsAlphanumeric(std::string theString);
+inline bool IsEmpty(char * theText) {return (theText[0] == '\0' );};
+inline bool IsEmpty(std::string theString) {return (theString.empty());};
 
 #endif /* UTILITY_H_ */
