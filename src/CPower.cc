@@ -278,7 +278,7 @@ CPower::CPower(netId_t theNetId, voltage_t theMinVoltage, voltage_t theSimVoltag
 }
 
 CPower::~CPower() {
-	if ( extraData ) free(extraData);
+	if ( extraData ) delete extraData;
 }
 
 void CPower::SetPowerAlias(string thePowerString, size_t theAliasStart) {

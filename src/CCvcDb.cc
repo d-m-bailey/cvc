@@ -669,7 +669,7 @@ bool CCvcDb::IsIrrelevant(CEventQueue& theEventQueue, deviceId_t theDeviceId, CC
 	if ( IsOffMos(theEventQueue.queueType, theDeviceId, theConnections, theVoltage) ) {
 		if ( leakVoltageSet ) return true;
 		// first time, propagate thru off mos if only chance
-		voltage_t myTargetNet;
+		netId_t myTargetNet;
 		if ( theConnections.sourceVoltage == UNKNOWN_VOLTAGE ) {
 			myTargetNet = theConnections.sourceId;
 		} else if ( theConnections.drainVoltage == UNKNOWN_VOLTAGE ) {
