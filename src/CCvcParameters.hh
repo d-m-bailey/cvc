@@ -1,7 +1,7 @@
 /*
  * CCvcParameters.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -74,7 +74,7 @@ public:
 	bool	cvcSCRC = defaultSCRC;
 	bool	cvcVthGates = defaultVthGates;
 	bool	cvcLeakOvervoltage = defaultLeakOvervoltage;
-	bool    cvcLogicDiodes = defaultLogicDiodes;
+	bool	cvcLogicDiodes = defaultLogicDiodes;
 	voltage_t	cvcShortErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcBiasErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcForwardErrorThreshold = defaultErrorThreshold;
@@ -95,7 +95,7 @@ public:
 	void	SaveDatabaseParameters();
 	void	ResetEnvironment();
 	void	PrintEnvironment(ostream & theOutputFile = cout);
-	void 	PrintDefaultEnvironment();
+	void	PrintDefaultEnvironment();
 	void	LoadEnvironment(const string theEnvironmentFilename, const string theReportPrefix);
 	returnCode_t	LoadModels();
 	returnCode_t	LoadPower();

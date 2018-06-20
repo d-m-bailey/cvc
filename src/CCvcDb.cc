@@ -1,7 +1,7 @@
 /*
  * CCvcDb.cc
  *
- * Copyright 2014-2108 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -33,6 +33,7 @@
 #include "CConnection.hh"
 
 extern set<modelType_t> FUSE_MODELS;
+char RESISTOR_TEXT[] = "resistor";
 
 void CCvcDb::ReportSimShort(deviceId_t theDeviceId, voltage_t theMainVoltage, voltage_t theShortVoltage, string theCalculation) {
 	static CFullConnection myConnections;
@@ -219,10 +220,11 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 	} else {
 		if ( theEventQueue.queueType == SIM_QUEUE ) {
 			if ( deviceType_v[theDeviceId] != FUSE_OFF ) {
+				// TODO: should do relative check and/or alias check
 				if ( theConnections.sourcePower_p->type[HIZ_BIT] && theConnections.sourcePower_p->relativeFriendly
-						&& theConnections.sourcePower_p->family == theConnections.drainPower_p->powerSignal ) return;
+						&& theConnections.sourcePower_p->family() == theConnections.drainPower_p->powerSignal() ) return;
 				if ( theConnections.drainPower_p->type[HIZ_BIT] && theConnections.drainPower_p->relativeFriendly
-						&& theConnections.drainPower_p->family == theConnections.sourcePower_p->powerSignal ) return;
+						&& theConnections.drainPower_p->family() == theConnections.sourcePower_p->powerSignal() ) return;
 				ReportShort(theDeviceId);
 			}
 		} else {
@@ -232,22 +234,26 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						&& IsVerifiedPower(theConnections.masterDrainNet.finalNetId) ) {
 					voltage_t myMaxVoltage = MaxVoltage(theConnections.sourceId);
 					assert(netVoltagePtr_v[theConnections.sourceId]);
+					CPower * myPower_p = netVoltagePtr_v[theConnections.sourceId];
 					if ( theConnections.sourceVoltage > theConnections.drainVoltage && ! ( leakVoltageSet && theConnections.drainPower_p->type[HIZ_BIT] ) ) {
 						// ignore pull downs to HI-Z power in second pass
-						netVoltagePtr_v[theConnections.sourceId]->pullDownVoltage = theConnections.drainVoltage;
+						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+						myPower_p->extraData->pullDownVoltage = theConnections.drainVoltage;
 						netStatus_v[theConnections.sourceId][NEEDS_MIN_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed min connection check for net: " << theConnections.sourceId << " "
 								<< theConnections.sourceVoltage << ">" << theConnections.drainVoltage << endl;
 					} else if ( theConnections.sourceVoltage == theConnections.drainVoltage
 							&& theConnections.drainVoltage == myMaxVoltage && ! netStatus_v[theConnections.drainId][NEEDS_MIN_CONNECTION] ) {
 						// handles propagation through mos switch that might get deleted in second pass for HiZ power. (needs verification)
-						netVoltagePtr_v[theConnections.sourceId]->pullDownVoltage = theConnections.drainVoltage;
+						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+						myPower_p->extraData->pullDownVoltage = theConnections.drainVoltage;
 						netStatus_v[theConnections.sourceId][NEEDS_MIN_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed matching min connection check for net: " << theConnections.sourceId << " "
 								<< theConnections.sourceVoltage << endl;
 					} else if ( ! leakVoltageSet && IsNmos_(deviceType_v[theDeviceId]) && LastNmosConnection(MIN_PENDING, theConnections.sourceId) ) {
 						// remove calculated net and reroute to drain. only for initial power prop.
-						netVoltagePtr_v[theConnections.sourceId]->pullDownVoltage = theConnections.drainVoltage;
+						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+						myPower_p->extraData->pullDownVoltage = theConnections.drainVoltage;
 						theEventQueue.virtualNet_v.Set(theConnections.sourceId, theConnections.drainId, theConnections.resistance, ++theEventQueue.virtualNet_v.lastUpdate);
 						CheckResistorOverflow_(theEventQueue.virtualNet_v[theConnections.sourceId].finalResistance, theConnections.sourceId, logFile);
 //						theEventQueue.virtualNet_v[theConnections.sourceId].nextNetId = theConnections.drainId;
@@ -263,22 +269,26 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						&& IsVerifiedPower(theConnections.masterSourceNet.finalNetId) ) {
 					voltage_t myMaxVoltage = MaxVoltage(theConnections.drainId);
 					assert(netVoltagePtr_v[theConnections.drainId]);
+					CPower * myPower_p = netVoltagePtr_v[theConnections.drainId];
 					if ( theConnections.drainVoltage > theConnections.sourceVoltage && ! ( leakVoltageSet && theConnections.sourcePower_p->type[HIZ_BIT] ) ) {
 						// ignore pull downs to HI-Z power in second pass
-						netVoltagePtr_v[theConnections.drainId]->pullDownVoltage = theConnections.sourceVoltage;
+						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+						myPower_p->extraData->pullDownVoltage = theConnections.sourceVoltage;
 						netStatus_v[theConnections.drainId][NEEDS_MIN_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed min connection check for net: " << theConnections.drainId << " "
 								<< theConnections.drainVoltage << ">" << theConnections.sourceVoltage << endl;
 					} else if ( theConnections.sourceVoltage == theConnections.drainVoltage
 							&& theConnections.sourceVoltage == myMaxVoltage && ! netStatus_v[theConnections.sourceId][NEEDS_MIN_CONNECTION] ) {
 						// handles propagation through mos switch that might get deleted in second pass for HiZ power. (needs verification)
-						netVoltagePtr_v[theConnections.drainId]->pullDownVoltage = theConnections.sourceVoltage;
+						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+						myPower_p->extraData->pullDownVoltage = theConnections.sourceVoltage;
 						netStatus_v[theConnections.drainId][NEEDS_MIN_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed matching min connection check for net: " << theConnections.drainId << " "
 								<< theConnections.drainVoltage << endl;
 					} else if ( ! leakVoltageSet && IsNmos_(deviceType_v[theDeviceId]) && LastNmosConnection(MIN_PENDING, theConnections.drainId) ) {
 						// remove calculated net and reroute to drain. only for initial power prop.
-						netVoltagePtr_v[theConnections.drainId]->pullDownVoltage = theConnections.sourceVoltage;
+						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+						myPower_p->extraData->pullDownVoltage = theConnections.sourceVoltage;
 						theEventQueue.virtualNet_v.Set(theConnections.drainId, theConnections.sourceId, theConnections.resistance, ++theEventQueue.virtualNet_v.lastUpdate);
 						CheckResistorOverflow_(theEventQueue.virtualNet_v[theConnections.drainId].finalResistance, theConnections.drainId, logFile);
 //						theEventQueue.virtualNet_v[theConnections.drainId].nextNetId = theConnections.sourceId;
@@ -297,22 +307,26 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						&& IsVerifiedPower(theConnections.masterDrainNet.finalNetId) ) {
 					voltage_t myMinVoltage = MinVoltage(theConnections.sourceId);
 					assert(netVoltagePtr_v[theConnections.sourceId]);
+					CPower * myPower_p = netVoltagePtr_v[theConnections.sourceId];
 					if ( theConnections.sourceVoltage < theConnections.drainVoltage && ! ( leakVoltageSet && theConnections.drainPower_p->type[HIZ_BIT] ) ) {
 						// ignore pull ups to HI-Z power in second pass
-						netVoltagePtr_v[theConnections.sourceId]->pullUpVoltage = theConnections.drainVoltage;
+						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+						myPower_p->extraData->pullUpVoltage = theConnections.drainVoltage;
 						netStatus_v[theConnections.sourceId][NEEDS_MAX_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed max connection check for net: " << theConnections.sourceId << " "
 								<< theConnections.sourceVoltage << "<" << theConnections.drainVoltage << endl;
 					} else if ( theConnections.sourceVoltage == theConnections.drainVoltage
 							&& theConnections.drainVoltage == myMinVoltage && ! netStatus_v[theConnections.drainId][NEEDS_MAX_CONNECTION] ) {
 						// handles propagation through mos switch that might get deleted in second pass for HiZ power. (needs verification)
-						netVoltagePtr_v[theConnections.sourceId]->pullUpVoltage = theConnections.drainVoltage;
+						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+						myPower_p->extraData->pullUpVoltage = theConnections.drainVoltage;
 						netStatus_v[theConnections.sourceId][NEEDS_MAX_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed matching max connection check for net: " << theConnections.sourceId << " "
 								<< theConnections.sourceVoltage << endl;
 					} else if ( ! leakVoltageSet && IsPmos_(deviceType_v[theDeviceId]) && LastPmosConnection(MAX_PENDING, theConnections.sourceId) ) {
 						// remove calculated net and reroute to drain. only for initial power prop.
-						netVoltagePtr_v[theConnections.sourceId]->pullUpVoltage = theConnections.drainVoltage;
+						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+						myPower_p->extraData->pullUpVoltage = theConnections.drainVoltage;
 						theEventQueue.virtualNet_v.Set(theConnections.sourceId, theConnections.drainId, theConnections.resistance, ++theEventQueue.virtualNet_v.lastUpdate);
 						CheckResistorOverflow_(theEventQueue.virtualNet_v[theConnections.sourceId].finalResistance, theConnections.sourceId, logFile);
 //						theEventQueue.virtualNet_v[theConnections.sourceId].nextNetId = theConnections.drainId;
@@ -328,22 +342,26 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						&& IsVerifiedPower(theConnections.masterSourceNet.finalNetId) ) {
 					voltage_t myMinVoltage = MinVoltage(theConnections.drainId);
 					assert(netVoltagePtr_v[theConnections.drainId]);
+					CPower * myPower_p = netVoltagePtr_v[theConnections.drainId];
 					if ( theConnections.drainVoltage < theConnections.sourceVoltage && ! ( leakVoltageSet && theConnections.sourcePower_p->type[HIZ_BIT] ) ) {
 						// ignore pull ups to HI-Z power in second pass
-						netVoltagePtr_v[theConnections.drainId]->pullUpVoltage = theConnections.sourceVoltage;
+						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+						myPower_p->extraData->pullUpVoltage = theConnections.sourceVoltage;
 						netStatus_v[theConnections.drainId][NEEDS_MAX_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed max connection check for net: " << theConnections.drainId << " "
 								<< theConnections.drainVoltage << "<" << theConnections.sourceVoltage << endl;
 					} else if ( theConnections.sourceVoltage == theConnections.drainVoltage
 							&& theConnections.drainVoltage == myMinVoltage && ! netStatus_v[theConnections.sourceId][NEEDS_MAX_CONNECTION] ) {
 						// handles propagation through mos switch that might get deleted in second pass for HiZ power. (needs verification)
-						netVoltagePtr_v[theConnections.drainId]->pullUpVoltage = theConnections.sourceVoltage;
+						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+						myPower_p->extraData->pullUpVoltage = theConnections.sourceVoltage;
 						netStatus_v[theConnections.drainId][NEEDS_MAX_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed matching max connection check for net: " << theConnections.drainId << " "
 								<< theConnections.drainVoltage << endl;
 					} else if ( ! leakVoltageSet && IsPmos_(deviceType_v[theDeviceId]) && LastPmosConnection(MAX_PENDING, theConnections.drainId) ) {
 						// remove calculated net and reroute to drain. only for initial power prop.
-						netVoltagePtr_v[theConnections.drainId]->pullUpVoltage = theConnections.sourceVoltage;
+						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+						myPower_p->extraData->pullUpVoltage = theConnections.sourceVoltage;
 						theEventQueue.virtualNet_v.Set(theConnections.drainId, theConnections.sourceId, theConnections.resistance, ++theEventQueue.virtualNet_v.lastUpdate);
 						CheckResistorOverflow_(theEventQueue.virtualNet_v[theConnections.drainId].finalResistance, theConnections.drainId, logFile);
 //						theEventQueue.virtualNet_v[theConnections.drainId].nextNetId = theConnections.sourceId;
@@ -357,7 +375,7 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 				}
 			}
 			// TODO: family check not correct. need to check for relatives
-			if ( theConnections.sourcePower_p->family != theConnections.drainPower_p->family ) {
+			if ( theConnections.sourcePower_p->family() != theConnections.drainPower_p->family() ) {
 				if (gDebug_cvc) cout << "adding leak" << endl;
 				theEventQueue.AddLeak(theDeviceId, theConnections);
 			}
@@ -406,8 +424,8 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 			}
 		}
 		// Unset min checks
-		CStatus myDrainStatus = netStatus_v[theConnections.drainId];
-		CStatus mySourceStatus = netStatus_v[theConnections.sourceId];
+		CStatus & myDrainStatus = netStatus_v[theConnections.drainId];
+		CStatus & mySourceStatus = netStatus_v[theConnections.sourceId];
 		bool mySourceVerified = ! (mySourceStatus[NEEDS_MIN_CHECK] || mySourceStatus[NEEDS_MIN_CONNECTION]);
 			//|| mySourceStatus[NEEDS_MAX_CHECK] || mySourceStatus[NEEDS_MAX_CONNECTION]);
 		bool myDrainVerified = ! (myDrainStatus[NEEDS_MIN_CHECK] || myDrainStatus[NEEDS_MIN_CONNECTION]);
@@ -419,9 +437,11 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 			if ( gDebug_cvc ) cout << "DEBUG: Removed min check for net " << theConnections.drainId
 					<< "(" << theConnections.drainVoltage << ") from " << theConnections.sourceId << "(" << theConnections.sourceVoltage << ")" << endl;
 			assert(netVoltagePtr_v[theConnections.drainId]);
-			netVoltagePtr_v[theConnections.drainId]->pullDownVoltage = theConnections.sourceVoltage;
+			CPower * myPower_p = netVoltagePtr_v[theConnections.drainId];
+			if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+			myPower_p->extraData->pullDownVoltage = theConnections.sourceVoltage;
 			myDrainStatus[NEEDS_MIN_CHECK] = myDrainStatus[NEEDS_MIN_CONNECTION] = false;
-			netStatus_v[theConnections.drainId] = myDrainStatus;
+//			netStatus_v[theConnections.drainId] = myDrainStatus;
 		}
 		if ( ( mySourceStatus[NEEDS_MIN_CHECK] || mySourceStatus[NEEDS_MIN_CONNECTION] )
 				&& theConnections.sourceVoltage != UNKNOWN_VOLTAGE && theConnections.drainVoltage != UNKNOWN_VOLTAGE
@@ -430,9 +450,11 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 			if ( gDebug_cvc ) cout << "DEBUG: Removed min check for net " << theConnections.sourceId
 					<< "(" << theConnections.sourceVoltage << ") from " << theConnections.drainId << "(" << theConnections.drainVoltage << ")" << endl;
 			assert(netVoltagePtr_v[theConnections.sourceId]);
-			netVoltagePtr_v[theConnections.sourceId]->pullDownVoltage = theConnections.drainVoltage;
+			CPower * myPower_p = netVoltagePtr_v[theConnections.sourceId];
+			if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+			myPower_p->extraData->pullDownVoltage = theConnections.drainVoltage;
 			mySourceStatus[NEEDS_MIN_CHECK] = mySourceStatus[NEEDS_MIN_CONNECTION] = false;
-			netStatus_v[theConnections.sourceId] = mySourceStatus;
+//			netStatus_v[theConnections.sourceId] = mySourceStatus;
 		}
 		// for mos connected as diode with source/drain known. Add max voltage propagation/check
 		if ( IsMos_(deviceType_v[theDeviceId]) ) {
@@ -496,8 +518,8 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 			}
 		}
 		// Unset max checks
-		CStatus myDrainStatus = netStatus_v[theConnections.drainId];
-		CStatus mySourceStatus = netStatus_v[theConnections.sourceId];
+		CStatus & myDrainStatus = netStatus_v[theConnections.drainId];
+		CStatus & mySourceStatus = netStatus_v[theConnections.sourceId];
 		bool mySourceVerified = ! (mySourceStatus[NEEDS_MAX_CHECK] || mySourceStatus[NEEDS_MAX_CONNECTION]);
 		bool myDrainVerified = ! (myDrainStatus[NEEDS_MAX_CHECK] || myDrainStatus[NEEDS_MAX_CONNECTION]);
 		if ( ( myDrainStatus[NEEDS_MAX_CHECK] || myDrainStatus[NEEDS_MAX_CONNECTION] )
@@ -507,9 +529,11 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 			if ( gDebug_cvc ) cout << "DEBUG: Removed max check for net " << theConnections.drainId
 					<< "(" << theConnections.drainVoltage << ") from " << theConnections.sourceId << "(" << theConnections.sourceVoltage << ")" << endl;
 			assert(netVoltagePtr_v[theConnections.drainId]);
-			netVoltagePtr_v[theConnections.drainId]->pullUpVoltage = theConnections.sourceVoltage;
+			CPower * myPower_p = netVoltagePtr_v[theConnections.drainId];
+			if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+			myPower_p->extraData->pullUpVoltage = theConnections.sourceVoltage;
 			myDrainStatus[NEEDS_MAX_CHECK] = myDrainStatus[NEEDS_MAX_CONNECTION] = false;
-			netStatus_v[theConnections.drainId] = myDrainStatus;
+//			netStatus_v[theConnections.drainId] = myDrainStatus;
 		}
 		if ( ( mySourceStatus[NEEDS_MAX_CHECK] || mySourceStatus[NEEDS_MAX_CONNECTION] )
 				&& theConnections.sourceVoltage != UNKNOWN_VOLTAGE && theConnections.drainVoltage != UNKNOWN_VOLTAGE
@@ -518,9 +542,11 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 			if ( gDebug_cvc ) cout << "DEBUG: Removed max check for net " << theConnections.sourceId
 					<< "(" << theConnections.sourceVoltage << ") from " << theConnections.drainId << "(" << theConnections.drainVoltage << ")" << endl;
 			assert(netVoltagePtr_v[theConnections.sourceId]);
-			netVoltagePtr_v[theConnections.sourceId]->pullUpVoltage = theConnections.drainVoltage;
+			CPower * myPower_p = netVoltagePtr_v[theConnections.sourceId];
+			if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
+			myPower_p->extraData->pullUpVoltage = theConnections.drainVoltage;
 			mySourceStatus[NEEDS_MAX_CHECK] = mySourceStatus[NEEDS_MAX_CONNECTION] = false;
-			netStatus_v[theConnections.sourceId] = mySourceStatus;
+//			netStatus_v[theConnections.sourceId] = mySourceStatus;
 		}
 
 		// for mos connected as diode with source/drain known. Add min voltage propagation/check
@@ -675,7 +701,7 @@ bool CCvcDb::IsIrrelevant(CEventQueue& theEventQueue, deviceId_t theDeviceId, CC
 	if ( IsOffMos(theEventQueue.queueType, theDeviceId, theConnections, theVoltage) ) {
 		if ( leakVoltageSet ) return true;
 		// first time, propagate thru off mos if only chance
-		voltage_t myTargetNet;
+		netId_t myTargetNet;
 		if ( theConnections.sourceVoltage == UNKNOWN_VOLTAGE ) {
 			myTargetNet = theConnections.sourceId;
 		} else if ( theConnections.drainVoltage == UNKNOWN_VOLTAGE ) {
@@ -996,19 +1022,23 @@ string CCvcDb::AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDevice
 					theVoltage = (myTargetVoltageLimit == UNKNOWN_VOLTAGE) ? theConnections.gateVoltage : min(myTargetVoltageLimit, theConnections.gateVoltage);
 				}
 */
-			} else if ( IsNmos_(deviceType_v[theDeviceId]) ) {
+			} else if ( IsNmos_(deviceType_v[theDeviceId]) && myMinTargetVoltage != UNKNOWN_VOLTAGE ) {
+				voltage_t myGateStepDown = theConnections.gateVoltage - theConnections.device_p->model_p->Vth;
 				if ( myPower_p && myPower_p->type[HIZ_BIT] ) {
 					;  // Don't adjust open voltages
-				} else if ( theConnections.gateVoltage - theConnections.device_p->model_p->Vth < theVoltage ) {
+				} else if ( myGateStepDown < theVoltage ) {
 					myCalculation = " NMOS sim Vth drop " + PrintParameter(theConnections.gateVoltage, VOLTAGE_SCALE) + "-" + PrintParameter(theConnections.device_p->model_p->Vth, VOLTAGE_SCALE);
-					theVoltage = theConnections.gateVoltage - theConnections.device_p->model_p->Vth;
+					myCalculation += " limited by " + PrintParameter(myMinTargetVoltage, VOLTAGE_SCALE);
+					theVoltage = max(myGateStepDown, myMinTargetVoltage);
 				}
-			} else if ( IsPmos_(deviceType_v[theDeviceId]) ) {
+			} else if ( IsPmos_(deviceType_v[theDeviceId]) && myMaxTargetVoltage != UNKNOWN_VOLTAGE) {
+				voltage_t myGateStepUp = theConnections.gateVoltage - theConnections.device_p->model_p->Vth;
 				if ( myPower_p && myPower_p->type[HIZ_BIT] ) {
 					;  // Don't adjust open voltages
-				} else if ( theConnections.gateVoltage - theConnections.device_p->model_p->Vth > theVoltage ) {
+				} else if ( myGateStepUp > theVoltage ) {
 					myCalculation = " PMOS sim Vth drop " + PrintParameter(theConnections.gateVoltage, VOLTAGE_SCALE) + "+" + PrintParameter(-theConnections.device_p->model_p->Vth, VOLTAGE_SCALE);
-					theVoltage = theConnections.gateVoltage - theConnections.device_p->model_p->Vth;
+					myCalculation += " limited by " + PrintParameter(myMaxTargetVoltage, VOLTAGE_SCALE);
+					theVoltage = min(myGateStepUp, myMaxTargetVoltage);
 				}
 			}
 		}
@@ -1023,10 +1053,10 @@ string CCvcDb::AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDevice
 */
 	}
 	if ( theVoltage == UNKNOWN_VOLTAGE ) return("");
- 	if ( myMinTargetVoltage != UNKNOWN_VOLTAGE && theVoltage < myMinTargetVoltage ) {
+	if ( myMinTargetVoltage != UNKNOWN_VOLTAGE && theVoltage < myMinTargetVoltage ) {
 		myCalculation += " Limited sim to min";
- 		if ( thePropagationType != POWER_NETS_ONLY  && myOriginalVoltage < myMinTargetVoltage ) ReportSimShort(theDeviceId, theVoltage, myMinTargetVoltage, myCalculation);
- 			// voltage drops in first pass are skipped, only report original voltage limits
+		if ( thePropagationType != POWER_NETS_ONLY  && myOriginalVoltage < myMinTargetVoltage ) ReportSimShort(theDeviceId, theVoltage, myMinTargetVoltage, myCalculation);
+		// voltage drops in first pass are skipped, only report original voltage limits
 		theVoltage = myMinTargetVoltage;
 	}
 	if ( myMaxTargetVoltage != UNKNOWN_VOLTAGE && theVoltage > myMaxTargetVoltage ) {
@@ -1102,7 +1132,7 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 	calculationType_t myCalculationType = UNKNOWN_CALCULATION;
 	for (deviceId_t device_it = theFirstDevice_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theNextDevice_v[device_it]) {
 		if ( deviceStatus_v[device_it][theEventQueue.inactiveBit] || deviceStatus_v[device_it][theEventQueue.pendingBit] ) {
-//		if ( deviceStatus_v[device_it][theEventQueue.inactiveBit] ) { //@TODO: possibly ignore pending only if later event
+//		if ( deviceStatus_v[device_it][theEventQueue.inactiveBit] ) { // TODO: possibly ignore pending only if later event
 			continue; // skip inactive and pending devices
 		} else {
 //			bool myJustSetFlag = false;
@@ -1179,7 +1209,7 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 //							minNet_v[myDrainNetId].resistance = parameterResistanceMap[myConnections.device_p->parameters] * 100;
 							if ( leakVoltageSet && myMinLeakVoltage != UNKNOWN_VOLTAGE && myMinLeakVoltage <= myEventKey ) continue;
 							assert(netVoltagePtr_v[myDrainNetId]);
-							if ( netVoltagePtr_v[myDrainNetId]->pullDownVoltage != UNKNOWN_VOLTAGE && netVoltagePtr_v[myDrainNetId]->pullDownVoltage <= myEventKey ) continue;
+							if ( netVoltagePtr_v[myDrainNetId]->pullDownVoltage() != UNKNOWN_VOLTAGE && netVoltagePtr_v[myDrainNetId]->pullDownVoltage() <= myEventKey ) continue;
 							// pull down not known
 							netStatus_v[myDrainNetId][NEEDS_MIN_CONNECTION] = true;
 							if ( gDebug_cvc ) cout << "DEBUG: min estimate net: " << myDrainNetId << endl;
@@ -1217,7 +1247,7 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 //							maxNet_v[myDrainNetId].resistance = parameterResistanceMap[myConnections.device_p->parameters] * 100;
 							if ( leakVoltageSet && myMaxLeakVoltage != UNKNOWN_VOLTAGE && myMaxLeakVoltage >= myEventKey ) continue;
 							assert(netVoltagePtr_v[myDrainNetId]);
-							if ( netVoltagePtr_v[myDrainNetId]->pullUpVoltage != UNKNOWN_VOLTAGE && netVoltagePtr_v[myDrainNetId]->pullUpVoltage >= myEventKey ) continue;
+							if ( netVoltagePtr_v[myDrainNetId]->pullUpVoltage() != UNKNOWN_VOLTAGE && netVoltagePtr_v[myDrainNetId]->pullUpVoltage() >= myEventKey ) continue;
 							// pull up not known
 							netStatus_v[myDrainNetId][NEEDS_MAX_CONNECTION] = true;
 							if ( gDebug_cvc ) cout << "DEBUG: max estimate net: " << myDrainNetId << endl;
@@ -1708,20 +1738,24 @@ void CCvcDb::PropagateMinMaxVoltages(CEventQueue& theEventQueue) {
 			if ( theEventQueue.queueType == MIN_QUEUE && myOriginalEventKey < myEventKey && IsPmos_(deviceType_v[myConnections.deviceId]) ) {
 				voltage_t myMaxVoltage = MaxVoltage(myDrainId);
 				if ( IsDerivedFromFloating(maxNet_v, myDrainId) || myMaxVoltage == UNKNOWN_VOLTAGE || myMaxVoltage == myEventKey || netStatus_v[mySourceId][NEEDS_MAX_CHECK] ) {
-					assert(netVoltagePtr_v[myDrainId]);
-					if ( netVoltagePtr_v[myDrainId]->pullUpVoltage == UNKNOWN_VOLTAGE || netVoltagePtr_v[myDrainId]->pullUpVoltage < myEventKey ) {
-						if (gDebug_cvc) cout << "DEBUG: Adding max check at net " << myDrainId << endl;
-						netStatus_v[myDrainId][NEEDS_MAX_CHECK] = true;
-					}
+					//assert(netVoltagePtr_v[myDrainId]);
+					if (netVoltagePtr_v[myDrainId] ) {
+						if ( netVoltagePtr_v[myDrainId]->pullUpVoltage() == UNKNOWN_VOLTAGE || netVoltagePtr_v[myDrainId]->pullUpVoltage() < myEventKey ) {
+							if (gDebug_cvc) cout << "DEBUG: Adding max check at net " << myDrainId << endl;
+							netStatus_v[myDrainId][NEEDS_MAX_CHECK] = true;
+						}
+					} else cout << "DEBUG: missing voltage for max check " << NetName(myDrainId) << endl;
 				}
 			} else if ( theEventQueue.queueType == MAX_QUEUE && myOriginalEventKey > myEventKey && IsNmos_(deviceType_v[myConnections.deviceId]) ) {
 				voltage_t myMinVoltage = MinVoltage(myDrainId);
 				if ( IsDerivedFromFloating(minNet_v, myDrainId) || myMinVoltage == UNKNOWN_VOLTAGE || myMinVoltage == myEventKey || netStatus_v[mySourceId][NEEDS_MIN_CHECK] ) {
-					assert(netVoltagePtr_v[myDrainId]);
-					if ( netVoltagePtr_v[myDrainId]->pullDownVoltage == UNKNOWN_VOLTAGE || netVoltagePtr_v[myDrainId]->pullDownVoltage > myEventKey ) {
-						if (gDebug_cvc) cout << "DEBUG: Adding min check at net " << myDrainId << endl;
-						netStatus_v[myDrainId][NEEDS_MIN_CHECK] = true;
-					}
+					//assert(netVoltagePtr_v[myDrainId]);
+					if ( netVoltagePtr_v[myDrainId] ) {
+						if ( netVoltagePtr_v[myDrainId]->pullDownVoltage() == UNKNOWN_VOLTAGE || netVoltagePtr_v[myDrainId]->pullDownVoltage() > myEventKey ) {
+							if (gDebug_cvc) cout << "DEBUG: Adding min check at net " << myDrainId << endl;
+							netStatus_v[myDrainId][NEEDS_MIN_CHECK] = true;
+						}
+					} else cout << "DEBUG: missing voltage for min check " << NetName(myDrainId) << endl;
 				}
 			}
 			EnqueueAttachedDevices(theEventQueue, myDrainId, myEventKey);
@@ -1819,7 +1853,7 @@ void CCvcDb::PropagateSimVoltages(CEventQueue& theEventQueue, propagation_t theP
 		if (gDebug_cvc) cout << "DEBUG propagation:(" << gEventQueueTypeMap[theEventQueue.queueType] << ") device: " << myDeviceId << " QueueKey: " << myQueueKey << " EventKey: " << mySimVoltage << endl;
 		string myCalculation;
 		myCalculation = AdjustSimVoltage(theEventQueue, myDeviceId, myConnections, mySimVoltage, myDirection, thePropagationType);
-		if ( thePropagationType == POWER_NETS_ONLY && ! myCalculation.empty() ) return;  // skip adjusted sim voltages with fixed-only
+		if ( thePropagationType == POWER_NETS_ONLY && ! IsEmpty(myCalculation) ) return;  // skip adjusted sim voltages with fixed-only
 		if ( mySimVoltage == UNKNOWN_VOLTAGE ) return; // gate input = Vth (non mos diode)
 		ShortSimNets(theEventQueue, myDeviceId, myConnections, myDirection, mySimVoltage, myCalculation);
 		EnqueueAttachedDevices(theEventQueue, myNextNetId, mySimVoltage);
@@ -1837,15 +1871,17 @@ void CCvcDb::CalculateResistorVoltage(netId_t theNetId, voltage_t theMinVoltage,
 	netId_t myMaxNet = maxNet_v[theNetId].finalNetId;
 	if ( ! netVoltagePtr_v[myMinNet] || netVoltagePtr_v[myMinNet]->type[HIZ_BIT] ) return;  // don't calculate non-power or open
 	if ( ! netVoltagePtr_v[myMaxNet] || netVoltagePtr_v[myMaxNet]->type[HIZ_BIT] ) return;  // don't calculate non-power or open
-	if ( ! netVoltagePtr_v[theNetId] ) {
-		cvcParameters.cvcPowerPtrList.push_back(new CPower(theNetId));
-		netVoltagePtr_v[theNetId] = cvcParameters.cvcPowerPtrList.back();
-	}
-	CPower * myPower_p = netVoltagePtr_v[theNetId];
 	if (  // myIgnoreResistorFlag == false &&
 			minNet_v[theNetId].nextNetId != maxNet_v[theNetId].nextNetId && // different paths to min/max
 			( minNet_v.IsTerminal(minNet_v[theNetId].nextNetId) || theNetId == maxNet_v[minNet_v[theNetId].nextNetId].nextNetId ) &&
 			( maxNet_v.IsTerminal(maxNet_v[theNetId].nextNetId) || theNetId == minNet_v[maxNet_v[theNetId].nextNetId].nextNetId ) ) {
+		if ( ! netVoltagePtr_v[theNetId] ) {
+			cvcParameters.cvcPowerPtrList.push_back(new CPower(theNetId));
+			netVoltagePtr_v[theNetId] = cvcParameters.cvcPowerPtrList.back();
+			netVoltagePtr_v[theNetId]->extraData = new CExtraPowerData;
+			netVoltagePtr_v[theNetId]->extraData->powerSignal = CPower::powerDefinitionText.SetTextAddress(RESISTOR_TEXT);
+		}
+		CPower * myPower_p = netVoltagePtr_v[theNetId];
 		voltage_t myNewVoltage = theMinVoltage + long( theMaxVoltage - theMinVoltage ) * theMinResistance / ( theMinResistance + theMaxResistance );
 		calculatedResistanceInfo_v[theNetId] = NetName(theNetId, PRINT_CIRCUIT_ON) + " " + to_string<voltage_t>(myNewVoltage);
 		calculatedResistanceInfo_v[theNetId] += " MinV:" + to_string<voltage_t>(theMinVoltage) + " MaxV:" + to_string<voltage_t>(theMaxVoltage);
@@ -1870,7 +1906,8 @@ void CCvcDb::CalculateResistorVoltage(netId_t theNetId, voltage_t theMinVoltage,
 		myPower_p->type[MIN_CALCULATED_BIT] = true;
 	//	myPower_p->type[SIM_CALCULATED_BIT] = true;
 		myPower_p->type[MAX_CALCULATED_BIT] = true;
-		myPower_p->definition += " calculation=> " + myCalculation;
+		string myDefinition = myPower_p->definition + (" calculation=> " + myCalculation);
+		myPower_p->definition = CPower::powerDefinitionText.SetTextAddress((text_t)myDefinition.c_str());
 //		cvcParameters.cvcPowerPtrList.push_back(new CPower(theNetId, NetName(theNetId), myNewVoltage, minNet_v[theNetId].finalNetId, maxNet_v[theNetId].finalNetId, myCalculation));
 //		netVoltagePtr_v[theNetId] = cvcParameters.cvcPowerPtrList.back();
 		myPower_p->type[RESISTOR_BIT] = true;
@@ -1896,11 +1933,15 @@ void CCvcDb::PropagateResistorCalculations(netId_t theNetId, CDeviceIdVector& th
 				cvcParameters.cvcPowerPtrList.push_back(new CPower(myConnections.drainId));
 				netVoltagePtr_v[myConnections.drainId] = cvcParameters.cvcPowerPtrList.back();
 				netVoltagePtr_v[myConnections.drainId]->type[RESISTOR_BIT] = true;
+				netVoltagePtr_v[myConnections.drainId]->extraData = new CExtraPowerData;
+				netVoltagePtr_v[myConnections.drainId]->extraData->powerSignal = CPower::powerDefinitionText.SetTextAddress(RESISTOR_TEXT);
 			}
 			if ( netVoltagePtr_v[myConnections.sourceId] == NULL ) {
 				cvcParameters.cvcPowerPtrList.push_back(new CPower(myConnections.sourceId));
 				netVoltagePtr_v[myConnections.sourceId] = cvcParameters.cvcPowerPtrList.back();
 				netVoltagePtr_v[myConnections.sourceId]->type[RESISTOR_BIT] = true;
+				netVoltagePtr_v[myConnections.sourceId]->extraData = new CExtraPowerData;
+				netVoltagePtr_v[myConnections.sourceId]->extraData->powerSignal = CPower::powerDefinitionText.SetTextAddress(RESISTOR_TEXT);
 			}
 		}
 	}
@@ -1944,8 +1985,9 @@ void CCvcDb::CalculateResistorVoltages() {
 		}
 	}
 	netId_t myLastPowerNet;
+	vector<bool> myPrintedPower(netCount, false);
 	for (auto power_ppit = cvcParameters.cvcPowerPtrList.begin(); power_ppit != cvcParameters.cvcPowerPtrList.end(); power_ppit++) {
-		if ( (*power_ppit)->type[RESISTOR_BIT] && IsCalculatedVoltage_((*power_ppit)) && ! (*power_ppit)->printed ) {
+		if ( (*power_ppit)->type[RESISTOR_BIT] && IsCalculatedVoltage_((*power_ppit)) && ! myPrintedPower[(*power_ppit)->netId] ) {
 			netId_t myPowerNet = (*power_ppit)->netId;
 			if ( netVoltagePtr_v[myPowerNet]->simVoltage == UNKNOWN_VOLTAGE ) {
 				logFile << "WARNING: Could not calculate explicit resistor voltage for " << NetName((*power_ppit)->netId, PRINT_CIRCUIT_ON) << endl;
@@ -1958,7 +2000,7 @@ void CCvcDb::CalculateResistorVoltages() {
 				}
 				do {
 					logFile << "INFO: Resistor voltage calculation " << calculatedResistanceInfo_v[myPowerNet] << endl;
-					netVoltagePtr_v[myPowerNet]->printed = true;
+					myPrintedPower[(*power_ppit)->netId] = true;
 					myLastPowerNet = myPowerNet;
 					myPowerNet = maxNet_v[myPowerNet].nextNetId;
 					minNet_v[myLastPowerNet].nextNetId = maxNet_v[myLastPowerNet].nextNetId = myLastPowerNet;
@@ -2493,8 +2535,8 @@ void CCvcDb::ResetMinMaxPower() {
 				// remove min/max calculations if not equal to sim
 				if ( netVoltagePtr_v[net_it]->type[MIN_CALCULATED_BIT] ) {
 					if ( netVoltagePtr_v[net_it] == leakVoltagePtr_v[net_it] ) {  // Save old copy before erasing.
-						leakVoltagePtr_v[net_it] = new CPower();
-						*(leakVoltagePtr_v[net_it]) = *(netVoltagePtr_v[net_it]);
+						leakVoltagePtr_v[net_it] = new CPower(netVoltagePtr_v[net_it]);
+//						*(leakVoltagePtr_v[net_it]) = *(netVoltagePtr_v[net_it]);
 					}
 					netVoltagePtr_v[net_it]->type[MIN_CALCULATED_BIT] = false;
 					netVoltagePtr_v[net_it]->defaultMinNet = UNKNOWN_NET;
@@ -2503,20 +2545,21 @@ void CCvcDb::ResetMinMaxPower() {
 				}
 				if ( netVoltagePtr_v[net_it]->type[MAX_CALCULATED_BIT] ) {
 					if ( netVoltagePtr_v[net_it] == leakVoltagePtr_v[net_it] ) {  // Save old copy before erasing.
-						leakVoltagePtr_v[net_it] = new CPower();
-						*(leakVoltagePtr_v[net_it]) = *(netVoltagePtr_v[net_it]);
+						leakVoltagePtr_v[net_it] = new CPower(netVoltagePtr_v[net_it]);
+//						*(leakVoltagePtr_v[net_it]) = *(netVoltagePtr_v[net_it]);
 					}
 					netVoltagePtr_v[net_it]->type[MAX_CALCULATED_BIT] = false;
 					netVoltagePtr_v[net_it]->defaultMaxNet = UNKNOWN_NET;
 					netVoltagePtr_v[net_it]->maxVoltage = UNKNOWN_VOLTAGE;
 //					myCalculatedVoltageFlag = true;
 				}
-				if ( netVoltagePtr_v[net_it]->type == NO_TYPE && netVoltagePtr_v[net_it]->powerSignal.empty() ) {
+				if ( netVoltagePtr_v[net_it]->type == NO_TYPE && IsEmpty(netVoltagePtr_v[net_it]->powerSignal()) ) {
 					if ( gDebug_cvc ) {
 						cout << "DEBUG: Deleting net: " << net_it;
 						netVoltagePtr_v[net_it]->Print(cout);
 					}
-					netVoltagePtr_v[net_it] = NULL; // dangling
+					delete netVoltagePtr_v[net_it];
+					netVoltagePtr_v[net_it] = NULL;
 				}
 			}
 //			maxNet_v[net_it].nextNetId = minNet_v[net_it].nextNetId = fixedSimNet_v[net_it].nextNetId;
@@ -2561,16 +2604,17 @@ void CCvcDb::ResetMinMaxPower() {
 		if ( myVoltage_p == NULL ) continue; // skips subordinate nets
 		if ( isFixedSimNet && myVoltage_p->simVoltage != UNKNOWN_VOLTAGE ) {
 			// default min/max voltages are not calculated. meaning there is no path to source voltage.
+			string myDefinition = myVoltage_p->definition;
 			if ( myVoltage_p->minVoltage == UNKNOWN_VOLTAGE ) {
 				if ( leakVoltagePtr_v[net_it] && leakVoltagePtr_v[net_it]->minVoltage != UNKNOWN_VOLTAGE
 						&& leakVoltagePtr_v[net_it]->minVoltage > myVoltage_p->simVoltage ) {
 					myVoltage_p->minVoltage = leakVoltagePtr_v[net_it]->minVoltage;
 					myVoltage_p->defaultMinNet = leakVoltagePtr_v[net_it]->defaultMinNet;
-					myVoltage_p->definition += " min=leak";
+					myDefinition += " min=leak";
 				} else {
 					myVoltage_p->minVoltage = myVoltage_p->simVoltage;
 					myVoltage_p->defaultMinNet = UNKNOWN_NET;
-					myVoltage_p->definition += " min=sim";
+					myDefinition += " min=sim";
 				}
 				myVoltage_p->active[MIN_ACTIVE] = true;
 //				myVoltage_p->baseMinId = myVoltage_p->baseSimId;
@@ -2581,11 +2625,11 @@ void CCvcDb::ResetMinMaxPower() {
 						&& leakVoltagePtr_v[net_it]->maxVoltage < myVoltage_p->simVoltage ) {
 					myVoltage_p->maxVoltage = leakVoltagePtr_v[net_it]->maxVoltage;
 					myVoltage_p->defaultMaxNet = UNKNOWN_NET;
-					myVoltage_p->definition += " max=leak";
+					myDefinition += " max=leak";
 				} else {
 					myVoltage_p->maxVoltage = myVoltage_p->simVoltage;
 					myVoltage_p->defaultMaxNet = UNKNOWN_NET;
-					myVoltage_p->definition += " max=sim";
+					myDefinition += " max=sim";
 				}
 				myVoltage_p->active[MAX_ACTIVE] = true;
 //				myVoltage_p->baseMaxId = myVoltage_p->baseSimId;
@@ -2597,6 +2641,7 @@ void CCvcDb::ResetMinMaxPower() {
 			if ( myVoltage_p->active[MAX_ACTIVE] && myVoltage_p->maxVoltage < myVoltage_p->simVoltage ) {
 				reportFile << "WARNING: MAX < SIM " << myVoltage_p->maxVoltage << " < " << myVoltage_p->simVoltage << " for " << NetName(net_it, PRINT_CIRCUIT_ON) << endl;
 			}
+			myVoltage_p->definition = CPower::powerDefinitionText.SetTextAddress((text_t)myDefinition.c_str());
 /*
 			if ( IsCalculatedVoltage_(myVoltage_p) ) {
 				myVoltage_p->type[SIM_CALCULATED_BIT] = true;
@@ -2616,7 +2661,7 @@ void CCvcDb::ResetMinMaxPower() {
 				if ( netVoltagePtr_v[net_it]->maxVoltage == UNKNOWN_VOLTAGE ) netVoltagePtr_v[net_it]->maxVoltage = netVoltagePtr_v[net_it]->simVoltage;
 			}
 */
-		} else if ( SimVoltage(net_it) == UNKNOWN_VOLTAGE && myVoltage_p->powerSignal.empty() && IsCalculatedVoltage_(myVoltage_p) ) {
+		} else if ( SimVoltage(net_it) == UNKNOWN_VOLTAGE && IsEmpty(myVoltage_p->powerSignal()) && IsCalculatedVoltage_(myVoltage_p) ) {
 			if ( gDebug_cvc ) {
 				cout << "DEBUG: Deleting net: " << net_it;
 				myVoltage_p->Print(cout);
@@ -2675,8 +2720,21 @@ void CCvcDb::SetSimPower(propagation_t thePropagationType) {
 void CCvcDb::CheckConnections() {
 //	resistance_t myResistance;
 	static CVirtualNet myVirtualNet;
+	unordered_map<netId_t, pair<deviceId_t, deviceId_t>> myBulkCount;
+//	vector<deviceId_t> myBulkCount;
+//	vector<deviceId_t> myBulkDevice;
+//	ResetVector<vector<deviceId_t>>(myBulkCount, netCount, 0);
+//	ResetVector<vector<deviceId_t>>(myBulkDevice, netCount, UNKNOWN_DEVICE);
+	for (deviceId_t device_it = 0; device_it < deviceCount; device_it++) {
+		if ( bulkNet_v[device_it] == UNKNOWN_NET ) continue;
+//		myBulkCount[bulkNet_v[device_it]].first++;
+		if ( myBulkCount[bulkNet_v[device_it]].first++ == 0 ) {
+			myBulkCount[bulkNet_v[device_it]].second = device_it;
+		}
+	}
 	for (netId_t net_it = 0; net_it < netCount; net_it++) {
-		if ( connectionCount_v[net_it].bulkCount > 0 && connectionCount_v[net_it].bulkCount >= connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount ) {
+//		if ( connectionCount_v[net_it].bulkCount > 0 && connectionCount_v[net_it].bulkCount >= connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount ) {
+		if ( myBulkCount.count(net_it) > 0 && myBulkCount[net_it].first >= connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount ) {
 			// skips subordinate nets because only equivalent masters have counts.
 			// may have problems with moscaps, because one device has both source and drain connection.
 			myVirtualNet(simNet_v, net_it);
@@ -2684,15 +2742,15 @@ void CCvcDb::CheckConnections() {
 			CPower * myPower_p = netVoltagePtr_v[myVirtualNet.finalNetId];
 //			myResistance = SimResistance(net_it);
 			if ( myVirtualNet.finalResistance > 1000000 && myVirtualNet.finalResistance != INFINITE_RESISTANCE ) {
-				reportFile << "WARNING: high res bias (" << connectionCount_v[net_it].bulkCount << ") " << NetName(net_it, PRINT_CIRCUIT_ON) << " r=" << myVirtualNet.finalResistance << endl;
+				reportFile << "WARNING: high res bias (" << myBulkCount[net_it].first << ") " << NetName(net_it, PRINT_CIRCUIT_ON) << " r=" << myVirtualNet.finalResistance << endl;
 			} else if ( ! myPower_p
 					|| ( myPower_p->simVoltage == UNKNOWN_VOLTAGE
 						&& ( myPower_p->minVoltage == UNKNOWN_VOLTAGE || myPower_p->maxVoltage == UNKNOWN_VOLTAGE ) ) ) {  // no error for missing bias if min/max defined.
-				reportFile << "WARNING: missing bias (" << connectionCount_v[net_it].bulkCount << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
-				reportFile << " at " << DeviceName(firstBulk_v[net_it], PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF) << endl;
+				reportFile << "WARNING: missing bias (" << myBulkCount[net_it].first << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
+				reportFile << " at " << DeviceName(myBulkCount[net_it].second, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF) << endl;
 			} else if ( IsCalculatedVoltage_(myPower_p) ) {
-				reportFile << "WARNING: calculated bias (" << connectionCount_v[net_it].bulkCount << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
-				reportFile << " at " << DeviceName(firstBulk_v[net_it], PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF)
+				reportFile << "WARNING: calculated bias (" << myBulkCount[net_it].first << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
+				reportFile << " at " << DeviceName(myBulkCount[net_it].second, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF)
 						<< (myPower_p->type[MIN_CALCULATED_BIT] ? " 1|" : " 0|")
 						<< (myPower_p->type[SIM_CALCULATED_BIT] ? "1|" : "0|")
 						<< (myPower_p->type[MAX_CALCULATED_BIT] ? "1" : "0") <<	endl;

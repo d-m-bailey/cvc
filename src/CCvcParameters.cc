@@ -1,7 +1,7 @@
 /*
  * Copyright (c) D. Mitch Bailey 2014.
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -249,7 +249,7 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 			cvcLeakErrorThreshold = String_to_Voltage(string(myBuffer));
 		}
 	}
-	if ( ! theReportPrefix.empty() ) {
+	if ( ! IsEmpty(theReportPrefix) ) {
 		cvcReportName = theReportPrefix + "-" + cvcReportName;
 	}
 /*
@@ -397,14 +397,14 @@ returnCode_t CCvcParameters::LoadPower() {
 				cvcInstancePowerPtrList.push_back(new CInstancePower(myInput));
 			} else {
 				CPower * myPowerPtr = new CPower(myInput, cvcPowerMacroPtrMap, cvcModelListMap);
-				if ( ! (myPowerPtr->expectedMin.empty() && myPowerPtr->expectedSim.empty() && myPowerPtr->expectedMax.empty()) ) {
-					cvcExpectedLevelPtrList.push_back(myPowerPtr);
+				if ( ! (IsEmpty(myPowerPtr->expectedMin()) && IsEmpty(myPowerPtr->expectedSim()) && IsEmpty(myPowerPtr->expectedMax())) ) {
+					cvcExpectedLevelPtrList.push_back(new CPower(myPowerPtr));  // duplicate CPower (not a bit-wise copy)
 				}
 				if (myPowerPtr->type != NO_TYPE || myPowerPtr->minVoltage != UNKNOWN_VOLTAGE || myPowerPtr->simVoltage != UNKNOWN_VOLTAGE || myPowerPtr->maxVoltage != UNKNOWN_VOLTAGE) {
-					cvcPowerPtrList.push_back(myPowerPtr);
+					cvcPowerPtrList.push_back(new CPower(myPowerPtr));  // duplicate CPower (not a bit-wise copy)
 				}
 				if ( myAutoMacroFlag ) {
-					myMacroName = myPowerPtr->powerSignal;
+					myMacroName = string(myPowerPtr->powerSignal());
 					if ( myMacroName[0] == '/' ) { // macros for top level nets that are not ports
 						myMacroName = myMacroName.substr(1);
 					}
@@ -412,6 +412,7 @@ returnCode_t CCvcParameters::LoadPower() {
 				} else {
 					myMacroName = "?";
 				}
+				delete myPowerPtr;
 			}
 			if ( myMacroName.find_first_of("(<[}/*@+-") > myMacroName.length() && isalpha(myMacroName[0]) ) { // no special characters in macro names
 				if ( cvcPowerMacroPtrMap.count(myMacroName) > 0 ) throw EPowerError("duplicate macro name: " + myMacroName);
@@ -450,7 +451,7 @@ returnCode_t CCvcParameters::LoadPower() {
 
 void CCvcParameters::SetHiZPropagation() {
 	for ( auto power_ppit = cvcPowerPtrList.begin(); power_ppit != cvcPowerPtrList.end(); power_ppit++ ) {
-		if ( (*power_ppit)->type[HIZ_BIT] && ! (*power_ppit)->family.empty() ) {
+		if ( (*power_ppit)->type[HIZ_BIT] && ! IsEmpty((*power_ppit)->family()) ) {
 			if ( (*power_ppit)->RelativeVoltage(cvcPowerMacroPtrMap, MIN_POWER, cvcModelListMap) == (*power_ppit)->minVoltage ) {
 				(*power_ppit)->active[MIN_IGNORE] = true;
 			}

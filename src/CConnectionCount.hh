@@ -1,7 +1,7 @@
 /*
  * CConnectionCount.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -31,7 +31,7 @@ public:
 	deviceId_t sourceCount = 0;
 	deviceId_t drainCount = 0;
 	deviceId_t gateCount = 0;
-	deviceId_t bulkCount = 0;
+//	deviceId_t bulkCount = 0;
 	CStatus sourceDrainType = bitset<8>(0);
 
 	inline deviceId_t SourceDrainCount() { return sourceCount + drainCount; };
@@ -51,8 +51,8 @@ public:
 	deviceId_t pmosCount = 0;
 	deviceId_t nmosGateCount = 0;
 	deviceId_t pmosGateCount = 0;
-	deviceId_t nmosBulkCount = 0;
-	deviceId_t pmosBulkCount = 0;
+//	deviceId_t nmosBulkCount = 0;
+//	deviceId_t pmosBulkCount = 0;
 	deviceId_t capacitorCount = 0;
 	deviceId_t diodeCount = 0;
 

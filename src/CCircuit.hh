@@ -1,7 +1,7 @@
 /*
  * CCircuit.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -31,39 +31,43 @@
 #include "gzstream.h"
 
 class CCircuit {
+	// subcircuit instance/device name to deviceID map
+	static text_t lastDeviceMap;
+	static CTextDeviceIdMap localDeviceIdMap;
+	static text_t lastSubcircuitMap;
+	static CTextDeviceIdMap localSubcircuitIdMap;
 public:
 	text_t name;
-	netId_t	portCount = 0;
 	// local signal to local netID Map
 	CTextNetIdMap localSignalIdMap;
-	// subcircuit instance/device name to deviceID map
-	CTextDeviceIdMap localDeviceIdMap;
-	//Å@temporary list to convert to vector
-	CTextList 	internalSignalList;
+	// temporary list to convert to vector
+	CTextList	internalSignalList;
 	// local netID to signal name map
-	CTextVector 	internalSignal_v;
+	CTextVector	internalSignal_v;
 	CDevicePtrVector	devicePtr_v;
 	CDevicePtrVector	subcircuitPtr_v;
-	vector<size_t>		deviceErrorCount_v;
-
-	// total items for this circuit and all subcircuits
-	uintmax_t	netCount = 0;
-	uintmax_t	deviceCount = 0;
-	// the number of children
-	uintmax_t	subcircuitCount = 0;
-	// the number of instantiations
-	uintmax_t	instanceCount = 0;
-
+	vector<deviceId_t>		deviceErrorCount_v;
 	CInstanceIdVector instanceId_v;
-	bool	linked = false;
 
-	deviceId_t		errorCount = 0;
-	deviceId_t		warningCount = 0;
+	netId_t	portCount = 0;
+	// total items for this circuit and all subcircuits
+	netId_t	netCount = 0;
+	deviceId_t	deviceCount = 0;
+	// the number of children
+	instanceId_t	subcircuitCount = 0;
+	// the number of instantiations
+	instanceId_t	instanceCount = 0;
+
+//	deviceId_t		errorCount = 0;
+//	deviceId_t		warningCount = 0;
+	bool	linked = false;
 
 	inline netId_t	LocalNetCount() { return ( localSignalIdMap.size() - portCount); }
 
 	void AddPortSignalIds(CTextList * thePortList_p);
 	void SetSignalIds(CTextList * theSignalList_p, CNetIdVector & theSignalId_v);
+	deviceId_t GetLocalDeviceId(text_t theName);
+	deviceId_t GetLocalSubcircuitId(text_t theName);
 	void LoadDevices(CDevicePtrList * theDeviceList_p);
 
 	void CountObjectsAndLinkSubcircuits(unordered_map<text_t, CCircuit *> & theCircuitNameMap);
@@ -75,7 +79,7 @@ public:
 
 class CTextCircuitPtrMap : public unordered_map<text_t, CCircuit *> {
 public:
-
+	CTextCircuitPtrMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 static set<modelType_t> emptyModelList;

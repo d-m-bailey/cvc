@@ -1,7 +1,7 @@
 /*
  * CEventQueue.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -224,8 +224,8 @@ string CLeakMap::PrintLeakKey(string theKey) {
 	unsigned int mySecondKey = from_string<unsigned int>(theKey.substr(theKey.find(" ")));
 	string myFirstPowerName = "", mySecondPowerName = "";
 	for (CPowerPtrList::iterator power_ppit = powerPtrList_p->begin(); power_ppit != powerPtrList_p->end(); power_ppit++) {
-		if ( (*power_ppit)->powerId == myFirstKey ) myFirstPowerName = (*power_ppit)->powerSignal;
-		if ( (*power_ppit)->powerId == mySecondKey ) mySecondPowerName = (*power_ppit)->powerSignal;
+		if ( (*power_ppit)->powerId == myFirstKey ) myFirstPowerName = string((*power_ppit)->powerSignal());
+		if ( (*power_ppit)->powerId == mySecondKey ) mySecondPowerName = string((*power_ppit)->powerSignal());
 	}
 //	cout << "PrintLeakKey> " << myFirstPowerName << ":" << mySecondPowerName << endl;
 	return (myFirstPowerName + ":" + mySecondPowerName);

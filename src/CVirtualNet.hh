@@ -1,7 +1,7 @@
 /*
  * CVirtualNet.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -27,6 +27,9 @@
 #include "Cvc.hh"
 
 #include "CPower.hh"
+#include "mmappable_vector.h"
+
+using namespace mmap_allocator_namespace;
 
 class CVirtualNet;
 class CVirtualNetVector;
@@ -39,6 +42,7 @@ public:
 	void operator= (CVirtualNet& theEqualNet);
 };
 
+/*
 class CBaseVirtualNetVector : public vector<CBaseVirtualNet> {
 public:
 	CBaseVirtualNetVector& operator() (CVirtualNetVector& theFullNetVector);
@@ -54,6 +58,13 @@ public:
 class CVirtualLeakNetVector : public vector<CVirtualLeakNet> {
 public:
 	CVirtualLeakNetVector& operator() (CVirtualNetVector& theFullNetVector);
+};
+*/
+
+class CVirtualNetMappedVector : public mmappable_vector<CVirtualNet> {
+public:
+	CVirtualNetMappedVector(mmap_allocator<CVirtualNet> theAllocator);
+	void operator= (CVirtualNetVector& theNetVector);
 };
 
 class CVirtualNet : public CBaseVirtualNet {

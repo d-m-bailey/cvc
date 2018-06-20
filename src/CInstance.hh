@@ -1,7 +1,7 @@
 /*
  * CInstance.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -45,6 +45,12 @@ public:
 	void AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInstanceId, const CDevice * theSubcircuit_p, const instanceId_t theParentId, const CInstance * theParent_p);
 
 	void Print(const instanceId_t theInstanceId, const string theIndentation = "");
+};
+
+class CInstancePtrVector : public vector<CInstance *> {
+public:
+	~CInstancePtrVector();
+	void Clear();
 };
 
 #endif /* CINSTANCE_HH_ */

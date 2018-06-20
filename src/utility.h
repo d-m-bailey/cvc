@@ -1,7 +1,7 @@
 /*
  * utility.h
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -37,8 +37,8 @@ std::string int_to_hex( T i )
 {
   std::stringstream stream;
   stream << "0x"
-         << std::setfill ('0') << std::setw(sizeof(T)*2)
-         << std::hex << i;
+	<< std::setfill ('0') << std::setw(sizeof(T)*2)
+	<< std::hex << i;
   return stream.str();
 }
 
@@ -70,5 +70,7 @@ std::string RegexErrorString(std::regex_constants::error_type theErrorCode);
 
 std::string FuzzyFilter(std::string theFilter);
 bool IsAlphanumeric(std::string theString);
+inline bool IsEmpty(char * theText) {return (theText[0] == '\0' );};
+inline bool IsEmpty(std::string theString) {return (theString.empty());};
 
 #endif /* UTILITY_H_ */

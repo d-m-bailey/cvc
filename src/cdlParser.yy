@@ -1,7 +1,7 @@
 /*
  * cdlParser.yy
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -205,6 +205,7 @@ subcircuit:
 			myParameterList->push_front(myString);  // add box model name
 			$subcircuit->parameters = cdlCircuitList.parameterText.SetTextAddress("X", myParameterList);
 		}
+		delete myParameterList;
 	};
 
 bipolar:
@@ -223,6 +224,7 @@ bipolar:
 		$bipolar->AppendSignal($emitter);
 		$bipolar->parameters = cdlCircuitList.parameterText.SetTextAddress("Q", $stringList);	
 /**/	
+		delete $stringList;
 };
 
 capacitor:
@@ -240,6 +242,7 @@ capacitor:
 		}
 */
 		$capacitor->parameters = cdlCircuitList.parameterText.SetTextAddress("C", $stringList);	
+		delete $stringList;
 	};
 
 diode:
@@ -252,6 +255,7 @@ diode:
 		$diode->AppendSignal($anode);
 		$diode->AppendSignal($cathode);
 		$diode->parameters = cdlCircuitList.parameterText.SetTextAddress("D", $stringList);		
+		delete $stringList;
 	};
 
 inductor:
@@ -266,6 +270,7 @@ inductor:
 		$inductor->AppendSignal($minus);
 		$inductor->parameters = cdlCircuitList.parameterText.SetTextAddress($stringList);	
 	*/
+		delete $stringList;
 	};
 
 mosfet:
@@ -280,6 +285,7 @@ mosfet:
 			$mosfet->AppendSignal($bulk);
 		}
 		$mosfet->parameters = cdlCircuitList.parameterText.SetTextAddress("M", $stringList);	
+		delete $stringList;
 	};
 
 resistor:
@@ -297,6 +303,7 @@ resistor:
 		}
 */
 		$resistor->parameters = cdlCircuitList.parameterText.SetTextAddress("R", $stringList);	
+		delete $stringList;
 	};
 
 %%

@@ -1,7 +1,7 @@
 /*
  * cvc.cc
  *
- * Copyright 2014-2108 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -77,6 +77,7 @@ int main(int argc, const char * argv[]) {
 try {
 	using_history();
 	gCvcDb = new CCvcDb(argc, argv);
+	if ( gDebug_cvc ) gCvcDb->PrintClassSizes();
 	gCvcDb->VerifyCircuitForAllModes(argc, argv);
 }
 catch (EFatalError& e) {
@@ -89,6 +90,7 @@ catch (exception& e) {
 	gCvcDb->RemoveLock();
 	cout << "unexpected error: " << e.what() << endl;
 }
+	delete gCvcDb;
 }
 
 /// \file Coding guidelines:

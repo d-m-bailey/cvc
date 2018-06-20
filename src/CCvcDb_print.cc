@@ -1,7 +1,7 @@
 /*
  * CCvcDb_print.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -136,7 +136,7 @@ void CCvcDb::SetOutputFiles(string theReportFilename) {
 string CCvcDb::NetAlias(netId_t theNetId, bool thePrintCircuitFlag) {
 	string myAlias = "";
 	CPower * myPower_p = netVoltagePtr_v[theNetId];
-	if ( myPower_p && ! myPower_p->powerAlias.empty() && myPower_p->powerAlias != myPower_p->powerSignal ) myAlias = "~>" + myPower_p->powerAlias;
+	if ( myPower_p && ! IsEmpty(myPower_p->powerAlias()) && myPower_p->powerAlias() != myPower_p->powerSignal() ) myAlias = "~>" + string(myPower_p->powerAlias());
 	return (thePrintCircuitFlag) ? myAlias : "";
 }
 
@@ -349,6 +349,23 @@ void CCvcDb::PrintConnections(deviceId_t theDeviceCount, deviceId_t theDeviceId,
 	cout << endl;
 }
 
+void CCvcDb::PrintBulkConnections(netId_t theNetId, string theIndentation, string theHeading) {
+	// debug function. not optimized.
+	deviceId_t myDeviceCount = 0;
+	for ( deviceId_t device_it = 0; device_it < deviceCount; device_it++ ) {
+		if ( bulkNet_v[device_it] == theNetId ) {
+			myDeviceCount++;
+		}
+	}
+	cout << theIndentation << theHeading << "(" << myDeviceCount << ")>";
+	for ( deviceId_t device_it = 0; device_it < deviceCount; device_it++ ) {
+		if ( bulkNet_v[device_it] == theNetId ) {
+			cout << " " << device_it;
+		}
+	}
+	cout << endl;
+}
+
 string CCvcDb::StatusString(const CStatus& theStatus) {
 	string myStatus = "";
 	for (size_t bit_it = 0; bit_it < theStatus.size(); bit_it++) {
@@ -359,31 +376,32 @@ string CCvcDb::StatusString(const CStatus& theStatus) {
 
 void CCvcDb::PrintPowerList(ostream & theOutputFile, string theHeading, string theIndentation) {
 	theOutputFile << theIndentation << theHeading << "> filename " << cvcParameters.cvcPowerFilename << endl;
-	string myRealPowerName, myLastPowerSignal = "";
+	string myRealPowerName;
+	text_t myLastPowerSignal = NULL;
 	for (CPowerPtrList::iterator power_ppit = cvcParameters.cvcPowerPtrList.begin(); power_ppit != cvcParameters.cvcPowerPtrList.end(); power_ppit++) {
-		if ( (*power_ppit)->powerSignal.empty() ) continue; // skip resistor definitions
+		if ( IsEmpty((*power_ppit)->powerSignal()) ) continue; // skip resistor definitions
 		myRealPowerName = NetName((*power_ppit)->netId);
-		if ( myLastPowerSignal != (*power_ppit)->powerSignal && myRealPowerName != (*power_ppit)->powerSignal ) {
+		if ( myLastPowerSignal != (*power_ppit)->powerSignal() && myRealPowerName != string((*power_ppit)->powerSignal()) ) {
 			string myAlias = "";
-			if ( ! (*power_ppit)->powerAlias.empty() && (*power_ppit)->powerSignal != (*power_ppit)->powerAlias ) {
-				myAlias = ALIAS_DELIMITER + (*power_ppit)->powerAlias;
+			if ( ! IsEmpty((*power_ppit)->powerAlias()) && string((*power_ppit)->powerSignal()) != (*power_ppit)->powerAlias() ) {
+				myAlias = ALIAS_DELIMITER + string((*power_ppit)->powerAlias());
 			}
-			theOutputFile << (*power_ppit)->powerSignal << myAlias << (*power_ppit)->definition << endl;
+			theOutputFile << (*power_ppit)->powerSignal() << myAlias << (*power_ppit)->definition << endl;
 		}
-		myLastPowerSignal = (*power_ppit)->powerSignal;
+		myLastPowerSignal = (*power_ppit)->powerSignal();
 		(*power_ppit)->Print(theOutputFile, theIndentation + " ", myRealPowerName);
 	}
-	myLastPowerSignal = "";
+	myLastPowerSignal = NULL;
 	for (auto power_ppit = cvcParameters.cvcExpectedLevelPtrList.begin(); power_ppit != cvcParameters.cvcExpectedLevelPtrList.end(); power_ppit++) {
 		myRealPowerName = NetName((*power_ppit)->netId);
-		if ( myLastPowerSignal != (*power_ppit)->powerSignal && myRealPowerName != (*power_ppit)->powerSignal ) {
+		if ( myLastPowerSignal != (*power_ppit)->powerSignal() && myRealPowerName != string((*power_ppit)->powerSignal()) ) {
 			string myAlias = "";
-			if ( ! (*power_ppit)->powerAlias.empty() && (*power_ppit)->powerSignal != (*power_ppit)->powerAlias ) {
-				myAlias = ALIAS_DELIMITER + (*power_ppit)->powerAlias;
+			if ( ! IsEmpty((*power_ppit)->powerAlias()) && (*power_ppit)->powerSignal() != (*power_ppit)->powerAlias() ) {
+				myAlias = ALIAS_DELIMITER + string((*power_ppit)->powerAlias());
 			}
-			theOutputFile << (*power_ppit)->powerSignal << myAlias << (*power_ppit)->definition << endl;
+			theOutputFile << (*power_ppit)->powerSignal() << myAlias << (*power_ppit)->definition << endl;
 		}
-		myLastPowerSignal = (*power_ppit)->powerSignal;
+		myLastPowerSignal = (*power_ppit)->powerSignal();
 		(*power_ppit)->Print(theOutputFile, theIndentation + " ", myRealPowerName);
 	}
 	theOutputFile << theIndentation << "> macros" << endl;
@@ -411,6 +429,12 @@ void CCvcDb::Print(const string theIndentation, const string theHeading) {
 	}
 	cout << myIndentation << "InstanceList> end" << endl << endl;
 	cout << myIndentation << "NetList> start" << endl;
+	vector<deviceId_t> myBulkCount;
+	ResetVector<vector<deviceId_t>>(myBulkCount, netCount, 0);
+	for (deviceId_t device_it = 0; device_it < deviceCount; device_it++) {
+		if ( bulkNet_v[device_it] == UNKNOWN_DEVICE ) continue;
+		myBulkCount[bulkNet_v[device_it]]++;
+	}
 	for (netId_t net_it = 0; net_it < netCount; net_it++) {
 		cout << myIndentation + " Net " << net_it << ":" << NetName(net_it) << endl;
 		if ( netVoltagePtr_v[net_it] ) {
@@ -424,7 +448,8 @@ void CCvcDb::Print(const string theIndentation, const string theHeading) {
 		if ( firstSource_v[net_it] != UNKNOWN_DEVICE ) PrintConnections(connectionCount_v[net_it].sourceCount, firstSource_v[net_it], nextSource_v, myIndentation + "  ", "SourceConnections");
 		if ( firstDrain_v[net_it] != UNKNOWN_DEVICE ) PrintConnections(connectionCount_v[net_it].drainCount, firstDrain_v[net_it], nextDrain_v, myIndentation + "  ", "DrainConnections");
 		if ( firstGate_v[net_it] != UNKNOWN_DEVICE ) PrintConnections(connectionCount_v[net_it].gateCount, firstGate_v[net_it], nextGate_v, myIndentation + "  ", "GateConnections");
-		if ( firstBulk_v[net_it] != UNKNOWN_DEVICE ) PrintConnections(connectionCount_v[net_it].bulkCount, firstBulk_v[net_it], nextBulk_v, myIndentation + "  ", "BulkConnections");
+		if ( myBulkCount[net_it] > 0 ) PrintBulkConnections(net_it, myIndentation + "  ", "BulkConnections");
+//		if ( firstBulk_v[net_it] != UNKNOWN_DEVICE ) PrintConnections(connectionCount_v[net_it].bulkCount, firstBulk_v[net_it], nextBulk_v, myIndentation + "  ", "BulkConnections");
 		if ( connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount > 0 ) {
 			PrintSourceDrainConnections(connectionCount_v[net_it].sourceDrainType, myIndentation + "  ");
 		}
@@ -1166,6 +1191,7 @@ void CCvcDb::PrintErrorTotals() {
 //	errorFile.open(theErrorFileName);
 //}
 
+/*
 void CCvcDb::PrintShortedNets(string theShortFileName) {
 	cout << "CVC: Printing shorted nets to " << theShortFileName << " ..." << endl;
 	ogzstream	shortFile(theShortFileName);
@@ -1179,6 +1205,7 @@ void CCvcDb::PrintShortedNets(string theShortFileName) {
 		//changed to include sim paths
 		mySimNet = simNet_v[GetEquivalentNet(net_it)].nextNetId;
 		myResistance = simNet_v[GetEquivalentNet(net_it)].resistance;
+*/
 		/*
 		mySimNet = GetEquivalentNet(net_it);
 		myResistance = 0;
@@ -1187,6 +1214,7 @@ void CCvcDb::PrintShortedNets(string theShortFileName) {
 			mySimNet = simNet_v[mySimNet].nextNetId;
 		}
 		*/
+/*
 		if ( net_it == mySimNet && ! netVoltagePtr_v[net_it] ) continue;
 		if ( net_it != mySimNet ) shortFile << net_it << "->";
 		shortFile << mySimNet;
@@ -1210,6 +1238,7 @@ void CCvcDb::PrintShortedNets(string theShortFileName) {
 			short_v[net_it].second = "";
 		}
 		shortFile << endl;
+*/
 /*
 // short file format
 0@1200		<- power definition
@@ -1279,17 +1308,84 @@ void CCvcDb::PrintShortedNets(string theShortFileName) {
 		}
 		shortFile << endl;
 */
+/*
 	}
 	shortFile.close();
 	isValidShortData = true;
 }
+*/
 
 string CCvcDb::NetVoltageSuffix(string theDelimiter, string theVoltage, resistance_t theResistance, string theLeakVoltage) {
-	if ( theVoltage == "???" && theLeakVoltage.empty() ) return ("");
-	if ( ! theLeakVoltage.empty() ) theLeakVoltage = "(" + theLeakVoltage + ")";
+	if ( theVoltage == "???" && IsEmpty(theLeakVoltage) ) return ("");
+	if ( ! IsEmpty(theLeakVoltage) ) theLeakVoltage = "(" + theLeakVoltage + ")";
 	return ( theDelimiter + theVoltage + theLeakVoltage + " r=" + to_string<resistance_t>(theResistance));
 }
 
 void CCvcDb::PrintResistorOverflow(netId_t theNet, ofstream& theOutputFile) {
 	theOutputFile << "WARNING: resistance exceeded 1G ohm at " << NetName(theNet, PRINT_CIRCUIT_ON) << endl;
+}
+
+void CCvcDb::PrintClassSizes() {
+	cout << "CBaseVirtualNet " << sizeof(class CBaseVirtualNet) << endl;
+//	cout << "CBaseVirtualNetVector " << sizeof(class CBaseVirtualNetVector) << endl;
+//	cout << "CCdlParserDriver " << sizeof(class CCdlParserDriver) << endl;
+	cout << "CCdlText " << sizeof(class CCdlText) << endl;
+	cout << "CCircuit " << sizeof(class CCircuit) << endl;
+	cout << "CCircuitPtrList " << sizeof(class CCircuitPtrList) << endl;
+	cout << "CCondition " << sizeof(class CCondition) << endl;
+	cout << "CConditionPtrList " << sizeof(class CConditionPtrList) << endl;
+	cout << "CConnection " << sizeof(class CConnection) << endl;
+	cout << "CConnectionCount " << sizeof(class CConnectionCount) << endl;
+	cout << "CConnectionCountVector " << sizeof(class CConnectionCountVector) << endl;
+	cout << "CCvcDb " << sizeof(class CCvcDb) << endl;
+	cout << "CCvcParameters " << sizeof(class CCvcParameters) << endl;
+	cout << "CDependencyMap " << sizeof(class CDependencyMap) << endl;
+	cout << "CDevice " << sizeof(class CDevice) << endl;
+	cout << "CDeviceCount " << sizeof(class CDeviceCount) << endl;
+	cout << "CDeviceIdVector " << sizeof(class CDeviceIdVector) << endl;
+	cout << "CDevicePtrList " << sizeof(class CDevicePtrList) << endl;
+	cout << "CDevicePtrVector " << sizeof(class CDevicePtrVector) << endl;
+	cout << "CEventList " << sizeof(class CEventList) << endl;
+	cout << "CEventQueue " << sizeof(class CEventQueue) << endl;
+	cout << "CEventSubQueue " << sizeof(class CEventSubQueue) << endl;
+	cout << "CFixedText " << sizeof(class CFixedText) << endl;
+	cout << "CFullConnection " << sizeof(class CFullConnection) << endl;
+	cout << "CHierList " << sizeof(class CHierList) << endl;
+	cout << "CInstance " << sizeof(class CInstance) << endl;
+	cout << "CInstanceIdVector " << sizeof(class CInstanceIdVector) << endl;
+	cout << "CInstancePtrVector " << sizeof(class CInstancePtrVector) << endl;
+	cout << "CLeakList " << sizeof(class CLeakList) << endl;
+	cout << "CLeakMap " << sizeof(class CLeakMap) << endl;
+	cout << "CModel " << sizeof(class CModel) << endl;
+	cout << "CModeList " << sizeof(class CModeList) << endl;
+	cout << "CModelList " << sizeof(class CModelList) << endl;
+	cout << "CModelListMap " << sizeof(class CModelListMap) << endl;
+	cout << "CNetIdVector " << sizeof(class CNetIdVector) << endl;
+	cout << "CNetList " << sizeof(class CNetList) << endl;
+	cout << "CNetMap " << sizeof(class CNetMap) << endl;
+	cout << "CNormalValue " << sizeof(class CNormalValue) << endl;
+	cout << "CParameterMap " << sizeof(class CParameterMap) << endl;
+	cout << "CPower " << sizeof(class CPower) << endl;
+	cout << "CPowerFamilyMap " << sizeof(class CPowerFamilyMap) << endl;
+	cout << "CPowerPtrList " << sizeof(class CPowerPtrList) << endl;
+	cout << "CPowerPtrMap " << sizeof(class CPowerPtrMap) << endl;
+	cout << "CPowerPtrVector " << sizeof(class CPowerPtrVector) << endl;
+	cout << "CSet " << sizeof(class CSet) << endl;
+	cout << "CShortVector " << sizeof(class CShortVector) << endl;
+	cout << "CStatusVector " << sizeof(class CStatusVector) << endl;
+	cout << "CStringList " << sizeof(class CStringList) << endl;
+	cout << "CStringTextMap " << sizeof(class CStringTextMap) << endl;
+	cout << "CTextCircuitPtrMap " << sizeof(class CTextCircuitPtrMap) << endl;
+	cout << "CTextDeviceIdMap " << sizeof(class CTextDeviceIdMap) << endl;
+	cout << "CTextInstanceIdMap " << sizeof(class CTextInstanceIdMap) << endl;
+	cout << "CTextList " << sizeof(class CTextList) << endl;
+	cout << "CTextModelPtrMap " << sizeof(class CTextModelPtrMap) << endl;
+	cout << "CTextNetIdMap " << sizeof(class CTextNetIdMap) << endl;
+	cout << "CTextResistanceMap " << sizeof(class CTextResistanceMap) << endl;
+	cout << "CTextVector " << sizeof(class CTextVector) << endl;
+//	cout << "CVirtualLeakNet " << sizeof(class CVirtualLeakNet) << endl;
+//	cout << "CVirtualLeakNetVector " << sizeof(class CVirtualLeakNetVector) << endl;
+	cout << "CVirtualNet " << sizeof(class CVirtualNet) << endl;
+	cout << "CVirtualNetMappedVector " << sizeof(class CVirtualNetMappedVector) << endl;
+	cout << "CVirtualNetVector " << sizeof(class CVirtualNetVector) << endl;
 }

@@ -1,7 +1,7 @@
 /*
  * CVirtualNet.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -22,6 +22,9 @@
  */
 
 #include "CVirtualNet.hh"
+#include "mmappable_vector.h"
+
+using namespace mmap_allocator_namespace;
 
 extern long gVirtualNetUpdateCount;
 extern long gVirtualNetAccessCount;
@@ -34,6 +37,7 @@ void CVirtualNet::operator+= (CVirtualNet theAddNet) {
 }
 */
 
+/*
 void CBaseVirtualNet::operator= (CVirtualNet& theEqualNet) {
 	nextNetId = theEqualNet.nextNetId;
 	resistance = theEqualNet.resistance;
@@ -44,6 +48,7 @@ void CVirtualLeakNet::operator= (CVirtualNet& theEqualNet) {
 	resistance = theEqualNet.resistance;
 	finalNetId = theEqualNet.finalNetId;
 }
+*/
 
 void CVirtualNet::operator= (CVirtualNet& theEqualNet) {
 	nextNetId = theEqualNet.nextNetId;
@@ -98,34 +103,9 @@ CVirtualNet& CVirtualNet::operator() (CVirtualNetVector& theVirtualNet_v, netId_
 	return (*this);
 }
 
-
 /*
-CVirtualNet::CVirtualNet() {
-}
-
-CVirtualNet::CVirtualNet(CVirtualNetVector& theVirtualNet_v, netId_t theNetId) {
-	if ( theNetId == UNKNOWN_NET ) {
-		nextNetId = UNKNOWN_NET;
-		resistance = INFINITE_RESISTANCE;
-	} else {
-		int myLinkCount = 0;
-		nextNetId = theNetId;
-		resistance = 0;
-		while ( nextNetId != theVirtualNet_v[nextNetId].nextNetId ) {
-			(*this) += theVirtualNet_v[nextNetId];
-			myLinkCount++;
-			if ( myLinkCount > 1000 ) {
-				cout << "looping at net " << theNetId << endl;
-				assert ( myLinkCount < 1021 );
-			}
-		}
-		resistance += theVirtualNet_v[nextNetId].resistance;
-	}
-}
-*/
-
 CBaseVirtualNetVector& CBaseVirtualNetVector::operator() (CVirtualNetVector& theFullNetVector) {
-	this->reserve(theFullNetVector.size());
+	reserve(theFullNetVector.size());
 	for( netId_t net_it = 0; net_it < theFullNetVector.size(); net_it++) {
 		(*this)[net_it] = theFullNetVector[net_it];
 	}
@@ -138,6 +118,17 @@ CVirtualLeakNetVector& CVirtualLeakNetVector::operator() (CVirtualNetVector& the
 		(*this)[net_it] = theFullNetVector[net_it];
 	}
 	return(*this);
+}
+*/
+
+CVirtualNetMappedVector::CVirtualNetMappedVector(mmap_allocator<CVirtualNet> theAllocator) :
+	mmappable_vector(theAllocator) {
+}
+
+void CVirtualNetMappedVector::operator= (CVirtualNetVector& theSourceVector) {
+	mmap_file(theSourceVector.size());
+	assign(theSourceVector.begin(), theSourceVector.end());
+	remmap_file_for_read();
 }
 
 void CVirtualNetVector::Set(netId_t theNetId, netId_t theNextNet, resistance_t theResistance, eventKey_t theTime) {

@@ -1,7 +1,7 @@
 /*
  * CModel.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -196,23 +196,23 @@ void CModel::Print(ostream & theLogFile, bool thePrintDeviceListFlag, string the
 	switch (type) {
 		case NMOS: case PMOS: case LDDN: case LDDP: {
 			theLogFile << " Vth=" << PrintParameter(Vth, VOLTAGE_SCALE);
-			if ( ! maxVdsDefinition.empty() ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
-			if ( ! maxVgsDefinition.empty() ) theLogFile << " Vgs=" << PrintToleranceParameter(maxVgsDefinition, maxVgs, VOLTAGE_SCALE);
-			if ( ! maxVbgDefinition.empty() ) theLogFile << " Vbg=" << PrintToleranceParameter(maxVbgDefinition, maxVbg, VOLTAGE_SCALE);
-			if ( ! maxVbsDefinition.empty() ) theLogFile << " Vbs=" << PrintToleranceParameter(maxVbsDefinition, maxVbs, VOLTAGE_SCALE);
+			if ( ! IsEmpty(maxVdsDefinition) ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
+			if ( ! IsEmpty(maxVgsDefinition) ) theLogFile << " Vgs=" << PrintToleranceParameter(maxVgsDefinition, maxVgs, VOLTAGE_SCALE);
+			if ( ! IsEmpty(maxVbgDefinition) ) theLogFile << " Vbg=" << PrintToleranceParameter(maxVbgDefinition, maxVbg, VOLTAGE_SCALE);
+			if ( ! IsEmpty(maxVbsDefinition) ) theLogFile << " Vbs=" << PrintToleranceParameter(maxVbsDefinition, maxVbs, VOLTAGE_SCALE);
 //			theLogFile << " R=" << PrintParameter(R, 1) << endl;
 			theLogFile << " R=" << resistanceDefinition;
 			break; }
 		case RESISTOR: {
-			if ( ! maxVdsDefinition.empty() ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
+			if ( ! IsEmpty(maxVdsDefinition) ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
 //			theLogFile << " R=" << PrintParameter(R, 1) << endl;
-			if ( ! resistanceDefinition.empty() ) theLogFile << " R=" << resistanceDefinition;
+			if ( ! IsEmpty(resistanceDefinition) ) theLogFile << " R=" << resistanceDefinition;
 			break; }
 		case FUSE_ON:
 		case FUSE_OFF:
 		case CAPACITOR:
 		case DIODE: {
-			if ( ! maxVdsDefinition.empty() ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
+			if ( ! IsEmpty(maxVdsDefinition) ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
 //			theLogFile << endl;
 			break; }
 		case BIPOLAR:
@@ -288,7 +288,7 @@ void CModelListMap::AddModel(string theParameterString) {
 			}
 		}
 		catch (const out_of_range& oor_exception) {
-			(*this)[myModelKey] = *(new CModelList);
+			//(*this)[myModelKey] = *(new CModelList);
 			(*this)[myModelKey].push_back(myNewModel);
 			(*this)[myModelKey].Vth = myNewModel.Vth;
 		}
@@ -381,19 +381,19 @@ returnCode_t CModelListMap::SetVoltageTolerances(teestream & theReportFile, CPow
 	for (CModelListMap::iterator modelList_pit = begin(); modelList_pit != end(); modelList_pit++) {
 		for (CModelList::iterator model_pit = modelList_pit->second.begin(); model_pit != modelList_pit->second.end(); model_pit++) {
 			try {
-				if ( ! model_pit->maxVbgDefinition.empty() ) {
+				if ( ! IsEmpty(model_pit->maxVbgDefinition) ) {
 					model_pit->maxVbg = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbgDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
 					if ( model_pit->maxVbg == UNKNOWN_VOLTAGE ) model_pit->validModel = false;
 				}
-				if ( ! model_pit->maxVbsDefinition.empty() ) {
+				if ( ! IsEmpty(model_pit->maxVbsDefinition) ) {
 					model_pit->maxVbs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbsDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
 					if ( model_pit->maxVbs == UNKNOWN_VOLTAGE ) model_pit->validModel = false;
 				}
-				if ( ! model_pit->maxVdsDefinition.empty() ) {
+				if ( ! IsEmpty(model_pit->maxVdsDefinition) ) {
 					model_pit->maxVds = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVdsDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
 					if ( model_pit->maxVds == UNKNOWN_VOLTAGE ) model_pit->validModel = false;
 				}
-				if ( ! model_pit->maxVgsDefinition.empty() ) {
+				if ( ! IsEmpty(model_pit->maxVgsDefinition) ) {
 					model_pit->maxVgs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVgsDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
 					if ( model_pit->maxVgs == UNKNOWN_VOLTAGE ) model_pit->validModel = false;
 				}

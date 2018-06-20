@@ -1,7 +1,7 @@
 /*
  * CCvcDb-utility.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -30,6 +30,8 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <sys/stat.h>
+#include <sys/mman.h>
 
 #include "CCircuit.hh"
 #include "CConnection.hh"
@@ -672,7 +674,7 @@ void CCvcDb::MapDeviceSourceDrainNets(deviceId_t theDeviceId, CFullConnection& t
 
 void CCvcDb::MapDeviceNets(CInstance * theInstance_p, CDevice * theDevice_p, CFullConnection& theConnections) {
 	theConnections.device_p = theDevice_p;
-	theConnections.deviceId = theInstance_p->firstDeviceId + theDevice_p->parent_p->localDeviceIdMap[theDevice_p->name];
+	theConnections.deviceId = theInstance_p->firstDeviceId + theDevice_p->offset;
 	SetConnections_(theConnections, theConnections.deviceId);
 	switch (theDevice_p->model_p->type) {
 		case NMOS: case PMOS: case LDDN: case LDDP: {
@@ -1020,28 +1022,16 @@ list<string> * CCvcDb::SplitHierarchy(string theFullPath) {
 void CCvcDb::SaveMinMaxLeakVoltages() {
 	leakVoltageSet = true;
 	cout << "Saving min/max voltages..." << endl;
-	minLeakNet_v(minNet_v);
-	maxLeakNet_v(maxNet_v);
+	minLeakNet_v = minNet_v;
+	maxLeakNet_v = maxNet_v;
 	leakVoltagePtr_v = netVoltagePtr_v;
 }
 
 void CCvcDb::SaveInitialVoltages() {
-// use minLeak/maxLeak as initial vectors
-//	initialMinNet_v = minNet_v;
-//	initialMaxNet_v = maxNet_v;
 	cout << "Saving simulation voltages..." << endl;
-	initialSimNet_v(simNet_v);
+	initialSimNet_v = simNet_v;
 	initialVoltagePtr_v = netVoltagePtr_v;
 }
-
-/*
-void CCvcDb::SaveLogicVoltages() {
-	logicMinNet_v = minNet_v;
-	logicMaxNet_v = maxNet_v;
-	logicSimNet_v = simNet_v;
-	logicVoltagePtr_v = netVoltagePtr_v;
-}
-*/
 
 list<string> * CCvcDb::ExpandBusNet(string theBusName) {
 	list<string> * myNetList = new(list<string>);
@@ -1191,8 +1181,8 @@ void CCvcDb::RemoveInvalidPower(netId_t theNetId, size_t & theRemovedCount) {
 		return;
 	}
 	if ( myMinVoltage == UNKNOWN_VOLTAGE || myMaxVoltage == UNKNOWN_VOLTAGE || myMinVoltage > myMaxVoltage ||
-		netStatus_v[theNetId][NEEDS_MIN_CHECK] || netStatus_v[theNetId][NEEDS_MAX_CHECK] ||
-		netStatus_v[theNetId][NEEDS_MIN_CONNECTION] || netStatus_v[theNetId][NEEDS_MAX_CONNECTION] ) {
+			netStatus_v[theNetId][NEEDS_MIN_CHECK] || netStatus_v[theNetId][NEEDS_MAX_CHECK] ||
+			netStatus_v[theNetId][NEEDS_MIN_CONNECTION] || netStatus_v[theNetId][NEEDS_MAX_CONNECTION] ) {
 		// invalid calculation
 		if (gDebug_cvc) cout << "INFO: Checking " << theNetId
 				<< " MIN/MAX_CHECK " << (netStatus_v[theNetId][NEEDS_MIN_CHECK] ? "1" : "0") << "|" << (netStatus_v[theNetId][NEEDS_MAX_CHECK] ? "1" : "0")
@@ -1230,6 +1220,9 @@ void CCvcDb::RemoveInvalidPower(netId_t theNetId, size_t & theRemovedCount) {
 				CheckResistorOverflow_(maxNet_v[theNetId].finalResistance, theNetId, logFile);
 			}
 		}
+		if ( ! leakVoltageSet || leakVoltagePtr_v[theNetId] != myPower_p ) {  // delete unless leak voltage
+				delete myPower_p;
+		}
 	}
 }
 
@@ -1240,4 +1233,72 @@ calculationType_t CCvcDb::GetCalculationType(CPower * thePower_p, eventQueue_t t
 	case MAX_QUEUE: { return thePower_p->maxCalculationType; break; }
 	default: return UNKNOWN_CALCULATION;
 	}
+}
+
+deviceId_t CCvcDb::GetSeriesConnectedDevice(deviceId_t theDeviceId, netId_t theNetId) {
+	modelType_t myDeviceType = deviceType_v[theDeviceId];
+	deviceId_t myReturnDevice = UNKNOWN_DEVICE;
+	for ( deviceId_t device_it = firstDrain_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
+		switch ( deviceType_v[device_it] ) {
+		case SWITCH_OFF: case FUSE_OFF: case CAPACITOR: case DIODE: case BIPOLAR: {
+			break;
+		}
+		default: {
+			if ( theDeviceId == device_it ) continue;
+			if ( deviceType_v[device_it] != myDeviceType ) return UNKNOWN_DEVICE;  // different type
+			if ( myReturnDevice != UNKNOWN_DEVICE ) return UNKNOWN_DEVICE;  // more than one
+			myReturnDevice = device_it;
+		}
+		}
+	}
+	for ( deviceId_t device_it = firstSource_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {
+		switch ( deviceType_v[device_it] ) {
+		case SWITCH_OFF: case FUSE_OFF: case CAPACITOR: case DIODE: case BIPOLAR: {
+			break;
+		}
+		default: {
+			if ( theDeviceId == device_it ) continue;
+			if ( deviceType_v[device_it] != myDeviceType ) return UNKNOWN_DEVICE;  // different type
+			if ( myReturnDevice != UNKNOWN_DEVICE ) return UNKNOWN_DEVICE;  // more than one
+			myReturnDevice = device_it;
+		}
+		}
+	}
+	return(myReturnDevice);
+}
+
+void CCvcDb::Cleanup() {
+	cvcParameters.cvcPowerPtrList.Clear(leakVoltagePtr_v, netVoltagePtr_v, netCount);  // defined power deleted here
+	int myDeleteCount = 0;
+	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+		if ( leakVoltagePtr_v.size() > net_it && leakVoltagePtr_v[net_it] && netVoltagePtr_v[net_it] != leakVoltagePtr_v[net_it] ) {  // unique leak power deleted here
+			if ( leakVoltagePtr_v[net_it]->extraData ) {
+				if ( gDebug_cvc ) cout << "DEBUG: extra data at net " << net_it << endl;
+			}
+			delete leakVoltagePtr_v[net_it];
+			myDeleteCount++;
+		}
+		if ( netVoltagePtr_v.size() > net_it && netVoltagePtr_v[net_it] ) {  // calculated power deleted here
+			if ( netVoltagePtr_v[net_it]->extraData ) {
+				if ( gDebug_cvc ) cout << "DEBUG: extra data at net " << net_it << endl;
+			}
+			delete netVoltagePtr_v[net_it];
+			myDeleteCount++;
+		}
+	}
+	if ( gDebug_cvc ) cout << "DEBUG: Deleted " << myDeleteCount << " power objects" << endl;
+	cvcParameters.cvcExpectedLevelPtrList.Clear();
+	cvcParameters.cvcPowerMacroPtrMap.Clear();
+	CPower::powerDefinitionText.Clear();
+	cvcParameters.cvcModelListMap.Clear();
+}
+
+deviceId_t CCvcDb::CountBulkConnections(netId_t theNetId) {
+	deviceId_t myDeviceCount = 0;
+	for (deviceId_t device_it = 0; device_it < deviceCount; device_it++) {
+		if ( bulkNet_v[device_it] == theNetId ) {
+			myDeviceCount++;
+		}
+	}
+	return myDeviceCount;
 }

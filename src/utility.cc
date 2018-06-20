@@ -1,7 +1,7 @@
 /*
  * utility.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -103,12 +103,12 @@ std::string RemoveCellNames(std::string thePath) {
 }
 
 char * CurrentTime() {
-	  time_t rawtime;
-	  struct tm * timeinfo;
+	time_t rawtime;
+	struct tm * timeinfo;
 
-	  time ( &rawtime );
-	  timeinfo = localtime ( &rawtime );
-	  return ( asctime (timeinfo) );
+	time ( &rawtime );
+	timeinfo = localtime ( &rawtime );
+	return ( asctime (timeinfo) );
 }
 
 std::list<string> * ParseEquation(std::string theEquation, std::string theDelimiters) {
@@ -153,7 +153,7 @@ std::list<string> * postfix(std::string theEquation) {
 		if ( myOperators.find(*string_pit) > myOperators.length() ) { // not an operator
 			myPostfixList_p->push_back(*string_pit);
 		} else if ( myOperatorStack.empty() || myOperatorStack.back() == "(" || *string_pit == "(" ) {
-			if ( *string_pit == "-" && ( myLastToken.empty() || myLastToken == "(" ) ) {
+			if ( *string_pit == "-" && ( IsEmpty(myLastToken) || myLastToken == "(" ) ) {
 				myPostfixList_p->push_back("0"); // for unary '-'
 			}
 			myOperatorStack.push_back(*string_pit);
@@ -256,6 +256,3 @@ bool IsAlphanumeric(std::string theString) {
 	}
 	return true;
 }
-
-
-

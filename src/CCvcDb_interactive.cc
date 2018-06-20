@@ -1,7 +1,7 @@
 /*
  * CCvcDb_interactive.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -107,7 +107,7 @@ void CCvcDb::FindInstances(string theSubcircuit, bool thePrintCircuitFlag) {
 				sort(mySearchList.begin(), mySearchList.end());
 				for ( size_t myIndex = 0; myIndex < mySearchList.size(); myIndex++ ) {
 					reportFile << mySearchList[myIndex] << endl;
-	 			}
+				}
 				reportFile << "Displayed " << mySearchList.size() << "/" << myMatchCount << " matches" << endl;
 			}
 		}
@@ -203,7 +203,7 @@ instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string the
 			}
 			catch (...) {
 			}
-			if ( ! myUnmatchedHierarchy.empty() ) {
+			if ( ! IsEmpty(myUnmatchedHierarchy) ) {
 				myInstanceName = myUnmatchedHierarchy + HIERARCHY_DELIMITER + myInstanceName;
 			}
 //			cerr << "searching for " << myInstanceName << endl;
@@ -215,7 +215,7 @@ instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string the
 			if ( myInstanceName == ".." ) {
 				theCurrentInstanceId = instancePtr_v[theCurrentInstanceId]->parentId;
 			} else {
-				myLocalInstanceId = instancePtr_v[theCurrentInstanceId]->master_p->localDeviceIdMap.at(cvcCircuitList.cdlText.GetTextAddress(myInstanceName));
+				myLocalInstanceId = instancePtr_v[theCurrentInstanceId]->master_p->GetLocalSubcircuitId(cvcCircuitList.cdlText.GetTextAddress(myInstanceName));
 				theCurrentInstanceId = instancePtr_v[theCurrentInstanceId]->firstSubcircuitId + myLocalInstanceId;
 			}
 			myUnmatchedHierarchy = "";
@@ -225,7 +225,7 @@ instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string the
 		}
 		myStringBegin = theHierarchy.find_first_not_of(HIERARCHY_DELIMITER, myStringEnd);
 	}
-	if ( myUnmatchedHierarchy.empty() || theAllowPartialMatch ) {
+	if ( IsEmpty(myUnmatchedHierarchy) || theAllowPartialMatch ) {
 		;  // For next searches, the last hierarchy may be part of a flattened hierarchy
 	} else {
 		theCurrentInstanceId = UNKNOWN_INSTANCE;
@@ -238,9 +238,11 @@ instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string the
 
 string CCvcDb::ShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag) {
 	string myShortString = "";
+/*
 	if ( isValidShortData && short_v[theNetId].first != UNKNOWN_NET && short_v[theNetId].first != theNetId ) {
 		myShortString += " shorted to " + NetName(short_v[theNetId].first, thePrintSubcircuitNameFlag) + short_v[theNetId].second;
 	}
+*/
 	if ( netVoltagePtr_v[theNetId] ) {
 //		myShortString = netVoltagePtr_v[myNetId]->PowerDefinition();
 		string myStandardDefinition = netVoltagePtr_v[theNetId]->StandardDefinition();
@@ -249,8 +251,8 @@ string CCvcDb::ShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag) {
 		} else {
 			myShortString += " defined as ";
 		}
-		if ( netVoltagePtr_v[theNetId]->definition != myStandardDefinition ) {
-			myShortString += netVoltagePtr_v[theNetId]->definition + " => ";
+		if ( string(netVoltagePtr_v[theNetId]->definition) != myStandardDefinition ) {
+			myShortString = myShortString + netVoltagePtr_v[theNetId]->definition + " => ";
 		}
 		myShortString += myStandardDefinition;
 	}
@@ -259,9 +261,11 @@ string CCvcDb::ShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag) {
 
 string CCvcDb::LeakShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag) {
 	string myShortString = "";
+/*
 	if ( isValidShortData && short_v[theNetId].first != UNKNOWN_NET && short_v[theNetId].first != theNetId ) {
 		myShortString += " shorted to " + NetName(short_v[theNetId].first, thePrintSubcircuitNameFlag) + short_v[theNetId].second;
 	}
+*/
 	if ( leakVoltagePtr_v[theNetId] ) {
 //	myShortString = netVoltagePtr_v[myNetId]->PowerDefinition();
 		string myStandardDefinition = leakVoltagePtr_v[theNetId]->StandardDefinition();
@@ -270,14 +274,13 @@ string CCvcDb::LeakShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag
 		} else {
 				myShortString += " defined as ";
 		}
-		if ( leakVoltagePtr_v[theNetId]->definition != myStandardDefinition ) {
-				myShortString += leakVoltagePtr_v[theNetId]->definition + " => ";
+		if ( string(leakVoltagePtr_v[theNetId]->definition) != myStandardDefinition ) {
+				myShortString = myShortString + leakVoltagePtr_v[theNetId]->definition + " => ";
 		}
 		myShortString += myStandardDefinition;
 	}
 return myShortString;
 }
-
 
 void CCvcDb::PrintNets(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag, bool theIsValidPowerFlag) {
 	CCircuit * myMasterCircuit_p = instancePtr_v[theCurrentInstanceId]->master_p;
@@ -313,7 +316,7 @@ void CCvcDb::PrintNets(instanceId_t theCurrentInstanceId, string theFilter, bool
 			}
 			myNetString.str("");
 			myNetString << mySignal_v[net_it] << myGlobalNet << ((theIsValidPowerFlag) ? ShortString(myGlobalNetId, thePrintSubcircuitNameFlag) : "");
-			if ( theFilter.empty() || regex_match(mySignal_v[net_it], mySearchPattern) ) {
+			if ( IsEmpty(theFilter) || regex_match(mySignal_v[net_it], mySearchPattern) ) {
 				if ( myMatchCount++ < cvcParameters.cvcSearchLimit ) {
 					mySearchList.push_back(myNetString.str());
 				}
@@ -350,7 +353,7 @@ void CCvcDb::PrintDevices(instanceId_t theCurrentInstanceId, string theFilter, b
 			}
 			myDeviceString.str("");
 			myDeviceString << (*device_ppit)->name << myParameters << " " << ((theIsValidModelFlag) ? (*device_ppit)->model_p->definition : "" );
-			if ( theFilter.empty() || regex_match((*device_ppit)->name, mySearchPattern) ) {
+			if ( IsEmpty(theFilter) || regex_match((*device_ppit)->name, mySearchPattern) ) {
 				if ( myMatchCount++ < cvcParameters.cvcSearchLimit ) {
 					mySearchList.push_back(myDeviceString.str());
 				}
@@ -385,7 +388,7 @@ void CCvcDb::PrintInstances(instanceId_t theCurrentInstanceId, string theFilter,
 			}
 			myInstanceString.str("");
 			myInstanceString << (*subcircuit_ppit)->name << myMasterName;
-			if ( theFilter.empty() || regex_match((*subcircuit_ppit)->name, mySearchPattern) ) {
+			if ( IsEmpty(theFilter) || regex_match((*subcircuit_ppit)->name, mySearchPattern) ) {
 				if ( myMatchCount++ < cvcParameters.cvcSearchLimit ) {
 					mySearchList.push_back(myInstanceString.str());
 				}
@@ -402,6 +405,7 @@ void CCvcDb::PrintInstances(instanceId_t theCurrentInstanceId, string theFilter,
 	}
 }
 
+/*
 void CCvcDb::ReadShorts(string theShortFileName) {
 	// TODO: make sure short output applies to current data base
 	igzstream myShortFile(theShortFileName);
@@ -435,6 +439,7 @@ void CCvcDb::ReadShorts(string theShortFileName) {
 		ResetVector<CShortVector>(short_v, netCount);
 	}
 }
+*/
 
 netId_t CCvcDb::FindNet(instanceId_t theCurrentInstanceId, string theNetName, bool theDisplayErrorFlag) {
 	instanceId_t myCurrentInstanceId;
@@ -490,7 +495,7 @@ deviceId_t CCvcDb::FindDevice(instanceId_t theCurrentInstanceId, string theDevic
 		CCircuit * myCircuit_p = instancePtr_v[myCurrentInstanceId]->master_p;
 		string myParentName = HierarchyName(myCurrentInstanceId, false) + HIERARCHY_DELIMITER;
 		myDeviceName = theDeviceName.substr(myParentName.length() - myInitialHierarchy.length());
-		return instancePtr_v[myCurrentInstanceId]->firstDeviceId + myCircuit_p->localDeviceIdMap.at(cvcCircuitList.cdlText.GetTextAddress(myDeviceName));
+		return instancePtr_v[myCurrentInstanceId]->firstDeviceId + myCircuit_p->GetLocalSubcircuitId(cvcCircuitList.cdlText.GetTextAddress(myDeviceName));
 	}
 	catch (const out_of_range& oor_exception) {
 		reportFile << "Could not find device " << HierarchyName(myCurrentInstanceId) << HIERARCHY_DELIMITER << myDeviceName << endl;
@@ -504,7 +509,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 	char myInputBuffer[1024];
 	istringstream myInputStream;
 	string	myCommand;
-	string 	myOption;
+	string	myOption;
 	string	myHierarchy;
 	string	myFilter;
 	string	mySubcircuit;
@@ -578,7 +583,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				if ( mySavedBufferStack.empty() ) {
 					myIsBatchInput = false;
 				}
-			} else if ( myCommandMode.empty() ){
+			} else if ( IsEmpty(myCommandMode) ){
 				gInteractive_cvc = false;
 				cin.clear();
 				myReturnCode = OK;
@@ -595,19 +600,19 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 			myInputStream.str(myInputLine);
 			myInputStream.clear();
 //			cout << "stream = " << myInputStream.str() << endl;
-			if ( myCommandMode.empty() ) {
+			if ( IsEmpty(myCommandMode) ) {
 				if ( ! (myInputStream >> myCommand) ) continue;
 			} else {
 				myCommand = myCommandMode;
 			}
 //			cout << "command = " << myCommand << endl;
-			if ( myCommand == "findsubcircuit" || myCommand == "fs"  ) {
+			if ( myCommand == "findsubcircuit" || myCommand == "fs" ) {
 				if ( myInputStream >> mySubcircuit ) {
 					FindInstances(mySubcircuit, myPrintSubcircuitNameFlag);
 				} else {
 					myCommandMode = "fs";
 				}
-			} else if ( myCommand == "findnet" || myCommand == "fn"  ) {
+			} else if ( myCommand == "findnet" || myCommand == "fn" ) {
 				if ( myInputStream >> myName ) {
 					FindNets(myName, myCurrentInstanceId, myPrintSubcircuitNameFlag);
 				} else {
@@ -709,7 +714,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				}
 				if ( modelFileStatus == OK ) {
 					fuseFileStatus = CheckFuses();
-				} else if ( ! cvcParameters.cvcFuseFilename.empty() ){
+				} else if ( ! IsEmpty(cvcParameters.cvcFuseFilename) ){
 					reportFile << "WARNING: fuse file not checked due to invalid model file" << endl;
 					fuseFileStatus = SKIP;
 				}
@@ -735,7 +740,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				cvcParameters.cvcFuseFilename = myFileName;
 				if ( modelFileStatus == OK ) {
 					fuseFileStatus = CheckFuses();
-				} else if ( ! cvcParameters.cvcFuseFilename.empty() ){
+				} else if ( ! IsEmpty(cvcParameters.cvcFuseFilename) ){
 					reportFile << "WARNING: fuse file not checked due to invalid model file" << endl;
 					fuseFileStatus = SKIP;
 				}
@@ -896,36 +901,45 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 							reportFile << " connections: gate " << connectionCount_v[myEquivalentNetId].gateCount;
 							reportFile << " source " << connectionCount_v[myEquivalentNetId].sourceCount;
 							reportFile << " drain " << connectionCount_v[myEquivalentNetId].drainCount;
-							reportFile << " bulk " << connectionCount_v[myEquivalentNetId].bulkCount << endl;
+							reportFile << " bulk " << CountBulkConnections(myEquivalentNetId) << endl;
 						}
 						string mySimpleName = NetName(myEquivalentNetId, PRINT_CIRCUIT_OFF);
 						if ( leakVoltageSet && leakVoltagePtr_v[myEquivalentNetId] && leakVoltagePtr_v[myEquivalentNetId] != netVoltagePtr_v[myEquivalentNetId] ) {
-							reportFile << " leak definition " << leakVoltagePtr_v[myEquivalentNetId]->powerSignal << LeakShortString(myEquivalentNetId, myPrintSubcircuitNameFlag) << endl;
+							reportFile << " leak definition " << leakVoltagePtr_v[myEquivalentNetId]->powerSignal() << LeakShortString(myEquivalentNetId, myPrintSubcircuitNameFlag) << endl;
 						}
 						if ( powerFileStatus == OK && netVoltagePtr_v[myEquivalentNetId] ) {
-							if ( netVoltagePtr_v[myEquivalentNetId]->powerSignal != mySimpleName ) {
-								reportFile << " base definition " << netVoltagePtr_v[myEquivalentNetId]->powerSignal;
+							if ( netVoltagePtr_v[myEquivalentNetId]->powerSignal() != mySimpleName ) {
+								reportFile << " base definition " << netVoltagePtr_v[myEquivalentNetId]->powerSignal();
 							}
 							reportFile << ShortString(myEquivalentNetId, myPrintSubcircuitNameFlag) << endl;
 						}
 						reportFile << endl;
 						if ( theCurrentStage >= STAGE_COMPLETE ) {
-							if ( minLeakNet_v[myEquivalentNetId].nextNetId != myNetId ) 	PrintVirtualNet<CVirtualLeakNetVector>(minLeakNet_v, myNetId, "Initial min path", reportFile);
-							if ( maxLeakNet_v[myEquivalentNetId].nextNetId != myNetId ) 	PrintVirtualNet<CVirtualLeakNetVector>(maxLeakNet_v, myNetId, "Initial max path", reportFile);
+							if ( minLeakNet_v[myEquivalentNetId].nextNetId != myNetId )
+								PrintVirtualNet<CVirtualNetMappedVector>(minLeakNet_v, myNetId, "Initial min path", reportFile);
+							if ( maxLeakNet_v[myEquivalentNetId].nextNetId != myNetId )
+								PrintVirtualNet<CVirtualNetMappedVector>(maxLeakNet_v, myNetId, "Initial max path", reportFile);
 						}
 						if ( theCurrentStage >= STAGE_SECOND_SIM ) {
-							if ( initialSimNet_v[myEquivalentNetId].nextNetId != myNetId ) 	PrintVirtualNet<CBaseVirtualNetVector>(initialSimNet_v, myNetId, "Initial sim path", reportFile);
+							if ( initialSimNet_v[myEquivalentNetId].nextNetId != myNetId )
+								PrintVirtualNet<CVirtualNetMappedVector>(initialSimNet_v, myNetId, "Initial sim path", reportFile);
 	/* 3pass
-							if ( logicMinNet_v[myNetId].nextNetId != myNetId ) 	PrintVirtualNet(logicMinNet_v, myNetId, "Logic min path", cout);
-							if ( logicMaxNet_v[myNetId].nextNetId != myNetId ) 	PrintVirtualNet(logicMaxNet_v, myNetId, "Logic max path", cout);
-							if ( logicSimNet_v[myNetId].nextNetId != myNetId ) 	PrintVirtualNet(logicSimNet_v, myNetId, "Logic sim path", cout);
+							if ( logicMinNet_v[myNetId].nextNetId != myNetId )
+								PrintVirtualNet(logicMinNet_v, myNetId, "Logic min path", cout);
+							if ( logicMaxNet_v[myNetId].nextNetId != myNetId )
+								PrintVirtualNet(logicMaxNet_v, myNetId, "Logic max path", cout);
+							if ( logicSimNet_v[myNetId].nextNetId != myNetId )
+								PrintVirtualNet(logicSimNet_v, myNetId, "Logic sim path", cout);
 	*/
 						}
 						if ( theCurrentStage >= STAGE_RESISTANCE ) {
 
-							if ( minNet_v[myEquivalentNetId].nextNetId != myNetId ) 	PrintVirtualNet<CVirtualNetVector>(minNet_v, myNetId, "Min path", reportFile);
-							if ( maxNet_v[myEquivalentNetId].nextNetId != myNetId ) 	PrintVirtualNet<CVirtualNetVector>(maxNet_v, myNetId, "Max path", reportFile);
-							if ( simNet_v[myEquivalentNetId].nextNetId != myNetId ) 	PrintVirtualNet<CVirtualNetVector>(simNet_v, myNetId, "Sim path", reportFile);
+							if ( minNet_v[myEquivalentNetId].nextNetId != myNetId )
+								PrintVirtualNet<CVirtualNetVector>(minNet_v, myNetId, "Min path", reportFile);
+							if ( maxNet_v[myEquivalentNetId].nextNetId != myNetId )
+								PrintVirtualNet<CVirtualNetVector>(maxNet_v, myNetId, "Max path", reportFile);
+							if ( simNet_v[myEquivalentNetId].nextNetId != myNetId )
+								PrintVirtualNet<CVirtualNetVector>(simNet_v, myNetId, "Sim path", reportFile);
 						}
 					}
 				} else {
@@ -984,7 +998,7 @@ void CCvcDb::DumpFuses(string theFileName) {
 				for (CDevice * device_pit = model_pit->firstDevice_p; device_pit != NULL; device_pit = device_pit->nextDevice_p) {
 					CCircuit * myParent_p = device_pit->parent_p;
 					for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
-						myDumpFile << DeviceName(instancePtr_v[myParent_p->instanceId_v[instance_it]]->firstDeviceId + myParent_p->localDeviceIdMap[device_pit->name]) << " " << gModelTypeMap[model_pit->type] << endl;
+						myDumpFile << DeviceName(instancePtr_v[myParent_p->instanceId_v[instance_it]]->firstDeviceId + device_pit->offset) << " " << gModelTypeMap[model_pit->type] << endl;
 						myFuseCount++;
 					}
 				}
@@ -996,7 +1010,7 @@ void CCvcDb::DumpFuses(string theFileName) {
 }
 
 returnCode_t CCvcDb::CheckFuses() {
-	if ( cvcParameters.cvcFuseFilename.empty() ) return (OK);
+	if ( IsEmpty(cvcParameters.cvcFuseFilename) ) return (OK);
 	ifstream myFuseFile(cvcParameters.cvcFuseFilename);
 	if ( myFuseFile.fail() ) {
 		reportFile << "ERROR: Could not open fuse file: " << cvcParameters.cvcFuseFilename << endl;
@@ -1077,7 +1091,7 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 	}
 	for ( netId_t macro_it = 0; macro_it < CPower::powerCount; macro_it++ ) {
 		if ( myMacroPtr_v[macro_it] ) {
-			myPowerFile << "#define " << myMacroPtr_v[macro_it]->powerSignal << " " << myMacroPtr_v[macro_it]->definition << endl;
+			myPowerFile << "#define " << myMacroPtr_v[macro_it]->powerSignal() << " " << myMacroPtr_v[macro_it]->definition << endl;
 		}
 	}
 	CInstance * myInstance_p = instancePtr_v[theInstanceId];
@@ -1091,8 +1105,8 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 	for ( netId_t net_it = 0; net_it < myInstance_p->master_p->portCount; net_it++ ) {
 		netId_t myGlobalNetId = GetEquivalentNet(myInstance_p->localToGlobalNetId_v[net_it]);
 		CPower * myPower_p = netVoltagePtr_v[myGlobalNetId];
-		if ( myPower_p && ! myPower_p->powerSignal.empty() ) {
-			string myDefinition = myPower_p->definition.substr(0, myPower_p->definition.find(" calculation=>"));
+		if ( myPower_p && ! IsEmpty(myPower_p->powerSignal()) ) {
+			string myDefinition = string(myPower_p->definition).substr(0, string(myPower_p->definition).find(" calculation=>"));
 			myPowerFile << mySignals_v[net_it] << myDefinition << endl;
 		} else {
 			CDeviceCount myDeviceCounts(myGlobalNetId, this, theInstanceId);
@@ -1135,7 +1149,7 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 				}
 			}
 			netId_t mySimNetId = simNet_v[myGlobalNetId].finalNetId;
-			if ( myMinPower_p  && myMinPower_p->minVoltage != UNKNOWN_VOLTAGE ) {
+			if ( myMinPower_p && myMinPower_p->minVoltage != UNKNOWN_VOLTAGE ) {
 				myPowerFile << " min@" << PrintParameter(myMinPower_p->minVoltage, VOLTAGE_SCALE);
 			}
 			if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId] && netVoltagePtr_v[mySimNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
@@ -1153,8 +1167,8 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 	// print internal definitions
 	netId_t myFirstNetId = myInstance_p->firstNetId;
 	for ( netId_t net_it = myFirstNetId; net_it < netCount && IsSubcircuitOf(netParent_v[net_it], theInstanceId); net_it++ ) {
-		if ( netVoltagePtr_v[net_it] && ! netVoltagePtr_v[net_it]->powerSignal.empty() ) {
-			myPowerFile << netVoltagePtr_v[net_it]->powerSignal << " " << netVoltagePtr_v[net_it]->definition << endl;
+		if ( netVoltagePtr_v[net_it] && ! IsEmpty(netVoltagePtr_v[net_it]->powerSignal()) ) {
+			myPowerFile << netVoltagePtr_v[net_it]->powerSignal() << " " << netVoltagePtr_v[net_it]->definition << endl;
 		}
 	}
 	cout << "Wrote debug power file " << thePowerFileName << endl;
