@@ -7,7 +7,7 @@
       HistoryTextInput: Implements text input with history and clear.
       SummaryWidget: Root widget handles filters, error totals, error displays and buttons.
 
-    Copyright 2106, 2017 D. Mitch Bailey  cvc at shuharisystem dot com
+    Copyright 2016, 2017 D. Mitch Bailey  cvc at shuharisystem dot com
 
     This file is part of check_cvc.
 

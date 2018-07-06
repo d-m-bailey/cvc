@@ -1054,13 +1054,13 @@ string CCvcDb::AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDevice
 	}
 	if ( theVoltage == UNKNOWN_VOLTAGE ) return("");
 	if ( myMinTargetVoltage != UNKNOWN_VOLTAGE && theVoltage < myMinTargetVoltage ) {
-		myCalculation += " Limited sim to min";
-		if ( thePropagationType != POWER_NETS_ONLY  && myOriginalVoltage < myMinTargetVoltage ) ReportSimShort(theDeviceId, theVoltage, myMinTargetVoltage, myCalculation);
+		myCalculation = " Limited sim to min" + myCalculation;
+		if ( thePropagationType != POWER_NETS_ONLY && myOriginalVoltage < myMinTargetVoltage ) ReportSimShort(theDeviceId, theVoltage, myMinTargetVoltage, myCalculation);
 		// voltage drops in first pass are skipped, only report original voltage limits
 		theVoltage = myMinTargetVoltage;
 	}
 	if ( myMaxTargetVoltage != UNKNOWN_VOLTAGE && theVoltage > myMaxTargetVoltage ) {
-		myCalculation += " Limited sim to max";
+		myCalculation = " Limited sim to max" + myCalculation;
 		if ( thePropagationType != POWER_NETS_ONLY && myOriginalVoltage > myMaxTargetVoltage ) ReportSimShort(theDeviceId, theVoltage, myMaxTargetVoltage, myCalculation);
 			// voltage drops in first pass are skipped, only report original voltage limits
 		theVoltage = myMaxTargetVoltage;

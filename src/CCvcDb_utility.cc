@@ -73,7 +73,7 @@ voltage_t CCvcDb::MinVoltage(netId_t theNetId, bool theSkipHiZFlag) {
 }
 
 voltage_t CCvcDb::MinSimVoltage(netId_t theNetId) {
-	// limit min value to sim value
+	// limit min value to calculated sim value
 	if ( theNetId != UNKNOWN_NET ) {
 		static CVirtualNet myVirtualNet;
 		assert(theNetId == GetEquivalentNet(theNetId));
@@ -93,8 +93,9 @@ voltage_t CCvcDb::MinSimVoltage(netId_t theNetId) {
 			netId_t myNetId = theNetId;
 			while ( myNetId != minNet_v[myNetId].nextNetId ) {
 				myNetId = minNet_v[myNetId].nextNetId;
-				if ( netVoltagePtr_v[myNetId] && netVoltagePtr_v[myNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
-					return ((myMinVoltage == UNKNOWN_VOLTAGE) ? netVoltagePtr_v[myNetId]->simVoltage : max(netVoltagePtr_v[myNetId]->simVoltage, myMinVoltage));
+				CPower * myPower_p = netVoltagePtr_v[myNetId];
+				if ( myPower_p && myPower_p->type[SIM_CALCULATED_BIT] && myPower_p->simVoltage != UNKNOWN_VOLTAGE ) {
+					return ((myMinVoltage == UNKNOWN_VOLTAGE) ? myPower_p->simVoltage : max(myPower_p->simVoltage, myMinVoltage));
 				}
 			}
 			return myMinVoltage;
@@ -254,7 +255,7 @@ voltage_t CCvcDb::MaxVoltage(netId_t theNetId, bool theSkipHiZFlag) {
 }
 
 voltage_t CCvcDb::MaxSimVoltage(netId_t theNetId) {
-	// limit max value to sim value
+	// limit max value to calculated sim value
 	if ( theNetId != UNKNOWN_NET ) {
 		static CVirtualNet myVirtualNet;
 		assert(theNetId == GetEquivalentNet(theNetId));
@@ -274,8 +275,9 @@ voltage_t CCvcDb::MaxSimVoltage(netId_t theNetId) {
 			netId_t myNetId = theNetId;
 			while ( myNetId != maxNet_v[myNetId].nextNetId ) {
 				myNetId = maxNet_v[myNetId].nextNetId;
-				if ( netVoltagePtr_v[myNetId] && netVoltagePtr_v[myNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
-					return ((myMaxVoltage == UNKNOWN_VOLTAGE) ? netVoltagePtr_v[myNetId]->simVoltage : min(netVoltagePtr_v[myNetId]->simVoltage, myMaxVoltage));
+				CPower * myPower_p = netVoltagePtr_v[myNetId];
+				if ( myPower_p && myPower_p->type[SIM_CALCULATED_BIT] && myPower_p->simVoltage != UNKNOWN_VOLTAGE ) {
+					return ((myMaxVoltage == UNKNOWN_VOLTAGE) ? myPower_p->simVoltage : min(myPower_p->simVoltage, myMaxVoltage));
 				}
 			}
 			return myMaxVoltage;
@@ -1119,6 +1121,8 @@ size_t CCvcDb::InstanceDepth(instanceId_t theInstanceId) {
 }
 
 bool CCvcDb::IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId) {
+//	cout << "Instance:parent " << theInstanceId << ":" << instancePtr_v[theInstanceId]->parentId << endl;
+	if ( theParentId == 0 ) return true;  // everything is subcircuit of root
 	if ( theInstanceId == theParentId ) return true;
 	if ( instancePtr_v[theInstanceId]->parentId == theParentId ) return true;
 	size_t myCount = 0;
@@ -1301,4 +1305,37 @@ deviceId_t CCvcDb::CountBulkConnections(netId_t theNetId) {
 		}
 	}
 	return myDeviceCount;
+}
+
+bool CCvcDb::IsAnalogNet(netId_t theNetId) {
+	bool myIsAnalogNet = false;
+	deviceId_t device_it = firstSource_v[theNetId];
+	while ( ! myIsAnalogNet && device_it != UNKNOWN_DEVICE ) {
+		if ( GetEquivalentNet(drainNet_v[device_it]) != theNetId ) {
+			switch( deviceType_v[device_it] ) {
+			case NMOS: case LDDN: case PMOS: case LDDP: {
+				if ( GetEquivalentNet(gateNet_v[device_it]) == theNetId) myIsAnalogNet = true;
+				break;
+			}
+			case RESISTOR: { myIsAnalogNet = true; break; }
+			default: break;
+			}
+		}
+		device_it = nextSource_v[device_it];
+	}
+	device_it = firstDrain_v[theNetId];
+	while ( ! myIsAnalogNet && device_it != UNKNOWN_DEVICE ) {
+		if ( GetEquivalentNet(sourceNet_v[device_it]) != theNetId ) {
+			switch( deviceType_v[device_it] ) {
+			case NMOS: case LDDN: case PMOS: case LDDP: {
+				if ( GetEquivalentNet(gateNet_v[device_it]) == theNetId) myIsAnalogNet = true;
+				break;
+			}
+			case RESISTOR: { myIsAnalogNet = true; break; }
+			default: break;
+			}
+		}
+		device_it = nextDrain_v[device_it];
+	}
+	return (myIsAnalogNet);
 }

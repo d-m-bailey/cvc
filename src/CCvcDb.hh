@@ -359,6 +359,7 @@ public:
 	deviceId_t GetSeriesConnectedDevice(deviceId_t theDeviceId, netId_t theNetId);
 	void Cleanup();
 	deviceId_t CountBulkConnections(netId_t theNetId);
+	bool IsAnalogNet(netId_t theNetId);
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);
@@ -432,6 +433,8 @@ public:
 	deviceId_t FindDevice(instanceId_t theCurrentInstanceId, string theDeviceName);
 	returnCode_t InteractiveCvc(int theCurrentStage);
 	void DumpFuses(string theFileName);
+	void DumpAnalogNets(string theFileName, bool thePrintCircuitFlag);
+	void DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag);
 	returnCode_t CheckFuses();
 	void CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInstanceId, string theMode, int theCurrentStage);
 	void PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerFileName, int theCurrentStage);

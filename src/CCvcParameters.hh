@@ -43,6 +43,7 @@ public:
 	const bool defaultSOI = false;
 	const bool defaultSCRC = false;
 	const bool defaultVthGates = false;
+	const bool defaultMinVthGates = false;
 	const bool defaultLeakOvervoltage = true;
 	const bool defaultLogicDiodes = false;
 	const voltage_t defaultErrorThreshold = 0;
@@ -73,6 +74,7 @@ public:
 	bool	cvcSOI = defaultSOI;
 	bool	cvcSCRC = defaultSCRC;
 	bool	cvcVthGates = defaultVthGates;
+	bool    cvcMinVthGates = defaultMinVthGates;
 	bool	cvcLeakOvervoltage = defaultLeakOvervoltage;
 	bool	cvcLogicDiodes = defaultLogicDiodes;
 	voltage_t	cvcShortErrorThreshold = defaultErrorThreshold;
@@ -80,6 +82,7 @@ public:
 	voltage_t	cvcForwardErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcGateErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcLeakErrorThreshold = defaultErrorThreshold;
+	voltage_t	cvcExpectedErrorThreshold = defaultErrorThreshold;
 
 	string	cvcLastTopBlock;
 	string	cvcLastNetlistFilename;

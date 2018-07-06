@@ -288,6 +288,17 @@ bool CPower::IsSamePower(CPower * theMatchPower) {
 			relativeFriendly == theMatchPower->relativeFriendly);
 }
 
+bool CPower::IsValidSubset(CPower * theMatchPower, voltage_t theThreshold) {
+	return ( theMatchPower->type == NO_TYPE &&
+			abs(minVoltage - theMatchPower->minVoltage) <= theThreshold &&
+			abs(simVoltage - theMatchPower->simVoltage) <= theThreshold &&
+			abs(maxVoltage - theMatchPower->maxVoltage) <= theThreshold &&
+			theMatchPower->expectedMin() == "" &&
+			theMatchPower->expectedSim() == "" &&
+			theMatchPower->expectedMax() == "" &&
+			theMatchPower->family() == "");
+}
+
 void CPowerFamilyMap::AddFamily(string thePowerString) {
 	// Valid power family definitions
 	// family vdd VDD,VSS,...		<- family definition
