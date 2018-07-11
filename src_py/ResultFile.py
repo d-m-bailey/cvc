@@ -1,6 +1,6 @@
 """ ResultFile.py: Read and process error file data class
 
-    Copyright 2016, 2017 D. Mitch Bailey  cvc at shuharisystem dot com
+    Copyright 2016-2018 D. Mitch Bailey  cvc at shuharisystem dot com
 
     This file is part of check_cvc.
 
@@ -218,7 +218,7 @@ class ResultFile():
         """
         myMatch = re.search(
            "(?:.*:)?(.*) INFO.*SUBCKT ([^\)]*\))([^ ]*) error count ([0-9]+)/([0-9]+)", 
-           theError['errorText']
+           theError['text']
         )  # parse the error text string to get
            # (1) section, (2) top cell name, (3) device name, (4) error count, (5) cell count
         if not myMatch:
@@ -253,11 +253,11 @@ class ResultFile():
         """
         myMatch = re.search(
            "(?:.*:)?(.*) INFO.*SUBCKT ([^\)]*\))([^ ]*) error count ([0-9]+)/([0-9]+)", 
-           theError['errorText']
+           theError['text']
         )  # parse the error text string to get
            # (1) section, (2) top cell name, (3) device name, (4) error count, (5) cell count
         if not myMatch:
-            return theError['errorText']  # display the error text as is
+            return theError['text']  # display the error text as is
         myErrorRecord = cvc_globals.errorList[cvc_globals.priorityMap[myMatch.group(1)]]
         mySectionRE = re.compile(myErrorRecord['searchText'])
         myDeviceRE = None

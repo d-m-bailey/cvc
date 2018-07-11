@@ -1,6 +1,6 @@
 """ SummaryApp.py: Kivy App class for check_cvc.
 
-    Copyright 2016 D. Mitch Bailey  cvc at shuharisystem dot com
+    Copyright 2016-2018 D. Mitch Bailey  cvc at shuharisystem dot com
 
     This file is part of check_cvc.
 

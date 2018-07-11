@@ -7,7 +7,7 @@
       HistoryTextInput: Implements text input with history and clear.
       SummaryWidget: Root widget handles filters, error totals, error displays and buttons.
 
-    Copyright 2016, 2017 D. Mitch Bailey  cvc at shuharisystem dot com
+    Copyright 2106-2018 D. Mitch Bailey  cvc at shuharisystem dot com
 
     This file is part of check_cvc.
 
@@ -47,13 +47,14 @@ from kivy.event import EventDispatcher
 from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
-from kivy.uix.listview import ListView, ListItemButton
+from kivy.uix.recycleview import RecycleView
+from kivy.uix.recycleview.views import RecycleDataViewBehavior
+from kivy.uix.recycleview.layout import LayoutSelectionBehavior
+from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.button import Button
 from kivy.uix.popup import Popup
-from kivy.uix.selectableview import SelectableView
 from kivy.uix.spinner import Spinner
 from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelHeader
-from kivy.adapters.listadapter import ListAdapter
 from kivy.graphics import Color
 from kivy.core.window import Window
 from kivy.core.clipboard import Clipboard
@@ -64,14 +65,12 @@ from kivy.properties import BooleanProperty
 from kivy.factory import Factory
 from kivy.config import Config
 
-class SummaryListItem(SelectableView, BoxLayout):
+class SummaryListItem(RecycleDataViewBehavior, BoxLayout):
     """Selectable error list item.
 
     Instance variables:
-      errorText: One line of error display text including leading '!' or '*'.
-      is_selected: True if selected.
+      selected: True if selected.
       index: The number of this item in filtered list.
-      parentView: The parent listview.
       type: The type of error ('checked', 'unchecked', 'uncommited', 'unmatched', 'comment').
       baseIndex: The number of this item in display list.
     Methods:
@@ -80,15 +79,16 @@ class SummaryListItem(SelectableView, BoxLayout):
       ChangeSelection: Toggle selected status.
       DragSelect: Select/deselect list item.
     """
-    def __init__(self, **kwargs):
-        """Create instance from filteredList item."""
-        super(SummaryListItem, self).__init__()
-        self.errorText = kwargs['errorText']
-        self.is_selected = kwargs['is_selected']
-        self.index = kwargs['index']
-        self.parentView = kwargs['parentView']
-        self.type = kwargs['type']
-        self.baseIndex = kwargs['baseIndex']
+    selected = BooleanProperty(False)
+    index = None
+    text = StringProperty("dummy")
+    type = None
+    baseIndex = None
+
+    def refresh_view_attrs(self, rv, index, data):
+        ''' Catch and handle the view changes '''
+        self.index = index
+        return super(SummaryListItem, self).refresh_view_attrs(rv, index, data)
 
     def TouchListItem(self, theTouch, theRoot, theIndex):
         """Handle error selection.
@@ -105,38 +105,45 @@ class SummaryListItem(SelectableView, BoxLayout):
           parentView.selectType: Current selection type.
         """
         if 'button' in theTouch.profile and theTouch.button != 'left':
-            return  # ignore middle, right clicks
+            return False # ignore middle, right clicks
         if 'control' in theRoot.modifiers:
             theRoot.SetCellFilter(theIndex)
+            return True
         if 'shift' in theRoot.modifiers:
             theRoot.ViewDetails(theIndex)
+            return True
         if not theRoot.modifiers:  # Change selection.
-            theTouch.grab(self.parentView)
-            myAdapter = self.parentView.adapter
-            if self.is_selected:
-                self.parentView.selectMode = 'deselect'
+            theTouch.grab(self.parent)
+            if self.selected:
+                self.parent.selectMode = 'deselect'
             else:
-                self.parentView.selectMode = 'select'
-                if len(myAdapter.selection) == 1 and self.type != self.parentView.selectType:
+                self.parent.selectMode = 'select'
+                if (len(self.parent.selected_nodes) == 1
+                    and self.type != self.parent.selectType):
                     # unselect and reset selection type
-                    myAdapter.handle_selection(myAdapter.selection[0])
-                if not myAdapter.selection:
-                    self.parentView.selectType = self.type
-            self.DragSelect()
+                    self.parent.select_with_touch(self.parent.selected_nodes[0], theTouch)
+                if not self.parent.selected_nodes:
+                    self.parent.selectType = self.type
+            self.DragSelect(theTouch, theCheckGrabFlag = False)
+            return True
 
-    def DragSelect(self):
+    def DragSelect(self, theTouch, theCheckGrabFlag = True):
         """Select/deselect list item.
 
         Select only lines of the same 'type' ('checked', 'unmatched', etc.).
         """
-        myAdapter = self.parentView.adapter
-        if (self.parentView.selectMode == 'select' and not self.is_selected
-                and self.type == self.parentView.selectType):
-            myAdapter.handle_selection(self.errorRef)
-        elif self.parentView.selectMode == 'deselect' and self.is_selected:
-            myAdapter.handle_selection(self.errorRef)
-        myAdapter.dispatch('on_selection_change')
+        if theCheckGrabFlag and theTouch.grab_current != self.parent:
+            # When called from TouchListItem, grab_current has not been set, so skip check.
+            return
+        if (self.parent.selectMode == 'select' and not self.selected
+                and self.type == self.parent.selectType):
+            self.parent.select_with_touch(self.index, theTouch)
+        elif self.parent.selectMode == 'deselect' and self.selected:
+            self.parent.select_with_touch(self.index, theTouch)
 
+    def apply_selection(self, theParent, theIndex, theSelectedFlag):
+        """ Respond to the selection of items in the view. """
+        self.selected = theSelectedFlag
 
 class SummaryTabContent(BoxLayout):
     """Tabbed panel content for a single report.
@@ -287,9 +294,10 @@ class SummaryTabContent(BoxLayout):
     def _FinishRedisplay(self, dt):
         """Redisplay counts and errors, and release screen."""
         myFilteredList = self.filteredList
-        self.listRef.adapter.data = [
-            {'errorText': myFilteredList[index]['display_text'],
-             'is_selected': False,
+        self.listRef.data = [
+            {'text': myFilteredList[index]['display_text'],
+             'selected': False,
+             'index': index,
              'type': myFilteredList[index]['type'],
              'baseIndex': myFilteredList[index]['baseIndex']}
             for index in range(len(myFilteredList))]
@@ -300,11 +308,11 @@ class SummaryTabContent(BoxLayout):
         self.root.DeselectAll()  # resets button status
         self.root.workingPopupRef.dismiss()
 
-    def FinishSelection(self, theTouch, theListView):
+    def FinishSelection(self, theTouch, theList, theView):
         """Reset buttons after finishing selection."""
-        self.root.EnableButtons(theListView.adapter)
-        theListView.selectMode = ""
-        theTouch.ungrab(theListView)
+        self.root.EnableButtons(theList, theView)
+        theList.selectMode = ""
+        theTouch.ungrab(theView)
 
 
 class ReferenceModeButton(Button):
@@ -384,6 +392,35 @@ class HistoryTextInput(BoxLayout):
             self.undoList.append(theTextRef.text)
         if not theHasFocusFlag and theRedisplayFlag:
             self.root.currentContent.RedisplayErrors()
+
+
+class FixedTabbedPanel(TabbedPanel):
+    """Fixes problem with tabbed panel exceeding window with causing scrolling in
+    tabbed panel heading.
+    """
+
+    def __init__(self, **kwargs):
+        super(FixedTabbedPanel, self).__init__(**kwargs)
+
+    def _update_tab_width(self, *l):
+        if self.tab_width:
+            for tab in self.tab_list:
+                tab.size_hint_x = 1
+            tsw = self.tab_width * min(len(self._tab_strip.children), self._tab_strip.cols) 
+        else:
+            # tab_width = None
+            tsw = 0
+            for tab in self.tab_list:
+                if tab.size_hint_x:
+                    # size_hint_x: x/.xyz
+                    tab.size_hint_x = 1
+                    # drop to default tab_width
+                    tsw += 100
+                else:
+                    # size_hint_x: None
+                    tsw += tab.width
+        self._tab_strip.width = tsw
+        self._reposition_tabs()
 
 
 class SummaryWidget(Widget):
@@ -645,15 +682,16 @@ class SummaryWidget(Widget):
 
         self.replaceReferencePopupRef.dismiss()
         myContent = self.currentContent
-        myAdapter = myContent.listRef.adapter
+        myList = myContent.listRef
+        myView = myContent.viewRef
         myDisplayList = myContent.report.displayList
         self._AddUndo(myContent, myDisplayList)
         myReference = self.ids.referenceText_id.textRef.text.strip()
         myEndOfReferenceRE = re.compile(r"\] .*")
         if not myReference.startswith("["):
             myReference = "[" + myReference + "]"
-        for record_it in myAdapter.selection:
-            myData = myAdapter.get_data_item(record_it.index)
+        for record_it in myView.selected_nodes:
+            myData = myList.data[record_it]
             myIndex = myData['baseIndex']
             myDisplayList[myIndex]['level'] = theLevel
             myDisplayList[myIndex]['type'] = 'checked'
@@ -673,14 +711,15 @@ class SummaryWidget(Widget):
         'type' is changed to 'comment'.
         """
         myContent = self.currentContent
-        myAdapter = myContent.listRef.adapter
+        myList = myContent.listRef
+        myView = myContent.viewRef
         myDisplayList = myContent.report.displayList
         self._AddUndo(myContent, myDisplayList)
         myComment = self.ids.commentText_id.textRef.text.strip()
         if not myComment.startswith("#"):
             myComment = "#" + myComment
-        for record_it in myAdapter.selection:
-            myData = myAdapter.get_data_item(record_it.index)
+        for record_it in myView.selected_nodes:
+            myData = myList.data[record_it]
             myIndex = myData['baseIndex']
             myDisplayList[myIndex]['level'] = 'unknown'
             myDisplayList[myIndex]['type'] = 'comment'
@@ -700,11 +739,11 @@ class SummaryWidget(Widget):
         'checked' and 'uncommitted' lines revert to 'unchecked'.
         """
         myContent = self.currentContent
-        myAdapter = myContent.listRef.adapter
+        myDataList = myContent.listRef.data
         myDisplayList = myContent.report.displayList
         self._AddUndo(myContent, myDisplayList)
-        for record_it in myAdapter.selection:
-            myData = myAdapter.get_data_item(record_it.index)
+        for record_it in myContent.viewRef.selected_nodes:
+            myData = myDataList[record_it]
             myIndex = myData['baseIndex']
             myDisplayList[myIndex]['level'] = 'unknown'
             if (myDisplayList[myIndex]['type'] == 'comment'
@@ -726,18 +765,18 @@ class SummaryWidget(Widget):
         Only works for lines containing SUBCKT (cellname).
         """
         myContent = self.currentContent
-        myData = myContent.listRef.adapter.get_data_item(theErrorIndex)
-        myMatch = re.search("[^:\[]*\[([^\]]*)", myData['errorText'])  #*[reference] *
+        myData = myContent.listRef.data[theErrorIndex]
+        myMatch = re.search("[^:\[]*\[([^\]]*)", myData['text'])  #*[reference] *
         if myMatch and myMatch.group(1):
             if self.referenceTextRef.textRef.text:
                 self.referenceTextRef.undoList.append(self.referenceTextRef.textRef.text)
             self.referenceTextRef.textRef.text = myMatch.group(1)
-        myMatch = re.search("^#([^\[:]*) *", myData['errorText'])  ##comment *
+        myMatch = re.search("^#([^\[:]*) *", myData['text'])  ##comment *
         if myMatch and myMatch.group(1):
             if self.commentTextRef.textRef.text:
                 self.commentTextRef.undoList.append(self.commentTextRef.textRef.text)
             self.commentTextRef.textRef.text = myMatch.group(1)
-        myMatch = re.search("SUBCKT ([^\)]*\))", myData['errorText'])  # * INFO: SUBCKT (cellName)
+        myMatch = re.search("SUBCKT ([^\)]*\))", myData['text'])  # * INFO: SUBCKT (cellName)
         if myMatch and myMatch.group(1):
             if self.filterTextRef.textRef.text:
                 self.filterTextRef.undoList.append(self.filterTextRef.textRef.text)
@@ -756,22 +795,22 @@ class SummaryWidget(Widget):
         No effect for unmatched or comment lines.
         """
         myContent = self.currentContent
-        myData = myContent.listRef.adapter.get_data_item(theErrorIndex)
+        myData = myContent.listRef.data[theErrorIndex]
         if myData['type'] in ['unmatched', 'comment']:
             return
         Clipboard.copy(myContent.report.GetFirstError(myData))
         self.ids.errorDetails_id.text = myContent.report.GetErrorDetails(myData)
         self.detailPopupRef.open()
 
-    def _CountLines(self, theAdapter, theType):
+    def _CountLines(self, theList, theType):
         """Count the number of lines of a given type in the current filtered display."""
         myCount = 0
-        for data_it in theAdapter.data:
+        for data_it in theList.data:
             if data_it['type'] == theType:
                 myCount += 1
         return myCount
 
-    def EnableButtons(self, theAdapter):
+    def EnableButtons(self, theList, theView):
         """Enable main screen buttons based on status.
 
         'Select All', 'Unselect All' enabled when something is selected.
@@ -804,22 +843,22 @@ class SummaryWidget(Widget):
         self.ids.unselectAllButton.text = "Unselect All"
         self.ids.referenceButton.disabled = True
         self.ids.viewButton.disabled = True
-        if theAdapter.selection:
+        if theView.selected_nodes:
             self.ids.selectAllButton.disabled = False
-            myData = theAdapter.get_data_item(theAdapter.selection[0].index)
+            myData = theList.data[theView.selected_nodes[0]]
             myType = myData['type']  # get type from first item
             self.ids.selectAllButton.text = \
-                "Select All (" + str(self._CountLines(theAdapter, myType))  + ")"
+                "Select All (" + str(self._CountLines(theList, myType))  + ")"
             self.ids.unselectAllButton.disabled = False
             self.ids.unselectAllButton.text = \
-                "Unselect All (" + str(len(theAdapter.selection)) + ")"
+                "Unselect All (" + str(len(theView.selected_nodes)) + ")"
             if myType == 'unchecked':
                 self.ids.errorButton.disabled = False
                 self.ids.warningButton.disabled = False
                 self.ids.checkButton.disabled = False
                 self.ids.ignoreButton.disabled = False
                 self.referenceAction = 'replace'
-                if myData['errorText'].startswith("!"):
+                if myData['text'].startswith("!"):
                     self.ids.clearButton.disabled = False
             elif myType == 'unmatched':
                 self.ids.commentButton.disabled = False
@@ -882,26 +921,25 @@ class SummaryWidget(Widget):
 
     def SelectAll(self):
         """Select all filtered display lines of the current type."""
-        myType = self.currentContent.listRef.selectType
-        myAdapter = self.currentContent.listRef.adapter
-        for index in range(len(myAdapter.data)):
-            myView = myAdapter.get_view(index)
-            myError = myView.errorRef
-            if not myError in myAdapter.selection and myError.parent.type == myType:
-                myAdapter.handle_selection(myError, hold_dispatch=True)
-        myAdapter.dispatch('on_selection_change')
-        self.EnableButtons(myAdapter)
+        myType = self.currentContent.viewRef.selectType
+        myList = self.currentContent.listRef
+        myView = self.currentContent.viewRef
+        print("list length {0}".format(len(myList.data)))
+        for line_it in range(len(myList.data)):
+            myData = myList.data[line_it]
+            if not line_it in myView.selected_nodes and myData['type'] == myType:
+                myView.select_node(line_it)
+        self.EnableButtons(myList, myView)
 
     def DeselectAll(self):
         """Unselect all selected filtered display lines."""
-        myAdapter = self.currentContent.listRef.adapter
-        for index in range(len(myAdapter.data)):
-            myView = myAdapter.get_view(index)
-            myError = myView.errorRef
-            if myError in myAdapter.selection:
-                myAdapter.handle_selection(myError, hold_dispatch=True)
-        myAdapter.dispatch('on_selection_change')
-        self.EnableButtons(myAdapter)
+        myList = self.currentContent.listRef
+        myView = self.currentContent.viewRef
+        for line_it in range(len(myList.data)):
+            myData = myList.data[line_it]
+            if line_it in myView.selected_nodes:
+                myView.deselect_node(line_it)
+        self.EnableButtons(myList, myView)
 
     def AddReferenceModes(self, theLayout):
         """Add a selectable mode button for each mode, except for the current mode.
@@ -983,11 +1021,12 @@ class SummaryWidget(Widget):
     def CommitReferences(self):
         """Commit selected references copied from other modes."""
         myContent = self.currentContent
-        myAdapter = myContent.listRef.adapter
+        myView = myContent.viewRef
+        myList = myContent.listRef
         myDisplayList = myContent.report.displayList
         self._AddUndo(myContent, myDisplayList)
-        for record_it in myAdapter.selection:
-            myData = myAdapter.get_data_item(record_it.index)
+        for record_it in myView.selected_nodes:
+            myData = myList.data[record_it]
             myIndex = myData['baseIndex']
             myDisplayList[myIndex]['type'] = 'checked'
             # remove leading "? " on uncommitted lines
@@ -1002,12 +1041,13 @@ class SummaryWidget(Widget):
         Only comment and unmatched lines are deletable.
         """
         myContent = self.currentContent
-        myAdapter = myContent.listRef.adapter
+        myList = myContent.listRef
+        myView = myContent.viewRef
         myDisplayList = myContent.report.displayList
         self._AddUndo(myContent, myDisplayList)
         myIndexList = []
-        for record_it in myAdapter.selection[::-1]:
-            myData = myAdapter.get_data_item(record_it.index)
+        for record_it in myView.selected_nodes[::-1]:
+            myData = myList.data[record_it]
             myIndexList.append(myData['baseIndex'])
         # Because deleting by index, must delete in reverse order.
         for index_it in sorted(myIndexList, reverse=True):
@@ -1024,13 +1064,13 @@ class SummaryWidget(Widget):
           theTime: unused.
         """
         if self.autoSaveFlag:
-            mySelection = self.currentContent.listRef.adapter.selection[:]
+            mySelection = self.currentContent.viewRef.selected_nodes[:]
             self.autoSaveFileName = self.summary.summaryFileName + "." + self.timeStamp
             self.SaveSummary(theFileName=self.autoSaveFileName,
                              theAutoCommitFlag=False,
                              theSaveUnmatchedFlag=True,
                              theAutoSaveFlag=True)
-            self.currentContent.listRef.adapter.selection = mySelection
+            self.currentContent.viewRef.selected_nodes = mySelection
             self.autoSaveFlag = False
 
     def SaveSummaryAs(self, theFileName, theAutoCommitFlag, theSaveUnmatchedFlag):
@@ -1216,7 +1256,6 @@ class SummaryWidget(Widget):
     def _ExportCSV(self, theExportMatch, theOutputModes, theModeList, theExportFile):
         """Export one CSV summary line."""
         # \1 reference, \2 level, \3 type, \4 device, (\5 count)
-#        print(theExportMatch.groups()[0:3])
         theExportFile.write("%s,%s,%s,%s" % (theExportMatch.groups()[0:4]))
         if len(theExportMatch.groups()) == 5:
             myCount = theExportMatch.group(5)

@@ -1,8 +1,8 @@
-#:kivy 1.0.9
+#:kivy 1.10.0
 
 ##kivy file for SummaryApp used in check_cvc
 
-##Copyright 2016, 2017 D. Mitch Bailey  cvc at shuharisystem dot com
+##Copyright 2016-2018 D. Mitch Bailey  cvc at shuharisystem dot com
 ##
 ##This file is part of check_cvc.
 ##
@@ -75,17 +75,18 @@
 #:set gDeselectedTextColor (0.6, 0.6, 0.6, 1)  # light grey
 
 <SummaryListItem>:
-    errorText: ""
-    is_selected: error_id.is_selected
+    index: None
+    text: ""
+    selected: False
     size_hint: 1, None
     height: 15
     type: None
-    errorRef: error_id
-    ListItemLabel:
-        id: error_id
-        index: root.index
-        is_selected: False
-        text: root.errorText
+    on_touch_down:
+        if self.collide_point(*args[1].pos): self.TouchListItem(args[1], app.root, self.index)
+    on_touch_move:
+        if self.collide_point(*args[1].pos) and not app.root.modifiers: self.DragSelect(args[1])
+    Label:
+        text: root.text
         markup: True
         font_size: 12
         auto_scale: False
@@ -94,11 +95,7 @@
         shorten_from: 'right'
         height: self.texture_size[1]
         text_size: self.size[0], self.texture_size[1]
-        color: gSelectedTextColor if self.is_selected else gDeselectedTextColor
-        on_touch_down:
-            if self.collide_point(*args[1].pos): root.TouchListItem(args[1], app.root, root.index)
-        on_touch_move:
-            if self.collide_point(*args[1].pos) and not app.root.modifiers: root.DragSelect()
+        color: gSelectedTextColor if root.selected else gDeselectedTextColor
 
 <LabeledText@BoxLayout>:
     orientation: 'horizontal'
@@ -124,11 +121,14 @@
         halign: 'left'
         valign: 'middle'
 
+<SelectableRecycleBoxLayout@FocusBehavior+LayoutSelectionBehavior+RecycleBoxLayout>:
+
 <SummaryTabContent>:  # error lists and log/error file names
     orientation: 'vertical'
     minimum_height: 50
     size_hint_y: 1
     listRef: list_id
+    viewRef: view_id
     spacing: 1
     canvas.before:
         Color:
@@ -136,32 +136,24 @@
         Rectangle:
             size: self.size
             pos: self.pos     
-    ListView:  # filtered error list
+    RecycleView:  # filtered error list
         size_hint_x: 1
         id: list_id
-        selectMode: ""
-        selectType: ""
-        adapter:
-            ListAdapter( \
-            data = [{'errorText': 'dummy', \
-            'is_selected': False, \
-            'type': 'unknown', \
-            'baseIndex': index} \
-            for index in range(len(root.report.displayList))],
-            args_converter = lambda row_index, rec: \
-            {'errorText': rec['errorText'], \
-            'is_selected': rec['is_selected'], \
-            'parentView': self, \
-            'index': row_index, \
-            'type': rec['type'], \
-            'baseIndex': rec['baseIndex']}, \
-            cls = 'SummaryListItem', \
-            selection_mode = 'multiple', \
-            propagate_selection_to_data = True, \
-            allow_empty_selection = True)
-        on_touch_up:
-            # grab is handled in child SummaryListItem
-            if args[1].grab_current == self: root.FinishSelection(args[1], self)
+        viewclass: 'SummaryListItem'
+        SelectableRecycleBoxLayout:
+            id: view_id
+            selectMode: ""
+            selectType: ""
+            default_size: None, dp(15)
+            default_size_hint: 1, None
+            size_hint_y: None
+            height: self.minimum_height
+            orientation: 'vertical'
+            multiselect: True
+            touch_multiselect: True
+            on_touch_up:
+                # grab is handled in child SummaryListItem
+                if args[1].grab_current == self: root.FinishSelection(args[1], self.parent, self)
     BoxLayout:  # log and summary file names
         orientation: 'horizontal'
         size_hint_y: None
@@ -407,7 +399,7 @@
                 FilterCheckBox:
                     id: show_none
                     text: 'none'
-        TabbedPanel:
+        FixedTabbedPanel:
             id: modePanel_id
             minimum_height: 100
             size_hint_x: 1

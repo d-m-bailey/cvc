@@ -1,6 +1,6 @@
 """ SummaryFile.py: Read and hold summary file data class.
 
-    Copyright 2016, 2017 D. Mitch Bailey  cvc at shuharisystem dot com
+    Copyright 2016-2018 D. Mitch Bailey  cvc at shuharisystem dot com
 
     This file is part of check_cvc.
 
