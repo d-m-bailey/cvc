@@ -71,6 +71,8 @@ errorList = [ \
      'searchText': "^WARNING: resistance "},
     {'source': 'log', 'section': 'unexpected_diode',
      'searchText': "^INFO: unexpected diode"},
+    {'source': 'report', 'section': 'FUSE_ERROR',
+     'searchText': "^! Power/Ground path through fuse"},
     {'source': 'report', 'section': 'MOS_DIODE',
      'searchText': "^! ... voltage already"},
     {'source': 'report', 'section': 'SHORT',
