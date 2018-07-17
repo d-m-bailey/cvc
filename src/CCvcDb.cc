@@ -807,7 +807,8 @@ string CCvcDb::AdjustMaxNmosKey(CConnection& theConnections, voltage_t theSimGat
 	} else if ( myGateVoltage - theConnections.device_p->model_p->Vth <= theMaxSource ) {
 		myAdjustment = " NMOS gate limited " + PrintParameter(myGateVoltage, VOLTAGE_SCALE) + "-" + PrintParameter(theConnections.device_p->model_p->Vth, VOLTAGE_SCALE);
 		theEventKey = myGateVoltage - theConnections.device_p->model_p->Vth;
-	} else {
+	} else if ( theEventKey != theMaxSource  ){
+		myAdjustment = " NMOS limited to source " + PrintParameter(theMaxSource, VOLTAGE_SCALE);
 		theEventKey = theMaxSource;
 	}
 	return(myAdjustment);
@@ -863,7 +864,8 @@ string CCvcDb::AdjustMinPmosKey(CConnection& theConnections, voltage_t theSimGat
 	} else if ( myGateVoltage - theConnections.device_p->model_p->Vth >= theMinSource ) {
 		myAdjustment = " PMOS gate limited " + PrintParameter(myGateVoltage, VOLTAGE_SCALE) + "+" + PrintParameter(-theConnections.device_p->model_p->Vth, VOLTAGE_SCALE);
 		theEventKey = myGateVoltage - theConnections.device_p->model_p->Vth;
-	} else {
+	} else if ( theEventKey != theMinSource  ){
+		myAdjustment = " PMOS limited to source " + PrintParameter(theMinSource, VOLTAGE_SCALE);
 		theEventKey = theMinSource;
 	}
 	return(myAdjustment);
@@ -941,7 +943,7 @@ string CCvcDb::AdjustKey(CEventQueue& theEventQueue, deviceId_t theDeviceId, CCo
 */
 		}
 	} else if ( theEventQueue.queueType == SIM_QUEUE ) {
-		theEventKey = SimKey(theEventQueue.QueueTime(), theConnections.resistance);
+		//theEventKey = SimKey(theEventQueue.QueueTime(), theConnections.resistance);  // Sim Key is adjusted in calling routine
 		if ( theConnections.gateId == theConnections.sourceId || theConnections.gateId == theConnections.drainId ) {
 			theQueuePosition = DELAY_FRONT;
 		} else if ( theConnections.gateVoltage == UNKNOWN_VOLTAGE ) { // check always on
@@ -1163,12 +1165,12 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 				if ( myQueuePosition == SKIP_QUEUE ) continue; // SIM queues/maxNmos/minPmos with unknown mos gate return SKIP_QUEUE, skip for now
 				if ( myEventKey < theEventKey && myCalculationType == UP_CALCULATION ) {
 					cout << "DEBUG: Skipped down propagation at " << DeviceName(myConnections.deviceId);
-					cout << " voltage " << PrintVoltage(myEventKey) << " from " << PrintVoltage(theEventKey) << endl;
+					cout << " voltage " << PrintVoltage(myEventKey) << "(" << myAdjustedCalculation << ") from " << PrintVoltage(theEventKey) << endl;
 					continue;  // do not propagate opposite calculations
 				}
 				if ( myEventKey > theEventKey && myCalculationType == DOWN_CALCULATION ) {
 					cout << "DEBUG: Skipped up propagation at " << DeviceName(myConnections.deviceId);
-					cout << " voltage " << PrintVoltage(myEventKey) << " from " << PrintVoltage(theEventKey) << endl;
+					cout << " voltage " << PrintVoltage(myEventKey) << "(" << myAdjustedCalculation << ") from " << PrintVoltage(theEventKey) << endl;
 					continue;  // do not propagate opposite calculations
 				}
 				if ( theEventQueue.queueType == SIM_QUEUE ) {

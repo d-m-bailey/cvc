@@ -51,6 +51,7 @@ from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
+from kivy.uix.behaviors.focus import FocusBehavior
 from kivy.uix.button import Button
 from kivy.uix.popup import Popup
 from kivy.uix.spinner import Spinner
@@ -144,6 +145,7 @@ class SummaryListItem(RecycleDataViewBehavior, BoxLayout):
     def apply_selection(self, theParent, theIndex, theSelectedFlag):
         """ Respond to the selection of items in the view. """
         self.selected = theSelectedFlag
+
 
 class SummaryTabContent(BoxLayout):
     """Tabbed panel content for a single report.
@@ -294,6 +296,7 @@ class SummaryTabContent(BoxLayout):
     def _FinishRedisplay(self, dt):
         """Redisplay counts and errors, and release screen."""
         myFilteredList = self.filteredList
+        self.root.DeselectAll()  # resets button status
         self.listRef.data = [
             {'text': myFilteredList[index]['display_text'],
              'selected': False,
@@ -305,7 +308,6 @@ class SummaryTabContent(BoxLayout):
         self.root.currentContent.report.CountErrors()
         self._SetTypeFilterCounts(self.root.currentContent.report.errorCount)
         self.root.ids.displayCount_id.text = str(len(myFilteredList))
-        self.root.DeselectAll()  # resets button status
         self.root.workingPopupRef.dismiss()
 
     def FinishSelection(self, theTouch, theList, theView):
@@ -924,21 +926,18 @@ class SummaryWidget(Widget):
         myType = self.currentContent.viewRef.selectType
         myList = self.currentContent.listRef
         myView = self.currentContent.viewRef
-        print("list length {0}".format(len(myList.data)))
         for line_it in range(len(myList.data)):
             myData = myList.data[line_it]
             if not line_it in myView.selected_nodes and myData['type'] == myType:
-                myView.select_node(line_it)
+                myView.select_with_touch(line_it)
         self.EnableButtons(myList, myView)
 
     def DeselectAll(self):
         """Unselect all selected filtered display lines."""
         myList = self.currentContent.listRef
         myView = self.currentContent.viewRef
-        for line_it in range(len(myList.data)):
-            myData = myList.data[line_it]
-            if line_it in myView.selected_nodes:
-                myView.deselect_node(line_it)
+        for line_it in sorted(myView.selected_nodes, reverse=True):
+            myView.select_with_touch(line_it)
         self.EnableButtons(myList, myView)
 
     def AddReferenceModes(self, theLayout):

@@ -12,7 +12,7 @@ checkcvc_sources = ResultFile.py \
 all : check_cvc
 
 check_cvc : $(checkcvc_sources) check_cvc.spec
-	pyinstaller -F check_cvc.spec
+	pyinstaller -F check_cvc.spec --clean
 	cp dist/check_cvc .
 
 install : check_cvc
