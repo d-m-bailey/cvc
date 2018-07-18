@@ -360,6 +360,7 @@ public:
 	void Cleanup();
 	deviceId_t CountBulkConnections(netId_t theNetId);
 	bool IsAnalogNet(netId_t theNetId);
+	bool IsAlwaysOff(CFullConnection& theConnections);
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);

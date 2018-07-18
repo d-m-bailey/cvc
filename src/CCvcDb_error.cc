@@ -1455,6 +1455,7 @@ void CCvcDb::FindFloatingInputErrors() {
 					if ( myFloatingFlag ) {
 						deviceStatus_v[device_it][SIM_INACTIVE] = true;  // ignore true floating input gates (not possible floating)
 					}
+					if ( cvcParameters.cvcIgnoreVthFloating && IsAlwaysOff(myConnections) ) continue;  // skips Hi-Z input that is never on
 					if ( myHasLeakPath || connectionCount_v[net_it].SourceDrainCount() == 0 ) { // physically floating gates too
 //						CCircuit * myParent_p = instancePtr_v[deviceParent_v[device_it]]->master_p;
 						errorCount[HIZ_INPUT]++;

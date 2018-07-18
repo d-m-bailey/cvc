@@ -99,6 +99,8 @@ void CCvcParameters::ResetEnvironment() {
 	//! When true, detects calculated gate-source errors at Vth. Default is to ignore calculated voltage errors at exactly Vth.
 	cvcMinVthGates = defaultMinVthGates;
 	//! When true, detect gate-source errors only if >= Vth. Default is to detect errors regardless of Vth.
+	cvcIgnoreVthFloating = defaultIgnoreVthFloating;
+	//! When true, ignore Hi-Z errors if max gate-source difference does not exceed Vth. Default is to detect errors regardless of Vth.
 	cvcLeakOvervoltage = defaultLeakOvervoltage;
 	//! When true, detects worst case overvoltage errors. Default is to flag all errors including those not possible with current mode logic.
 	cvcLogicDiodes = defaultLogicDiodes;
@@ -129,6 +131,7 @@ void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
 	theOutputFile << "CVC_SCRC = '" << (( cvcSCRC ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "CVC_VTH_GATES = '" << (( cvcVthGates ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "CVC_MIN_VTH_GATES = '" << (( cvcMinVthGates ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_IGNORE_VTH_FLOATING = '" << (( cvcIgnoreVthFloating ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "CVC_LEAK_OVERVOLTAGE = '" << (( cvcLeakOvervoltage ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "CVC_LOGIC_DIODES = '" << (( cvcLogicDiodes ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "CVC_SHORT_ERROR_THRESHOLD = '" << Voltage_to_float(cvcShortErrorThreshold) << "'" << endl;
@@ -163,6 +166,7 @@ void CCvcParameters::PrintDefaultEnvironment() {
 	myDefaultCvcrc << "CVC_SCRC = '" << (( cvcSCRC ) ? "true" : "false") << "'" << endl;
 	myDefaultCvcrc << "CVC_VTH_GATES = '" << (( cvcVthGates ) ? "true" : "false") << "'" << endl;
 	myDefaultCvcrc << "CVC_MIN_VTH_GATES = '" << (( cvcMinVthGates ) ? "true" : "false") << "'" << endl;
+	myDefaultCvcrc << "CVC_IGNORE_VTH_FLOATING = '" << (( cvcIgnoreVthFloating ) ? "true" : "false") << "'" << endl;
 	myDefaultCvcrc << "CVC_LEAK_OVERVOLTAGE = '" << (( cvcLeakOvervoltage ) ? "true" : "false") << "'" << endl;
 	myDefaultCvcrc << "CVC_LOGIC_DIODES = '" << (( cvcLogicDiodes ) ? "true" : "false") << "'" << endl;
 	myDefaultCvcrc << "CVC_SHORT_ERROR_THRESHOLD = '" << Voltage_to_float(cvcShortErrorThreshold) << "'" << endl;
@@ -243,6 +247,8 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 			cvcVthGates = strcasecmp(myBuffer, "true") == 0;
 		} else if ( myVariable == "CVC_MIN_VTH_GATES" ) {
 			cvcMinVthGates = strcasecmp(myBuffer, "true") == 0;
+		} else if ( myVariable == "CVC_IGNORE_VTH_FLOATING" ) {
+			cvcIgnoreVthFloating = strcasecmp(myBuffer, "true") == 0;
 		} else if ( myVariable == "CVC_LEAK_OVERVOLTAGE" ) {
 			cvcLeakOvervoltage = strcasecmp(myBuffer, "true") == 0;
 		} else if ( myVariable == "CVC_LOGIC_DIODES" ) {

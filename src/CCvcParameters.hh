@@ -44,6 +44,7 @@ public:
 	const bool defaultSCRC = false;
 	const bool defaultVthGates = false;
 	const bool defaultMinVthGates = false;
+	const bool defaultIgnoreVthFloating = false;
 	const bool defaultLeakOvervoltage = true;
 	const bool defaultLogicDiodes = false;
 	const voltage_t defaultErrorThreshold = 0;
@@ -75,6 +76,7 @@ public:
 	bool	cvcSCRC = defaultSCRC;
 	bool	cvcVthGates = defaultVthGates;
 	bool    cvcMinVthGates = defaultMinVthGates;
+	bool	cvcIgnoreVthFloating = defaultIgnoreVthFloating;
 	bool	cvcLeakOvervoltage = defaultLeakOvervoltage;
 	bool	cvcLogicDiodes = defaultLogicDiodes;
 	voltage_t	cvcShortErrorThreshold = defaultErrorThreshold;

@@ -1339,3 +1339,50 @@ bool CCvcDb::IsAnalogNet(netId_t theNetId) {
 	}
 	return (myIsAnalogNet);
 }
+
+bool CCvcDb::IsAlwaysOff(CFullConnection& theConnections) {
+	/// True if gate is always off
+	switch (deviceType_v[theConnections.deviceId]) {
+	case NMOS:
+	case LDDN: {
+		if ( theConnections.maxGateLeakVoltage == UNKNOWN_VOLTAGE ) return false;
+		if ( theConnections.minSourceLeakVoltage == UNKNOWN_VOLTAGE ) return false;
+		if ( theConnections.minDrainLeakVoltage == UNKNOWN_VOLTAGE ) return false;
+		return ( theConnections.maxGateLeakVoltage < min(theConnections.minSourceLeakVoltage, theConnections.minDrainLeakVoltage) + theConnections.device_p->model_p->Vth );
+		break;
+	}
+	case PMOS:
+	case LDDP: {
+		if ( theConnections.minGateLeakVoltage == UNKNOWN_VOLTAGE ) return false;
+		if ( theConnections.maxSourceLeakVoltage == UNKNOWN_VOLTAGE ) return false;
+		if ( theConnections.maxDrainLeakVoltage == UNKNOWN_VOLTAGE ) return false;
+		return ( theConnections.minGateLeakVoltage > max(theConnections.maxSourceLeakVoltage, theConnections.maxDrainLeakVoltage) + theConnections.device_p->model_p->Vth );
+		break;
+	}
+	case RESISTOR:
+	case SWITCH_ON:
+	case FUSE_ON:
+	case FUSE_OFF: {
+		return false;
+		break;
+	}
+	case CAPACITOR:
+	case SWITCH_OFF: {
+		return true;
+		break;
+	}
+	case DIODE: {
+		if ( theConnections.minDrainLeakVoltage == UNKNOWN_VOLTAGE ) return false;
+		if ( theConnections.maxSourceLeakVoltage == UNKNOWN_VOLTAGE ) return false;
+		return theConnections.maxSourceLeakVoltage > theConnections.minDrainLeakVoltage;
+		break;
+	}
+	case BIPOLAR: {
+		return false;
+		break;
+	}
+	default:
+		return false;
+	}
+}
+
