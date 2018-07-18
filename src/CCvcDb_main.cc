@@ -194,7 +194,9 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Logic shorts 1");
 		reportFile << PrintProgress(&lastSnapshot, "SIM1 ") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
-		CheckConnections();
+		if ( ! cvcParameters.cvcSOI ) {
+			CheckConnections();
+		}
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_FIRST_SIM) == SKIP ) continue;
 		SaveInitialVoltages();

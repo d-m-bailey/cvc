@@ -2730,15 +2730,18 @@ void CCvcDb::CheckConnections() {
 	for (deviceId_t device_it = 0; device_it < deviceCount; device_it++) {
 		if ( bulkNet_v[device_it] == UNKNOWN_NET ) continue;
 //		myBulkCount[bulkNet_v[device_it]].first++;
-		if ( myBulkCount[bulkNet_v[device_it]].first++ == 0 ) {
-			myBulkCount[bulkNet_v[device_it]].second = device_it;
+		if ( IsMos_(deviceType_v[device_it]) && sourceNet_v[device_it] != drainNet_v[device_it] ) {  // only count non-capacitor mosfet
+			netId_t myBulkNet = bulkNet_v[device_it];
+			if ( myBulkCount[myBulkNet].first++ == 0 ) {  // remember the first connected device
+				myBulkCount[myBulkNet].second = device_it;
+			}
 		}
 	}
 	for (netId_t net_it = 0; net_it < netCount; net_it++) {
 //		if ( connectionCount_v[net_it].bulkCount > 0 && connectionCount_v[net_it].bulkCount >= connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount ) {
 		if ( myBulkCount.count(net_it) > 0 && myBulkCount[net_it].first >= connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount ) {
 			// skips subordinate nets because only equivalent masters have counts.
-			// may have problems with moscaps, because one device has both source and drain connection.
+			// may have problems with moscaps, because one device has both source and drain connection.  <- moscaps not included in connectionCounts
 			myVirtualNet(simNet_v, net_it);
 			assert( myVirtualNet.finalNetId != UNKNOWN_NET );
 			CPower * myPower_p = netVoltagePtr_v[myVirtualNet.finalNetId];
