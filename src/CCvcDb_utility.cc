@@ -1342,6 +1342,7 @@ bool CCvcDb::IsAnalogNet(netId_t theNetId) {
 
 bool CCvcDb::IsAlwaysOff(CFullConnection& theConnections) {
 	/// True if gate is always off
+	theConnections.SetMinMaxLeakVoltagesAndFlags(this);
 	switch (deviceType_v[theConnections.deviceId]) {
 	case NMOS:
 	case LDDN: {
