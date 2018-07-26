@@ -198,7 +198,7 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 //	}
 	definition = CPower::powerDefinitionText.SetTextAddress((text_t)myDefinition.c_str());
 	if ( type[HIZ_BIT] ) {
-		if ( IsEmpty(extraData->family) ) extraData->family = "cvc-none";
+		if ( IsEmpty(extraData->family) ) extraData->family = "cvc-noleak";
 	}
 }
 
@@ -388,7 +388,10 @@ CPower * CPower::GetMaxBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualN
 }
 
 */
-bool CPower::IsRelative(CPower * theTestPower_p, bool theDefault) {
+bool CPower::IsRelative(CPower * theTestPower_p, bool theDefault, bool theIsHiZRelative) {
+	if ( ! theTestPower_p ) return theDefault;
+	if ( theIsHiZRelative && (type[HIZ_BIT] || theTestPower_p->type[HIZ_BIT]) ) return true;  // HiZ is always family for certain checks
+
 	CSet emptySet;
 	CSet & myRelativeSet = (extraData) ? extraData->relativeSet : emptySet;
 	CSet & myTestRelativeSet = (theTestPower_p->extraData) ? theTestPower_p->extraData->relativeSet : emptySet;

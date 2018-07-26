@@ -96,8 +96,9 @@ void CCvcDb::ReportShort(deviceId_t theDeviceId) {
 				(IsPmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage - myMaxVoltage == myConnections.device_p->model_p->Vth);
 		myLeakCurrent = myConnections.EstimatedCurrent(myVthFlag);
 	}
+	bool myUnrelatedFlag = ! myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, true);
 	if ( ExceedsLeakLimit_(myLeakCurrent)  // flag all leaks with large current
-			|| ! myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, true)  // flag leaks between unrelated power
+			|| myUnrelatedFlag  // flag leaks between unrelated power
 			|| ( myMaxVoltage != myMinVoltage && ! myVthFlag  // ignore leaks between same voltages or at Vth
 				&& ( ( IsExternalPower_(myConnections.simSourcePower_p)
 						&& IsExternalPower_(myConnections.simDrainPower_p)
@@ -108,6 +109,9 @@ void CCvcDb::ReportShort(deviceId_t theDeviceId) {
 			errorFile << "! Short Detected: " << PrintVoltage(myMaxVoltage) << " to " << PrintVoltage(myMinVoltage);
 			if ( myVthFlag ) errorFile << " at Vth ";
 			errorFile << " Estimated current: " << AddSiSuffix(myLeakCurrent) << "A" << endl;
+			if ( myUnrelatedFlag ) {
+				errorFile << "Unrelated power error" << endl;
+			}
 			if ( IsNmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage == UNKNOWN_VOLTAGE && myConnections.minGateVoltage != UNKNOWN_VOLTAGE ) {
 				PrintDeviceWithMinGateAndSimConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
 			} else if ( IsPmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage == UNKNOWN_VOLTAGE && myConnections.maxGateVoltage != UNKNOWN_VOLTAGE ) {

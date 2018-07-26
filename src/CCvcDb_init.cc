@@ -398,6 +398,9 @@ void CCvcDb::SetEquivalentNets() {
 							errorCount[LEAK]++;
 							if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
 								errorFile << "! Short Detected: " << endl;
+								if ( myConnections.simSourceVoltage == myConnections.simDrainVoltage ) {
+									errorFile << "Unrelated power error" << endl;
+								}
 								PrintDeviceWithSimConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile);
 								errorFile << endl;
 							}

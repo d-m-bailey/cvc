@@ -62,7 +62,7 @@ deviceId_t CCircuit::GetLocalDeviceId(text_t theName) {
 		}
 		CCircuit::lastDeviceMap = name;
 	}
-	return (CCircuit::localDeviceIdMap[theName]);
+	return (CCircuit::localDeviceIdMap.at(theName));
 }
 
 deviceId_t CCircuit::GetLocalSubcircuitId(text_t theName) {
@@ -73,7 +73,7 @@ deviceId_t CCircuit::GetLocalSubcircuitId(text_t theName) {
 		}
 		CCircuit::lastSubcircuitMap = name;
 	}
-	return (CCircuit::localSubcircuitIdMap[theName]);
+	return (CCircuit::localSubcircuitIdMap.at(theName));
 }
 
 void CCircuit::LoadDevices(CDevicePtrList * theDevicePtrList_p) {

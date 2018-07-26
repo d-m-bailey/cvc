@@ -357,7 +357,8 @@ void CCvcParameters::AddTestPower() {
 */
 
 returnCode_t CCvcParameters::LoadPower() {
-	igzstream myPowerFile(cvcPowerFilename);
+	igzstream myPowerFile;
+	myPowerFile.open(cvcPowerFilename);
 	cvcPowerPtrList.Clear();
 	cvcExpectedLevelPtrList.Clear();
 	cvcPowerFamilyMap.clear();

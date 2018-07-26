@@ -438,64 +438,56 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 		CDevice * myDevice_p = myParent_p->devicePtr_v[device_it - myInstance_p->firstDeviceId];
 		if ( ! IsNmos_(myDevice_p->model_p->type) ) continue;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-//					bool myErrorFlag = false;
-		voltage_t myGateSourceDifference = myConnections.minGateVoltage - min(myConnections.minSourceVoltage, myConnections.minSourceVoltage + myDevice_p->model_p->Vth);
-		voltage_t myGateDrainDifference = myConnections.minGateVoltage - min(myConnections.minDrainVoltage, myConnections.minDrainVoltage + myDevice_p->model_p->Vth);
-		voltage_t myMaxVoltageDifference = min(0, myDevice_p->model_p->Vth);
-		if ( myConnections.CheckTerminalMinVoltages(GATE | SOURCE) &&
-//				myConnections.CheckTerminalMaxVoltages(DRAIN) &&
-//				myConnections.minGateVoltage > min(myConnections.minSourceVoltage, myConnections.minSourceVoltage + myDevice_p->model_p->Vth) &&
-				myGateSourceDifference > myMaxVoltageDifference &&
-				myConnections.gateId != myConnections.drainId ) {
-			myMaxVoltageDifference = myGateSourceDifference;
-		}
-//					myConnections.minGateVoltage < myConnections.maxDrainVoltage && myConnections.gateId != myConnections.drainId ) ||
-//					myConnections.minGateVoltage - myConnections.minSourceVoltage != myDevice_p->model_p->Vth) ||
-		if ( myConnections.CheckTerminalMinVoltages(GATE | DRAIN) &&
-//					myConnections.CheckTerminalMaxVoltages(SOURCE) &&
-//				myConnections.minGateVoltage > min(myConnections.minDrainVoltage, myConnections.minDrainVoltage + myDevice_p->model_p->Vth) &&
-				myGateDrainDifference > myMaxVoltageDifference &&
-				myConnections.gateId != myConnections.sourceId ) {
-//					myConnections.minGateVoltage < myConnections.maxSourceVoltage && myConnections.gateId != myConnections.sourceId ) ) {
-//					myConnections.minGateVoltage - myConnections.minDrainVoltage != myDevice_p->model_p->Vth) ) {
-//						cout << "Overvoltage Error:Gate vs Bulk:" << endl;
-			myMaxVoltageDifference = myGateDrainDifference;
-		}
-		if ( myMaxVoltageDifference <= cvcParameters.cvcGateErrorThreshold
-				|| ( cvcParameters.cvcMinVthGates && myMaxVoltageDifference < myDevice_p->model_p->Vth ) ) continue;  // no error
-		// Skip gates that are always fully on
-		if ( myConnections.CheckTerminalMaxVoltages(SOURCE) ) {
-			if ( myConnections.CheckTerminalMaxVoltages(DRAIN) ) {
-				if ( myConnections.minGateVoltage >= max(myConnections.maxSourceVoltage, myConnections.maxDrainVoltage) - cvcParameters.cvcGateErrorThreshold ) continue;
-				if ( myConnections.sourceId == myConnections.drainId ) {  // capacitor check
-					if ( IsPower_(netVoltagePtr_v[myConnections.gateId]) && IsPower_(netVoltagePtr_v[myConnections.drainId]) ) continue;  // ignore direct power capacitors
-					if ( ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId])
-							|| ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]) ) continue;  // ignore capacitors connected to non-input/power nets
-				}
-			} else {
-				if ( myConnections.minGateVoltage >= myConnections.maxSourceVoltage - cvcParameters.cvcGateErrorThreshold ) continue;
+		bool myVthFlag = false;
+		bool myUnrelatedFlag = false;
+		if ( ! myConnections.minGatePower_p
+				|| (myConnections.minGatePower_p->IsRelative(myConnections.minSourcePower_p, true, true)
+						&& myConnections.minGatePower_p->IsRelative(myConnections.minDrainPower_p, true, true)) ) {
+			// if relatives (default), then checks are conditional
+			voltage_t myGateSourceDifference = myConnections.minGateVoltage - min(myConnections.minSourceVoltage, myConnections.minSourceVoltage + myDevice_p->model_p->Vth);
+			voltage_t myGateDrainDifference = myConnections.minGateVoltage - min(myConnections.minDrainVoltage, myConnections.minDrainVoltage + myDevice_p->model_p->Vth);
+			voltage_t myMaxVoltageDifference = min(0, myDevice_p->model_p->Vth);
+			if ( myConnections.CheckTerminalMinVoltages(GATE | SOURCE)
+					&& myGateSourceDifference > myMaxVoltageDifference
+					&& myConnections.gateId != myConnections.drainId ) {
+				myMaxVoltageDifference = myGateSourceDifference;
 			}
-		} else if ( myConnections.CheckTerminalMaxVoltages(DRAIN) ) {
-			if ( myConnections.minGateVoltage >= myConnections.maxDrainVoltage - cvcParameters.cvcGateErrorThreshold ) continue;
+			if ( myConnections.CheckTerminalMinVoltages(GATE | DRAIN)
+					&& myGateDrainDifference > myMaxVoltageDifference
+					&& myConnections.gateId != myConnections.sourceId ) {
+				myMaxVoltageDifference = myGateDrainDifference;
+			}
+			if ( myMaxVoltageDifference <= cvcParameters.cvcGateErrorThreshold
+					|| ( cvcParameters.cvcMinVthGates && myMaxVoltageDifference < myDevice_p->model_p->Vth ) ) continue;  // no error
+			// Skip gates that are always fully on
+			if ( myConnections.CheckTerminalMaxVoltages(SOURCE) ) {
+				if ( myConnections.CheckTerminalMaxVoltages(DRAIN) ) {
+					if ( myConnections.minGateVoltage >= max(myConnections.maxSourceVoltage, myConnections.maxDrainVoltage) - cvcParameters.cvcGateErrorThreshold ) continue;
+					if ( myConnections.sourceId == myConnections.drainId ) {  // capacitor check
+						if ( IsPower_(netVoltagePtr_v[myConnections.gateId]) && IsPower_(netVoltagePtr_v[myConnections.drainId]) ) continue;  // ignore direct power capacitors
+						if ( ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId])
+								|| ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]) ) continue;  // ignore capacitors connected to non-input/power nets
+					}
+				} else {
+					if ( myConnections.minGateVoltage >= myConnections.maxSourceVoltage - cvcParameters.cvcGateErrorThreshold ) continue;
+				}
+			} else if ( myConnections.CheckTerminalMaxVoltages(DRAIN) ) {
+				if ( myConnections.minGateVoltage >= myConnections.maxDrainVoltage - cvcParameters.cvcGateErrorThreshold ) continue;
+			} else {
+				continue;  // ignore devices with no max connections
+			}
+			myVthFlag = myConnections.minGatePower_p->type[MIN_CALCULATED_BIT]
+					&& ( myConnections.minGateVoltage - myConnections.minSourceVoltage == myDevice_p->model_p->Vth
+							|| myConnections.minGateVoltage - myConnections.minDrainVoltage == myDevice_p->model_p->Vth );
+			if ( myVthFlag && ! cvcParameters.cvcVthGates ) continue;
 		} else {
-			continue;  // ignore devices with no max connections
+			myUnrelatedFlag = true;  // if not relatives, always an error
 		}
-/*
-		// ignore capacitors connected to non-input/power nets
-		if ( myConnections.sourceId == myConnections.drainId &&
-				! ( IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId])
-						&& IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]) ) ) {
-			cout << "DEBUG: ignoring capacitor " << DeviceName(myConnections.deviceId) << endl;
-			continue;
-		}
-*/
-		bool myVthFlag = myConnections.minGatePower_p->type[MIN_CALCULATED_BIT]
-				&& ( myConnections.minGateVoltage - myConnections.minSourceVoltage == myDevice_p->model_p->Vth
-						|| myConnections.minGateVoltage - myConnections.minDrainVoltage == myDevice_p->model_p->Vth );
-		if ( myVthFlag && ! cvcParameters.cvcVthGates ) continue;
 		errorCount[NMOS_GATE_SOURCE]++;
 		if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-			if ( myConnections.minGatePower_p->type[REFERENCE_BIT] ) {
+			if ( myUnrelatedFlag ) {
+				errorFile << "Unrelated power error" << endl;
+			} else if ( myConnections.minGatePower_p->type[REFERENCE_BIT] ) {
 				errorFile << "Gate reference signal" << endl;
 			} else if ( myVthFlag ) {
 				errorFile << "Gate-source = Vth" << endl;
@@ -505,48 +497,6 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking nmos gate vs source errors: ");
-//	errorFile << "! Finished" << endl << endl;
-
-/*
-	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
-		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
-			if ( model_pit->type != NMOS ) continue;
-			cout << "! Checking nmos gate vs source errors for model: " << model_pit->definition << endl << endl;
-			errorFile << "! Checking nmos gate vs source errors for model: " << model_pit->definition << endl << endl;
-			CDevice * myDevice_p = model_pit->firstDevice_p;
-			while (myDevice_p) {
-				CCircuit * myParent_p = myDevice_p->parent_p;
-//				deviceId_t myLocalDeviceId = myParent_p->localDeviceIdMap[myDevice_p->name];
-				for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
-					CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
-					MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-//					bool myErrorFlag = false;
-					if ( ( myConnections.CheckTerminalMinVoltages(GATE | SOURCE) &&
-								myConnections.CheckTerminalMaxVoltages(DRAIN) &&
-								myConnections.minGateVoltage > min(myConnections.minSourceVoltage, myConnections.minSourceVoltage + myDevice_p->model_p->Vth) &&
-								myConnections.minGateVoltage < myConnections.maxDrainVoltage &&
-								myConnections.minGateVoltage - myConnections.minSourceVoltage != model_pit->Vth) ||
-							( myConnections.CheckTerminalMinVoltages(GATE | DRAIN) &&
-								myConnections.CheckTerminalMaxVoltages(SOURCE) &&
-								myConnections.minGateVoltage > min(myConnections.minDrainVoltage, myConnections.minDrainVoltage + myDevice_p->model_p->Vth) &&
-								myConnections.minGateVoltage < myConnections.maxSourceVoltage &&
-								myConnections.minGateVoltage - myConnections.minDrainVoltage != model_pit->Vth) ) {
-//						cout << "Overvoltage Error:Gate vs Bulk:" << endl;
-						errorCount[NMOS_GATE_SOURCE]++;
-						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-							PrintDeviceWithMinConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile);
-							errorFile << endl;
-						}
-					}
-				}
-				myDevice_p = myDevice_p->nextDevice_p;
-			}
-			errorFile << "! Finished" << endl << endl;
-		}
-	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-
-*/
 }
 
 void CCvcDb::FindPmosGateVsSourceErrors() {
@@ -559,64 +509,56 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 		CDevice * myDevice_p = myParent_p->devicePtr_v[device_it - myInstance_p->firstDeviceId];
 		if ( ! IsPmos_(myDevice_p->model_p->type) ) continue;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-//					bool myErrorFlag = false;
-		voltage_t myGateSourceDifference = max(myConnections.maxSourceVoltage, myConnections.maxSourceVoltage + myDevice_p->model_p->Vth) - myConnections.maxGateVoltage;
-		voltage_t myGateDrainDifference = max(myConnections.maxDrainVoltage, myConnections.maxDrainVoltage + myDevice_p->model_p->Vth) - myConnections.maxGateVoltage;
-		voltage_t myMaxVoltageDifference = max(0, myDevice_p->model_p->Vth);
-		if ( myConnections.CheckTerminalMaxVoltages(GATE | SOURCE) &&
-//					myConnections.CheckTerminalMinVoltages(DRAIN) &&
-//				myConnections.maxGateVoltage < max(myConnections.maxSourceVoltage, myConnections.maxSourceVoltage + myDevice_p->model_p->Vth) &&
-				myGateSourceDifference > myMaxVoltageDifference  &&
-				myConnections.gateId != myConnections.drainId ) {
-			myMaxVoltageDifference = myGateSourceDifference;
-		}
-//					myConnections.maxGateVoltage > myConnections.minDrainVoltage && myConnections.gateId != myConnections.drainId ) ||
-//					myConnections.maxGateVoltage - myConnections.maxSourceVoltage != myDevice_p->model_p->Vth) ||
-		if ( myConnections.CheckTerminalMaxVoltages(GATE | DRAIN) &&
-//					myConnections.CheckTerminalMinVoltages(SOURCE) &&
-//					myConnections.maxGateVoltage < max(myConnections.maxDrainVoltage, myConnections.maxDrainVoltage + myDevice_p->model_p->Vth) &&
-				myGateDrainDifference > myMaxVoltageDifference  &&
-				myConnections.gateId != myConnections.sourceId ) {
-//					myConnections.maxGateVoltage > myConnections.minSourceVoltage && myConnections.gateId != myConnections.sourceId ) ) {
-//					myConnections.maxGateVoltage - myConnections.maxDrainVoltage != myDevice_p->model_p->Vth) ) {
-//						errorFile errorFileOvervoltage Error:Gate vs Bulk:" << endl;
-			myMaxVoltageDifference = myGateDrainDifference;
-		}
-		if ( myMaxVoltageDifference <= cvcParameters.cvcGateErrorThreshold
-				|| ( cvcParameters.cvcMinVthGates && myMaxVoltageDifference < -myDevice_p->model_p->Vth ) ) continue;  // no error
-		// Skip gates that are always fully on
-		if ( myConnections.CheckTerminalMinVoltages(SOURCE) ) {
-			if ( myConnections.CheckTerminalMinVoltages(DRAIN) ) {
-				if ( myConnections.maxGateVoltage <= min(myConnections.minSourceVoltage, myConnections.minDrainVoltage) + cvcParameters.cvcGateErrorThreshold ) continue;
-				if ( myConnections.sourceId == myConnections.drainId ) {  // capacitor check
-					if ( IsPower_(netVoltagePtr_v[myConnections.gateId]) && IsPower_(netVoltagePtr_v[myConnections.drainId]) ) continue;  // ignore direct power capacitors
-					if ( ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId])
-							|| ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]) ) continue;  // ignore capacitors connected to non-input/power nets
-				}
-			} else {
-				if ( myConnections.maxGateVoltage <= myConnections.minSourceVoltage + cvcParameters.cvcGateErrorThreshold ) continue;
+		bool myVthFlag = false;
+		bool myUnrelatedFlag = false;
+		if ( ! myConnections.maxGatePower_p
+				|| (myConnections.maxGatePower_p->IsRelative(myConnections.maxSourcePower_p, true, true)
+						&& myConnections.maxGatePower_p->IsRelative(myConnections.maxDrainPower_p, true, true)) ) {
+			// if relatives (default), then checks are conditional
+			voltage_t myGateSourceDifference = max(myConnections.maxSourceVoltage, myConnections.maxSourceVoltage + myDevice_p->model_p->Vth) - myConnections.maxGateVoltage;
+			voltage_t myGateDrainDifference = max(myConnections.maxDrainVoltage, myConnections.maxDrainVoltage + myDevice_p->model_p->Vth) - myConnections.maxGateVoltage;
+			voltage_t myMaxVoltageDifference = max(0, myDevice_p->model_p->Vth);
+			if ( myConnections.CheckTerminalMaxVoltages(GATE | SOURCE) &&
+					myGateSourceDifference > myMaxVoltageDifference  &&
+					myConnections.gateId != myConnections.drainId ) {
+				myMaxVoltageDifference = myGateSourceDifference;
 			}
-		} else if ( myConnections.CheckTerminalMinVoltages(DRAIN) ) {
-			if ( myConnections.maxGateVoltage <= myConnections.minDrainVoltage + cvcParameters.cvcGateErrorThreshold ) continue;
+			if ( myConnections.CheckTerminalMaxVoltages(GATE | DRAIN) &&
+					myGateDrainDifference > myMaxVoltageDifference  &&
+					myConnections.gateId != myConnections.sourceId ) {
+				myMaxVoltageDifference = myGateDrainDifference;
+			}
+			if ( myMaxVoltageDifference <= cvcParameters.cvcGateErrorThreshold
+					|| ( cvcParameters.cvcMinVthGates && myMaxVoltageDifference < -myDevice_p->model_p->Vth ) ) continue;  // no error
+			// Skip gates that are always fully on
+			if ( myConnections.CheckTerminalMinVoltages(SOURCE) ) {
+				if ( myConnections.CheckTerminalMinVoltages(DRAIN) ) {
+					if ( myConnections.maxGateVoltage <= min(myConnections.minSourceVoltage, myConnections.minDrainVoltage) + cvcParameters.cvcGateErrorThreshold ) continue;
+					if ( myConnections.sourceId == myConnections.drainId ) {  // capacitor check
+						if ( IsPower_(netVoltagePtr_v[myConnections.gateId]) && IsPower_(netVoltagePtr_v[myConnections.drainId]) ) continue;  // ignore direct power capacitors
+						if ( ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId])
+								|| ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]) ) continue;  // ignore capacitors connected to non-input/power nets
+					}
+				} else {
+					if ( myConnections.maxGateVoltage <= myConnections.minSourceVoltage + cvcParameters.cvcGateErrorThreshold ) continue;
+				}
+			} else if ( myConnections.CheckTerminalMinVoltages(DRAIN) ) {
+				if ( myConnections.maxGateVoltage <= myConnections.minDrainVoltage + cvcParameters.cvcGateErrorThreshold ) continue;
+			} else {
+				continue;  // ignore devices with no min connections
+			}
+			myVthFlag= myConnections.maxGatePower_p->type[MAX_CALCULATED_BIT]
+				&& ( myConnections.maxGateVoltage - myConnections.maxSourceVoltage == myDevice_p->model_p->Vth
+						|| myConnections.maxGateVoltage - myConnections.maxDrainVoltage == myDevice_p->model_p->Vth );
+			if ( myVthFlag && ! cvcParameters.cvcVthGates ) continue;
 		} else {
-			continue;  // ignore devices with no min connections
+			myUnrelatedFlag = true; // if not relatives, always an error
 		}
-/*
-		// ignore capacitors connected to non-input/power nets
-		if ( myConnections.sourceId == myConnections.drainId &&
-				! ( IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId])
-						&& IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]) ) ) {
-			cout << "DEBUG: ignoring capacitor " << DeviceName(myConnections.deviceId) << endl;
-			continue;
-		}
-*/
-		bool myVthFlag = myConnections.maxGatePower_p->type[MAX_CALCULATED_BIT]
-			&& ( myConnections.maxGateVoltage - myConnections.maxSourceVoltage == myDevice_p->model_p->Vth
-					|| myConnections.maxGateVoltage - myConnections.maxDrainVoltage == myDevice_p->model_p->Vth );
-		if ( myVthFlag && ! cvcParameters.cvcVthGates ) continue;
 		errorCount[PMOS_GATE_SOURCE]++;
 		if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-			if ( myConnections.maxGatePower_p->type[REFERENCE_BIT] ) {
+			if ( myUnrelatedFlag ) {
+				errorFile << "Unrelated power error" << endl;
+			} else if ( myConnections.maxGatePower_p->type[REFERENCE_BIT] ) {
 				errorFile << "Gate reference signal" << endl;
 			} else if ( myVthFlag ) {
 				errorFile << "Gate-source = Vth" << endl;
@@ -626,47 +568,6 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking pmos gate vs source errors: ");
-//	errorFile << "! Finished" << endl << endl;
-
-/*
-	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
-		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
-			if ( model_pit->type != PMOS ) continue;
-			cout << "! Checking pmos gate vs source errors for model: " << model_pit->definition << endl << endl;
-			errorFile << "! Checking pmos gate vs source errors for model: " << model_pit->definition << endl << endl;
-			CDevice * myDevice_p = model_pit->firstDevice_p;
-			while (myDevice_p) {
-				CCircuit * myParent_p = myDevice_p->parent_p;
-//				deviceId_t myLocalDeviceId = myParent_p->localDeviceIdMap[myDevice_p->name];
-				for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
-					CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
-					MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-//					bool myErrorFlag = false;
-					if ( ( myConnections.CheckTerminalMaxVoltages(GATE | SOURCE) &&
-								myConnections.CheckTerminalMinVoltages(DRAIN) &&
-								myConnections.maxGateVoltage < max(myConnections.maxSourceVoltage, myConnections.maxSourceVoltage + myDevice_p->model_p->Vth) &&
-								myConnections.maxGateVoltage > myConnections.minDrainVoltage &&
-								myConnections.maxGateVoltage - myConnections.maxSourceVoltage != model_pit->Vth) ||
-							( myConnections.CheckTerminalMaxVoltages(GATE | DRAIN) &&
-								myConnections.CheckTerminalMinVoltages(SOURCE) &&
-								myConnections.maxGateVoltage < max(myConnections.maxDrainVoltage, myConnections.maxDrainVoltage + myDevice_p->model_p->Vth) &&
-								myConnections.maxGateVoltage > myConnections.minSourceVoltage &&
-								myConnections.maxGateVoltage - myConnections.maxDrainVoltage != model_pit->Vth) ) {
-//						errorFile errorFileOvervoltage Error:Gate vs Bulk:" << endl;
-						errorCount[PMOS_GATE_SOURCE]++;
-						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-							PrintDeviceWithMaxConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile);
-							errorFile << endl;
-						}
-					}
-				}
-				myDevice_p = myDevice_p->nextDevice_p;
-			}
-			errorFile << "! Finished" << endl << endl;
-		}
-	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-*/
 }
 
 void CCvcDb::FindNmosSourceVsBulkErrors() {
@@ -680,181 +581,97 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 		if ( ! IsNmos_(myDevice_p->model_p->type) ) continue;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 		if ( myConnections.sourceId == myConnections.drainId && myConnections.sourceId == myConnections.bulkId ) continue;  // ignore drain = source = bulk
-		if ( (myConnections.maxBulkVoltage == myConnections.minSourceVoltage || myConnections.minSourceVoltage == UNKNOWN_VOLTAGE)
-				&& (myConnections.maxBulkVoltage == myConnections.minDrainVoltage || myConnections.minDrainVoltage == UNKNOWN_VOLTAGE) ) continue;
-			// no error if max bulk = min source = min drain
 		bool myErrorFlag = false;
-		if ( myConnections.minBulkPower_p && myConnections.minBulkPower_p->type[HIZ_BIT] ) {
-			if ( myConnections.sourceId == myConnections.bulkId && myConnections.drainId == myConnections.bulkId ) continue;
-			if ( myConnections.minSourcePower_p && ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.minSourcePower_p, netVoltagePtr_v, minNet_v, minNet_v, false) ) {
+		bool myUnrelatedFlag = false;
+		if ( ! myConnections.minBulkPower_p
+				|| (myConnections.minBulkPower_p->IsRelative(myConnections.minSourcePower_p, true, true)
+						&& myConnections.minBulkPower_p->IsRelative(myConnections.minDrainPower_p, true, true)) ) {
+			// if relatives (default), then checks are conditional
+			if ( (myConnections.maxBulkVoltage == myConnections.minSourceVoltage || myConnections.minSourceVoltage == UNKNOWN_VOLTAGE)
+					&& (myConnections.maxBulkVoltage == myConnections.minDrainVoltage || myConnections.minDrainVoltage == UNKNOWN_VOLTAGE) ) continue;
+				// no error if max bulk = min source = min drain
+			if ( myConnections.minBulkPower_p && myConnections.minBulkPower_p->type[HIZ_BIT] ) {
+				if ( myConnections.sourceId == myConnections.bulkId && myConnections.drainId == myConnections.bulkId ) continue;
+				if ( myConnections.minSourcePower_p && ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.minSourcePower_p, netVoltagePtr_v, minNet_v, minNet_v, false) ) {
+					myErrorFlag = true;
+				} else if ( myConnections.simSourcePower_p && IsKnownVoltage_(myConnections.simSourcePower_p->simVoltage)
+						&& ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.simSourcePower_p, netVoltagePtr_v, minNet_v, simNet_v, false)
+						&& myConnections.simSourceVoltage < myConnections.maxBulkVoltage ) {
+					myErrorFlag = true;
+				} else if ( myConnections.maxSourcePower_p && ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.maxSourcePower_p, netVoltagePtr_v, minNet_v, maxNet_v, false) ) {
+					myErrorFlag = true;
+				} else if ( myConnections.minDrainPower_p && ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.minDrainPower_p, netVoltagePtr_v, minNet_v, minNet_v, false) ) {
+					myErrorFlag = true;
+				} else if ( myConnections.simDrainPower_p && IsKnownVoltage_(myConnections.simDrainPower_p->simVoltage)
+						&& ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, minNet_v, simNet_v, false)
+						&& myConnections.simDrainVoltage < myConnections.maxBulkVoltage ) {
+					myErrorFlag = true;
+				} else if ( myConnections.maxDrainPower_p && ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.maxDrainPower_p, netVoltagePtr_v, minNet_v, maxNet_v, false) ) {
+					myErrorFlag = true;
+				}
+			} else if ( myConnections.CheckTerminalMinVoltages(BULK) == false ) {
+				if ( myConnections.minSourcePower_p || myConnections.simSourcePower_p || myConnections.maxSourcePower_p ||
+						myConnections.minDrainPower_p || myConnections.simDrainPower_p || myConnections.maxDrainPower_p ) { // has some connection (all connections open -> no error)
+					myErrorFlag = true;
+				}
+			} else if ( myConnections.CheckTerminalMinVoltages(BULK | SOURCE) &&
+					( myConnections.minBulkVoltage - myConnections.minSourceVoltage > cvcParameters.cvcBiasErrorThreshold ||
+						( myConnections.minSourceVoltage == myConnections.minBulkVoltage &&
+							myConnections.masterMinSourceNet.finalResistance < myConnections.masterMinBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
-			} else if ( myConnections.simSourcePower_p && IsKnownVoltage_(myConnections.simSourcePower_p->simVoltage)
-					&& ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.simSourcePower_p, netVoltagePtr_v, minNet_v, simNet_v, false)
-					&& myConnections.simSourceVoltage < myConnections.maxBulkVoltage ) {
+			} else if (	myConnections.CheckTerminalMinVoltages(BULK | DRAIN) &&
+					( myConnections.minBulkVoltage - myConnections.minDrainVoltage > cvcParameters.cvcBiasErrorThreshold ||
+						( myConnections.minDrainVoltage == myConnections.minBulkVoltage &&
+							myConnections.masterMinDrainNet.finalResistance < myConnections.masterMinBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
-			} else if ( myConnections.maxSourcePower_p && ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.maxSourcePower_p, netVoltagePtr_v, minNet_v, maxNet_v, false) ) {
+			} else if (	myConnections.CheckTerminalSimVoltages(BULK | SOURCE) &&
+					( myConnections.simBulkVoltage - myConnections.simSourceVoltage > cvcParameters.cvcBiasErrorThreshold ||
+						( myConnections.simSourceVoltage == myConnections.simBulkVoltage &&
+							myConnections.masterSimSourceNet.finalResistance < myConnections.masterSimBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
-			} else if ( myConnections.minDrainPower_p && ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.minDrainPower_p, netVoltagePtr_v, minNet_v, minNet_v, false) ) {
+			} else if (	myConnections.CheckTerminalSimVoltages(BULK | DRAIN) &&
+					( myConnections.simBulkVoltage - myConnections.simDrainVoltage > cvcParameters.cvcBiasErrorThreshold ||
+						( myConnections.simDrainVoltage == myConnections.simBulkVoltage &&
+							myConnections.masterSimDrainNet.finalResistance < myConnections.masterSimBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
-			} else if ( myConnections.simDrainPower_p && IsKnownVoltage_(myConnections.simDrainPower_p->simVoltage)
-					&& ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, minNet_v, simNet_v, false)
-					&& myConnections.simDrainVoltage < myConnections.maxBulkVoltage ) {
+			} else if (	myConnections.CheckTerminalMaxVoltages(BULK | SOURCE) &&
+					( ( myConnections.maxBulkVoltage - myConnections.maxSourceVoltage > cvcParameters.cvcBiasErrorThreshold &&
+							myConnections.maxSourcePower_p->defaultMaxNet != myConnections.bulkId ) ||
+						( myConnections.maxSourceVoltage == myConnections.maxBulkVoltage &&
+							myConnections.maxSourceVoltage != myConnections.minBulkVoltage && // no leak path
+	//						myConnections.masterMinBulkNet.finalNetId != myConnections.masterMaxBulkNet.finalNetId &&
+							myConnections.masterMaxSourceNet.finalResistance > myConnections.masterMaxBulkNet.finalResistance &&
+							! myConnections.minBulkPower_p->type[HIZ_BIT] &&
+							! PathContains(maxNet_v, myConnections.sourceId, myConnections.bulkId)) ) ) { // resistance check backwards in NMOS max (ignore connections through self)
 				myErrorFlag = true;
-			} else if ( myConnections.maxDrainPower_p && ! myConnections.minBulkPower_p->IsRelatedPower(myConnections.maxDrainPower_p, netVoltagePtr_v, minNet_v, maxNet_v, false) ) {
+	// Added 20140523
+			} else if (	myConnections.CheckTerminalMaxVoltages(BULK | DRAIN) &&
+					( ( myConnections.maxBulkVoltage - myConnections.maxDrainVoltage > cvcParameters.cvcBiasErrorThreshold &&
+							myConnections.maxDrainPower_p->defaultMaxNet != myConnections.bulkId ) ||
+						( myConnections.maxDrainVoltage == myConnections.maxBulkVoltage &&
+							myConnections.maxDrainVoltage != myConnections.minBulkVoltage && // no leak path
+	//						myConnections.masterMinBulkNet.finalNetId != myConnections.masterMaxBulkNet.finalNetId &&
+							myConnections.masterMaxDrainNet.finalResistance > myConnections.masterMaxBulkNet.finalResistance &&
+							! myConnections.minBulkPower_p->type[HIZ_BIT] &&
+							! PathContains(maxNet_v, myConnections.drainId, myConnections.bulkId)) ) ) { // resistance check backwards in NMOS max (ignore connections through self)
 				myErrorFlag = true;
 			}
-		} else if ( myConnections.CheckTerminalMinVoltages(BULK) == false ) {
-			if ( myConnections.minSourcePower_p || myConnections.simSourcePower_p || myConnections.maxSourcePower_p ||
-					myConnections.minDrainPower_p || myConnections.simDrainPower_p || myConnections.maxDrainPower_p ) { // has some connection (all connections open -> no error)
-				myErrorFlag = true;
-			}
-		} else if ( myConnections.CheckTerminalMinVoltages(BULK | SOURCE) &&
-				( myConnections.minBulkVoltage - myConnections.minSourceVoltage > cvcParameters.cvcBiasErrorThreshold ||
-					( myConnections.minSourceVoltage == myConnections.minBulkVoltage &&
-						myConnections.masterMinSourceNet.finalResistance < myConnections.masterMinBulkNet.finalResistance) ) ) {
-			myErrorFlag = true;
-		} else if (	myConnections.CheckTerminalMinVoltages(BULK | DRAIN) &&
-				( myConnections.minBulkVoltage - myConnections.minDrainVoltage > cvcParameters.cvcBiasErrorThreshold ||
-					( myConnections.minDrainVoltage == myConnections.minBulkVoltage &&
-						myConnections.masterMinDrainNet.finalResistance < myConnections.masterMinBulkNet.finalResistance) ) ) {
-			myErrorFlag = true;
-		} else if (	myConnections.CheckTerminalSimVoltages(BULK | SOURCE) &&
-				( myConnections.simBulkVoltage - myConnections.simSourceVoltage > cvcParameters.cvcBiasErrorThreshold ||
-					( myConnections.simSourceVoltage == myConnections.simBulkVoltage &&
-						myConnections.masterSimSourceNet.finalResistance < myConnections.masterSimBulkNet.finalResistance) ) ) {
-			myErrorFlag = true;
-		} else if (	myConnections.CheckTerminalSimVoltages(BULK | DRAIN) &&
-				( myConnections.simBulkVoltage - myConnections.simDrainVoltage > cvcParameters.cvcBiasErrorThreshold ||
-					( myConnections.simDrainVoltage == myConnections.simBulkVoltage &&
-						myConnections.masterSimDrainNet.finalResistance < myConnections.masterSimBulkNet.finalResistance) ) ) {
-			myErrorFlag = true;
-		} else if (	myConnections.CheckTerminalMaxVoltages(BULK | SOURCE) &&
-				( ( myConnections.maxBulkVoltage - myConnections.maxSourceVoltage > cvcParameters.cvcBiasErrorThreshold &&
-						myConnections.maxSourcePower_p->defaultMaxNet != myConnections.bulkId ) ||
-					( myConnections.maxSourceVoltage == myConnections.maxBulkVoltage &&
-						myConnections.maxSourceVoltage != myConnections.minBulkVoltage && // no leak path
-//						myConnections.masterMinBulkNet.finalNetId != myConnections.masterMaxBulkNet.finalNetId &&
-						myConnections.masterMaxSourceNet.finalResistance > myConnections.masterMaxBulkNet.finalResistance &&
-						! myConnections.minBulkPower_p->type[HIZ_BIT] &&
-						! PathContains(maxNet_v, myConnections.sourceId, myConnections.bulkId)) ) ) { // resistance check backwards in NMOS max (ignore connections through self)
-			myErrorFlag = true;
-// Added 20140523
-		} else if (	myConnections.CheckTerminalMaxVoltages(BULK | DRAIN) &&
-				( ( myConnections.maxBulkVoltage - myConnections.maxDrainVoltage > cvcParameters.cvcBiasErrorThreshold &&
-						myConnections.maxDrainPower_p->defaultMaxNet != myConnections.bulkId ) ||
-					( myConnections.maxDrainVoltage == myConnections.maxBulkVoltage &&
-						myConnections.maxDrainVoltage != myConnections.minBulkVoltage && // no leak path
-//						myConnections.masterMinBulkNet.finalNetId != myConnections.masterMaxBulkNet.finalNetId &&
-						myConnections.masterMaxDrainNet.finalResistance > myConnections.masterMaxBulkNet.finalResistance &&
-						! myConnections.minBulkPower_p->type[HIZ_BIT] &&
-						! PathContains(maxNet_v, myConnections.drainId, myConnections.bulkId)) ) ) { // resistance check backwards in NMOS max (ignore connections through self)
-			myErrorFlag = true;
+		} else {
+			myErrorFlag = true; // if not relatives, always an error
+			myUnrelatedFlag = true;
 		}
 		if ( myErrorFlag ) {
 			errorCount[NMOS_SOURCE_BULK]++;
 			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
+				if ( myUnrelatedFlag ) {
+					errorFile << "Unrelated power error" << endl;
+				}
 				PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
 				errorFile << endl;
 			}
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking nmos source/drain vs bias errors: ");
-//	errorFile << "! Finished" << endl << endl;
-/*
-	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
-		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
-			if ( model_pit->type != NMOS ) continue;
-			cout << "! Checking nmos source/drain vs bias errors for model: " << model_pit->definition << endl << endl;
-			errorFile << "! Checking nmos source/drain vs bias errors for model: " << model_pit->definition << endl << endl;
-			CDevice * myDevice_p = model_pit->firstDevice_p;
-			while (myDevice_p) {
-				CCircuit * myParent_p = myDevice_p->parent_p;
-//				deviceId_t myLocalDeviceId = myParent_p->localDeviceIdMap[myDevice_p->name];
-				for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
-					CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
-					MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-					bool myErrorFlag = false;
-					if ( myConnections.CheckTerminalMinVoltages(BULK) == false ) {
-						if ( myConnections.minBulkPower_p && myConnections.minBulkPower_p->type[HIZ_BIT] ) {
-							if ( myConnections.minSourcePower_p && ! myConnections.minBulkPower_p->RelatedPower(myConnections.minSourcePower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.simSourcePower_p && ! myConnections.minBulkPower_p->RelatedPower(myConnections.simSourcePower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.maxSourcePower_p && ! myConnections.minBulkPower_p->RelatedPower(myConnections.maxSourcePower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.minDrainPower_p && ! myConnections.minBulkPower_p->RelatedPower(myConnections.minDrainPower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.simDrainPower_p && ! myConnections.minBulkPower_p->RelatedPower(myConnections.simDrainPower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.maxDrainPower_p && ! myConnections.minBulkPower_p->RelatedPower(myConnections.maxDrainPower_p) ) {
-								myErrorFlag = true;
-							}
-						} else if ( myConnections.minSourcePower_p || myConnections.simSourcePower_p || myConnections.maxSourcePower_p ||
-								myConnections.minDrainPower_p || myConnections.simDrainPower_p || myConnections.maxDrainPower_p ) { // has some connection (all connections open -> no error)
-							myErrorFlag = true;
-						}
-					} else if ( myConnections.CheckTerminalMinVoltages(BULK | SOURCE) &&
-							( myConnections.minSourceVoltage < myConnections.minBulkVoltage ||
-								( myConnections.minSourceVoltage == myConnections.minBulkVoltage &&
-									myConnections.masterMinSourceNet.resistance < myConnections.masterMinBulkNet.resistance) ) ) {
-						myErrorFlag = true;
-					} else if (	myConnections.CheckTerminalMinVoltages(BULK | DRAIN) &&
-							( myConnections.minDrainVoltage < myConnections.minBulkVoltage ||
-								( myConnections.minDrainVoltage == myConnections.minBulkVoltage &&
-									myConnections.masterMinDrainNet.resistance < myConnections.masterMinBulkNet.resistance) ) ) {
-						myErrorFlag = true;
-					} else if (	myConnections.CheckTerminalSimVoltages(BULK | SOURCE) &&
-							( myConnections.simSourceVoltage < myConnections.simBulkVoltage ||
-								( myConnections.simSourceVoltage == myConnections.simBulkVoltage &&
-									myConnections.masterSimSourceNet.resistance < myConnections.masterSimBulkNet.resistance) ) ) {
-						myErrorFlag = true;
-					} else if (	myConnections.CheckTerminalSimVoltages(BULK | DRAIN) &&
-							( myConnections.simDrainVoltage < myConnections.simBulkVoltage ||
-								( myConnections.simDrainVoltage == myConnections.simBulkVoltage &&
-									myConnections.masterSimDrainNet.resistance < myConnections.masterSimBulkNet.resistance) ) ) {
-						myErrorFlag = true;
-					} else if (	myConnections.CheckTerminalMaxVoltages(BULK | SOURCE) &&
-							( myConnections.maxSourceVoltage < myConnections.maxBulkVoltage ||
-								( myConnections.maxSourceVoltage == myConnections.maxBulkVoltage &&
-									myConnections.masterMaxSourceNet.resistance < myConnections.masterMaxBulkNet.resistance) ) ) {
-						myErrorFlag = true;
-// Added 20140523
-					} else if (	myConnections.CheckTerminalMaxVoltages(BULK | DRAIN) &&
-							( myConnections.maxDrainVoltage < myConnections.maxBulkVoltage ||
-								( myConnections.maxDrainVoltage == myConnections.maxBulkVoltage &&
-									myConnections.masterMaxDrainNet.resistance < myConnections.masterMaxBulkNet.resistance) ) ) {
-						myErrorFlag = true;
-					} else if ( myConnections.CheckTerminalSimVoltages(BULK) == false &&
-								myConnections.simBulkPower_p && myConnections.simBulkPower_p->type[HIZ_BIT] ) {
-							if ( myConnections.minSourcePower_p && ! myConnections.simBulkPower_p->RelatedPower(myConnections.minSourcePower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.simSourcePower_p && ! myConnections.simBulkPower_p->RelatedPower(myConnections.simSourcePower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.maxSourcePower_p && ! myConnections.simBulkPower_p->RelatedPower(myConnections.maxSourcePower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.minDrainPower_p && ! myConnections.simBulkPower_p->RelatedPower(myConnections.minDrainPower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.simDrainPower_p && ! myConnections.simBulkPower_p->RelatedPower(myConnections.simDrainPower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.maxDrainPower_p && ! myConnections.simBulkPower_p->RelatedPower(myConnections.maxDrainPower_p) ) {
-								myErrorFlag = true;
-							}
-					}
-					if ( myErrorFlag ) {
-						errorCount[NMOS_SOURCE_BULK]++;
-						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-							PrintDeviceWithAllConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile);
-							errorFile << endl;
-						}
-					}
-				}
-				myDevice_p = myDevice_p->nextDevice_p;
-			}
-			errorFile << "! Finished" << endl << endl;
-		}
-	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-*/
 }
 
 void CCvcDb::FindPmosSourceVsBulkErrors() {
@@ -868,178 +685,95 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 		if ( ! IsPmos_(myDevice_p->model_p->type) ) continue;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 		if ( myConnections.sourceId == myConnections.drainId && myConnections.sourceId == myConnections.bulkId ) continue;  // ignore drain = source = bulk
-		if ( (myConnections.minBulkVoltage == myConnections.maxSourceVoltage || myConnections.maxSourceVoltage == UNKNOWN_VOLTAGE)
-				&& (myConnections.minBulkVoltage == myConnections.maxDrainVoltage || myConnections.maxDrainVoltage == UNKNOWN_VOLTAGE) ) continue;
-		 	 // no error if min bulk = max source = max drain
 		bool myErrorFlag = false;
-		if ( myConnections.maxBulkPower_p && myConnections.maxBulkPower_p->type[HIZ_BIT] ) {
-			if ( myConnections.minSourcePower_p && ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.minSourcePower_p, netVoltagePtr_v, maxNet_v, minNet_v, false) ) {
+		bool myUnrelatedFlag = false;
+		if ( ! myConnections.maxBulkPower_p
+				|| (myConnections.maxBulkPower_p->IsRelative(myConnections.maxSourcePower_p, true, true)
+						&& myConnections.maxBulkPower_p->IsRelative(myConnections.maxDrainPower_p, true, true)) ) {
+			// if relatives (default), then checks are conditional
+			if ( (myConnections.minBulkVoltage == myConnections.maxSourceVoltage || myConnections.maxSourceVoltage == UNKNOWN_VOLTAGE)
+					&& (myConnections.minBulkVoltage == myConnections.maxDrainVoltage || myConnections.maxDrainVoltage == UNKNOWN_VOLTAGE) ) continue;
+				 // no error if min bulk = max source = max drain
+			if ( myConnections.maxBulkPower_p && myConnections.maxBulkPower_p->type[HIZ_BIT] ) {
+				if ( myConnections.minSourcePower_p && ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.minSourcePower_p, netVoltagePtr_v, maxNet_v, minNet_v, false) ) {
+					myErrorFlag = true;
+				} else if ( myConnections.simSourcePower_p && IsKnownVoltage_(myConnections.simSourcePower_p->simVoltage)
+						&& ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.simSourcePower_p, netVoltagePtr_v, maxNet_v, simNet_v, false)
+						&& myConnections.simSourceVoltage > myConnections.minBulkVoltage ) {
+					myErrorFlag = true;
+				} else if ( myConnections.maxSourcePower_p && ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.maxSourcePower_p, netVoltagePtr_v, maxNet_v, maxNet_v, false) ) {
+					myErrorFlag = true;
+				} else if ( myConnections.minDrainPower_p && ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.minDrainPower_p, netVoltagePtr_v, maxNet_v, minNet_v, false) ) {
+					myErrorFlag = true;
+				} else if ( myConnections.simDrainPower_p && IsKnownVoltage_(myConnections.simDrainPower_p->simVoltage)
+						&& ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, maxNet_v, simNet_v, false)
+						&& myConnections.simDrainVoltage > myConnections.minBulkVoltage ) {
+					myErrorFlag = true;
+				} else if ( myConnections.maxDrainPower_p && ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.maxDrainPower_p, netVoltagePtr_v, maxNet_v, maxNet_v, false) ) {
+					myErrorFlag = true;
+				}
+			} else if ( myConnections.CheckTerminalMaxVoltages(BULK) == false ) {
+				if ( myConnections.minSourcePower_p || myConnections.simSourcePower_p || myConnections.maxSourcePower_p ||
+						myConnections.minDrainPower_p || myConnections.simDrainPower_p || myConnections.maxDrainPower_p ) { // has some connection (all connections open -> no error)
+					myErrorFlag = true;
+				}
+			} else if (	myConnections.CheckTerminalMinVoltages(BULK | SOURCE) &&
+					( ( myConnections.minSourceVoltage - myConnections.minBulkVoltage > cvcParameters.cvcBiasErrorThreshold &&
+							myConnections.minSourcePower_p->defaultMinNet != myConnections.bulkId ) ||
+						( myConnections.minSourceVoltage == myConnections.minBulkVoltage &&
+	//						myConnections.masterMinBulkNet.finalNetId != myConnections.masterMaxBulkNet.finalNetId &&
+							myConnections.minSourceVoltage != myConnections.maxBulkVoltage && // no leak path
+							myConnections.masterMinSourceNet.finalResistance > myConnections.masterMinBulkNet.finalResistance &&
+							! myConnections.maxBulkPower_p->type[HIZ_BIT] &&
+							! PathContains(minNet_v, myConnections.sourceId, myConnections.bulkId)) ) ) { // resistance check backwards in PMOS min (ignore connections through self)
 				myErrorFlag = true;
-			} else if ( myConnections.simSourcePower_p && IsKnownVoltage_(myConnections.simSourcePower_p->simVoltage)
-					&& ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.simSourcePower_p, netVoltagePtr_v, maxNet_v, simNet_v, false)
-					&& myConnections.simSourceVoltage > myConnections.minBulkVoltage ) {
+			} else if (	myConnections.CheckTerminalMinVoltages(BULK | DRAIN) &&
+					( ( myConnections.minDrainVoltage - myConnections.minBulkVoltage > cvcParameters.cvcBiasErrorThreshold &&
+							myConnections.minDrainPower_p->defaultMinNet != myConnections.bulkId ) ||
+						( myConnections.minDrainVoltage == myConnections.minBulkVoltage &&
+	//						myConnections.masterMinBulkNet.finalNetId != myConnections.masterMaxBulkNet.finalNetId &&
+							myConnections.minDrainVoltage != myConnections.maxBulkVoltage && // no leak path
+							myConnections.masterMinDrainNet.finalResistance > myConnections.masterMinBulkNet.finalResistance &&
+							! myConnections.maxBulkPower_p->type[HIZ_BIT] &&
+							! PathContains(minNet_v, myConnections.drainId, myConnections.bulkId)) ) ) { // resistance check backwards in PMOS min (ignore connections through self)
 				myErrorFlag = true;
-			} else if ( myConnections.maxSourcePower_p && ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.maxSourcePower_p, netVoltagePtr_v, maxNet_v, maxNet_v, false) ) {
+			} else if (	myConnections.CheckTerminalSimVoltages(BULK | SOURCE) &&
+					( myConnections.simSourceVoltage - myConnections.simBulkVoltage > cvcParameters.cvcBiasErrorThreshold ||
+						( myConnections.simSourceVoltage == myConnections.simBulkVoltage &&
+							myConnections.masterSimSourceNet.finalResistance < myConnections.masterSimBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
-			} else if ( myConnections.minDrainPower_p && ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.minDrainPower_p, netVoltagePtr_v, maxNet_v, minNet_v, false) ) {
+			} else if (	myConnections.CheckTerminalSimVoltages(BULK | DRAIN) &&
+					( myConnections.simDrainVoltage - myConnections.simBulkVoltage > cvcParameters.cvcBiasErrorThreshold ||
+						( myConnections.simDrainVoltage == myConnections.simBulkVoltage &&
+							myConnections.masterSimDrainNet.finalResistance < myConnections.masterSimBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
-			} else if ( myConnections.simDrainPower_p && IsKnownVoltage_(myConnections.simDrainPower_p->simVoltage)
-					&& ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, maxNet_v, simNet_v, false)
-					&& myConnections.simDrainVoltage > myConnections.minBulkVoltage ) {
+			} else if (	myConnections.CheckTerminalMaxVoltages(BULK | SOURCE) &&
+					( myConnections.maxSourceVoltage - myConnections.maxBulkVoltage > cvcParameters.cvcBiasErrorThreshold ||
+						( myConnections.maxSourceVoltage == myConnections.maxBulkVoltage &&
+							myConnections.masterMaxSourceNet.finalResistance < myConnections.masterMaxBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
-			} else if ( myConnections.maxDrainPower_p && ! myConnections.maxBulkPower_p->IsRelatedPower(myConnections.maxDrainPower_p, netVoltagePtr_v, maxNet_v, maxNet_v, false) ) {
+			} else if (	myConnections.CheckTerminalMaxVoltages(BULK | DRAIN) &&
+					( myConnections.maxDrainVoltage - myConnections.maxBulkVoltage > cvcParameters.cvcBiasErrorThreshold ||
+						( myConnections.maxDrainVoltage == myConnections.maxBulkVoltage &&
+							myConnections.masterMaxDrainNet.finalResistance < myConnections.masterMaxBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
 			}
-		} else if ( myConnections.CheckTerminalMaxVoltages(BULK) == false ) {
-			if ( myConnections.minSourcePower_p || myConnections.simSourcePower_p || myConnections.maxSourcePower_p ||
-					myConnections.minDrainPower_p || myConnections.simDrainPower_p || myConnections.maxDrainPower_p ) { // has some connection (all connections open -> no error)
-				myErrorFlag = true;
-			}
-		} else if (	myConnections.CheckTerminalMinVoltages(BULK | SOURCE) &&
-				( ( myConnections.minSourceVoltage - myConnections.minBulkVoltage > cvcParameters.cvcBiasErrorThreshold &&
-						myConnections.minSourcePower_p->defaultMinNet != myConnections.bulkId ) ||
-					( myConnections.minSourceVoltage == myConnections.minBulkVoltage &&
-//						myConnections.masterMinBulkNet.finalNetId != myConnections.masterMaxBulkNet.finalNetId &&
-						myConnections.minSourceVoltage != myConnections.maxBulkVoltage && // no leak path
-						myConnections.masterMinSourceNet.finalResistance > myConnections.masterMinBulkNet.finalResistance &&
-						! myConnections.maxBulkPower_p->type[HIZ_BIT] &&
-						! PathContains(minNet_v, myConnections.sourceId, myConnections.bulkId)) ) ) { // resistance check backwards in PMOS min (ignore connections through self)
-			myErrorFlag = true;
-		} else if (	myConnections.CheckTerminalMinVoltages(BULK | DRAIN) &&
-				( ( myConnections.minDrainVoltage - myConnections.minBulkVoltage > cvcParameters.cvcBiasErrorThreshold &&
-						myConnections.minDrainPower_p->defaultMinNet != myConnections.bulkId ) ||
-					( myConnections.minDrainVoltage == myConnections.minBulkVoltage &&
-//						myConnections.masterMinBulkNet.finalNetId != myConnections.masterMaxBulkNet.finalNetId &&
-						myConnections.minDrainVoltage != myConnections.maxBulkVoltage && // no leak path
-						myConnections.masterMinDrainNet.finalResistance > myConnections.masterMinBulkNet.finalResistance &&
-						! myConnections.maxBulkPower_p->type[HIZ_BIT] &&
-						! PathContains(minNet_v, myConnections.drainId, myConnections.bulkId)) ) ) { // resistance check backwards in PMOS min (ignore connections through self)
-			myErrorFlag = true;
-		} else if (	myConnections.CheckTerminalSimVoltages(BULK | SOURCE) &&
-				( myConnections.simSourceVoltage - myConnections.simBulkVoltage > cvcParameters.cvcBiasErrorThreshold ||
-					( myConnections.simSourceVoltage == myConnections.simBulkVoltage &&
-						myConnections.masterSimSourceNet.finalResistance < myConnections.masterSimBulkNet.finalResistance) ) ) {
-			myErrorFlag = true;
-		} else if (	myConnections.CheckTerminalSimVoltages(BULK | DRAIN) &&
-				( myConnections.simDrainVoltage - myConnections.simBulkVoltage > cvcParameters.cvcBiasErrorThreshold ||
-					( myConnections.simDrainVoltage == myConnections.simBulkVoltage &&
-						myConnections.masterSimDrainNet.finalResistance < myConnections.masterSimBulkNet.finalResistance) ) ) {
-			myErrorFlag = true;
-		} else if (	myConnections.CheckTerminalMaxVoltages(BULK | SOURCE) &&
-				( myConnections.maxSourceVoltage - myConnections.maxBulkVoltage > cvcParameters.cvcBiasErrorThreshold ||
-					( myConnections.maxSourceVoltage == myConnections.maxBulkVoltage &&
-						myConnections.masterMaxSourceNet.finalResistance < myConnections.masterMaxBulkNet.finalResistance) ) ) {
-			myErrorFlag = true;
-		} else if (	myConnections.CheckTerminalMaxVoltages(BULK | DRAIN) &&
-				( myConnections.maxDrainVoltage - myConnections.maxBulkVoltage > cvcParameters.cvcBiasErrorThreshold ||
-					( myConnections.maxDrainVoltage == myConnections.maxBulkVoltage &&
-						myConnections.masterMaxDrainNet.finalResistance < myConnections.masterMaxBulkNet.finalResistance) ) ) {
-			myErrorFlag = true;
+		} else {
+			myUnrelatedFlag = true;
+			myErrorFlag = true; // if not relatives, always an error
 		}
 		if ( myErrorFlag ) {
 			errorCount[PMOS_SOURCE_BULK]++;
 			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
+				if ( myUnrelatedFlag ) {
+					errorFile << "Unrelated power error" << endl;
+				}
 				PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
 				errorFile << endl;
 			}
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking pmos source/drain vs bias errors: ");
-//	errorFile << "! Finished" << endl << endl;
-/*
-	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
-		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
-			if ( model_pit->type != PMOS ) continue;
-			cout << "! Checking pmos source/drain vs bias errors for model: " << model_pit->definition << endl << endl;
-			errorFile << "! Checking pmos source/drain vs bias errors for model: " << model_pit->definition << endl << endl;
-			CDevice * myDevice_p = model_pit->firstDevice_p;
-			while (myDevice_p) {
-				CCircuit * myParent_p = myDevice_p->parent_p;
-//				deviceId_t myLocalDeviceId = myParent_p->localDeviceIdMap[myDevice_p->name];
-				for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
-					CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
-					MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-					bool myErrorFlag = false;
-					if ( myConnections.CheckTerminalMaxVoltages(BULK) == false ) {
-						if ( myConnections.maxBulkPower_p && myConnections.maxBulkPower_p->type[HIZ_BIT] ) {
-							if ( myConnections.minSourcePower_p && ! myConnections.maxBulkPower_p->RelatedPower(myConnections.minSourcePower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.simSourcePower_p && ! myConnections.maxBulkPower_p->RelatedPower(myConnections.simSourcePower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.maxSourcePower_p && ! myConnections.maxBulkPower_p->RelatedPower(myConnections.maxSourcePower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.minDrainPower_p && ! myConnections.maxBulkPower_p->RelatedPower(myConnections.minDrainPower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.simDrainPower_p && ! myConnections.maxBulkPower_p->RelatedPower(myConnections.simDrainPower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.maxDrainPower_p && ! myConnections.maxBulkPower_p->RelatedPower(myConnections.maxDrainPower_p) ) {
-								myErrorFlag = true;
-							}
-						} else if ( myConnections.minSourcePower_p || myConnections.simSourcePower_p || myConnections.maxSourcePower_p ||
-								myConnections.minDrainPower_p || myConnections.simDrainPower_p || myConnections.maxDrainPower_p ) { // has some connection (all connections open -> no error)
-							myErrorFlag = true;
-						}
-					} else if (	myConnections.CheckTerminalMinVoltages(BULK | SOURCE) &&
-							( myConnections.minSourceVoltage > myConnections.minBulkVoltage ||
-								( myConnections.minSourceVoltage == myConnections.minBulkVoltage &&
-									myConnections.masterMinSourceNet.resistance < myConnections.masterMinBulkNet.resistance) ) ) {
-						myErrorFlag = true;
-					} else if (	myConnections.CheckTerminalMinVoltages(BULK | DRAIN) &&
-							( myConnections.minDrainVoltage > myConnections.minBulkVoltage ||
-								( myConnections.minDrainVoltage == myConnections.minBulkVoltage &&
-									myConnections.masterMinDrainNet.resistance < myConnections.masterMinBulkNet.resistance) ) ) {
-						myErrorFlag = true;
-					} else if (	myConnections.CheckTerminalSimVoltages(BULK | SOURCE) &&
-							( myConnections.simSourceVoltage > myConnections.simBulkVoltage ||
-								( myConnections.simSourceVoltage == myConnections.simBulkVoltage &&
-									myConnections.masterSimSourceNet.resistance < myConnections.masterSimBulkNet.resistance) ) ) {
-						myErrorFlag = true;
-					} else if (	myConnections.CheckTerminalSimVoltages(BULK | DRAIN) &&
-							( myConnections.simDrainVoltage > myConnections.simBulkVoltage ||
-								( myConnections.simDrainVoltage == myConnections.simBulkVoltage &&
-									myConnections.masterSimDrainNet.resistance < myConnections.masterSimBulkNet.resistance) ) ) {
-						myErrorFlag = true;
-					} else if (	myConnections.CheckTerminalMaxVoltages(BULK | SOURCE) &&
-							( myConnections.maxSourceVoltage > myConnections.maxBulkVoltage ||
-								( myConnections.maxSourceVoltage == myConnections.maxBulkVoltage &&
-									myConnections.masterMaxSourceNet.resistance < myConnections.masterMaxBulkNet.resistance) ) ) {
-						myErrorFlag = true;
-					} else if (	myConnections.CheckTerminalMaxVoltages(BULK | DRAIN) &&
-							( myConnections.maxDrainVoltage > myConnections.maxBulkVoltage ||
-								( myConnections.maxDrainVoltage == myConnections.maxBulkVoltage &&
-									myConnections.masterMaxDrainNet.resistance < myConnections.masterMaxBulkNet.resistance) ) ) {
-						myErrorFlag = true;
-					} else if ( myConnections.CheckTerminalSimVoltages(BULK) == false &&
-								myConnections.simBulkPower_p && myConnections.simBulkPower_p->type[HIZ_BIT] ) {
-							if ( myConnections.minSourcePower_p && ! myConnections.simBulkPower_p->RelatedPower(myConnections.minSourcePower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.simSourcePower_p && ! myConnections.simBulkPower_p->RelatedPower(myConnections.simSourcePower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.maxSourcePower_p && ! myConnections.simBulkPower_p->RelatedPower(myConnections.maxSourcePower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.minDrainPower_p && ! myConnections.simBulkPower_p->RelatedPower(myConnections.minDrainPower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.simDrainPower_p && ! myConnections.simBulkPower_p->RelatedPower(myConnections.simDrainPower_p) ) {
-								myErrorFlag = true;
-							} else if ( myConnections.maxDrainPower_p && ! myConnections.simBulkPower_p->RelatedPower(myConnections.maxDrainPower_p) ) {
-								myErrorFlag = true;
-							}
-					}
-					if ( myErrorFlag ) {
-						errorCount[PMOS_SOURCE_BULK]++;
-						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-							PrintDeviceWithAllConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile);
-							errorFile << endl;
-						}
-					}
-				}
-				myDevice_p = myDevice_p->nextDevice_p;
-			}
-			errorFile << "! Finished" << endl << endl;
-		}
-	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-*/
 }
 
 void CCvcDb::FindForwardBiasDiodes() {
@@ -1054,6 +788,7 @@ void CCvcDb::FindForwardBiasDiodes() {
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 		if ( GetEquivalentNet(myConnections.originalSourceId) == GetEquivalentNet(myConnections.originalDrainId) ) continue;
 		bool myErrorFlag = false;
+		bool myUnrelatedFlag = false;
 		if ( myConnections.CheckTerminalMinMaxVoltages(SOURCE | DRAIN) ) {
 			voltage_t mySourceVoltage = UNKNOWN_VOLTAGE, myDrainVoltage = UNKNOWN_VOLTAGE;
 			if ( myConnections.minSourcePower_p == myConnections.minDrainPower_p ) {
@@ -1105,17 +840,6 @@ void CCvcDb::FindForwardBiasDiodes() {
 				}
 			}
 			if ( mySourceVoltage - myDrainVoltage > cvcParameters.cvcForwardErrorThreshold ) {
-/*
-				if ( myConnections.maxSourcePower_p->type[HIZ_BIT] ) {
-					if ( ! myConnections.maxSourcePower_p->RelatedPower(myConnections.minDrainPower_p) ) myErrorFlag = true;
-					if ( ! myConnections.maxSourcePower_p->RelatedPower(myConnections.maxDrainPower_p) ) myErrorFlag = true;
-				} else if ( myConnections.minDrainPower_p->type[HIZ_BIT] ) {
-					if ( ! myConnections.minDrainPower_p->RelatedPower(myConnections.maxSourcePower_p) ) myErrorFlag = true;
-					if ( ! myConnections.minDrainPower_p->RelatedPower(myConnections.minSourcePower_p) ) myErrorFlag = true;
-				} else {
-					myErrorFlag = true;
-				}
-*/
 				if ( myConnections.maxSourcePower_p->type[HIZ_BIT] || myConnections.minDrainPower_p->type[HIZ_BIT] ) {
 					// the following are errors for cutoff power. unknown annode, unknown cathode, source > max drain, max source not related to min drain
 					if ( mySourceVoltage == UNKNOWN_VOLTAGE || myConnections.maxDrainVoltage == UNKNOWN_VOLTAGE || mySourceVoltage > myConnections.maxDrainVoltage ) {
@@ -1126,6 +850,10 @@ void CCvcDb::FindForwardBiasDiodes() {
 				} else {
 					myErrorFlag = true;
 				}
+			} else if ( ! myConnections.minSourcePower_p->IsRelative(myConnections.minDrainPower_p, true, true)
+					|| ! myConnections.maxSourcePower_p->IsRelative(myConnections.maxDrainPower_p, true, true) ) {
+				myErrorFlag = true;
+				myUnrelatedFlag = true;
 			}
 		} else if ( myConnections.CheckTerminalMinMaxVoltages(SOURCE) && ! myConnections.CheckTerminalMinMaxVoltages(DRAIN) ) {
 			if ( myConnections.maxSourceVoltage > 0 && ! myConnections.maxSourcePower_p->type[HIZ_BIT] ) {
@@ -1137,112 +865,29 @@ void CCvcDb::FindForwardBiasDiodes() {
 			}
 		}
 		if ( myErrorFlag ) {
-//						cout << "Overvoltage Error:Gate vs Bulk:" << endl;
 			errorCount[FORWARD_DIODE]++;
 			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
+				if ( myUnrelatedFlag ) {
+					errorFile << "Unrelated power error" << endl;
+				}
 				PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
 				errorFile << endl;
 			}
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking forward bias diode errors: ");
-//	errorFile << "! Finished" << endl << endl;
-/*
-	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
-		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
-			if ( model_pit->type != DIODE ) continue;
-			cout << "! Checking forward bias diode errors for model: " << model_pit->definition << endl << endl;
-			errorFile << "! Checking forward bias diode errors for model: " << model_pit->definition << endl << endl;
-			CDevice * myDevice_p = model_pit->firstDevice_p;
-			while (myDevice_p) {
-				CCircuit * myParent_p = myDevice_p->parent_p;
-				deviceId_t myLocalDeviceId = myParent_p->localDeviceIdMap[myDevice_p->name];
-				for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
-					CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
-					MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-					if ( myConnections.originalSourceId == myConnections.originalDrainId ) continue;
-					bool myErrorFlag = false;
-					if ( myConnections.CheckTerminalMinMaxVoltages(SOURCE | DRAIN) ) {
-						voltage_t mySourceVoltage = UNKNOWN_VOLTAGE, myDrainVoltage = UNKNOWN_VOLTAGE;
-						if ( myConnections.minSourceVoltage == myConnections.minDrainVoltage ) {
-							if ( myConnections.maxSourceVoltage == myConnections.maxDrainVoltage && myConnections.minSourceVoltage == myConnections.maxDrainVoltage ) continue;
-							if ( myConnections.masterMinSourceNet.resistance < myConnections.masterMinDrainNet.resistance ) {
-								mySourceVoltage = myConnections.minSourceVoltage;
-							} else if ( myConnections.masterMinSourceNet.resistance > myConnections.masterMinDrainNet.resistance ) {
-								myDrainVoltage = myConnections.minDrainVoltage;
-							}
-						}
-						if ( myConnections.maxSourceVoltage == myConnections.maxDrainVoltage ) {
-							if ( myConnections.masterMaxDrainNet.resistance < myConnections.masterMaxSourceNet.resistance ) {
-								if (myDrainVoltage == UNKNOWN_VOLTAGE) {
-									myDrainVoltage = myConnections.maxDrainVoltage; // min drain overrides
-								} else if ( PathCrosses(maxNet_v, myConnections.sourceId, minNet_v, myConnections.drainId) ) {
-									continue; // no error if anode to power crosses cathode to ground path
-								} else {
-									cout << "INFO: unexpected diode " << DeviceName(myInstance_p->firstDeviceId + myLocalDeviceId, PRINT_CIRCUIT_ON) << endl << endl;
-									PrintVirtualNet<CVirtualNetVector>(maxNet_v, myConnections.sourceId, "Max anode path");
-									PrintVirtualNet<CVirtualNetVector>(minNet_v, myConnections.sourceId, "Min anode path");
-									PrintVirtualNet<CVirtualNetVector>(maxNet_v, myConnections.drainId, "Max cathode path");
-									PrintVirtualNet<CVirtualNetVector>(minNet_v, myConnections.drainId, "Min cathode path");
-								}
-							} else {
-								if (mySourceVoltage != UNKNOWN_VOLTAGE) {
-									if ( PathCrosses(minNet_v, myConnections.drainId, maxNet_v, myConnections.sourceId) ) {
-										continue; // no error if anode to power crosses cathode to ground path
-									} else {
-										cout << "INFO: unexpected diode " << DeviceName(myInstance_p->firstDeviceId + myLocalDeviceId, PRINT_CIRCUIT_ON) << endl << endl;
-										PrintVirtualNet<CVirtualNetVector>(maxNet_v, myConnections.sourceId, "Max anode path");
-										PrintVirtualNet<CVirtualNetVector>(minNet_v, myConnections.sourceId, "Min anode path");
-										PrintVirtualNet<CVirtualNetVector>(maxNet_v, myConnections.drainId, "Max cathode path");
-										PrintVirtualNet<CVirtualNetVector>(minNet_v, myConnections.drainId, "Min cathode path");
-									}
-								}
-								mySourceVoltage = myConnections.maxSourceVoltage; // max source overrides
-							}
-						}
-						if ( mySourceVoltage == UNKNOWN_VOLTAGE ) mySourceVoltage = myConnections.maxSourceVoltage;
-						if ( myDrainVoltage == UNKNOWN_VOLTAGE ) myDrainVoltage = myConnections.minDrainVoltage;
-						if ( mySourceVoltage > myDrainVoltage ) {
-							myErrorFlag = true;
-						}
-					} else if ( myConnections.CheckTerminalMinMaxVoltages(SOURCE) && ! myConnections.CheckTerminalMinMaxVoltages(DRAIN) ) {
-						if ( myConnections.maxSourceVoltage > 0 ) {
-							myErrorFlag = true;
-						}
-					} else if ( ! myConnections.CheckTerminalMinMaxVoltages(SOURCE) && myConnections.CheckTerminalMinMaxVoltages(DRAIN) ) {
-						if ( myConnections.minDrainVoltage <= 0 ) {
-							myErrorFlag = true;
-						}
-					}
-					if ( myErrorFlag ) {
-//						cout << "Overvoltage Error:Gate vs Bulk:" << endl;
-						errorCount[FORWARD_DIODE]++;
-						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-							PrintDeviceWithAllConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile);
-							errorFile << endl;
-						}
-					}
-				}
-				myDevice_p = myDevice_p->nextDevice_p;
-			}
-			errorFile << "! Finished" << endl << endl;
-		}
-	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-*/
 }
 
 void CCvcDb::FindNmosPossibleLeakErrors() {
 	CFullConnection myConnections;
 	reportFile << "! Checking nmos possible leak errors: " << endl << endl;
 	errorFile << "! Checking nmos possible leak errors: " << endl << endl;
-	bool myErrorFlag;
 	for ( deviceId_t device_it = 0; device_it < deviceCount; device_it++ ) {
 		CInstance * myInstance_p = instancePtr_v[deviceParent_v[device_it]];
 		CCircuit * myParent_p = myInstance_p->master_p;
 		CDevice * myDevice_p = myParent_p->devicePtr_v[device_it - myInstance_p->firstDeviceId];
 		if ( ! IsNmos_(myDevice_p->model_p->type) ) continue;
-		myErrorFlag = false;
+		bool myErrorFlag = false;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 		if ( IsKnownVoltage_(myConnections.simGateVoltage) ) continue;
 		if ( myConnections.CheckTerminalMinVoltages(SOURCE | DRAIN) == true ) {
@@ -1268,20 +913,6 @@ void CCvcDb::FindNmosPossibleLeakErrors() {
 				if ( myConnections.EstimatedCurrent() <= cvcParameters.cvcLeakLimit ) continue;
 			}
 			myErrorFlag = true;
-/*
-			if (myConnections.simGateVoltage == UNKNOWN_VOLTAGE ||
-					myConnections.simGateVoltage > myConnections.simSourceVoltage + model_pit->Vth ||
-					myConnections.simGateVoltage > myConnections.simDrainVoltage + model_pit->Vth ) {
-*/
-//							errorFile << "Overvoltage Error:Gate vs Bulk:" << endl;
-/*			if ( myConnections.simGateVoltage == UNKNOWN_VOLTAGE ) {
-				errorCount[NMOS_POSSIBLE_LEAK]++;
-				if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-					PrintDeviceWithSimConnections(deviceParent_v[device_it], myConnections, errorFile);
-					errorFile << endl;
-				}
-			}
-*/
 		} else if ( myConnections.EstimatedMinimumCurrent() > cvcParameters.cvcLeakLimit ) {
 			myErrorFlag = true;
 		}
@@ -1294,57 +925,18 @@ void CCvcDb::FindNmosPossibleLeakErrors() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking nmos possible leak errors: ");
-//	errorFile << "! Finished" << endl << endl;
-/*
-	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
-		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
-			if ( model_pit->type != NMOS ) continue;
-			cout << "! Checking nmos possible leak errors for model: " << model_pit->definition << endl << endl;
-			errorFile << "! Checking nmos possible leak errors for model: " << model_pit->definition << endl << endl;
-			CDevice * myDevice_p = model_pit->firstDevice_p;
-			while (myDevice_p) {
-				CCircuit * myParent_p = myDevice_p->parent_p;
-//				deviceId_t myLocalDeviceId = myParent_p->localDeviceIdMap[myDevice_p->name];
-				for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
-					CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
-					MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-//					bool myErrorFlag = false;
-					if ( myConnections.CheckTerminalSimVoltages(SOURCE | DRAIN) == true ) {
-						if ( myConnections.simSourceVoltage == myConnections.simDrainVoltage ) continue;
-						if ( myConnections.simSourcePower_p->type[SIM_CALCULATED_BIT] || myConnections.simDrainPower_p->type[SIM_CALCULATED_BIT] ) continue;
-						if ( myConnections.simGateVoltage == UNKNOWN_VOLTAGE ) {
-//						if (myConnections.simGateVoltage == UNKNOWN_VOLTAGE ||
-//								myConnections.simGateVoltage > myConnections.simSourceVoltage + model_pit->Vth ||
-//								myConnections.simGateVoltage > myConnections.simDrainVoltage + model_pit->Vth ) {
-//							errorFile << "Overvoltage Error:Gate vs Bulk:" << endl;
-							errorCount[NMOS_POSSIBLE_LEAK]++;
-							if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-								PrintDeviceWithSimConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile);
-								errorFile << endl;
-							}
-						}
-					}
-				}
-				myDevice_p = myDevice_p->nextDevice_p;
-			}
-			errorFile << "! Finished" << endl << endl;
-		}
-	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-*/
 }
 
 void CCvcDb::FindPmosPossibleLeakErrors() {
 	CFullConnection myConnections;
 	reportFile << "! Checking pmos possible leak errors: " << endl << endl;
 	errorFile << "! Checking pmos possible leak errors: " << endl << endl;
-	bool myErrorFlag;
 	for ( deviceId_t device_it = 0; device_it < deviceCount; device_it++ ) {
 		CInstance * myInstance_p = instancePtr_v[deviceParent_v[device_it]];
 		CCircuit * myParent_p = myInstance_p->master_p;
 		CDevice * myDevice_p = myParent_p->devicePtr_v[device_it - myInstance_p->firstDeviceId];
 		if ( ! IsPmos_(myDevice_p->model_p->type) ) continue;
-		myErrorFlag = false;
+		bool myErrorFlag = false;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 		if ( IsKnownVoltage_(myConnections.simGateVoltage) ) continue;
 		if ( myConnections.CheckTerminalMaxVoltages(SOURCE | DRAIN) == true ) {
@@ -1355,7 +947,6 @@ void CCvcDb::FindPmosPossibleLeakErrors() {
 				continue;  // always off
 			}
 		}
-//					bool myErrorFlag = false;
 		if ( myConnections.CheckTerminalSimVoltages(SOURCE | DRAIN) == true ) {
 			if ( myConnections.simSourceVoltage == myConnections.simDrainVoltage ) continue;
 			if ( abs(myConnections.simSourceVoltage - myConnections.simDrainVoltage) <= cvcParameters.cvcLeakErrorThreshold ) continue;
@@ -1371,20 +962,6 @@ void CCvcDb::FindPmosPossibleLeakErrors() {
 				if ( myConnections.EstimatedCurrent() <= cvcParameters.cvcLeakLimit ) continue;
 			}
 			myErrorFlag = true;
-/*
-			if (myConnections.simGateVoltage == UNKNOWN_VOLTAGE ||
-					myConnections.simGateVoltage < myConnections.simSourceVoltage + model_pit->Vth ||
-					myConnections.simGateVoltage < myConnections.simDrainVoltage + model_pit->Vth ) {
-*/
-//							errorFile << "Overvoltage Error:Gate vs Bulk:" << endl;
-/*			if ( myConnections.simGateVoltage == UNKNOWN_VOLTAGE ) {
-				errorCount[PMOS_POSSIBLE_LEAK]++;
-				if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-					PrintDeviceWithSimConnections(deviceParent_v[device_it], myConnections, errorFile);
-					errorFile << endl;
-				}
-			}
-*/
 		} else if ( myConnections.EstimatedMinimumCurrent() > cvcParameters.cvcLeakLimit ) {
 			myErrorFlag = true;
 		}
@@ -1397,44 +974,6 @@ void CCvcDb::FindPmosPossibleLeakErrors() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking pmos possible leak errors: ");
-//	errorFile << "! Finished" << endl << endl;
-/*
-	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
-		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
-			if ( model_pit->type != PMOS ) continue;
-			cout << "! Checking pmos possible leak errors for model: " << model_pit->definition << endl << endl;
-			errorFile << "! Checking pmos possible leak errors for model: " << model_pit->definition << endl << endl;
-			CDevice * myDevice_p = model_pit->firstDevice_p;
-			while (myDevice_p) {
-				CCircuit * myParent_p = myDevice_p->parent_p;
-//				deviceId_t myLocalDeviceId = myParent_p->localDeviceIdMap[myDevice_p->name];
-				for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
-					CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
-					MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-//					bool myErrorFlag = false;
-					if ( myConnections.CheckTerminalSimVoltages(SOURCE | DRAIN) == true ) {
-						if ( myConnections.simSourceVoltage == myConnections.simDrainVoltage ) continue;
-						if ( myConnections.simSourcePower_p->type[SIM_CALCULATED_BIT] || myConnections.simDrainPower_p->type[SIM_CALCULATED_BIT] ) continue;
-						if ( myConnections.simGateVoltage == UNKNOWN_VOLTAGE ) {
-//						if (myConnections.simGateVoltage == UNKNOWN_VOLTAGE ||
-//								myConnections.simGateVoltage < myConnections.simSourceVoltage + model_pit->Vth ||
-//								myConnections.simGateVoltage < myConnections.simDrainVoltage + model_pit->Vth ) {
-//							errorFile << "Overvoltage Error:Gate vs Bulk:" << endl;
-							errorCount[PMOS_POSSIBLE_LEAK]++;
-							if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-								PrintDeviceWithSimConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile);
-								errorFile << endl;
-							}
-						}
-					}
-				}
-				myDevice_p = myDevice_p->nextDevice_p;
-			}
-			errorFile << "! Finished" << endl << endl;
-		}
-	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-*/
 }
 
 void CCvcDb::FindFloatingInputErrors() {
@@ -1684,7 +1223,6 @@ void CCvcDb::FindLDDErrors() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking LDD errors for model: ");
-//	errorFile << "! Finished" << endl << endl;
 }
 
 /*
