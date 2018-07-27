@@ -72,6 +72,7 @@ public:
 	deviceId_t	cvcCircuitErrorLimit = defaultErrorLimit;
 	float	cvcLeakLimit = defaultLeakLimit;
 	size_t		cvcSearchLimit = defaultSearchLimit;
+	string	cvcHierarchyDelimiters = HIERARCHY_DELIMITER;
 	bool	cvcSOI = defaultSOI;
 	bool	cvcSCRC = defaultSCRC;
 	bool	cvcVthGates = defaultVthGates;

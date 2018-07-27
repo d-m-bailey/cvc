@@ -1011,11 +1011,11 @@ list<string> * CCvcDb::SplitHierarchy(string theFullPath) {
 		myHierarchy->push_back("");
 		myStringStart = 1;
 	}
-	size_t myHierarchyOffset = theFullPath.find(HIERARCHY_DELIMITER, myStringStart);
+	size_t myHierarchyOffset = theFullPath.find(cvcParameters.cvcHierarchyDelimiters, myStringStart);
 	while ( myHierarchyOffset <= theFullPath.size() ) {
 		myHierarchy->push_back(theFullPath.substr(myStringStart, myHierarchyOffset - myStringStart));
 		myStringStart = myHierarchyOffset + 1;
-		myHierarchyOffset = theFullPath.find(HIERARCHY_DELIMITER, myStringStart);
+		myHierarchyOffset = theFullPath.find(cvcParameters.cvcHierarchyDelimiters, myStringStart);
 	}
 	myHierarchy->push_back(theFullPath.substr(myStringStart));
 	return myHierarchy;

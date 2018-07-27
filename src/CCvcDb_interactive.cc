@@ -185,7 +185,7 @@ void CCvcDb::PrintSubcircuitCdl(string theSubcircuit) {
 
 instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string theHierarchy, bool theAllowPartialMatch, bool thePrintUnmatchFlag) {
 	// HIERARCHY_DELIMITER is only used to delimit hierarchy
-	if ( theHierarchy.substr(0, 1) == HIERARCHY_DELIMITER ) {
+	if ( theHierarchy.find_first_of(cvcParameters.cvcHierarchyDelimiters, 0) == 0 ) {  // starts with delimiter
 		theCurrentInstanceId = 0;
 		theHierarchy = theHierarchy.substr(1);
 	}
@@ -196,7 +196,7 @@ instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string the
 	instanceId_t myLocalInstanceId;
 	while ( myStringBegin <= theHierarchy.length() ) {
 		try {
-			myStringEnd = theHierarchy.find_first_of(HIERARCHY_DELIMITER, myStringBegin);
+			myStringEnd = theHierarchy.find_first_of(cvcParameters.cvcHierarchyDelimiters, myStringBegin);
 			myInstanceName = theHierarchy.substr(myStringBegin, myStringEnd - myStringBegin);
 			try {
 				myInstanceName = myInstanceName.erase(myInstanceName.find_first_of("("));
@@ -223,7 +223,7 @@ instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string the
 		catch (const out_of_range& oor_exception) {
 			myUnmatchedHierarchy = myInstanceName;
 		}
-		myStringBegin = theHierarchy.find_first_not_of(HIERARCHY_DELIMITER, myStringEnd);
+		myStringBegin = theHierarchy.find_first_not_of(cvcParameters.cvcHierarchyDelimiters, myStringEnd);
 	}
 	if ( IsEmpty(myUnmatchedHierarchy) || theAllowPartialMatch ) {
 		;  // For next searches, the last hierarchy may be part of a flattened hierarchy
@@ -445,14 +445,14 @@ netId_t CCvcDb::FindNet(instanceId_t theCurrentInstanceId, string theNetName, bo
 	instanceId_t myCurrentInstanceId;
 	string myInitialHierarchy;
 	string mySearchHierarchy;
-	if (theNetName.length() > theNetName.find_last_of(HIERARCHY_DELIMITER) ) {
-		mySearchHierarchy = theNetName.substr(0, theNetName.find_last_of(HIERARCHY_DELIMITER));
+	if (theNetName.length() > theNetName.find_last_of(cvcParameters.cvcHierarchyDelimiters) ) {
+		mySearchHierarchy = theNetName.substr(0, theNetName.find_last_of(cvcParameters.cvcHierarchyDelimiters));
 	} else {
 		mySearchHierarchy = "";
 	}
 	string myNetName;
 	try {
-		if ( theNetName.substr(0, 1) == HIERARCHY_DELIMITER ) {
+		if ( theNetName.find_first_of(cvcParameters.cvcHierarchyDelimiters, 0) == 0 ) {  // starts with delimiter
 			myInitialHierarchy = "";
 			myCurrentInstanceId = FindHierarchy(0, mySearchHierarchy, true, false);
 		} else {
@@ -477,14 +477,14 @@ deviceId_t CCvcDb::FindDevice(instanceId_t theCurrentInstanceId, string theDevic
 	instanceId_t myCurrentInstanceId;
 	string myInitialHierarchy;
 	string mySearchHierarchy;
-	if (theDeviceName.length() > theDeviceName.find_last_of(HIERARCHY_DELIMITER) ) {
-		mySearchHierarchy = theDeviceName.substr(0, theDeviceName.find_last_of(HIERARCHY_DELIMITER));
+	if (theDeviceName.length() > theDeviceName.find_last_of(cvcParameters.cvcHierarchyDelimiters) ) {
+		mySearchHierarchy = theDeviceName.substr(0, theDeviceName.find_last_of(cvcParameters.cvcHierarchyDelimiters));
 	} else {
 		mySearchHierarchy = "";
 	}
 	string myDeviceName;
 	try {
-		if ( theDeviceName.substr(0, 1) == HIERARCHY_DELIMITER ) {
+		if ( theDeviceName.find_first_of(cvcParameters.cvcHierarchyDelimiters, 0) == 0 ) {  // starts with delimiter
 			myInitialHierarchy = "";
 			myCurrentInstanceId = FindHierarchy(0, mySearchHierarchy, true, false);
 		} else {
@@ -633,6 +633,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				cout << "Available commands are:" << endl;
 				cout << "<ctrl-d> switch to automatic (i.e. end interactive)" << endl;
 				cout << "searchlimit<sl> [limit]: set search limit" << endl;
+				cout << "hierarchydelimiter<hd> [character]: set interactive hierarchy delimiter" << endl;
 				cout << "goto<g|cd> <hierarchy>: goto hierarchy" << endl;
 				cout << "currenthierarchy<ch|pwd>: print current hierarchy" << endl;
 				cout << "printhierarchy<ph> hierarchynumber: print hierarchy name" << endl;
@@ -752,6 +753,14 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 					reportFile << "Search limit set to: " << cvcParameters.cvcSearchLimit << endl;
 				} else {
 					reportFile << "Current search limit: " << cvcParameters.cvcSearchLimit << endl;
+				}
+			} else if ( myCommand == "hierarchydelimiter" || myCommand == "hd" ) {
+				string myHierarchyDelimiters;
+				if ( myInputStream >> myHierarchyDelimiters ) {
+					cvcParameters.cvcHierarchyDelimiters = myHierarchyDelimiters;
+					reportFile << "Hierarchy delimiter(s) set to: '" << cvcParameters.cvcHierarchyDelimiters << "'" << endl;
+				} else {
+					reportFile << "Current hierarchy delimiter(s): '" << cvcParameters.cvcHierarchyDelimiters << "'" << endl;
 				}
 			} else if ( myCommand == "printmodel" || myCommand == "pm" ) {
 				cvcParameters.cvcModelListMap.Print(reportFile);

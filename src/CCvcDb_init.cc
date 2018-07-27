@@ -977,7 +977,7 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal, instanceId_t theParent)
 //	instanceId_t mySearchInstanceId = UNKNOWN_SUBCIRCUIT;
 	size_t mySearchEnd = thePowerSignal.length();
 	do {
-		mySearchEnd = thePowerSignal.find_last_of(HIERARCHY_DELIMITER, mySearchEnd-1);
+		mySearchEnd = thePowerSignal.find_last_of(cvcParameters.cvcHierarchyDelimiters, mySearchEnd-1);
 		if (mySearchEnd > thePowerSignal.length()) {
 			mySearchEnd = 0;
 			myInstanceName = "";
