@@ -440,9 +440,9 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 		bool myVthFlag = false;
 		bool myUnrelatedFlag = false;
-		if ( ! myConnections.minGatePower_p
-				|| (myConnections.minGatePower_p->IsRelative(myConnections.minSourcePower_p, true, true)
-						&& myConnections.minGatePower_p->IsRelative(myConnections.minDrainPower_p, true, true)) ) {
+		if ( ! myConnections.minGatePower_p ) continue;
+		if ( myConnections.minGatePower_p->IsRelative(myConnections.minSourcePower_p, true, true)
+				&& myConnections.minGatePower_p->IsRelative(myConnections.minDrainPower_p, true, true) ) {
 			// if relatives (default), then checks are conditional
 			voltage_t myGateSourceDifference = myConnections.minGateVoltage - min(myConnections.minSourceVoltage, myConnections.minSourceVoltage + myDevice_p->model_p->Vth);
 			voltage_t myGateDrainDifference = myConnections.minGateVoltage - min(myConnections.minDrainVoltage, myConnections.minDrainVoltage + myDevice_p->model_p->Vth);
@@ -477,8 +477,8 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 				continue;  // ignore devices with no max connections
 			}
 			myVthFlag = myConnections.minGatePower_p->type[MIN_CALCULATED_BIT]
-					&& ( myConnections.minGateVoltage - myConnections.minSourceVoltage == myDevice_p->model_p->Vth
-							|| myConnections.minGateVoltage - myConnections.minDrainVoltage == myDevice_p->model_p->Vth );
+				&& ( myConnections.minGateVoltage - myConnections.minSourceVoltage == myDevice_p->model_p->Vth
+					|| myConnections.minGateVoltage - myConnections.minDrainVoltage == myDevice_p->model_p->Vth );
 			if ( myVthFlag && ! cvcParameters.cvcVthGates ) continue;
 		} else {
 			myUnrelatedFlag = true;  // if not relatives, always an error
@@ -511,9 +511,9 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 		bool myVthFlag = false;
 		bool myUnrelatedFlag = false;
-		if ( ! myConnections.maxGatePower_p
-				|| (myConnections.maxGatePower_p->IsRelative(myConnections.maxSourcePower_p, true, true)
-						&& myConnections.maxGatePower_p->IsRelative(myConnections.maxDrainPower_p, true, true)) ) {
+		if ( ! myConnections.maxGatePower_p ) continue;
+		if ( myConnections.maxGatePower_p->IsRelative(myConnections.maxSourcePower_p, true, true)
+				&& myConnections.maxGatePower_p->IsRelative(myConnections.maxDrainPower_p, true, true) ) {
 			// if relatives (default), then checks are conditional
 			voltage_t myGateSourceDifference = max(myConnections.maxSourceVoltage, myConnections.maxSourceVoltage + myDevice_p->model_p->Vth) - myConnections.maxGateVoltage;
 			voltage_t myGateDrainDifference = max(myConnections.maxDrainVoltage, myConnections.maxDrainVoltage + myDevice_p->model_p->Vth) - myConnections.maxGateVoltage;
@@ -549,7 +549,7 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 			}
 			myVthFlag= myConnections.maxGatePower_p->type[MAX_CALCULATED_BIT]
 				&& ( myConnections.maxGateVoltage - myConnections.maxSourceVoltage == myDevice_p->model_p->Vth
-						|| myConnections.maxGateVoltage - myConnections.maxDrainVoltage == myDevice_p->model_p->Vth );
+					|| myConnections.maxGateVoltage - myConnections.maxDrainVoltage == myDevice_p->model_p->Vth );
 			if ( myVthFlag && ! cvcParameters.cvcVthGates ) continue;
 		} else {
 			myUnrelatedFlag = true; // if not relatives, always an error
