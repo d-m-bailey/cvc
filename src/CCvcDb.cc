@@ -1800,6 +1800,12 @@ void CCvcDb::PropagateSimVoltages(CEventQueue& theEventQueue, propagation_t theP
 	} else if ( myConnections.IsUnknownDrainVoltage() ) {
 		myDirection = DRAIN_TO_MASTER_SOURCE;
 		if ( myConnections.sourcePower_p && myConnections.sourcePower_p->type[HIZ_BIT] && ! IsSCRCPower(myConnections.sourcePower_p) ) return;  // Don't propagate non-SCRC Hi-Z power
+	} else if ( myConnections.sourceVoltage == UNKNOWN_VOLTAGE && myConnections.drainVoltage == UNKNOWN_VOLTAGE ) {  // drain/source Hi-Z, use default
+		myDirection = DRAIN_TO_MASTER_SOURCE;
+	} else if ( myConnections.sourceVoltage == UNKNOWN_VOLTAGE ) {  // source Hi-Z
+		myDirection = SOURCE_TO_MASTER_DRAIN;
+	} else if ( myConnections.drainVoltage == UNKNOWN_VOLTAGE ) {  // drain Hi-Z
+		myDirection = DRAIN_TO_MASTER_SOURCE;
 	} else if ( ( IsPmos_(deviceType_v[myDeviceId]) && myConnections.drainVoltage >= myConnections.sourceVoltage ) \
 			|| ( IsNmos_(deviceType_v[myDeviceId]) && myConnections.drainVoltage <= myConnections.sourceVoltage ) ) { // both source drain known
 		myDirection = SOURCE_TO_MASTER_DRAIN;
@@ -1822,11 +1828,11 @@ void CCvcDb::PropagateSimVoltages(CEventQueue& theEventQueue, propagation_t theP
 			// check always on devices
 			voltage_t myMaxGateVoltage = MaxVoltage(myConnections.masterGateNet.finalNetId);
 			voltage_t myMinGateVoltage = MinVoltage(myConnections.masterGateNet.finalNetId);
-			if ( IsPmos_(deviceType_v[myDeviceId]) && myMaxGateVoltage != UNKNOWN_VOLTAGE
+			if ( IsPmos_(deviceType_v[myDeviceId]) && myMaxGateVoltage != UNKNOWN_VOLTAGE && mySimVoltage != UNKNOWN_VOLTAGE
 					&& myMaxGateVoltage < mySimVoltage + myConnections.device_p->model_p->Vth ) {
 				if ( ! IsAlwaysOnCandidate(myDeviceId, myDirection) ) return;
 				myConnections.gateVoltage = myMaxGateVoltage;
-			} else if ( IsNmos_(deviceType_v[myDeviceId]) && myMinGateVoltage != UNKNOWN_VOLTAGE
+			} else if ( IsNmos_(deviceType_v[myDeviceId]) && myMinGateVoltage != UNKNOWN_VOLTAGE && mySimVoltage != UNKNOWN_VOLTAGE
 					&& myMinGateVoltage > mySimVoltage + myConnections.device_p->model_p->Vth ) {
 				if ( ! IsAlwaysOnCandidate(myDeviceId, myDirection) ) return;
 				myConnections.gateVoltage = myMinGateVoltage;
@@ -1853,6 +1859,7 @@ void CCvcDb::PropagateSimVoltages(CEventQueue& theEventQueue, propagation_t theP
 			// unknown gates not enqueued
 //			if ( IsMos_(deviceType_v[myDeviceId]) && myConnections.gateVoltage == UNKNOWN_VOLTAGE && myConnections.gateId != myConnections.drainId ) return;
 		} else {
+			assert (myConnections.IsUnknownSourceVoltage());
 //			if ( IsMos_(deviceType_v[myDeviceId]) && myConnections.gateVoltage == UNKNOWN_VOLTAGE && myConnections.gateId != myConnections.sourceId ) return;
 		}
 
