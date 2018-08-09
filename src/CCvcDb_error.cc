@@ -441,8 +441,8 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 		bool myVthFlag = false;
 		bool myUnrelatedFlag = false;
 		if ( ! myConnections.minGatePower_p ) continue;
-		if ( myConnections.minGatePower_p->IsRelative(myConnections.minSourcePower_p, true, true)
-				&& myConnections.minGatePower_p->IsRelative(myConnections.minDrainPower_p, true, true) ) {
+		if ( myConnections.minGatePower_p->IsRelatedPower(myConnections.minSourcePower_p, netVoltagePtr_v, minNet_v, minNet_v, true, true)
+				&& myConnections.minGatePower_p->IsRelatedPower(myConnections.minDrainPower_p, netVoltagePtr_v, minNet_v, minNet_v, true, true) ) {
 			// if relatives (default), then checks are conditional
 			voltage_t myGateSourceDifference = myConnections.minGateVoltage - min(myConnections.minSourceVoltage, myConnections.minSourceVoltage + myDevice_p->model_p->Vth);
 			voltage_t myGateDrainDifference = myConnections.minGateVoltage - min(myConnections.minDrainVoltage, myConnections.minDrainVoltage + myDevice_p->model_p->Vth);
@@ -512,8 +512,8 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 		bool myVthFlag = false;
 		bool myUnrelatedFlag = false;
 		if ( ! myConnections.maxGatePower_p ) continue;
-		if ( myConnections.maxGatePower_p->IsRelative(myConnections.maxSourcePower_p, true, true)
-				&& myConnections.maxGatePower_p->IsRelative(myConnections.maxDrainPower_p, true, true) ) {
+		if ( myConnections.maxGatePower_p->IsRelatedPower(myConnections.maxSourcePower_p, netVoltagePtr_v, maxNet_v, maxNet_v, true, true)
+				&& myConnections.maxGatePower_p->IsRelatedPower(myConnections.maxDrainPower_p, netVoltagePtr_v, maxNet_v, maxNet_v, true, true) ) {
 			// if relatives (default), then checks are conditional
 			voltage_t myGateSourceDifference = max(myConnections.maxSourceVoltage, myConnections.maxSourceVoltage + myDevice_p->model_p->Vth) - myConnections.maxGateVoltage;
 			voltage_t myGateDrainDifference = max(myConnections.maxDrainVoltage, myConnections.maxDrainVoltage + myDevice_p->model_p->Vth) - myConnections.maxGateVoltage;
@@ -584,8 +584,8 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 		bool myErrorFlag = false;
 		bool myUnrelatedFlag = false;
 		if ( ! myConnections.minBulkPower_p
-				|| (myConnections.minBulkPower_p->IsRelative(myConnections.minSourcePower_p, true, true)
-						&& myConnections.minBulkPower_p->IsRelative(myConnections.minDrainPower_p, true, true)) ) {
+				|| (myConnections.minBulkPower_p->IsRelatedPower(myConnections.minSourcePower_p, netVoltagePtr_v, minNet_v, minNet_v, true, true)
+					&& myConnections.minBulkPower_p->IsRelatedPower(myConnections.minDrainPower_p, netVoltagePtr_v, minNet_v, minNet_v, true, true)) ) {
 			// if relatives (default), then checks are conditional
 			if ( (myConnections.maxBulkVoltage == myConnections.minSourceVoltage || myConnections.minSourceVoltage == UNKNOWN_VOLTAGE)
 					&& (myConnections.maxBulkVoltage == myConnections.minDrainVoltage || myConnections.minDrainVoltage == UNKNOWN_VOLTAGE) ) continue;
@@ -688,8 +688,8 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 		bool myErrorFlag = false;
 		bool myUnrelatedFlag = false;
 		if ( ! myConnections.maxBulkPower_p
-				|| (myConnections.maxBulkPower_p->IsRelative(myConnections.maxSourcePower_p, true, true)
-						&& myConnections.maxBulkPower_p->IsRelative(myConnections.maxDrainPower_p, true, true)) ) {
+				|| (myConnections.maxBulkPower_p->IsRelatedPower(myConnections.maxSourcePower_p, netVoltagePtr_v, maxNet_v, maxNet_v, true, true)
+					&& myConnections.maxBulkPower_p->IsRelatedPower(myConnections.maxDrainPower_p, netVoltagePtr_v, maxNet_v, maxNet_v, true, true)) ) {
 			// if relatives (default), then checks are conditional
 			if ( (myConnections.minBulkVoltage == myConnections.maxSourceVoltage || myConnections.maxSourceVoltage == UNKNOWN_VOLTAGE)
 					&& (myConnections.minBulkVoltage == myConnections.maxDrainVoltage || myConnections.maxDrainVoltage == UNKNOWN_VOLTAGE) ) continue;
@@ -850,8 +850,8 @@ void CCvcDb::FindForwardBiasDiodes() {
 				} else {
 					myErrorFlag = true;
 				}
-			} else if ( ! myConnections.minSourcePower_p->IsRelative(myConnections.minDrainPower_p, true, true)
-					|| ! myConnections.maxSourcePower_p->IsRelative(myConnections.maxDrainPower_p, true, true) ) {
+			} else if ( ! myConnections.minSourcePower_p->IsRelatedPower(myConnections.minDrainPower_p, netVoltagePtr_v, minNet_v, minNet_v, true, true)
+					|| ! myConnections.maxSourcePower_p->IsRelatedPower(myConnections.maxDrainPower_p, netVoltagePtr_v, maxNet_v, maxNet_v, true, true) ) {
 				myErrorFlag = true;
 				myUnrelatedFlag = true;
 			}

@@ -27,14 +27,14 @@
 # include "CCdlParserDriver.hh"
 #include "cdlParser.hh"
 
-     
+
 // Work around an incompatibility in flex (at least versions
 // 2.5.31 through 2.5.33): it generates code that does
 // not conform to C89.  See Debian bug 333231
 // <http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=333231>.
 # undef yywrap
 # define yywrap() 1
-     
+
 // The location of the current token.
 static yy::location scanner_location;
 

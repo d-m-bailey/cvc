@@ -1854,6 +1854,7 @@ void CCvcDb::PropagateSimVoltages(CEventQueue& theEventQueue, propagation_t theP
 		return;
 */
 	} else {
+		/*
 		if ( myDirection == DRAIN_TO_MASTER_SOURCE ) {
 			assert (myConnections.IsUnknownDrainVoltage());
 			// unknown gates not enqueued
@@ -1862,7 +1863,7 @@ void CCvcDb::PropagateSimVoltages(CEventQueue& theEventQueue, propagation_t theP
 			assert (myConnections.IsUnknownSourceVoltage());
 //			if ( IsMos_(deviceType_v[myDeviceId]) && myConnections.gateVoltage == UNKNOWN_VOLTAGE && myConnections.gateId != myConnections.sourceId ) return;
 		}
-
+		*/
 		if (gDebug_cvc) cout << "DEBUG propagation:(" << gEventQueueTypeMap[theEventQueue.queueType] << ") device: " << myDeviceId << " QueueKey: " << myQueueKey << " EventKey: " << mySimVoltage << endl;
 		string myCalculation;
 		myCalculation = AdjustSimVoltage(theEventQueue, myDeviceId, myConnections, mySimVoltage, myDirection, thePropagationType);

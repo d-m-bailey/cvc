@@ -76,7 +76,7 @@ public:
 	bool	cvcSOI = defaultSOI;
 	bool	cvcSCRC = defaultSCRC;
 	bool	cvcVthGates = defaultVthGates;
-	bool    cvcMinVthGates = defaultMinVthGates;
+	bool	cvcMinVthGates = defaultMinVthGates;
 	bool	cvcIgnoreVthFloating = defaultIgnoreVthFloating;
 	bool	cvcLeakOvervoltage = defaultLeakOvervoltage;
 	bool	cvcLogicDiodes = defaultLogicDiodes;

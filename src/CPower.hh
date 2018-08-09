@@ -42,8 +42,9 @@ enum calculationType_t : unsigned char { UNKNOWN_CALCULATION=0, NO_CALCULATION, 
 #define IsExternalPower_(power_p) ((power_p)->type[POWER_BIT] || (power_p)->type[INPUT_BIT])
 #define IsPriorityPower_(power_p) ((power_p)->type[POWER_BIT] || (power_p)->type[INPUT_BIT] || (power_p)->type[RESISTOR_BIT])
 
-class CPowerFamilyMap : public unordered_map<string, unordered_set<text_t>> {
+class CPowerFamilyMap : public unordered_map<string, CSet> {
 public:
+	string definition = "";
 	CPowerFamilyMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 	void AddFamily(string thePowerString);
 };
@@ -57,6 +58,7 @@ public:
 	string	expectedMin = "";
 	string	expectedMax = "";
 	string	family = "";
+	string	implicitFamily = "";
 	CSet	relativeSet;
 	text_t	powerSignal; // power name from power file (possibly bus or cell level net)    must be initialized in constructor
 	text_t	powerAlias; // name used to represent this power definition (/VSS -> VSS, /X1/VDDA -> VDDA)    must be initialized in constructor
@@ -119,6 +121,7 @@ public:
 	string expectedMin() { return (( extraData ) ? extraData->expectedMin : ""); };
 	string expectedMax() { return (( extraData ) ? extraData->expectedMax : ""); };
 	string family() { return (( extraData ) ? extraData->family : ""); };
+	string implicitFamily() { return (( extraData ) ? extraData->implicitFamily : ""); };
 //	CSet	relativeSet() { return (( extraData ) ? extraData->relativeSet : ""); };
 	voltage_t pullDownVoltage() { return (( extraData ) ? extraData->pullDownVoltage : UNKNOWN_VOLTAGE); };
 	voltage_t pullUpVoltage() { return (( extraData ) ? extraData->pullDownVoltage : UNKNOWN_VOLTAGE); };
@@ -132,8 +135,8 @@ public:
 	bool IsSamePower(CPower * theMatchPower);
 	bool IsValidSubset(CPower * theMatchPower, voltage_t theThreshold);
 	bool IsRelative(CPower * theTestPower_p, bool theDefault, bool theIsHiZRelative = false);
-	bool IsRelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v, CVirtualNetVector & theTestNet_v, bool theDefault);
-
+	bool IsRelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v, CVirtualNetVector & theTestNet_v,
+			bool theDefault, bool isHiZRelated = false);
 //	bool IsRelatedMinPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
 //	bool IsRelatedSimPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
 //	bool IsRelatedMaxPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
@@ -161,6 +164,7 @@ public:
 
 class CPowerPtrMap : public unordered_map<string, CPower *> {
 public:
+	string	implicitFamily = "";
 	CPowerPtrMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 	void Clear();
 	string CalculateExpectedValue(string theEquation, netStatus_t theType, CModelListMap & theModelListMap);

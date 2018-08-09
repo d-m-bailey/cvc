@@ -1130,7 +1130,7 @@ returnCode_t CCvcDb::SetModePower() {
  						myPowerConflict = true;
  					}
  				}
- 				if ( myPower_p->type != NO_TYPE || myPower_p->family() != "" ) {  // can't override power types or families
+ 				if ( myPower_p->type != netVoltagePtr_v[*netId_pit]->type || myPower_p->family() != netVoltagePtr_v[*netId_pit]->family() ) {  // can't override power types or families
  					myPowerConflict = true;
  				}
  				if ( myPowerConflict ) {

@@ -1051,7 +1051,7 @@ void CCvcDb::DumpAnalogNets(string theFileName, bool thePrintCircuitFlag) {
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 		if ( net_it != GetEquivalentNet(net_it) ) continue;  // skip shorted nets
 		if ( netVoltagePtr_v[net_it]
-		    && ( netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE || netVoltagePtr_v[net_it]->type[POWER_BIT] ) ) continue;  // skip defined sim voltages and power
+			&& ( netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE || netVoltagePtr_v[net_it]->type[POWER_BIT] ) ) continue;  // skip defined sim voltages and power
 /*
 		bool myIsAnalog = false;
 		deviceId_t device_it = firstSource_v[net_it];
@@ -1105,7 +1105,7 @@ void CCvcDb::DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 		if ( net_it != GetEquivalentNet(net_it) ) continue;  // skip shorted nets
 		if ( netVoltagePtr_v[net_it]
-		    && ( netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE || netVoltagePtr_v[net_it]->type[POWER_BIT] ) ) continue;  // skip defined sim voltages and power
+			&& ( netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE || netVoltagePtr_v[net_it]->type[POWER_BIT] ) ) continue;  // skip defined sim voltages and power
 		myIsLogicalNet_v[net_it] = ! IsAnalogNet(net_it);
 	}
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {

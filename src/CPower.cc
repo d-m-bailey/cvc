@@ -62,6 +62,7 @@ CPower::CPower(CPower * thePower_p, netId_t theNetId) {
 		extraData->expectedMin = thePower_p->expectedMin();
 		extraData->expectedMax = thePower_p->expectedMax();
 		extraData->family = thePower_p->family();
+		extraData->implicitFamily = thePower_p->implicitFamily();
 		extraData->relativeSet = thePower_p->extraData->relativeSet;
 	}
 	relativeFriendly = thePower_p->relativeFriendly;
@@ -116,6 +117,7 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 	extraData->powerSignal = CPower::powerDefinitionText.SetTextAddress((text_t)(thePowerString.substr(myStringBegin, min(myStringEnd, myAliasBegin))).c_str());
 //	definition = thePowerString.substr(thePowerString.find_first_not_of(" \t", myStringEnd));
 	string myDefinition = "";
+	string myImplicitFamily = "";
 	while (myStringEnd < thePowerString.length()) {
 		myStringBegin = thePowerString.find_first_not_of(" \t", myStringEnd);
 		myStringEnd = thePowerString.find_first_of(" \t", myStringBegin);
@@ -126,14 +128,17 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 //			cout << "parameter '" << myParameterName << "' = '" << myParameterValue << "'" << endl;
 			if ( myParameterName == "min" ) {
 				minVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, MIN_POWER, theModelListMap);
+				myImplicitFamily += thePowerMacroPtrMap.implicitFamily;
 				minCalculationType = NO_CALCULATION;
 			}
 			if ( myParameterName == "max" ) {
 				maxVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, MAX_POWER, theModelListMap);
+				myImplicitFamily += thePowerMacroPtrMap.implicitFamily;
 				maxCalculationType = NO_CALCULATION;
 			}
 			if ( myParameterName == "sim" ) {
 				simVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterValue, SIM_POWER, theModelListMap);
+				myImplicitFamily += thePowerMacroPtrMap.implicitFamily;
 				simCalculationType = NO_CALCULATION;
 			}
 			if ( myParameterName == "expectMin" ) extraData->expectedMin = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, MIN_POWER, theModelListMap);
@@ -173,6 +178,7 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 				minVoltage = thePowerMacroPtrMap[myParameterName]->minVoltage;
 				maxVoltage = thePowerMacroPtrMap[myParameterName]->maxVoltage;
 				simVoltage = thePowerMacroPtrMap[myParameterName]->simVoltage;
+				myImplicitFamily += "," + myParameterName;
 				if ( thePowerMacroPtrMap[myParameterName]->extraData ) {
 					if (! extraData) extraData = new CExtraPowerData;
 					extraData->expectedMin = thePowerMacroPtrMap[myParameterName]->expectedMin();
@@ -188,6 +194,7 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 				simVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterName, SIM_POWER, theModelListMap);
 				maxVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterName, MAX_POWER, theModelListMap);
 				minVoltage = thePowerMacroPtrMap.CalculateVoltage(myParameterName, MIN_POWER, theModelListMap);
+				myImplicitFamily += thePowerMacroPtrMap.implicitFamily;
 			}
 		}
 	}
@@ -199,6 +206,10 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 	definition = CPower::powerDefinitionText.SetTextAddress((text_t)myDefinition.c_str());
 	if ( type[HIZ_BIT] ) {
 		if ( IsEmpty(extraData->family) ) extraData->family = "cvc-noleak";
+	}
+	if ( myImplicitFamily != "" ) {
+		extraData->implicitFamily = "family " + myImplicitFamily + " " + myImplicitFamily.substr(1);  // family ,net1,net2 net1,net2
+//		cout << "DEBUG: " << extraData->powerSignal << " implicit family \"" << extraData->implicitFamily << "\"" << endl;
 	}
 }
 
@@ -311,6 +322,14 @@ void CPowerFamilyMap::AddFamily(string thePowerString) {
 	myStringBegin = thePowerString.find_first_not_of(" \t", myStringEnd);
 	myStringEnd = thePowerString.find_first_of(" \t", myStringBegin);
 	myFamilyName = thePowerString.substr(myStringBegin, myStringEnd - myStringBegin);
+	string myDefinition = thePowerString.substr(myStringEnd);
+	if ( this->count(myFamilyName) ) {
+		if ( definition != myDefinition ) {
+			cout << "DEBUG: duplicate family definition " << myFamilyName << " original " << definition << " new " << myDefinition << endl;
+			assert(definition == myDefinition);
+		}
+		return;
+	}
 	while (myStringEnd < thePowerString.length()) {
 		myStringBegin = thePowerString.find_first_not_of(", \t", myStringEnd);
 		myStringEnd = thePowerString.find_first_of(",", myStringBegin);
@@ -398,8 +417,9 @@ bool CPower::IsRelative(CPower * theTestPower_p, bool theDefault, bool theIsHiZR
 	if ( myRelativeSet.empty() && myTestRelativeSet.empty() ) return theDefault;
 	bool myFriend = false, myEnemy = false, myTestFriend = false, myTestEnemy = false;
 	bool myHasFriends = false, myHasEnemies = false, myTestHasFriends = false, myTestHasEnemies = false;
+	// relative sets are for explicit and implicit connections. explicit overrides implicit. only check if explicit definition exists. ie implicit, test->implicit -> no check
 
-	if ( ! myRelativeSet.empty() ) {
+	if ( ! IsEmpty(family()) ) {
 		bool myRelation = ( myRelativeSet.count(theTestPower_p->powerSignal())
 				|| myRelativeSet.count(theTestPower_p->powerAlias())
 				|| ( ! myTestRelativeSet.empty()
@@ -412,7 +432,7 @@ bool CPower::IsRelative(CPower * theTestPower_p, bool theDefault, bool theIsHiZR
 			myEnemy = myRelation;
 		}
 	}
-	if ( ! myTestRelativeSet.empty() ) {
+	if ( ! IsEmpty(theTestPower_p->family()) ) {
 		bool myRelation = ( myTestRelativeSet.count(powerSignal())
 				|| myTestRelativeSet.count(powerAlias())
 				|| ( ! myRelativeSet.empty()
@@ -443,7 +463,9 @@ bool CPower::IsRelative(CPower * theTestPower_p, bool theDefault, bool theIsHiZR
 	/*if ( myTestHasEnemies )*/ return ! myTestEnemy;
 }
 
-bool CPower::IsRelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v, CVirtualNetVector & theTestNet_v, bool theDefault) {
+bool CPower::IsRelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v, CVirtualNetVector & theTestNet_v,
+		bool theDefault, bool theIsHiZRelative) {
+	if ( ! theTestPower_p ) return theDefault;
 	CPower * myPower_p = GetBasePower(theNetVoltagePtr_v, theNet_v);
 	CPower * myTestPower_p = theTestPower_p->GetBasePower(theNetVoltagePtr_v, theTestNet_v);
 	assert( myPower_p && myTestPower_p );
@@ -451,7 +473,7 @@ bool CPower::IsRelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVol
 	if ( ! IsEmpty(myPower_p->powerAlias())
 			&& (myPower_p->powerAlias() == myTestPower_p->powerAlias() || myPower_p->powerAlias() == myTestPower_p->powerSignal()) ) return true;
 	if ( ! IsEmpty(myTestPower_p->powerAlias()) && myTestPower_p->powerAlias() == myPower_p->powerSignal()) return true;
-	return myPower_p->IsRelative(myTestPower_p, theDefault);
+	return myPower_p->IsRelative(myTestPower_p, theDefault, theIsHiZRelative);
 }
 
 /*
@@ -842,11 +864,14 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 		myStatus[CALCULATED_BIT] = true;
 	}
 */
-	if ( (*this)[theDefaultNetId] && (*this)[theDefaultNetId]->type[HIZ_BIT] ) {
-		myPower_p->type[HIZ_BIT] = true;
+	if ( (*this)[theDefaultNetId] ) {
+		if ( (*this)[theDefaultNetId]->type[HIZ_BIT] ) {
+			myPower_p->type[HIZ_BIT] = true;
+		}
 		if ( (*this)[theDefaultNetId]->extraData ) {
 			if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
 			myPower_p->extraData->family = (*this)[theDefaultNetId]->family();
+			myPower_p->extraData->implicitFamily = (*this)[theDefaultNetId]->implicitFamily();
 			myPower_p->extraData->relativeSet = (*this)[theDefaultNetId]->extraData->relativeSet;
 		}
 		myPower_p->relativeFriendly = (*this)[theDefaultNetId]->relativeFriendly;
@@ -974,10 +999,12 @@ void CPowerPtrList::SetFamilies(CPowerFamilyMap & thePowerFamilyMap) {
 	string myFamilyName;
 	string myRelativeName;
 	string myFamilyList;
+	string myImplicitFamilyList;
 	size_t	myStringBegin;
 	size_t	myStringEnd;
 	for ( CPowerPtrList::iterator powerPtr_ppit = begin(); powerPtr_ppit != end(); powerPtr_ppit++ ) {
 		myFamilyList = (*powerPtr_ppit)->family();
+		myImplicitFamilyList = (*powerPtr_ppit)->implicitFamily();
 		if ( ! IsEmpty(myFamilyList) ) {
 			myStringBegin = myFamilyList.find_first_not_of(",", 0);
 			myStringEnd = myFamilyList.find_first_of(",", myStringBegin);
@@ -991,6 +1018,21 @@ void CPowerPtrList::SetFamilies(CPowerFamilyMap & thePowerFamilyMap) {
 				}
 				myStringBegin = myFamilyList.find_first_not_of(",", myStringEnd);
 				myStringEnd = myFamilyList.find_first_of(",", myStringBegin);
+			}
+		// explicit family list overrides implicit list
+		} else if ( ! IsEmpty(myImplicitFamilyList) ) {
+			myStringBegin = myImplicitFamilyList.find_first_not_of(",", 0);
+			myStringEnd = myImplicitFamilyList.find_first_of(",", myStringBegin);
+			if ( ! (*powerPtr_ppit)->extraData ) (*powerPtr_ppit)->extraData = new CExtraPowerData;
+			while (myStringBegin < myImplicitFamilyList.length()) {
+				myRelativeName = myImplicitFamilyList.substr(myStringBegin, myStringEnd - myStringBegin);
+				if ( thePowerFamilyMap.count(myRelativeName) > 0 ) {
+					(*powerPtr_ppit)->extraData->relativeSet.insert(thePowerFamilyMap[myRelativeName].begin(), thePowerFamilyMap[myRelativeName].end());
+				} else {
+					(*powerPtr_ppit)->extraData->relativeSet.insert(CPower::powerDefinitionText.SetTextAddress((text_t)myRelativeName.c_str()));
+				}
+				myStringBegin = myImplicitFamilyList.find_first_not_of(",", myStringEnd);
+				myStringEnd = myImplicitFamilyList.find_first_of(",", myStringBegin);
 			}
 		}
 	}
@@ -1022,6 +1064,7 @@ string CPowerPtrMap::CalculateExpectedValue(string theEquation, netStatus_t theT
 
 #define UNKNOWN_TOKEN (float(MAX_VOLTAGE) * 2)
 voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType, CModelListMap & theModelListMap, bool thePermitUndefinedFlag) {
+	implicitFamily = "";
 	list<string> * myTokenList_p;
 	// exceptions cause memory leaks
 //	cout << "calculating " << theEquation << endl;
@@ -1067,6 +1110,7 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 				if ( theType == MIN_POWER ) myVoltageStack.push_back(float((*this)[*token_pit]->minVoltage) / VOLTAGE_SCALE);
 				if ( theType == SIM_POWER ) myVoltageStack.push_back(float((*this)[*token_pit]->simVoltage) / VOLTAGE_SCALE);
 				if ( theType == MAX_POWER ) myVoltageStack.push_back(float((*this)[*token_pit]->maxVoltage) / VOLTAGE_SCALE);
+				implicitFamily += "," + *token_pit;
 			} else if ( (*token_pit).substr(0,4) == "Vth[" && (*token_pit).back() == ']' ){
 				string myModelName = "M " + (*token_pit).substr(4, (*token_pit).length() - 5);
 				if ( theModelListMap.count(myModelName) > 0 ) {
