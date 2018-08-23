@@ -99,7 +99,8 @@ public:
 	void Print(const string theIndentation = "", const string theHeading = "CircuitList>");
 //	void CreateDatabase(const string theTopBlockName);
 	CCircuit * FindCircuit(const string theSearchCircuit);
-	void PrintAndResetCircuitErrors(deviceId_t theErrorLimit, ogzstream & theErrorFile, string theSummaryHeading = "", set<modelType_t> & theModelList = emptyModelList);
+	void PrintAndResetCircuitErrors(deviceId_t theErrorLimit, ofstream & theLogFile, ogzstream & theErrorFile, string theSummaryHeading = "",
+			set<modelType_t> & theModelList = emptyModelList);
 };
 
 

@@ -184,11 +184,12 @@ class ResultFile():
         try:
             for line_it in theFile:
                 self._errorData.append(line_it)
-                for error_it in cvc_globals.errorList:
-                    if error_it['source'] == 'report' and error_it['regex'].search(line_it):
-                        mySection = error_it['section']
-                        myPriority = cvc_globals.priorityMap[mySection]
-                        break
+                if line_it.beginswith("!"):  # all report sections must begin with "!"
+                    for error_it in cvc_globals.errorList:
+                        if error_it['source'] == 'report' and error_it['regex'].search(line_it):
+                            mySection = error_it['section']
+                            myPriority = cvc_globals.priorityMap[mySection]
+                            break
                 if self.summaryRE.search(line_it):  # "^(INFO|WARNING|Expected)"
                     myErrorData = mySection + " " + line_it.strip()
                     if not myErrorData in myErrorDict:

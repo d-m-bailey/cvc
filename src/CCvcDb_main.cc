@@ -191,7 +191,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// - missing bulk connection check
 		SaveMinMaxLeakVoltages();
 		SetSimPower(POWER_NETS_ONLY);
-		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Logic shorts 1");
+		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Logic shorts 1");
 		reportFile << PrintProgress(&lastSnapshot, "SIM1 ") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( ! cvcParameters.cvcSOI ) {
@@ -217,7 +217,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 			SetSimPower(ALL_NETS_AND_FUSE);
 			reportFile << PrintProgress(&lastSnapshot, "LATCH ") << endl;
 		}
-		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Logic shorts 2");
+		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Logic shorts 2");
 		if ( detectErrorFlag ) {
 			FindLDDErrors();
 			FindForwardBiasDiodes();
@@ -264,6 +264,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 
 /// Clean-up
 		logFile.close();
+		debugFile.close();
 	}
 	Cleanup();
 	RemoveLock();

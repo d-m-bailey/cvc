@@ -127,9 +127,14 @@ void CCvcDb::SetOutputFiles(string theReportFilename) {
 	if ( ! errorFile.good() ) {
 		throw EFatalError("Could not open " + cvcParameters.cvcReportBaseFilename + ".error.gz");
 	}
+	debugFile.open(cvcParameters.cvcReportBaseFilename + ".debug.gz");
+	if ( ! debugFile.good() ) {
+		throw EFatalError("Could not open " + cvcParameters.cvcReportBaseFilename + ".debug.gz");
+	}
 
 	reportFile << "CVC: Log output to " << theReportFilename << endl;
 	reportFile << "CVC: Error output to " << cvcParameters.cvcReportBaseFilename << ".error.gz" << endl;
+	reportFile << "CVC: Debug output to " << cvcParameters.cvcReportBaseFilename << ".debug.gz" << endl;
 //	reportFile << "CVC: Short output to " << cvcParameters.cvcReportBaseFilename << ".shorts.gz" << endl;
 }
 

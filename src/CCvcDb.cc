@@ -1168,13 +1168,13 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 				}
 				if ( myQueuePosition == SKIP_QUEUE ) continue; // SIM queues/maxNmos/minPmos with unknown mos gate return SKIP_QUEUE, skip for now
 				if ( myEventKey < theEventKey && myCalculationType == UP_CALCULATION ) {
-					cout << "DEBUG: Skipped down propagation at " << DeviceName(myConnections.deviceId);
-					cout << " voltage " << PrintVoltage(myEventKey) << "(" << myAdjustedCalculation << ") from " << PrintVoltage(theEventKey) << endl;
+					debugFile << "DEBUG: Skipped down propagation at " << DeviceName(myConnections.deviceId);
+					debugFile << " voltage " << PrintVoltage(myEventKey) << "(" << myAdjustedCalculation << ") from " << PrintVoltage(theEventKey) << endl;
 					continue;  // do not propagate opposite calculations
 				}
 				if ( myEventKey > theEventKey && myCalculationType == DOWN_CALCULATION ) {
-					cout << "DEBUG: Skipped up propagation at " << DeviceName(myConnections.deviceId);
-					cout << " voltage " << PrintVoltage(myEventKey) << "(" << myAdjustedCalculation << ") from " << PrintVoltage(theEventKey) << endl;
+					debugFile << "DEBUG: Skipped up propagation at " << DeviceName(myConnections.deviceId);
+					debugFile << " voltage " << PrintVoltage(myEventKey) << "(" << myAdjustedCalculation << ") from " << PrintVoltage(theEventKey) << endl;
 					continue;  // do not propagate opposite calculations
 				}
 				if ( theEventQueue.queueType == SIM_QUEUE ) {
@@ -2064,7 +2064,7 @@ void CCvcDb::SetResistorVoltagesByPower() {
 //	minimumEventQueue.Print();
 //	maximumEventQueue.Print();
 	CalculateResistorVoltages();
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Resistor Errors");
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Resistor Errors");
 	if ( gDebug_cvc ) {
 		PrintVirtualNets(minNet_v, "(minimum r)");
 		PrintVirtualNets(maxNet_v, "(maximum r)");
@@ -2434,8 +2434,8 @@ void CCvcDb::SetInitialMinMaxPower() {
 		}
 	}
 	// Reset min/max voltage conflict errors
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Power/Ground path through fuse", FUSE_MODELS);
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! ... voltage already set");
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Power/Ground path through fuse", FUSE_MODELS);
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! ... voltage already set");
 //	errorFile << "! Finished" << endl << endl;
 //	if ( ! isFixedSimNet ) cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile); // Bad LDD connections (first pass)
 	CheckEstimateDependencies();

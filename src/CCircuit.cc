@@ -254,8 +254,10 @@ CCircuit * CCircuitPtrList::FindCircuit(const string theSearchCircuitName) {
 */
 }
 
-void CCircuitPtrList::PrintAndResetCircuitErrors(deviceId_t theErrorLimit, ogzstream & theErrorFile, string theSummaryHeading, set<modelType_t> & theModelList) {
+void CCircuitPtrList::PrintAndResetCircuitErrors(deviceId_t theErrorLimit, ofstream & theLogFile, ogzstream & theErrorFile, string theSummaryHeading,
+		set<modelType_t> & theModelList) {
 	list<string> myErrorSummaryList;
+//	theLogFile << theSummaryHeading << endl;
 	theErrorFile << theSummaryHeading << endl;
 	for (auto circuit_ppit = begin(); circuit_ppit != end(); circuit_ppit++) {
 /*
@@ -285,8 +287,9 @@ void CCircuitPtrList::PrintAndResetCircuitErrors(deviceId_t theErrorLimit, ogzst
 	}
 	myErrorSummaryList.sort();
 	for ( auto error_pit = myErrorSummaryList.begin(); error_pit != myErrorSummaryList.end(); error_pit++ ) {
+//		theLogFile << (*error_pit) << endl;
 		theErrorFile << (*error_pit) << endl;
 	}
-	theErrorFile << endl;
-	theErrorFile << "! Finished" << endl << endl;
+//	theLogFile << endl << "! Finished" << endl << endl;
+	theErrorFile << endl<< "! Finished" << endl << endl;
 }

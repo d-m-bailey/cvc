@@ -68,7 +68,7 @@ from SummaryApp import SummaryApp
 
 def DisplayLicense():
     """Display GPLv3 reference."""
-    print("check_cvc v1.0.12 Copyright (C) 2016-2018  D. Mitch Bailey")
+    print("check_cvc v1.0.13 Copyright (C) 2016-2018  D. Mitch Bailey")
     print("This program comes with ABSOLUTELY NO WARRANTY.")
     print("This is free software licensed under GPLv3,")
     print("and you are welcome to redistribute it under certain conditions.")

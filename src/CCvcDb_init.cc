@@ -415,7 +415,7 @@ void CCvcDb::SetEquivalentNets() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Switch shorts");
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Switch shorts");
 //	PrintEquivalentNets("before fix");
 	// following iterator must be int! netId_t results in infinite loop
 	for (int net_it = equivalentNet_v.size() - 1; net_it >= 0; net_it--) {
@@ -1594,7 +1594,7 @@ bool CCvcDb::SetLatchPower() {
 				cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it]);
 			}
 			myLatchCount++;
-			logFile << "Added latch for " << NetName(net_it) << endl;
+			debugFile << "Added latch for " << NetName(net_it) << endl;
 		} else if ( myPmosVoltage != UNKNOWN_VOLTAGE ) {
 			if ( netVoltagePtr_v[net_it] ) {
 				assert(netVoltagePtr_v[net_it]->simVoltage == UNKNOWN_VOLTAGE);
@@ -1606,7 +1606,7 @@ bool CCvcDb::SetLatchPower() {
 				cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it]);
 			}
 			myLatchCount++;
-			logFile << "Added latch for " << NetName(net_it) << endl;
+			debugFile << "Added latch for " << NetName(net_it) << endl;
 		}
 	}
 	reportFile << "Added " << myLatchCount << " latch voltages" << endl;

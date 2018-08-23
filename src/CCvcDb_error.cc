@@ -269,7 +269,7 @@ void CCvcDb::FindOverVoltageErrors(string theCheck, int theErrorIndex) {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking " + theCheck + " overvoltage errors");
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking " + theCheck + " overvoltage errors");
 //	errorFile << "! Finished" << endl << endl;
 }
 
@@ -496,7 +496,7 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 			errorFile << endl;
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking nmos gate vs source errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking nmos gate vs source errors: ");
 }
 
 void CCvcDb::FindPmosGateVsSourceErrors() {
@@ -567,7 +567,7 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 			errorFile << endl;
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking pmos gate vs source errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking pmos gate vs source errors: ");
 }
 
 void CCvcDb::FindNmosSourceVsBulkErrors() {
@@ -671,7 +671,7 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking nmos source/drain vs bias errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking nmos source/drain vs bias errors: ");
 }
 
 void CCvcDb::FindPmosSourceVsBulkErrors() {
@@ -773,7 +773,7 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking pmos source/drain vs bias errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking pmos source/drain vs bias errors: ");
 }
 
 void CCvcDb::FindForwardBiasDiodes() {
@@ -875,7 +875,7 @@ void CCvcDb::FindForwardBiasDiodes() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking forward bias diode errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking forward bias diode errors: ");
 }
 
 void CCvcDb::FindNmosPossibleLeakErrors() {
@@ -924,7 +924,7 @@ void CCvcDb::FindNmosPossibleLeakErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking nmos possible leak errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking nmos possible leak errors: ");
 }
 
 void CCvcDb::FindPmosPossibleLeakErrors() {
@@ -973,7 +973,7 @@ void CCvcDb::FindPmosPossibleLeakErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking pmos possible leak errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking pmos possible leak errors: ");
 }
 
 void CCvcDb::FindFloatingInputErrors() {
@@ -1031,7 +1031,7 @@ void CCvcDb::FindFloatingInputErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking mos floating input errors:");
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking mos floating input errors:");
 //	errorFile << "! Finished" << endl << endl;
 }
 
@@ -1222,7 +1222,7 @@ void CCvcDb::FindLDDErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile, "! Checking LDD errors for model: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking LDD errors for model: ");
 }
 
 /*

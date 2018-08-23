@@ -165,6 +165,7 @@ public:
 	ogzstream errorFile;
 	ofstream logFile;
 	teestream reportFile;
+	ogzstream debugFile;
 
 	string lockFile;
 	string reportPrefix;
