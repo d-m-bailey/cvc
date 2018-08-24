@@ -457,8 +457,8 @@ returnCode_t CCvcParameters::LoadPower() {
 		}
 		myInstancePowerFile.close();
 	}
-	cvcPowerPtrList.SetFamilies(cvcPowerFamilyMap);
-	SetHiZPropagation();
+//	cvcPowerPtrList.SetFamilies(cvcPowerFamilyMap);
+//	SetHiZPropagation();
 	myPowerFile.close();
 	if ( myPowerErrorFlag ) {
 		reportFile << "Invalid power file: " << cvcPowerFilename << endl;

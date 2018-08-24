@@ -138,6 +138,8 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 			reportFile << "ERROR: skipped due to problems in power files" << endl;
 			continue;
 		}
+		cvcParameters.cvcPowerPtrList.SetFamilies(cvcParameters.cvcPowerFamilyMap);
+		cvcParameters.SetHiZPropagation();
 		cvcParameters.cvcModelListMap.Print(logFile);
 		PrintPowerList(logFile, "Power List");
 		cvcParameters.cvcPowerPtrList.SetPowerLimits(maxPower, minPower);

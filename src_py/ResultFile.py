@@ -184,7 +184,7 @@ class ResultFile():
         try:
             for line_it in theFile:
                 self._errorData.append(line_it)
-                if line_it.beginswith("!"):  # all report sections must begin with "!"
+                if line_it.startswith("!"):  # all report sections must begin with "!"
                     for error_it in cvc_globals.errorList:
                         if error_it['source'] == 'report' and error_it['regex'].search(line_it):
                             mySection = error_it['section']

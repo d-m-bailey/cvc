@@ -1104,8 +1104,7 @@ void CCvcDb::CheckExpectedValues() {
 				if ( myMinNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMinNetId] || netVoltagePtr_v[myMinNetId]->simVoltage == UNKNOWN_VOLTAGE ) { // open match
 					myExpectedValueFound = true;
 				}
-			// simVoltage in the following condition is correct. open voltages can have min/max voltages.
-			} else if ( myMinNetId != UNKNOWN_NET && netVoltagePtr_v[myMinNetId] && netVoltagePtr_v[myMinNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
+			} else if ( myMinNetId != UNKNOWN_NET && netVoltagePtr_v[myMinNetId] ) {
 				if ( String_to_Voltage((*power_ppit)->expectedMin()) == netVoltagePtr_v[myMinNetId]->minVoltage ) { // voltage match
 					myExpectedValueFound = true;
 				} else if ( (*power_ppit)->expectedMin() == NetName(myMinNetId) ) { // name match
@@ -1133,8 +1132,7 @@ void CCvcDb::CheckExpectedValues() {
 				if ( myMaxNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMaxNetId] || netVoltagePtr_v[myMaxNetId]->simVoltage == UNKNOWN_VOLTAGE ) { // open match
 					myExpectedValueFound = true;
 				}
-			// simVoltage in the following condition is correct. open voltages can have min/max voltages.
-			} else if ( myMaxNetId != UNKNOWN_NET && netVoltagePtr_v[myMaxNetId] && netVoltagePtr_v[myMaxNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
+			} else if ( myMaxNetId != UNKNOWN_NET && netVoltagePtr_v[myMaxNetId] ) {
 				if ( String_to_Voltage((*power_ppit)->expectedMax()) == netVoltagePtr_v[myMaxNetId]->maxVoltage ) { // voltage match
 					myExpectedValueFound = true;
 				} else if ( (*power_ppit)->expectedMax() == NetName(myMaxNetId) ) { // name match

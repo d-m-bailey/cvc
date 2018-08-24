@@ -56,6 +56,7 @@ from __future__ import print_function
 import sys
 import os
 import getopt
+import glob
 
 os.environ["KIVY_NO_ARGS"] = "1"
 os.environ["KIVY_NO_CONSOLELOG"] = "1"

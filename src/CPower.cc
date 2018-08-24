@@ -179,6 +179,9 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 				maxVoltage = thePowerMacroPtrMap[myParameterName]->maxVoltage;
 				simVoltage = thePowerMacroPtrMap[myParameterName]->simVoltage;
 				myImplicitFamily += "," + myParameterName;
+				if ( ! IsEmpty(thePowerMacroPtrMap[myParameterName]->family()) ) {
+					myImplicitFamily += "," + thePowerMacroPtrMap[myParameterName]->family();
+				}
 				if ( thePowerMacroPtrMap[myParameterName]->extraData ) {
 					if (! extraData) extraData = new CExtraPowerData;
 					extraData->expectedMin = thePowerMacroPtrMap[myParameterName]->expectedMin();
@@ -208,7 +211,7 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 		if ( IsEmpty(extraData->family) ) extraData->family = "cvc-noleak";
 	}
 	if ( myImplicitFamily != "" ) {
-		extraData->implicitFamily = "family " + myImplicitFamily + " " + myImplicitFamily.substr(1);  // family ,net1,net2 net1,net2
+		extraData->implicitFamily = myImplicitFamily.substr(1);  // ,net1,net2 -> net1,net2
 //		cout << "DEBUG: " << extraData->powerSignal << " implicit family \"" << extraData->implicitFamily << "\"" << endl;
 	}
 }
@@ -621,6 +624,13 @@ void CPower::Print(ostream & theLogFile, string theIndentation, string theRealPo
 //	}
 	if ( ! IsEmpty(myDefinition) && myDefinition != string(definition) ) {
 		theLogFile << (IsCalculatedVoltage_(this) ? " =>" : " ->") << myDefinition;
+	}
+	if ( extraData && ! extraData->relativeSet.empty() ) {
+		theLogFile << " family(";
+		for ( auto relative_it = extraData->relativeSet.begin(); relative_it != extraData->relativeSet.end(); relative_it++ ) {
+			theLogFile << *relative_it << ";";
+		}
+		theLogFile << ")";
 	}
 	theLogFile << endl;
 }
@@ -1082,13 +1092,13 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 			if ( myVoltageStack.size() < 2 ) throw EPowerError("invalid equation: " + theEquation);
 			myVoltage = myVoltageStack.back();
 			myVoltageStack.pop_back();
-			if ( myVoltage > float(MAX_VOLTAGE) ) {
+			if ( myVoltage > float(MAX_VOLTAGE) / VOLTAGE_SCALE ) {
 				if ( ( *token_pit == "<" ) || ( *token_pit == ">" ) ) {  // min/max keep value on stack
 					;
 				} else {  // arithmetic with invalid values gives invalid value
 					myVoltageStack.back() = UNKNOWN_TOKEN;
 				}
-			} else if ( myVoltageStack.back() > float(MAX_VOLTAGE) ) {
+			} else if ( myVoltageStack.back() > float(MAX_VOLTAGE) / VOLTAGE_SCALE ) {
 				if ( ( *token_pit == "<" ) || ( *token_pit == ">" ) ) {  // min/max replace with last voltage
 					myVoltageStack.back() = myVoltage;
 				}
@@ -1131,7 +1141,7 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 	}
 	delete myTokenList_p;
 	if ( myVoltageStack.size() != 1 ) throw EPowerError("invalid equation: " + theEquation);
-	if ( myVoltageStack.front() > float(MAX_VOLTAGE) ) {
+	if ( myVoltageStack.front() > float(MAX_VOLTAGE) / VOLTAGE_SCALE ) {
 		cout << "Warning: equation contains undefined tokens: " << theEquation << endl;
 		return(UNKNOWN_VOLTAGE);
 	}
