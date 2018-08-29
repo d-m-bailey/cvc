@@ -1112,7 +1112,7 @@ void CCvcDb::CheckExpectedValues() {
 					myExpectedValueFound = true;
 				}
 			} else if ( myMinNetId != UNKNOWN_NET && netVoltagePtr_v[myMinNetId] ) {
-				if ( String_to_Voltage((*power_ppit)->expectedMin()) == netVoltagePtr_v[myMinNetId]->minVoltage ) { // voltage match
+				if ( String_to_Voltage((*power_ppit)->expectedMin()) <= netVoltagePtr_v[myMinNetId]->minVoltage ) { // voltage match (anything higher than expected is ok)
 					myExpectedValueFound = true;
 				} else if ( (*power_ppit)->expectedMin() == NetName(myMinNetId) ) { // name match
 					myExpectedValueFound = true;
@@ -1140,7 +1140,7 @@ void CCvcDb::CheckExpectedValues() {
 					myExpectedValueFound = true;
 				}
 			} else if ( myMaxNetId != UNKNOWN_NET && netVoltagePtr_v[myMaxNetId] ) {
-				if ( String_to_Voltage((*power_ppit)->expectedMax()) == netVoltagePtr_v[myMaxNetId]->maxVoltage ) { // voltage match
+				if ( String_to_Voltage((*power_ppit)->expectedMax()) >= netVoltagePtr_v[myMaxNetId]->maxVoltage ) { // voltage match (anything lower than expected is ok)
 					myExpectedValueFound = true;
 				} else if ( (*power_ppit)->expectedMax() == NetName(myMaxNetId) ) { // name match
 					myExpectedValueFound = true;

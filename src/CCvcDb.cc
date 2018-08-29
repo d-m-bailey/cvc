@@ -2004,7 +2004,7 @@ void CCvcDb::CalculateResistorVoltages() {
 		if ( (*power_ppit)->type[RESISTOR_BIT] && IsCalculatedVoltage_((*power_ppit)) && ! myPrintedPower[(*power_ppit)->netId] ) {
 			netId_t myPowerNet = (*power_ppit)->netId;
 			if ( netVoltagePtr_v[myPowerNet]->simVoltage == UNKNOWN_VOLTAGE ) {
-				logFile << "WARNING: Could not calculate explicit resistor voltage for " << NetName((*power_ppit)->netId, PRINT_CIRCUIT_ON) << endl;
+				reportFile << "WARNING: Could not calculate explicit resistor voltage for " << NetName((*power_ppit)->netId, PRINT_CIRCUIT_ON) << endl;
 			} else {
 				if ( netVoltagePtr_v[myPowerNet] != *power_ppit ) continue; // skip unused power nodes
 				netId_t myNextNet = minNet_v[myPowerNet].nextNetId;
@@ -2013,14 +2013,14 @@ void CCvcDb::CalculateResistorVoltages() {
 					myNextNet = minNet_v[myNextNet].nextNetId;
 				}
 				do {
-					logFile << "INFO: Resistor voltage calculation " << calculatedResistanceInfo_v[myPowerNet] << endl;
+					debugFile << "INFO: Resistor voltage calculation " << calculatedResistanceInfo_v[myPowerNet] << endl;
 					myPrintedPower[(*power_ppit)->netId] = true;
 					myLastPowerNet = myPowerNet;
 					myPowerNet = maxNet_v[myPowerNet].nextNetId;
 					minNet_v[myLastPowerNet].nextNetId = maxNet_v[myLastPowerNet].nextNetId = myLastPowerNet;
 					minNet_v[myLastPowerNet].finalNetId = maxNet_v[myLastPowerNet].finalNetId = myLastPowerNet;
 				} while ( netVoltagePtr_v[myPowerNet] && netVoltagePtr_v[myPowerNet]->simVoltage != UNKNOWN_VOLTAGE && ! maxNet_v.IsTerminal(myPowerNet));
-				logFile << endl;
+				debugFile << endl;
 			}
 		}
 	}

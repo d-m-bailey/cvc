@@ -552,13 +552,9 @@
                 size_hint_y: None
                 padding: 5, 5
                 size: self.texture_size
-                disabled: False if filterText_id.textRef.text else True
+#                disabled: False if filterText_id.textRef.text else True
                 on_press:
-                    os.system("echo '" \
-                    + filterText_id.textRef.text \
-                    + "' | search_report_cvc '" \
-                    + root.currentContent.report.errorFileName \
-                    + "'")
+                    root.CopySelectionToClipboard()
             Button:
                 id: referenceButton
                 text: "Copy Checks"

@@ -804,6 +804,19 @@ class SummaryWidget(Widget):
         self.ids.errorDetails_id.text = myContent.report.GetErrorDetails(myData)
         self.detailPopupRef.open()
 
+    def CopySelectionToClipboard(self):
+        """Copy a representative device for each selected line to the clipboard
+
+        """
+        myContent = self.currentContent
+        mySelectedDeviceList = []
+        for record_it in myContent.viewRef.selected_nodes:
+            myData = myContent.listRef.data[record_it]
+            if myData['type'] in ['unmatched', 'comment']:
+                continue
+            mySelectedDeviceList.append(myContent.report.GetFirstError(myData))
+        Clipboard.copy(" ".join(mySelectedDeviceList))
+
     def _CountLines(self, theList, theType):
         """Count the number of lines of a given type in the current filtered display."""
         myCount = 0
@@ -859,6 +872,7 @@ class SummaryWidget(Widget):
                 self.ids.warningButton.disabled = False
                 self.ids.checkButton.disabled = False
                 self.ids.ignoreButton.disabled = False
+                self.ids.viewButton.disabled = False
                 self.referenceAction = 'replace'
                 if myData['text'].startswith("!"):
                     self.ids.clearButton.disabled = False
@@ -874,6 +888,7 @@ class SummaryWidget(Widget):
                 self.ids.warningButton.disabled = False
                 self.ids.checkButton.disabled = False
                 self.ids.ignoreButton.disabled = False
+                self.ids.viewButton.disabled = False
                 self.referenceAction = 'ask'
                 self.ids.clearButton.disabled = False
             elif myType == 'comment':
@@ -890,8 +905,8 @@ class SummaryWidget(Widget):
             self.ids.redoButton.disabled = False
         else:
             self.ids.redoButton.text = "Redo"
-        if self.filterTextRef.textRef.text:
-            self.ids.viewButton.disabled = False
+#        if self.filterTextRef.textRef.text:
+#            self.ids.viewButton.disabled = False
         if len(self.modePanelRef.tab_list) > 1:
             self.ids.referenceButton.disabled = False
 
