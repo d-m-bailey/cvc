@@ -1387,3 +1387,252 @@ bool CCvcDb::IsAlwaysOff(CFullConnection& theConnections) {
 	}
 }
 
+void CCvcDb::SetDiodeConnections(pair<int, int> theDiodePair, CFullConnection & theConnections, CFullConnection & theDiodeConnections) {
+	theDiodeConnections = theConnections;
+	int myAnnode, myCathode;
+	if (theConnections.device_p->model_p->baseType == "M" ) {
+		switch(theDiodePair.first){
+			case 1: { myAnnode = DRAIN; break; }
+			case 2: { myAnnode = GATE; break; }
+			case 3: { myAnnode = SOURCE; break; }
+			case 4: { myAnnode = BULK; break; }
+			default: {
+				theConnections.device_p->model_p->Print();
+				throw EInvalidTerminal("base type " + theConnections.device_p->model_p->baseType + " does not have terminal " + to_string<int>(theDiodePair.first));
+			}
+		}
+		switch(theDiodePair.second){
+			case 1: { myCathode = DRAIN; break; }
+			case 2: { myCathode = GATE; break; }
+			case 3: { myCathode = SOURCE; break; }
+			case 4: { myCathode = BULK; break; }
+			default: {
+				theConnections.device_p->model_p->Print();
+				throw EInvalidTerminal("base type " + theConnections.device_p->model_p->baseType + " does not have terminal " + to_string<int>(theDiodePair.first));
+			}
+		}
+	} else if (theConnections.device_p->model_p->baseType == "D"
+			|| theConnections.device_p->model_p->baseType == "R"
+			|| theConnections.device_p->model_p->baseType == "C") {
+		switch(theDiodePair.first){
+			case 1: { myAnnode = SOURCE; break; }
+			case 2: { myAnnode = DRAIN; break; }
+			case 3: { myAnnode = BULK; break; }
+			default: {
+				theConnections.device_p->model_p->Print();
+				throw EInvalidTerminal("base type " + theConnections.device_p->model_p->baseType + " does not have terminal " + to_string<int>(theDiodePair.first));
+			}
+		}
+		switch(theDiodePair.second){
+			case 1: { myCathode = SOURCE; break; }
+			case 2: { myCathode = DRAIN; break; }
+			case 3: { myCathode = BULK; break; }
+			default: {
+				theConnections.device_p->model_p->Print();
+				throw EInvalidTerminal("base type " + theConnections.device_p->model_p->baseType + " does not have terminal " + to_string<int>(theDiodePair.first));
+			}
+		}
+	} else if (theConnections.device_p->model_p->baseType == "Q" ) {
+		switch(theDiodePair.first){
+			case 1: { myAnnode = SOURCE; break; }
+			case 2: { myAnnode = GATE; break; }
+			case 3: { myAnnode = DRAIN; break; }
+			default: {
+				theConnections.device_p->model_p->Print();
+				throw EInvalidTerminal("base type " + theConnections.device_p->model_p->baseType + " does not have terminal " + to_string<int>(theDiodePair.first));
+			}
+		}
+		switch(theDiodePair.second){
+			case 1: { myCathode = SOURCE; break; }
+			case 2: { myCathode = GATE; break; }
+			case 3: { myCathode = DRAIN; break; }
+			default: {
+				theConnections.device_p->model_p->Print();
+				throw EInvalidTerminal("base type " + theConnections.device_p->model_p->baseType + " does not have terminal " + to_string<int>(theDiodePair.first));
+			}
+		}
+	} else {
+		theConnections.device_p->model_p->Print();
+		throw EUnknownModel();
+	}
+	switch(myAnnode) {
+		case SOURCE: {
+			theDiodeConnections.sourceId = theConnections.sourceId;
+			theDiodeConnections.masterMaxSourceNet = theConnections.masterMaxSourceNet;
+			theDiodeConnections.masterMinSourceNet = theConnections.masterMinSourceNet;
+			theDiodeConnections.masterSimSourceNet = theConnections.masterSimSourceNet;
+			theDiodeConnections.maxSourceLeakVoltage = theConnections.maxSourceLeakVoltage;
+			theDiodeConnections.maxSourcePower_p = theConnections.maxSourcePower_p;
+			theDiodeConnections.maxSourceVoltage = theConnections.maxSourceVoltage;
+			theDiodeConnections.minSourceLeakVoltage = theConnections.minSourceLeakVoltage;
+			theDiodeConnections.minSourcePower_p = theConnections.minSourcePower_p;
+			theDiodeConnections.minSourceVoltage = theConnections.minSourceVoltage;
+			theDiodeConnections.originalSourceId = theConnections.originalSourceId;
+			theDiodeConnections.simSourcePower_p = theConnections.simSourcePower_p;
+			theDiodeConnections.simSourceVoltage = theConnections.simSourceVoltage;
+			theDiodeConnections.validMaxSource = theConnections.validMaxSource;
+			theDiodeConnections.validMaxSourceLeak = theConnections.validMaxSourceLeak;
+			theDiodeConnections.validMinSource = theConnections.validMinSource;
+			theDiodeConnections.validMinSourceLeak = theConnections.validMinSourceLeak;
+			theDiodeConnections.validSimSource = theConnections.validSimSource;
+			break;
+		}
+		case GATE: {
+			theDiodeConnections.sourceId = theConnections.gateId;
+			theDiodeConnections.masterMaxSourceNet = theConnections.masterMaxGateNet;
+			theDiodeConnections.masterMinSourceNet = theConnections.masterMinGateNet;
+			theDiodeConnections.masterSimSourceNet = theConnections.masterSimGateNet;
+			theDiodeConnections.maxSourceLeakVoltage = theConnections.maxGateLeakVoltage;
+			theDiodeConnections.maxSourcePower_p = theConnections.maxGatePower_p;
+			theDiodeConnections.maxSourceVoltage = theConnections.maxGateVoltage;
+			theDiodeConnections.minSourceLeakVoltage = theConnections.minGateLeakVoltage;
+			theDiodeConnections.minSourcePower_p = theConnections.minGatePower_p;
+			theDiodeConnections.minSourceVoltage = theConnections.minGateVoltage;
+			theDiodeConnections.originalSourceId = theConnections.originalGateId;
+			theDiodeConnections.simSourcePower_p = theConnections.simGatePower_p;
+			theDiodeConnections.simSourceVoltage = theConnections.simGateVoltage;
+			theDiodeConnections.validMaxSource = theConnections.validMaxGate;
+			theDiodeConnections.validMaxSourceLeak = theConnections.validMaxGateLeak;
+			theDiodeConnections.validMinSource = theConnections.validMinGate;
+			theDiodeConnections.validMinSourceLeak = theConnections.validMinGateLeak;
+			theDiodeConnections.validSimSource = theConnections.validSimGate;
+			break;
+		}
+		case DRAIN: {
+			theDiodeConnections.sourceId = theConnections.drainId;
+			theDiodeConnections.masterMaxSourceNet = theConnections.masterMaxDrainNet;
+			theDiodeConnections.masterMinSourceNet = theConnections.masterMinDrainNet;
+			theDiodeConnections.masterSimSourceNet = theConnections.masterSimDrainNet;
+			theDiodeConnections.maxSourceLeakVoltage = theConnections.maxDrainLeakVoltage;
+			theDiodeConnections.maxSourcePower_p = theConnections.maxDrainPower_p;
+			theDiodeConnections.maxSourceVoltage = theConnections.maxDrainVoltage;
+			theDiodeConnections.minSourceLeakVoltage = theConnections.minDrainLeakVoltage;
+			theDiodeConnections.minSourcePower_p = theConnections.minDrainPower_p;
+			theDiodeConnections.minSourceVoltage = theConnections.minDrainVoltage;
+			theDiodeConnections.originalSourceId = theConnections.originalDrainId;
+			theDiodeConnections.simSourcePower_p = theConnections.simDrainPower_p;
+			theDiodeConnections.simSourceVoltage = theConnections.simDrainVoltage;
+			theDiodeConnections.validMaxSource = theConnections.validMaxDrain;
+			theDiodeConnections.validMaxSourceLeak = theConnections.validMaxDrainLeak;
+			theDiodeConnections.validMinSource = theConnections.validMinDrain;
+			theDiodeConnections.validMinSourceLeak = theConnections.validMinDrainLeak;
+			theDiodeConnections.validSimSource = theConnections.validSimDrain;
+			break;
+		}
+		case BULK: {
+			theDiodeConnections.sourceId = theConnections.bulkId;
+			theDiodeConnections.masterMaxSourceNet = theConnections.masterMaxBulkNet;
+			theDiodeConnections.masterMinSourceNet = theConnections.masterMinBulkNet;
+			theDiodeConnections.masterSimSourceNet = theConnections.masterSimBulkNet;
+			theDiodeConnections.maxSourceLeakVoltage = theConnections.maxBulkLeakVoltage;
+			theDiodeConnections.maxSourcePower_p = theConnections.maxBulkPower_p;
+			theDiodeConnections.maxSourceVoltage = theConnections.maxBulkVoltage;
+			theDiodeConnections.minSourceLeakVoltage = theConnections.minBulkLeakVoltage;
+			theDiodeConnections.minSourcePower_p = theConnections.minBulkPower_p;
+			theDiodeConnections.minSourceVoltage = theConnections.minBulkVoltage;
+			theDiodeConnections.originalSourceId = theConnections.originalBulkId;
+			theDiodeConnections.simSourcePower_p = theConnections.simBulkPower_p;
+			theDiodeConnections.simSourceVoltage = theConnections.simBulkVoltage;
+			theDiodeConnections.validMaxSource = theConnections.validMaxBulk;
+			theDiodeConnections.validMaxSourceLeak = theConnections.validMaxBulkLeak;
+			theDiodeConnections.validMinSource = theConnections.validMinBulk;
+			theDiodeConnections.validMinSourceLeak = theConnections.validMinBulkLeak;
+			theDiodeConnections.validSimSource = theConnections.validSimBulk;
+			break;
+		}
+		default: {
+			theConnections.device_p->model_p->Print();
+			throw EInvalidTerminal(to_string<int>(myAnnode) + " is not a valid terminal");
+		}
+	}
+	switch(myCathode) {
+		case SOURCE: {
+			theDiodeConnections.drainId = theConnections.sourceId;
+			theDiodeConnections.masterMaxDrainNet = theConnections.masterMaxSourceNet;
+			theDiodeConnections.masterMinDrainNet = theConnections.masterMinSourceNet;
+			theDiodeConnections.masterSimDrainNet = theConnections.masterSimSourceNet;
+			theDiodeConnections.maxDrainLeakVoltage = theConnections.maxSourceLeakVoltage;
+			theDiodeConnections.maxDrainPower_p = theConnections.maxSourcePower_p;
+			theDiodeConnections.maxDrainVoltage = theConnections.maxSourceVoltage;
+			theDiodeConnections.minDrainLeakVoltage = theConnections.minSourceLeakVoltage;
+			theDiodeConnections.minDrainPower_p = theConnections.minSourcePower_p;
+			theDiodeConnections.minDrainVoltage = theConnections.minSourceVoltage;
+			theDiodeConnections.originalDrainId = theConnections.originalSourceId;
+			theDiodeConnections.simDrainPower_p = theConnections.simSourcePower_p;
+			theDiodeConnections.simDrainVoltage = theConnections.simSourceVoltage;
+			theDiodeConnections.validMaxDrain = theConnections.validMaxSource;
+			theDiodeConnections.validMaxDrainLeak = theConnections.validMaxSourceLeak;
+			theDiodeConnections.validMinDrain = theConnections.validMinSource;
+			theDiodeConnections.validMinDrainLeak = theConnections.validMinSourceLeak;
+			theDiodeConnections.validSimDrain = theConnections.validSimSource;
+			break;
+		}
+		case GATE: {
+			theDiodeConnections.drainId = theConnections.gateId;
+			theDiodeConnections.masterMaxDrainNet = theConnections.masterMaxGateNet;
+			theDiodeConnections.masterMinDrainNet = theConnections.masterMinGateNet;
+			theDiodeConnections.masterSimDrainNet = theConnections.masterSimGateNet;
+			theDiodeConnections.maxDrainLeakVoltage = theConnections.maxGateLeakVoltage;
+			theDiodeConnections.maxDrainPower_p = theConnections.maxGatePower_p;
+			theDiodeConnections.maxDrainVoltage = theConnections.maxGateVoltage;
+			theDiodeConnections.minDrainLeakVoltage = theConnections.minGateLeakVoltage;
+			theDiodeConnections.minDrainPower_p = theConnections.minGatePower_p;
+			theDiodeConnections.minDrainVoltage = theConnections.minGateVoltage;
+			theDiodeConnections.originalDrainId = theConnections.originalGateId;
+			theDiodeConnections.simDrainPower_p = theConnections.simGatePower_p;
+			theDiodeConnections.simDrainVoltage = theConnections.simGateVoltage;
+			theDiodeConnections.validMaxDrain = theConnections.validMaxGate;
+			theDiodeConnections.validMaxDrainLeak = theConnections.validMaxGateLeak;
+			theDiodeConnections.validMinDrain = theConnections.validMinGate;
+			theDiodeConnections.validMinDrainLeak = theConnections.validMinGateLeak;
+			theDiodeConnections.validSimDrain = theConnections.validSimGate;
+			break;
+		}
+		case DRAIN: {
+			theDiodeConnections.drainId = theConnections.drainId;
+			theDiodeConnections.masterMaxDrainNet = theConnections.masterMaxDrainNet;
+			theDiodeConnections.masterMinDrainNet = theConnections.masterMinDrainNet;
+			theDiodeConnections.masterSimDrainNet = theConnections.masterSimDrainNet;
+			theDiodeConnections.maxDrainLeakVoltage = theConnections.maxDrainLeakVoltage;
+			theDiodeConnections.maxDrainPower_p = theConnections.maxDrainPower_p;
+			theDiodeConnections.maxDrainVoltage = theConnections.maxDrainVoltage;
+			theDiodeConnections.minDrainLeakVoltage = theConnections.minDrainLeakVoltage;
+			theDiodeConnections.minDrainPower_p = theConnections.minDrainPower_p;
+			theDiodeConnections.minDrainVoltage = theConnections.minDrainVoltage;
+			theDiodeConnections.originalDrainId = theConnections.originalDrainId;
+			theDiodeConnections.simDrainPower_p = theConnections.simDrainPower_p;
+			theDiodeConnections.simDrainVoltage = theConnections.simDrainVoltage;
+			theDiodeConnections.validMaxDrain = theConnections.validMaxDrain;
+			theDiodeConnections.validMaxDrainLeak = theConnections.validMaxDrainLeak;
+			theDiodeConnections.validMinDrain = theConnections.validMinDrain;
+			theDiodeConnections.validMinDrainLeak = theConnections.validMinDrainLeak;
+			theDiodeConnections.validSimDrain = theConnections.validSimDrain;
+			break;
+		}
+		case BULK: {
+			theDiodeConnections.drainId = theConnections.bulkId;
+			theDiodeConnections.masterMaxDrainNet = theConnections.masterMaxBulkNet;
+			theDiodeConnections.masterMinDrainNet = theConnections.masterMinBulkNet;
+			theDiodeConnections.masterSimDrainNet = theConnections.masterSimBulkNet;
+			theDiodeConnections.maxDrainLeakVoltage = theConnections.maxBulkLeakVoltage;
+			theDiodeConnections.maxDrainPower_p = theConnections.maxBulkPower_p;
+			theDiodeConnections.maxDrainVoltage = theConnections.maxBulkVoltage;
+			theDiodeConnections.minDrainLeakVoltage = theConnections.minBulkLeakVoltage;
+			theDiodeConnections.minDrainPower_p = theConnections.minBulkPower_p;
+			theDiodeConnections.minDrainVoltage = theConnections.minBulkVoltage;
+			theDiodeConnections.originalDrainId = theConnections.originalBulkId;
+			theDiodeConnections.simDrainPower_p = theConnections.simBulkPower_p;
+			theDiodeConnections.simDrainVoltage = theConnections.simBulkVoltage;
+			theDiodeConnections.validMaxDrain = theConnections.validMaxBulk;
+			theDiodeConnections.validMaxDrainLeak = theConnections.validMaxBulkLeak;
+			theDiodeConnections.validMinDrain = theConnections.validMinBulk;
+			theDiodeConnections.validMinDrainLeak = theConnections.validMinBulkLeak;
+			theDiodeConnections.validSimDrain = theConnections.validSimBulk;
+			break;
+		}
+		default: {
+			theConnections.device_p->model_p->Print();
+			throw EInvalidTerminal(to_string<int>(myAnnode) + " is not a valid terminal");
+		}
+	}
+}

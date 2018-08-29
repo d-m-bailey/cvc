@@ -45,13 +45,6 @@ CModel::CModel(string theParameterString) {
 	baseType = gBaseModelTypePrefixMap.at(type);
 	if ( IsMos_(type) ) {
 		resistanceDefinition = DEFAULT_MOS_RESISTANCE;
-		if ( IsNmos_(type) ) {
-			diodeList.push_back(make_pair(4,1));
-			diodeList.push_back(make_pair(4,3));
-		} else if ( IsPmos_(type) ) {
-			diodeList.push_back(make_pair(1,4));
-			diodeList.push_back(make_pair(3,4));
-		}
 	} else if ( type == RESISTOR ) {
 		resistanceDefinition = DEFAULT_RESISTANCE;
 	}
@@ -95,6 +88,17 @@ CModel::CModel(string theParameterString) {
 			throw EModelError("unknown parameter '" + theParameterString.substr(myStringBegin, myStringEnd - myStringBegin) + "' in " + definition);
 		}
 		myStringBegin = theParameterString.find_first_not_of(" \t", myStringEnd);
+	}
+	if ( diodeList.empty() ) {
+		if ( IsNmos_(type) ) {
+			diodeList.push_back(make_pair(4,1));
+			diodeList.push_back(make_pair(4,3));
+		} else if ( IsPmos_(type) ) {
+			diodeList.push_back(make_pair(1,4));
+			diodeList.push_back(make_pair(3,4));
+		} else if ( type == DIODE ) {
+			diodeList.push_back(make_pair(1,2));
+		}
 	}
 }
 

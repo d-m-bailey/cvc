@@ -532,8 +532,14 @@ void CCvcDb::PrintDeviceWithAllConnections(instanceId_t theParentId, CFullConnec
 		case RESISTOR: case CAPACITOR: case DIODE: case FUSE_OFF: case FUSE_ON: case SWITCH_ON: case SWITCH_OFF: {
 			PrintAllTerminalConnections(SOURCE, theConnections, theErrorFile);
 			PrintAllTerminalConnections(DRAIN, theConnections, theErrorFile);
+			if ( theConnections.originalBulkId != UNKNOWN_NET) {
+				PrintAllTerminalConnections(BULK, theConnections, theErrorFile);
+			}
 		break; }
 		case BIPOLAR: {
+			PrintAllTerminalConnections(SOURCE, theConnections, theErrorFile);
+			PrintAllTerminalConnections(GATE, theConnections, theErrorFile);
+			PrintAllTerminalConnections(DRAIN, theConnections, theErrorFile);
 		break; }
 		default: {
 			throw EDatabaseError("Invalid device type: " + theConnections.device_p->model_p->type);
@@ -554,8 +560,14 @@ void CCvcDb::PrintDeviceWithMinMaxConnections(instanceId_t theParentId, CFullCon
 		case RESISTOR: case CAPACITOR: case DIODE: case FUSE_OFF: case FUSE_ON: case SWITCH_ON: case SWITCH_OFF: {
 			PrintMinMaxTerminalConnections(SOURCE, theConnections, theErrorFile, theIncludeLeakVoltage);
 			PrintMinMaxTerminalConnections(DRAIN, theConnections, theErrorFile, theIncludeLeakVoltage);
+			if ( theConnections.originalBulkId != UNKNOWN_NET) {
+				PrintMinMaxTerminalConnections(BULK, theConnections, theErrorFile);
+			}
 		break; }
 		case BIPOLAR: {
+			PrintMinMaxTerminalConnections(SOURCE, theConnections, theErrorFile, theIncludeLeakVoltage);
+			PrintMinMaxTerminalConnections(GATE, theConnections, theErrorFile, theIncludeLeakVoltage);
+			PrintMinMaxTerminalConnections(DRAIN, theConnections, theErrorFile, theIncludeLeakVoltage);
 		break; }
 		default: {
 			throw EDatabaseError("Invalid device type: " + theConnections.device_p->model_p->type);
@@ -576,8 +588,14 @@ void CCvcDb::PrintDeviceWithMinSimConnections(instanceId_t theParentId, CFullCon
 		case RESISTOR: case CAPACITOR: case DIODE: case FUSE_OFF: case FUSE_ON: case SWITCH_ON: case SWITCH_OFF: {
 			PrintMinSimTerminalConnections(SOURCE, theConnections, theErrorFile);
 			PrintMinSimTerminalConnections(DRAIN, theConnections, theErrorFile);
+			if ( theConnections.originalBulkId != UNKNOWN_NET) {
+				PrintMinSimTerminalConnections(BULK, theConnections, theErrorFile);
+			}
 		break; }
 		case BIPOLAR: {
+			PrintMinSimTerminalConnections(SOURCE, theConnections, theErrorFile);
+			PrintMinSimTerminalConnections(GATE, theConnections, theErrorFile);
+			PrintMinSimTerminalConnections(DRAIN, theConnections, theErrorFile);
 		break; }
 		default: {
 			throw EDatabaseError("Invalid device type: " + theConnections.device_p->model_p->type);
@@ -598,8 +616,14 @@ void CCvcDb::PrintDeviceWithSimMaxConnections(instanceId_t theParentId, CFullCon
 		case RESISTOR: case CAPACITOR: case DIODE: case FUSE_OFF: case FUSE_ON: case SWITCH_ON: case SWITCH_OFF: {
 			PrintSimMaxTerminalConnections(SOURCE, theConnections, theErrorFile);
 			PrintSimMaxTerminalConnections(DRAIN, theConnections, theErrorFile);
+			if ( theConnections.originalBulkId != UNKNOWN_NET) {
+				PrintSimMaxTerminalConnections(BULK, theConnections, theErrorFile);
+			}
 		break; }
 		case BIPOLAR: {
+			PrintSimMaxTerminalConnections(SOURCE, theConnections, theErrorFile);
+			PrintSimMaxTerminalConnections(GATE, theConnections, theErrorFile);
+			PrintSimMaxTerminalConnections(DRAIN, theConnections, theErrorFile);
 		break; }
 		default: {
 			throw EDatabaseError("Invalid device type: " + theConnections.device_p->model_p->type);
@@ -620,8 +644,14 @@ void CCvcDb::PrintDeviceWithMaxConnections(instanceId_t theParentId, CFullConnec
 		case RESISTOR: case CAPACITOR: case DIODE: case FUSE_OFF: case FUSE_ON: case SWITCH_ON: case SWITCH_OFF: {
 			PrintMaxTerminalConnections(SOURCE, theConnections, theErrorFile);
 			PrintMaxTerminalConnections(DRAIN, theConnections, theErrorFile);
+			if ( theConnections.originalBulkId != UNKNOWN_NET) {
+				PrintMaxTerminalConnections(BULK, theConnections, theErrorFile);
+			}
 		break; }
 		case BIPOLAR: {
+			PrintMaxTerminalConnections(SOURCE, theConnections, theErrorFile);
+			PrintMaxTerminalConnections(GATE, theConnections, theErrorFile);
+			PrintMaxTerminalConnections(DRAIN, theConnections, theErrorFile);
 		break; }
 		default: {
 			throw EDatabaseError("Invalid device type: " + theConnections.device_p->model_p->type);
@@ -642,8 +672,14 @@ void CCvcDb::PrintDeviceWithMinConnections(instanceId_t theParentId, CFullConnec
 		case RESISTOR: case CAPACITOR: case DIODE: case FUSE_OFF: case FUSE_ON: case SWITCH_ON: case SWITCH_OFF: {
 			PrintMinTerminalConnections(SOURCE, theConnections, theErrorFile);
 			PrintMinTerminalConnections(DRAIN, theConnections, theErrorFile);
+			if ( theConnections.originalBulkId != UNKNOWN_NET) {
+				PrintMinTerminalConnections(BULK, theConnections, theErrorFile);
+			}
 		break; }
 		case BIPOLAR: {
+			PrintMinTerminalConnections(SOURCE, theConnections, theErrorFile);
+			PrintMinTerminalConnections(GATE, theConnections, theErrorFile);
+			PrintMinTerminalConnections(DRAIN, theConnections, theErrorFile);
 		break; }
 		default: {
 			throw EDatabaseError("Invalid device type: " + theConnections.device_p->model_p->type);
@@ -664,8 +700,14 @@ void CCvcDb::PrintDeviceWithSimConnections(instanceId_t theParentId, CFullConnec
 		case RESISTOR: case CAPACITOR: case DIODE: case FUSE_OFF: case FUSE_ON: case SWITCH_ON: case SWITCH_OFF: {
 			PrintSimTerminalConnections(SOURCE, theConnections, theErrorFile);
 			PrintSimTerminalConnections(DRAIN, theConnections, theErrorFile);
+			if ( theConnections.originalBulkId != UNKNOWN_NET) {
+				PrintSimTerminalConnections(BULK, theConnections, theErrorFile);
+			}
 		break; }
 		case BIPOLAR: {
+			PrintSimTerminalConnections(SOURCE, theConnections, theErrorFile);
+			PrintSimTerminalConnections(GATE, theConnections, theErrorFile);
+			PrintSimTerminalConnections(DRAIN, theConnections, theErrorFile);
 		break; }
 		default: {
 			throw EDatabaseError("Invalid device type: " + theConnections.device_p->model_p->type);
@@ -686,8 +728,14 @@ void CCvcDb::PrintDeviceWithMinGateAndSimConnections(instanceId_t theParentId, C
 		case RESISTOR: case CAPACITOR: case DIODE: case FUSE_OFF: case FUSE_ON: case SWITCH_ON: case SWITCH_OFF: {
 			PrintSimTerminalConnections(SOURCE, theConnections, theErrorFile);
 			PrintSimTerminalConnections(DRAIN, theConnections, theErrorFile);
+			if ( theConnections.originalBulkId != UNKNOWN_NET) {
+				PrintSimTerminalConnections(BULK, theConnections, theErrorFile);
+			}
 		break; }
 		case BIPOLAR: {
+			PrintSimTerminalConnections(SOURCE, theConnections, theErrorFile);
+			PrintMinTerminalConnections(GATE, theConnections, theErrorFile);
+			PrintSimTerminalConnections(DRAIN, theConnections, theErrorFile);
 		break; }
 		default: {
 			throw EDatabaseError("Invalid device type: " + theConnections.device_p->model_p->type);
@@ -708,8 +756,14 @@ void CCvcDb::PrintDeviceWithMaxGateAndSimConnections(instanceId_t theParentId, C
 		case RESISTOR: case CAPACITOR: case DIODE: case FUSE_OFF: case FUSE_ON: case SWITCH_ON: case SWITCH_OFF: {
 			PrintSimTerminalConnections(SOURCE, theConnections, theErrorFile);
 			PrintSimTerminalConnections(DRAIN, theConnections, theErrorFile);
+			if ( theConnections.originalBulkId != UNKNOWN_NET) {
+				PrintSimTerminalConnections(BULK, theConnections, theErrorFile);
+			}
 		break; }
 		case BIPOLAR: {
+			PrintSimTerminalConnections(SOURCE, theConnections, theErrorFile);
+			PrintMaxTerminalConnections(GATE, theConnections, theErrorFile);
+			PrintSimTerminalConnections(DRAIN, theConnections, theErrorFile);
 		break; }
 		default: {
 			throw EDatabaseError("Invalid device type: " + theConnections.device_p->model_p->type);
@@ -746,7 +800,7 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 	resistance_t myMaxResistance;
 	switch (theTerminal) {
 		case GATE: {
-			errorFile << "G: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "B: " : "G: ");
 			myNetId = theConnections.originalGateId;
 			myMinNetId = theConnections.masterMinGateNet.finalNetId;
 			myMinResistance = theConnections.masterMinGateNet.finalResistance;
@@ -762,7 +816,7 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 			myMaxPowerDelimiter = PowerDelimiter_(theConnections.maxGatePower_p, MAX_CALCULATED_BIT);
 		break; }
 		case SOURCE: {
-			errorFile << "S: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "C: " : "S: ");
 			myNetId = theConnections.originalSourceId;
 			myMinNetId = theConnections.masterMinSourceNet.finalNetId;
 			myMinResistance = theConnections.masterMinSourceNet.finalResistance;
@@ -778,7 +832,7 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 			myMaxPowerDelimiter = PowerDelimiter_(theConnections.maxSourcePower_p, MAX_CALCULATED_BIT);
 		break; }
 		case DRAIN: {
-			errorFile << "D: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "E: " : "D: ");
 			myNetId = theConnections.originalDrainId;
 			myMinNetId = theConnections.masterMinDrainNet.finalNetId;
 			myMinResistance = theConnections.masterMinDrainNet.finalResistance;
@@ -826,7 +880,7 @@ void CCvcDb::PrintMinMaxTerminalConnections(terminal_t theTerminal, CFullConnect
 	resistance_t myMaxResistance;
 	switch (theTerminal) {
 		case GATE: {
-			errorFile << "G: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "B: " : "G: ");
 			myNetId = theConnections.originalGateId;
 			myMinNetId = theConnections.masterMinGateNet.finalNetId;
 			myMinResistance = theConnections.masterMinGateNet.finalResistance;
@@ -844,7 +898,7 @@ void CCvcDb::PrintMinMaxTerminalConnections(terminal_t theTerminal, CFullConnect
 			}
 		break; }
 		case SOURCE: {
-			errorFile << "S: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "C: " : "S: ");
 			myNetId = theConnections.originalSourceId;
 			myMinNetId = theConnections.masterMinSourceNet.finalNetId;
 			myMinResistance = theConnections.masterMinSourceNet.finalResistance;
@@ -862,7 +916,7 @@ void CCvcDb::PrintMinMaxTerminalConnections(terminal_t theTerminal, CFullConnect
 			}
 		break; }
 		case DRAIN: {
-			errorFile << "D: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "E: " : "D: ");
 			myNetId = theConnections.originalDrainId;
 			myMinNetId = theConnections.masterMinDrainNet.finalNetId;
 			myMinResistance = theConnections.masterMinDrainNet.finalResistance;
@@ -912,7 +966,7 @@ void CCvcDb::PrintMinSimTerminalConnections(terminal_t theTerminal, CFullConnect
 	resistance_t mySimResistance;
 	switch (theTerminal) {
 		case GATE: {
-			errorFile << "G: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "B: " : "G: ");
 			myNetId = theConnections.originalGateId;
 			myMinNetId = theConnections.masterMinGateNet.finalNetId;
 			myMinResistance = theConnections.masterMinGateNet.finalResistance;
@@ -924,7 +978,7 @@ void CCvcDb::PrintMinSimTerminalConnections(terminal_t theTerminal, CFullConnect
 			mySimPowerDelimiter = PowerDelimiter_(theConnections.simGatePower_p, SIM_CALCULATED_BIT);
 		break; }
 		case SOURCE: {
-			errorFile << "S: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "C: " : "S: ");
 			myNetId = theConnections.originalSourceId;
 			myMinNetId = theConnections.masterMinSourceNet.finalNetId;
 			myMinResistance = theConnections.masterMinSourceNet.finalResistance;
@@ -936,7 +990,7 @@ void CCvcDb::PrintMinSimTerminalConnections(terminal_t theTerminal, CFullConnect
 			mySimPowerDelimiter = PowerDelimiter_(theConnections.simSourcePower_p, SIM_CALCULATED_BIT);
 		break; }
 		case DRAIN: {
-			errorFile << "D: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "E: " : "D: ");
 			myNetId = theConnections.originalDrainId;
 			myMinNetId = theConnections.masterMinDrainNet.finalNetId;
 			myMinResistance = theConnections.masterMinDrainNet.finalResistance;
@@ -974,7 +1028,7 @@ void CCvcDb::PrintSimMaxTerminalConnections(terminal_t theTerminal, CFullConnect
 	resistance_t myMaxResistance;
 	switch (theTerminal) {
 		case GATE: {
-			errorFile << "G: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "B: " : "G: ");
 			myNetId = theConnections.originalGateId;
 			mySimNetId = theConnections.masterSimGateNet.finalNetId;
 			mySimResistance = theConnections.masterSimGateNet.finalResistance;
@@ -986,7 +1040,7 @@ void CCvcDb::PrintSimMaxTerminalConnections(terminal_t theTerminal, CFullConnect
 			myMaxPowerDelimiter = PowerDelimiter_(theConnections.maxGatePower_p, MAX_CALCULATED_BIT);
 		break; }
 		case SOURCE: {
-			errorFile << "S: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "C: " : "S: ");
 			myNetId = theConnections.originalSourceId;
 			mySimNetId = theConnections.masterSimSourceNet.finalNetId;
 			mySimResistance = theConnections.masterSimSourceNet.finalResistance;
@@ -998,7 +1052,7 @@ void CCvcDb::PrintSimMaxTerminalConnections(terminal_t theTerminal, CFullConnect
 			myMaxPowerDelimiter = PowerDelimiter_(theConnections.maxSourcePower_p, MAX_CALCULATED_BIT);
 		break; }
 		case DRAIN: {
-			errorFile << "D: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "E: " : "D: ");
 			myNetId = theConnections.originalDrainId;
 			mySimNetId = theConnections.masterSimDrainNet.finalNetId;
 			mySimResistance = theConnections.masterSimDrainNet.finalResistance;
@@ -1035,7 +1089,7 @@ void CCvcDb::PrintMinTerminalConnections(terminal_t theTerminal, CFullConnection
 	resistance_t myMinResistance;
 	switch (theTerminal) {
 		case GATE: {
-			errorFile << "G: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "B: " : "G: ");
 			myNetId = theConnections.originalGateId;
 			myMinNetId = theConnections.masterMinGateNet.finalNetId;
 			myMinResistance = theConnections.masterSimGateNet.finalResistance;
@@ -1043,7 +1097,7 @@ void CCvcDb::PrintMinTerminalConnections(terminal_t theTerminal, CFullConnection
 			myMinPowerDelimiter = PowerDelimiter_(theConnections.minGatePower_p, MIN_CALCULATED_BIT);
 		break; }
 		case SOURCE: {
-			errorFile << "S: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "C: " : "S: ");
 			myNetId = theConnections.originalSourceId;
 			myMinNetId = theConnections.masterMinSourceNet.finalNetId;
 			myMinResistance = theConnections.masterMinSourceNet.finalResistance;
@@ -1051,7 +1105,7 @@ void CCvcDb::PrintMinTerminalConnections(terminal_t theTerminal, CFullConnection
 			myMinPowerDelimiter = PowerDelimiter_(theConnections.minSourcePower_p, MIN_CALCULATED_BIT);
 		break; }
 		case DRAIN: {
-			errorFile << "D: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "E: " : "D: ");
 			myNetId = theConnections.originalDrainId;
 			myMinNetId = theConnections.masterMinDrainNet.finalNetId;
 			myMinResistance = theConnections.masterMinDrainNet.finalResistance;
@@ -1079,7 +1133,7 @@ void CCvcDb::PrintMaxTerminalConnections(terminal_t theTerminal, CFullConnection
 	resistance_t myMaxResistance;
 	switch (theTerminal) {
 		case GATE: {
-			errorFile << "G: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "B: " : "G: ");
 			myNetId = theConnections.originalGateId;
 			myMaxNetId = theConnections.masterMaxGateNet.finalNetId;
 			myMaxResistance = theConnections.masterSimGateNet.finalResistance;
@@ -1087,7 +1141,7 @@ void CCvcDb::PrintMaxTerminalConnections(terminal_t theTerminal, CFullConnection
 			myMaxPowerDelimiter = PowerDelimiter_(theConnections.maxGatePower_p, MAX_CALCULATED_BIT);
 		break; }
 		case SOURCE: {
-			errorFile << "S: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "C: " : "S: ");
 			myNetId = theConnections.originalSourceId;
 			myMaxNetId = theConnections.masterMaxSourceNet.finalNetId;
 			myMaxResistance = theConnections.masterMaxSourceNet.finalResistance;
@@ -1095,7 +1149,7 @@ void CCvcDb::PrintMaxTerminalConnections(terminal_t theTerminal, CFullConnection
 			myMaxPowerDelimiter = PowerDelimiter_(theConnections.maxSourcePower_p, MAX_CALCULATED_BIT);
 		break; }
 		case DRAIN: {
-			errorFile << "D: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "E: " : "D: ");
 			myNetId = theConnections.originalDrainId;
 			myMaxNetId = theConnections.masterMaxDrainNet.finalNetId;
 			myMaxResistance = theConnections.masterMaxDrainNet.finalResistance;
@@ -1123,7 +1177,7 @@ void CCvcDb::PrintSimTerminalConnections(terminal_t theTerminal, CFullConnection
 	resistance_t mySimResistance;
 	switch (theTerminal) {
 		case GATE: {
-			errorFile << "G: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "B: " : "G: ");
 			myNetId = theConnections.originalGateId;
 			mySimNetId = theConnections.masterSimGateNet.finalNetId;
 			mySimResistance = theConnections.masterSimGateNet.finalResistance;
@@ -1131,7 +1185,7 @@ void CCvcDb::PrintSimTerminalConnections(terminal_t theTerminal, CFullConnection
 			mySimPowerDelimiter = PowerDelimiter_(theConnections.simGatePower_p, SIM_CALCULATED_BIT);
 		break; }
 		case SOURCE: {
-			errorFile << "S: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "C: " : "S: ");
 			myNetId = theConnections.originalSourceId;
 			mySimNetId = theConnections.masterSimSourceNet.finalNetId;
 			mySimResistance = theConnections.masterSimSourceNet.finalResistance;
@@ -1139,7 +1193,7 @@ void CCvcDb::PrintSimTerminalConnections(terminal_t theTerminal, CFullConnection
 			mySimPowerDelimiter = PowerDelimiter_(theConnections.simSourcePower_p, SIM_CALCULATED_BIT);
 		break; }
 		case DRAIN: {
-			errorFile << "D: ";
+			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "E: " : "D: ");
 			myNetId = theConnections.originalDrainId;
 			mySimNetId = theConnections.masterSimDrainNet.finalNetId;
 			mySimResistance = theConnections.masterSimDrainNet.finalResistance;

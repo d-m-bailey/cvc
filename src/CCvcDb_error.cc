@@ -778,100 +778,107 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 
 void CCvcDb::FindForwardBiasDiodes() {
 	CFullConnection myConnections;
+	CFullConnection myDiodeConnections;
 	reportFile << "! Checking forward bias diode errors: " << endl << endl;
 	errorFile << "! Checking forward bias diode errors: " << endl << endl;
 	for ( deviceId_t device_it = 0; device_it < deviceCount; device_it++ ) {
 		CInstance * myInstance_p = instancePtr_v[deviceParent_v[device_it]];
 		CCircuit * myParent_p = myInstance_p->master_p;
 		CDevice * myDevice_p = myParent_p->devicePtr_v[device_it - myInstance_p->firstDeviceId];
-		if ( myDevice_p->model_p->type != DIODE ) continue;
+//		if ( myDevice_p->model_p->type != DIODE ) continue;
+		if ( IsNmos_(deviceType_v[device_it]) || IsPmos_(deviceType_v[device_it]) ) continue;
+		if ( myDevice_p->model_p->diodeList.empty() ) continue;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-		if ( GetEquivalentNet(myConnections.originalSourceId) == GetEquivalentNet(myConnections.originalDrainId) ) continue;
-		bool myErrorFlag = false;
-		bool myUnrelatedFlag = false;
-		if ( myConnections.CheckTerminalMinMaxVoltages(SOURCE | DRAIN) ) {
-			voltage_t mySourceVoltage = UNKNOWN_VOLTAGE, myDrainVoltage = UNKNOWN_VOLTAGE;
-			if ( myConnections.minSourcePower_p == myConnections.minDrainPower_p ) {
-				if ( myConnections.maxSourceVoltage == myConnections.maxDrainVoltage && myConnections.minSourceVoltage == myConnections.maxDrainVoltage ) continue;
-				if ( myConnections.masterMinSourceNet.finalResistance < myConnections.masterMinDrainNet.finalResistance ) {
-					mySourceVoltage = myConnections.minSourceVoltage;
-				} else if ( myConnections.masterMinSourceNet.finalResistance > myConnections.masterMinDrainNet.finalResistance ) {
-					myDrainVoltage = myConnections.minDrainVoltage;
+		for ( auto diode_pit = myDevice_p->model_p->diodeList.begin(); diode_pit != myDevice_p->model_p->diodeList.end(); diode_pit++ ) {
+			SetDiodeConnections((*diode_pit), myConnections, myDiodeConnections);  // switch connections for diodes
+			if ( GetEquivalentNet(myDiodeConnections.originalSourceId) == GetEquivalentNet(myDiodeConnections.originalDrainId) ) continue;
+			bool myErrorFlag = false;
+			bool myUnrelatedFlag = false;
+			if ( myDiodeConnections.CheckTerminalMinMaxVoltages(SOURCE | DRAIN) ) {
+				voltage_t mySourceVoltage = UNKNOWN_VOLTAGE, myDrainVoltage = UNKNOWN_VOLTAGE;
+				if ( myDiodeConnections.minSourcePower_p == myDiodeConnections.minDrainPower_p ) {
+					if ( myDiodeConnections.maxSourceVoltage == myDiodeConnections.maxDrainVoltage
+							&& myDiodeConnections.minSourceVoltage == myDiodeConnections.maxDrainVoltage ) continue;
+					if ( myDiodeConnections.masterMinSourceNet.finalResistance < myDiodeConnections.masterMinDrainNet.finalResistance ) {
+						mySourceVoltage = myDiodeConnections.minSourceVoltage;
+					} else if ( myDiodeConnections.masterMinSourceNet.finalResistance > myDiodeConnections.masterMinDrainNet.finalResistance ) {
+						myDrainVoltage = myDiodeConnections.minDrainVoltage;
+					}
 				}
-			}
-			if ( myConnections.maxSourcePower_p == myConnections.maxDrainPower_p ) {
-				if ( myConnections.masterMaxDrainNet.finalResistance < myConnections.masterMaxSourceNet.finalResistance ) {
-					if (myDrainVoltage == UNKNOWN_VOLTAGE) {
-						myDrainVoltage = myConnections.maxDrainVoltage; // min drain overrides
-					} else if ( PathCrosses(maxNet_v, myConnections.sourceId, minNet_v, myConnections.drainId) ) {
-						continue; // no error if anode to power crosses cathode to ground path
+				if ( myDiodeConnections.maxSourcePower_p == myDiodeConnections.maxDrainPower_p ) {
+					if ( myDiodeConnections.masterMaxDrainNet.finalResistance < myDiodeConnections.masterMaxSourceNet.finalResistance ) {
+						if (myDrainVoltage == UNKNOWN_VOLTAGE) {
+							myDrainVoltage = myDiodeConnections.maxDrainVoltage; // min drain overrides
+						} else if ( PathCrosses(maxNet_v, myDiodeConnections.sourceId, minNet_v, myDiodeConnections.drainId) ) {
+							continue; // no error if anode to power crosses cathode to ground path
+						} else {
+							logFile << "INFO: unexpected diode " << DeviceName(device_it, PRINT_CIRCUIT_ON) << endl << endl;
+							PrintVirtualNet<CVirtualNetVector>(maxNet_v, myDiodeConnections.sourceId, "Max anode path", logFile);
+							PrintVirtualNet<CVirtualNetVector>(minNet_v, myDiodeConnections.sourceId, "Min anode path", logFile);
+							PrintVirtualNet<CVirtualNetVector>(maxNet_v, myDiodeConnections.drainId, "Max cathode path", logFile);
+							PrintVirtualNet<CVirtualNetVector>(minNet_v, myDiodeConnections.drainId, "Min cathode path", logFile);
+						}
 					} else {
-						logFile << "INFO: unexpected diode " << DeviceName(device_it, PRINT_CIRCUIT_ON) << endl << endl;
-						PrintVirtualNet<CVirtualNetVector>(maxNet_v, myConnections.sourceId, "Max anode path", logFile);
-						PrintVirtualNet<CVirtualNetVector>(minNet_v, myConnections.sourceId, "Min anode path", logFile);
-						PrintVirtualNet<CVirtualNetVector>(maxNet_v, myConnections.drainId, "Max cathode path", logFile);
-						PrintVirtualNet<CVirtualNetVector>(minNet_v, myConnections.drainId, "Min cathode path", logFile);
+						if ( PathCrosses(minNet_v, myDiodeConnections.drainId, maxNet_v, myDiodeConnections.sourceId) ) {
+							continue; // no error if anode to power crosses cathode to ground path
+						} else if ( mySourceVoltage != UNKNOWN_VOLTAGE ) {
+							logFile << "INFO: unexpected diode " << DeviceName(device_it, PRINT_CIRCUIT_ON) << endl << endl;
+							PrintVirtualNet<CVirtualNetVector>(maxNet_v, myDiodeConnections.sourceId, "Max anode path", logFile);
+							PrintVirtualNet<CVirtualNetVector>(minNet_v, myDiodeConnections.sourceId, "Min anode path", logFile);
+							PrintVirtualNet<CVirtualNetVector>(maxNet_v, myDiodeConnections.drainId, "Max cathode path", logFile);
+							PrintVirtualNet<CVirtualNetVector>(minNet_v, myDiodeConnections.drainId, "Min cathode path", logFile);
+						}
+						mySourceVoltage = myDiodeConnections.maxSourceVoltage; // max source overrides
 					}
-				} else {
-					if ( PathCrosses(minNet_v, myConnections.drainId, maxNet_v, myConnections.sourceId) ) {
-						continue; // no error if anode to power crosses cathode to ground path
-					} else if ( mySourceVoltage != UNKNOWN_VOLTAGE ) {
-						logFile << "INFO: unexpected diode " << DeviceName(device_it, PRINT_CIRCUIT_ON) << endl << endl;
-						PrintVirtualNet<CVirtualNetVector>(maxNet_v, myConnections.sourceId, "Max anode path", logFile);
-						PrintVirtualNet<CVirtualNetVector>(minNet_v, myConnections.sourceId, "Min anode path", logFile);
-						PrintVirtualNet<CVirtualNetVector>(maxNet_v, myConnections.drainId, "Max cathode path", logFile);
-						PrintVirtualNet<CVirtualNetVector>(minNet_v, myConnections.drainId, "Min cathode path", logFile);
+				}
+				if ( mySourceVoltage == UNKNOWN_VOLTAGE ) {
+					if ( cvcParameters.cvcLogicDiodes && myDiodeConnections.simSourceVoltage != UNKNOWN_VOLTAGE ) {
+						mySourceVoltage = myDiodeConnections.simSourceVoltage;
+					} else {
+						mySourceVoltage = myDiodeConnections.maxSourceVoltage;
 					}
-					mySourceVoltage = myConnections.maxSourceVoltage; // max source overrides
 				}
-			}
-			if ( mySourceVoltage == UNKNOWN_VOLTAGE ) {
-				if ( cvcParameters.cvcLogicDiodes && myConnections.simSourceVoltage != UNKNOWN_VOLTAGE ) {
-					mySourceVoltage = myConnections.simSourceVoltage;
-				} else {
-					mySourceVoltage = myConnections.maxSourceVoltage;
-				}
-			}
-			if ( myDrainVoltage == UNKNOWN_VOLTAGE ) {
-				if ( cvcParameters.cvcLogicDiodes && myConnections.simDrainVoltage != UNKNOWN_VOLTAGE ) {
-					myDrainVoltage = myConnections.simDrainVoltage;
-				} else {
-					myDrainVoltage = myConnections.minDrainVoltage;
-				}
-			}
-			if ( mySourceVoltage - myDrainVoltage > cvcParameters.cvcForwardErrorThreshold ) {
-				if ( myConnections.maxSourcePower_p->type[HIZ_BIT] || myConnections.minDrainPower_p->type[HIZ_BIT] ) {
-					// the following are errors for cutoff power. unknown annode, unknown cathode, source > max drain, max source not related to min drain
-					if ( mySourceVoltage == UNKNOWN_VOLTAGE || myConnections.maxDrainVoltage == UNKNOWN_VOLTAGE || mySourceVoltage > myConnections.maxDrainVoltage ) {
-							myErrorFlag = true;
-					} else if ( ! myConnections.maxSourcePower_p->IsRelatedPower(myConnections.minDrainPower_p, netVoltagePtr_v, maxNet_v, minNet_v, true)) {
-							myErrorFlag = true;
+				if ( myDrainVoltage == UNKNOWN_VOLTAGE ) {
+					if ( cvcParameters.cvcLogicDiodes && myDiodeConnections.simDrainVoltage != UNKNOWN_VOLTAGE ) {
+						myDrainVoltage = myDiodeConnections.simDrainVoltage;
+					} else {
+						myDrainVoltage = myDiodeConnections.minDrainVoltage;
 					}
-				} else {
+				}
+				if ( mySourceVoltage - myDrainVoltage > cvcParameters.cvcForwardErrorThreshold ) {
+					if ( myDiodeConnections.maxSourcePower_p->type[HIZ_BIT] || myDiodeConnections.minDrainPower_p->type[HIZ_BIT] ) {
+						// the following are errors for cutoff power. unknown annode, unknown cathode, source > max drain, max source not related to min drain
+						if ( mySourceVoltage == UNKNOWN_VOLTAGE || myDiodeConnections.maxDrainVoltage == UNKNOWN_VOLTAGE || mySourceVoltage > myDiodeConnections.maxDrainVoltage ) {
+								myErrorFlag = true;
+						} else if ( ! myDiodeConnections.maxSourcePower_p->IsRelatedPower(myDiodeConnections.minDrainPower_p, netVoltagePtr_v, maxNet_v, minNet_v, true)) {
+								myErrorFlag = true;
+						}
+					} else {
+						myErrorFlag = true;
+					}
+				} else if ( ! myDiodeConnections.minSourcePower_p->IsRelatedPower(myDiodeConnections.minDrainPower_p, netVoltagePtr_v, minNet_v, minNet_v, true, true)
+						|| ! myDiodeConnections.maxSourcePower_p->IsRelatedPower(myDiodeConnections.maxDrainPower_p, netVoltagePtr_v, maxNet_v, maxNet_v, true, true) ) {
+					myErrorFlag = true;
+					myUnrelatedFlag = true;
+				}
+			} else if ( myDiodeConnections.CheckTerminalMinMaxVoltages(SOURCE) && ! myDiodeConnections.CheckTerminalMinMaxVoltages(DRAIN) ) {
+				if ( myDiodeConnections.maxSourceVoltage > 0 && ! myDiodeConnections.maxSourcePower_p->type[HIZ_BIT] ) {
 					myErrorFlag = true;
 				}
-			} else if ( ! myConnections.minSourcePower_p->IsRelatedPower(myConnections.minDrainPower_p, netVoltagePtr_v, minNet_v, minNet_v, true, true)
-					|| ! myConnections.maxSourcePower_p->IsRelatedPower(myConnections.maxDrainPower_p, netVoltagePtr_v, maxNet_v, maxNet_v, true, true) ) {
-				myErrorFlag = true;
-				myUnrelatedFlag = true;
-			}
-		} else if ( myConnections.CheckTerminalMinMaxVoltages(SOURCE) && ! myConnections.CheckTerminalMinMaxVoltages(DRAIN) ) {
-			if ( myConnections.maxSourceVoltage > 0 && ! myConnections.maxSourcePower_p->type[HIZ_BIT] ) {
-				myErrorFlag = true;
-			}
-		} else if ( ! myConnections.CheckTerminalMinMaxVoltages(SOURCE) && myConnections.CheckTerminalMinMaxVoltages(DRAIN) ) {
-			if ( myConnections.minDrainVoltage <= 0 && ! myConnections.minDrainPower_p->type[HIZ_BIT] ) {
-				myErrorFlag = true;
-			}
-		}
-		if ( myErrorFlag ) {
-			errorCount[FORWARD_DIODE]++;
-			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-				if ( myUnrelatedFlag ) {
-					errorFile << "Unrelated power error" << endl;
+			} else if ( ! myDiodeConnections.CheckTerminalMinMaxVoltages(SOURCE) && myDiodeConnections.CheckTerminalMinMaxVoltages(DRAIN) ) {
+				if ( myDiodeConnections.minDrainVoltage <= 0 && ! myDiodeConnections.minDrainPower_p->type[HIZ_BIT] ) {
+					myErrorFlag = true;
 				}
-				PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
-				errorFile << endl;
+			}
+			if ( myErrorFlag ) {
+				errorCount[FORWARD_DIODE]++;
+				if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
+					if ( myUnrelatedFlag ) {
+						errorFile << "Unrelated power error" << endl;
+					}
+					PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
+					errorFile << endl;
+				}
 			}
 		}
 	}

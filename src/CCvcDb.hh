@@ -362,6 +362,8 @@ public:
 	deviceId_t CountBulkConnections(netId_t theNetId);
 	bool IsAnalogNet(netId_t theNetId);
 	bool IsAlwaysOff(CFullConnection& theConnections);
+	void SetDiodeConnections(pair<int, int> diode_pit, CFullConnection & myConnections, CFullConnection & myDiodeConnections);
+
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);
