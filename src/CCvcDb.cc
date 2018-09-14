@@ -112,13 +112,16 @@ void CCvcDb::ReportShort(deviceId_t theDeviceId) {
 			if ( myUnrelatedFlag ) {
 				errorFile << "Unrelated power error" << endl;
 			}
-			if ( IsNmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage == UNKNOWN_VOLTAGE && myConnections.minGateVoltage != UNKNOWN_VOLTAGE ) {
+			PrintDeviceWithAllConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
+/*
+ 			if ( IsNmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage == UNKNOWN_VOLTAGE && myConnections.minGateVoltage != UNKNOWN_VOLTAGE ) {
 				PrintDeviceWithMinGateAndSimConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
 			} else if ( IsPmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage == UNKNOWN_VOLTAGE && myConnections.maxGateVoltage != UNKNOWN_VOLTAGE ) {
 				PrintDeviceWithMaxGateAndSimConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
 			} else {
 				PrintDeviceWithSimConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
 			}
+*/
 			errorFile << endl;
 		}
 	}
@@ -788,7 +791,8 @@ string CCvcDb::AdjustMaxPmosKey(CConnection& theConnections, netId_t theDrainId,
 	return(myAdjustment);
 }
 
-string CCvcDb::AdjustMaxNmosKey(CConnection& theConnections, voltage_t theSimGate, voltage_t theMaxSource, eventKey_t& theEventKey, queuePosition_t& theQueuePosition, bool theWarningFlag) {
+string CCvcDb::AdjustMaxNmosKey(CConnection& theConnections, voltage_t theSimGate, voltage_t theMaxSource, eventKey_t& theEventKey, queuePosition_t& theQueuePosition,
+		bool theWarningFlag) {
 	theQueuePosition = DELAY_BACK; // default: back of delay queue
 	string myAdjustment = "";
 	// do not use sim on first pass
@@ -796,7 +800,10 @@ string CCvcDb::AdjustMaxNmosKey(CConnection& theConnections, voltage_t theSimGat
 	if ( myGateVoltage == UNKNOWN_VOLTAGE ) {
 //		if (theMinDrain == UNKNOWN_VOLTAGE ) {
 		if ( connectionCount_v[theConnections.gateId].SourceDrainCount() == 0 ) {
-			if (theWarningFlag) reportFile << "WARNING: unknown max gate at net->device: " << NetName(theConnections.gateId) << " -> " << HierarchyName(deviceParent_v[theConnections.deviceId], PRINT_CIRCUIT_ON) << "/" << theConnections.device_p->name << endl;
+			if (theWarningFlag && ! (IsOneConnectionNet(theConnections.sourceId) || IsOneConnectionNet(theConnections.drainId)) ) {
+				reportFile << "WARNING: unknown max gate at net->device: " << NetName(theConnections.gateId) << " -> " <<
+						HierarchyName(deviceParent_v[theConnections.deviceId], PRINT_CIRCUIT_ON) << "/" << theConnections.device_p->name << endl;
+			}
 			if ( theConnections.device_p->model_p->Vth > 0 ) {
 				myAdjustment = " NMOS Vth drop " + PrintParameter(theEventKey, VOLTAGE_SCALE) + "-" + PrintParameter(theConnections.device_p->model_p->Vth, VOLTAGE_SCALE);
 				theEventKey = theEventKey - theConnections.device_p->model_p->Vth;
@@ -843,7 +850,8 @@ string CCvcDb::AdjustMinNmosKey(CConnection& theConnections, netId_t theDrainId,
 	return(myAdjustment);
 }
 
-string CCvcDb::AdjustMinPmosKey(CConnection& theConnections, voltage_t theSimGate, voltage_t theMinSource, eventKey_t& theEventKey, queuePosition_t& theQueuePosition, bool theWarningFlag) {
+string CCvcDb::AdjustMinPmosKey(CConnection& theConnections, voltage_t theSimGate, voltage_t theMinSource, eventKey_t& theEventKey, queuePosition_t& theQueuePosition,
+		bool theWarningFlag) {
 	theQueuePosition = DELAY_BACK; // default: back of delay queue
 	string myAdjustment = "";
 	// do not use sim on first pass
@@ -853,7 +861,10 @@ string CCvcDb::AdjustMinPmosKey(CConnection& theConnections, voltage_t theSimGat
 //			if (theWarningFlag) cout << "WARNING: unknown min gate at device " << HierarchyName(deviceParent_v[theConnections.deviceId], PRINT_CIRCUIT_ON) << "/" << theConnections.device_p->name << endl;
 //			theEventKey = max(theEventKey, theEventKey - theConnections.device_p->model_p->Vth);
 		if ( connectionCount_v[theConnections.gateId].SourceDrainCount() == 0 ) {
-			if (theWarningFlag) reportFile << "WARNING: unknown min gate at net->device: " << NetName(theConnections.gateId) << " -> " << HierarchyName(deviceParent_v[theConnections.deviceId], PRINT_CIRCUIT_ON) << "/" << theConnections.device_p->name << endl;
+			if (theWarningFlag && ! (IsOneConnectionNet(theConnections.sourceId) || IsOneConnectionNet(theConnections.drainId)) ) {
+				reportFile << "WARNING: unknown min gate at net->device: " << NetName(theConnections.gateId) << " -> " <<
+						HierarchyName(deviceParent_v[theConnections.deviceId], PRINT_CIRCUIT_ON) << "/" << theConnections.device_p->name << endl;
+			}
 			if ( theConnections.device_p->model_p->Vth < 0 ) {
 				myAdjustment = " PMOS Vth drop " + PrintParameter(theEventKey, VOLTAGE_SCALE) + "+" + PrintParameter(-theConnections.device_p->model_p->Vth, VOLTAGE_SCALE);
 				theEventKey = theEventKey - theConnections.device_p->model_p->Vth;
@@ -1570,7 +1581,7 @@ void CCvcDb::ShortSimNets(CEventQueue& theEventQueue, deviceId_t theDeviceId, CC
 				errorFile << "! Short Detected: SCRC " << PrintVoltage(myMasterVoltage) << " to output" << endl;
 				static CFullConnection myConnections;
 				MapDeviceNets(theDeviceId, myConnections);
-				PrintDeviceWithSimConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
+				PrintDeviceWithAllConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
 				errorFile << endl;
 			}
 		}
@@ -2122,7 +2133,9 @@ void CCvcDb::SetTrivialMinMaxPower() {
 			myPrintCount = 1000000;
 		}
 		if ( minNet_v[net_it].nextNetId != net_it || maxNet_v[net_it].nextNetId != net_it ) continue; // already assigned
-		if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->type[POWER_BIT] ) continue;  // skip power definitions
+//		if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->type[POWER_BIT] ) continue;  // skip power definitions
+		if ( netVoltagePtr_v[net_it]
+		        && ! ( netVoltagePtr_v[net_it]->minVoltage == UNKNOWN_VOLTAGE && netVoltagePtr_v[net_it]->minVoltage == UNKNOWN_VOLTAGE ) ) continue;  // skip defined min/max
 		if ( connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount == 2 ) { // only hits master equivalent nets
 			if ( connectionCount_v[net_it].sourceDrainType[NMOS] && connectionCount_v[net_it].sourceDrainType[PMOS] ) {
 				myNmos = UNKNOWN_DEVICE;

@@ -519,27 +519,27 @@ void CCvcDb::PrintVirtualNets(CVirtualNetVector& theVirtualNet_v, string theTitl
 	cout << theIndentation << "VirtualNetVector" << theTitle << "> end" << endl;
 }
 
-void CCvcDb::PrintDeviceWithAllConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile) {
+void CCvcDb::PrintDeviceWithAllConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage) {
 	errorFile << DeviceName(theConnections.device_p->name, theParentId, PRINT_CIRCUIT_ON) << " " << theConnections.device_p->parameters;
 	errorFile << " (r=" << parameterResistanceMap[theConnections.device_p->parameters] << ")" << endl;
 	switch ( theConnections.device_p->model_p->type ) {
 		case NMOS: case PMOS: case LDDN: case LDDP: {
-			PrintAllTerminalConnections(GATE, theConnections, theErrorFile);
-			PrintAllTerminalConnections(SOURCE, theConnections, theErrorFile);
-			PrintAllTerminalConnections(DRAIN, theConnections, theErrorFile);
-			if ( ! cvcParameters.cvcSOI ) PrintAllTerminalConnections(BULK, theConnections, theErrorFile);
+			PrintAllTerminalConnections(GATE, theConnections, theErrorFile, theIncludeLeakVoltage);
+			PrintAllTerminalConnections(SOURCE, theConnections, theErrorFile, theIncludeLeakVoltage);
+			PrintAllTerminalConnections(DRAIN, theConnections, theErrorFile, theIncludeLeakVoltage);
+			if ( ! cvcParameters.cvcSOI ) PrintAllTerminalConnections(BULK, theConnections, theErrorFile, theIncludeLeakVoltage);
 		break; }
 		case RESISTOR: case CAPACITOR: case DIODE: case FUSE_OFF: case FUSE_ON: case SWITCH_ON: case SWITCH_OFF: {
-			PrintAllTerminalConnections(SOURCE, theConnections, theErrorFile);
-			PrintAllTerminalConnections(DRAIN, theConnections, theErrorFile);
+			PrintAllTerminalConnections(SOURCE, theConnections, theErrorFile, theIncludeLeakVoltage);
+			PrintAllTerminalConnections(DRAIN, theConnections, theErrorFile, theIncludeLeakVoltage);
 			if ( theConnections.originalBulkId != UNKNOWN_NET) {
-				PrintAllTerminalConnections(BULK, theConnections, theErrorFile);
+				PrintAllTerminalConnections(BULK, theConnections, theErrorFile, theIncludeLeakVoltage);
 			}
 		break; }
 		case BIPOLAR: {
-			PrintAllTerminalConnections(SOURCE, theConnections, theErrorFile);
-			PrintAllTerminalConnections(GATE, theConnections, theErrorFile);
-			PrintAllTerminalConnections(DRAIN, theConnections, theErrorFile);
+			PrintAllTerminalConnections(SOURCE, theConnections, theErrorFile, theIncludeLeakVoltage);
+			PrintAllTerminalConnections(GATE, theConnections, theErrorFile, theIncludeLeakVoltage);
+			PrintAllTerminalConnections(DRAIN, theConnections, theErrorFile, theIncludeLeakVoltage);
 		break; }
 		default: {
 			throw EDatabaseError("Invalid device type: " + theConnections.device_p->model_p->type);
@@ -791,9 +791,10 @@ string CCvcDb::PrintVoltage(voltage_t theVoltage, CPower * thePower_p) {
 	}
 }
 
-void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile) {
+void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage) {
 	netId_t myNetId, myMinNetId, mySimNetId, myMaxNetId;
 	string myMinVoltageString, mySimVoltageString, myMaxVoltageString;
+	string myMinLeakVoltageString = "", myMaxLeakVoltageString = "";
 	string myMinPowerDelimiter, mySimPowerDelimiter, myMaxPowerDelimiter;
 	resistance_t myMinResistance;
 	resistance_t mySimResistance;
@@ -806,6 +807,9 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 			myMinResistance = theConnections.masterMinGateNet.finalResistance;
 			myMinVoltageString = PrintVoltage(theConnections.minGateVoltage, theConnections.minGatePower_p);
 			myMinPowerDelimiter = PowerDelimiter_(theConnections.minGatePower_p, MIN_CALCULATED_BIT);
+			if ( theIncludeLeakVoltage && theConnections.minGateVoltage != theConnections.minGateLeakVoltage ) {
+				myMinLeakVoltageString = PrintVoltage(theConnections.minGateLeakVoltage, (CPower *) NULL);;
+			}
 			mySimNetId = theConnections.masterSimGateNet.finalNetId;
 			mySimResistance = theConnections.masterSimGateNet.finalResistance;
 			mySimVoltageString = PrintVoltage(theConnections.simGateVoltage, theConnections.simGatePower_p);
@@ -814,6 +818,9 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 			myMaxResistance = theConnections.masterMaxGateNet.finalResistance;
 			myMaxVoltageString = PrintVoltage(theConnections.maxGateVoltage, theConnections.maxGatePower_p);
 			myMaxPowerDelimiter = PowerDelimiter_(theConnections.maxGatePower_p, MAX_CALCULATED_BIT);
+			if ( theIncludeLeakVoltage && theConnections.maxGateVoltage != theConnections.maxGateLeakVoltage ) {
+				myMaxLeakVoltageString = PrintVoltage(theConnections.maxGateLeakVoltage, (CPower *) NULL);;
+			}
 		break; }
 		case SOURCE: {
 			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "C: " : "S: ");
@@ -822,6 +829,9 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 			myMinResistance = theConnections.masterMinSourceNet.finalResistance;
 			myMinVoltageString = PrintVoltage(theConnections.minSourceVoltage, theConnections.minSourcePower_p);
 			myMinPowerDelimiter = PowerDelimiter_(theConnections.minSourcePower_p, MIN_CALCULATED_BIT);
+			if ( theIncludeLeakVoltage && theConnections.minSourceVoltage != theConnections.minSourceLeakVoltage ) {
+				myMinLeakVoltageString = PrintVoltage(theConnections.minSourceLeakVoltage, (CPower *) NULL);;
+			}
 			mySimNetId = theConnections.masterSimSourceNet.finalNetId;
 			mySimResistance = theConnections.masterSimSourceNet.finalResistance;
 			mySimVoltageString = PrintVoltage(theConnections.simSourceVoltage, theConnections.simSourcePower_p);
@@ -830,6 +840,9 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 			myMaxResistance = theConnections.masterMaxSourceNet.finalResistance;
 			myMaxVoltageString = PrintVoltage(theConnections.maxSourceVoltage, theConnections.maxSourcePower_p);
 			myMaxPowerDelimiter = PowerDelimiter_(theConnections.maxSourcePower_p, MAX_CALCULATED_BIT);
+			if ( theIncludeLeakVoltage && theConnections.maxSourceVoltage != theConnections.maxSourceLeakVoltage ) {
+				myMaxLeakVoltageString = PrintVoltage(theConnections.maxSourceLeakVoltage, (CPower *) NULL);;
+			}
 		break; }
 		case DRAIN: {
 			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "E: " : "D: ");
@@ -838,6 +851,9 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 			myMinResistance = theConnections.masterMinDrainNet.finalResistance;
 			myMinVoltageString = PrintVoltage(theConnections.minDrainVoltage, theConnections.minDrainPower_p);
 			myMinPowerDelimiter = PowerDelimiter_(theConnections.minDrainPower_p, MIN_CALCULATED_BIT);
+			if ( theIncludeLeakVoltage && theConnections.minDrainVoltage != theConnections.minDrainLeakVoltage ) {
+				myMinLeakVoltageString = PrintVoltage(theConnections.minDrainLeakVoltage, (CPower *) NULL);;
+			}
 			mySimNetId = theConnections.masterSimDrainNet.finalNetId;
 			mySimResistance = theConnections.masterSimDrainNet.finalResistance;
 			mySimVoltageString = PrintVoltage(theConnections.simDrainVoltage, theConnections.simDrainPower_p);
@@ -846,6 +862,9 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 			myMaxResistance = theConnections.masterMaxDrainNet.finalResistance;
 			myMaxVoltageString = PrintVoltage(theConnections.maxDrainVoltage, theConnections.maxDrainPower_p);
 			myMaxPowerDelimiter = PowerDelimiter_(theConnections.maxDrainPower_p, MAX_CALCULATED_BIT);
+			if ( theIncludeLeakVoltage && theConnections.maxDrainVoltage != theConnections.maxDrainLeakVoltage ) {
+				myMaxLeakVoltageString = PrintVoltage(theConnections.maxDrainLeakVoltage, (CPower *) NULL);;
+			}
 		break; }
 		case BULK: {
 			errorFile << "B: ";
@@ -854,6 +873,9 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 			myMinResistance = theConnections.masterMinBulkNet.finalResistance;
 			myMinVoltageString = PrintVoltage(theConnections.minBulkVoltage, theConnections.minBulkPower_p);
 			myMinPowerDelimiter = PowerDelimiter_(theConnections.minBulkPower_p, MIN_CALCULATED_BIT);
+			if ( theIncludeLeakVoltage && theConnections.minBulkVoltage != theConnections.minBulkLeakVoltage ) {
+				myMinLeakVoltageString = PrintVoltage(theConnections.minBulkLeakVoltage, (CPower *) NULL);;
+			}
 			mySimNetId = theConnections.masterSimBulkNet.finalNetId;
 			mySimResistance = theConnections.masterSimBulkNet.finalResistance;
 			mySimVoltageString = PrintVoltage(theConnections.simBulkVoltage, theConnections.simBulkPower_p);
@@ -862,13 +884,16 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 			myMaxResistance = theConnections.masterMaxBulkNet.finalResistance;
 			myMaxVoltageString = PrintVoltage(theConnections.maxBulkVoltage, theConnections.maxBulkPower_p);
 			myMaxPowerDelimiter = PowerDelimiter_(theConnections.maxBulkPower_p, MAX_CALCULATED_BIT);
+			if ( theIncludeLeakVoltage && theConnections.maxBulkVoltage != theConnections.maxBulkLeakVoltage ) {
+				myMaxLeakVoltageString = PrintVoltage(theConnections.maxBulkLeakVoltage, (CPower *) NULL);;
+			}
 		break; }
 		default: { throw EDatabaseError("Invalid terminal type: " + theTerminal); }
 	}
 	errorFile << NetName(myNetId) << endl;
-	errorFile << " Min: " << NetName(myMinNetId) << NetVoltageSuffix(myMinPowerDelimiter, myMinVoltageString, myMinResistance) << endl;
+	errorFile << " Min: " << NetName(myMinNetId) << NetVoltageSuffix(myMinPowerDelimiter, myMinVoltageString, myMinResistance, myMinLeakVoltageString) << endl;
 	errorFile << " Sim: " << NetName(mySimNetId) << NetVoltageSuffix(mySimPowerDelimiter, mySimVoltageString, mySimResistance) << endl;
-	errorFile << " Max: " << NetName(myMaxNetId) << NetVoltageSuffix(myMaxPowerDelimiter, myMaxVoltageString, myMaxResistance) << endl;
+	errorFile << " Max: " << NetName(myMaxNetId) << NetVoltageSuffix(myMaxPowerDelimiter, myMaxVoltageString, myMaxResistance, myMaxLeakVoltageString) << endl;
 }
 
 void CCvcDb::PrintMinMaxTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage) {
@@ -1092,7 +1117,7 @@ void CCvcDb::PrintMinTerminalConnections(terminal_t theTerminal, CFullConnection
 			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "B: " : "G: ");
 			myNetId = theConnections.originalGateId;
 			myMinNetId = theConnections.masterMinGateNet.finalNetId;
-			myMinResistance = theConnections.masterSimGateNet.finalResistance;
+			myMinResistance = theConnections.masterMinGateNet.finalResistance;
 			myMinVoltageString = PrintVoltage(theConnections.minGateVoltage, theConnections.minGatePower_p);
 			myMinPowerDelimiter = PowerDelimiter_(theConnections.minGatePower_p, MIN_CALCULATED_BIT);
 		break; }
@@ -1136,7 +1161,7 @@ void CCvcDb::PrintMaxTerminalConnections(terminal_t theTerminal, CFullConnection
 			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "B: " : "G: ");
 			myNetId = theConnections.originalGateId;
 			myMaxNetId = theConnections.masterMaxGateNet.finalNetId;
-			myMaxResistance = theConnections.masterSimGateNet.finalResistance;
+			myMaxResistance = theConnections.masterMaxGateNet.finalResistance;
 			myMaxVoltageString = PrintVoltage(theConnections.maxGateVoltage, theConnections.maxGatePower_p);
 			myMaxPowerDelimiter = PowerDelimiter_(theConnections.maxGatePower_p, MAX_CALCULATED_BIT);
 		break; }

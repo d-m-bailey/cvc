@@ -1387,6 +1387,31 @@ bool CCvcDb::IsAlwaysOff(CFullConnection& theConnections) {
 	}
 }
 
+bool CCvcDb::IsOneConnectionNet(netId_t theNetId) {
+	// WARNING: Doesn't count bulk connections.
+	netId_t myNetId = GetEquivalentNet(theNetId);
+	deviceId_t myDevice;
+	if ( firstGate_v[myNetId] != UNKNOWN_DEVICE ) {
+		myDevice = firstGate_v[myNetId];
+	} else if ( firstSource_v[myNetId] != UNKNOWN_DEVICE ) {
+		myDevice = firstSource_v[myNetId];
+	} else if ( firstDrain_v[myNetId] != UNKNOWN_DEVICE ) {
+		myDevice = firstDrain_v[myNetId];
+	} else {
+		return true;  // nets not connected to any devices are also 'one connection', i.e. no leak.
+	}
+	if ( firstGate_v[myNetId] != UNKNOWN_DEVICE ) {
+		if ( firstGate_v[myNetId] != myDevice || nextGate_v[myDevice] != UNKNOWN_DEVICE ) return false;
+	}
+	if ( firstSource_v[myNetId] != UNKNOWN_DEVICE ) {
+		if ( firstSource_v[myNetId] != myDevice || nextSource_v[myDevice] != UNKNOWN_DEVICE ) return false;
+	}
+	if ( firstDrain_v[myNetId] != UNKNOWN_DEVICE ) {
+		if ( firstDrain_v[myNetId] != myDevice || nextDrain_v[myDevice] != UNKNOWN_DEVICE ) return false;
+	}
+	return true;
+}
+
 void CCvcDb::SetDiodeConnections(pair<int, int> theDiodePair, CFullConnection & theConnections, CFullConnection & theDiodeConnections) {
 	theDiodeConnections = theConnections;
 	int myAnnode, myCathode;

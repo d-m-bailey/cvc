@@ -1092,13 +1092,13 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 			if ( myVoltageStack.size() < 2 ) throw EPowerError("invalid equation: " + theEquation);
 			myVoltage = myVoltageStack.back();
 			myVoltageStack.pop_back();
-			if ( myVoltage > float(MAX_VOLTAGE) / VOLTAGE_SCALE ) {
+			if ( myVoltage == UNKNOWN_TOKEN ) {
 				if ( ( *token_pit == "<" ) || ( *token_pit == ">" ) ) {  // min/max keep value on stack
 					;
 				} else {  // arithmetic with invalid values gives invalid value
 					myVoltageStack.back() = UNKNOWN_TOKEN;
 				}
-			} else if ( myVoltageStack.back() > float(MAX_VOLTAGE) / VOLTAGE_SCALE ) {
+			} else if ( myVoltageStack.back() == UNKNOWN_TOKEN ) {
 				if ( ( *token_pit == "<" ) || ( *token_pit == ">" ) ) {  // min/max replace with last voltage
 					myVoltageStack.back() = myVoltage;
 				}
@@ -1141,7 +1141,7 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 	}
 	delete myTokenList_p;
 	if ( myVoltageStack.size() != 1 ) throw EPowerError("invalid equation: " + theEquation);
-	if ( myVoltageStack.front() > float(MAX_VOLTAGE) / VOLTAGE_SCALE ) {
+	if ( myVoltageStack.front() > float(MAX_VOLTAGE) ) {
 		cout << "Warning: equation contains undefined tokens: " << theEquation << endl;
 		return(UNKNOWN_VOLTAGE);
 	}

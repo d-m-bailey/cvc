@@ -45,6 +45,7 @@ public:
 	const bool defaultVthGates = false;
 	const bool defaultMinVthGates = false;
 	const bool defaultIgnoreVthFloating = false;
+	const bool defaultIgnoreNoLeakFloating = false;
 	const bool defaultLeakOvervoltage = true;
 	const bool defaultLogicDiodes = false;
 	const voltage_t defaultErrorThreshold = 0;
@@ -78,6 +79,7 @@ public:
 	bool	cvcVthGates = defaultVthGates;
 	bool	cvcMinVthGates = defaultMinVthGates;
 	bool	cvcIgnoreVthFloating = defaultIgnoreVthFloating;
+	bool    cvcIgnoreNoLeakFloating = defaultIgnoreNoLeakFloating;
 	bool	cvcLeakOvervoltage = defaultLeakOvervoltage;
 	bool	cvcLogicDiodes = defaultLogicDiodes;
 	voltage_t	cvcShortErrorThreshold = defaultErrorThreshold;

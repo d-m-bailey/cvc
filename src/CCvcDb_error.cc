@@ -48,7 +48,7 @@ void CCvcDb::PrintFuseError(netId_t theTargetNetId, CConnection & theConnections
 		} else {
 			errorFile << "; unknown fuse type" << endl;
 		}
-		PrintDeviceWithMinMaxConnections(deviceParent_v[theConnections.deviceId], myFullConnections, errorFile);
+		PrintDeviceWithAllConnections(deviceParent_v[theConnections.deviceId], myFullConnections, errorFile);
 		errorFile << endl;
 	}
 }
@@ -64,7 +64,7 @@ void CCvcDb::PrintMinVoltageConflict(netId_t theTargetNetId, CConnection & theMi
 		errorFile << "! Min voltage already set for " << NetName(theTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
 		errorFile << " at mos diode: expected/found " << theExpectedVoltage << "/" << theMinConnections.gateVoltage;
 		errorFile << " estimated current " << AddSiSuffix(theLeakCurrent) << "A" << endl;
-		PrintDeviceWithMinMaxConnections(deviceParent_v[theMinConnections.deviceId], myFullConnections, errorFile);
+		PrintDeviceWithAllConnections(deviceParent_v[theMinConnections.deviceId], myFullConnections, errorFile);
 		errorFile << endl;
 	}
 }
@@ -80,7 +80,7 @@ void CCvcDb::PrintMaxVoltageConflict(netId_t theTargetNetId, CConnection & theMa
 		errorFile << "! Max voltage already set for " << NetName(theTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
 		errorFile << " at mos diode: expected/found " << theExpectedVoltage << "/" << theMaxConnections.gateVoltage;
 		errorFile << " estimated current " << AddSiSuffix(theLeakCurrent) << "A" << endl;
-		PrintDeviceWithMinMaxConnections(deviceParent_v[theMaxConnections.deviceId], myFullConnections, errorFile);
+		PrintDeviceWithAllConnections(deviceParent_v[theMaxConnections.deviceId], myFullConnections, errorFile);
 		errorFile << endl;
 	}
 }
@@ -260,7 +260,7 @@ void CCvcDb::FindOverVoltageErrors(string theCheck, int theErrorIndex) {
 						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
 							errorFile << myErrorExplanation + myDisplayParameter << endl;;
 							bool myLeakCheckFlag = ( myErrorExplanation.find("logic ok") < string::npos );
-							PrintDeviceWithMinMaxConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile, myLeakCheckFlag);
+							PrintDeviceWithAllConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile, myLeakCheckFlag);
 							errorFile << endl;
 						}
 					}
@@ -492,7 +492,7 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 			} else if ( myVthFlag ) {
 				errorFile << "Gate-source = Vth" << endl;
 			}
-			PrintDeviceWithMinConnections(deviceParent_v[device_it], myConnections, errorFile);
+			PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
 			errorFile << endl;
 		}
 	}
@@ -563,7 +563,7 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 			} else if ( myVthFlag ) {
 				errorFile << "Gate-source = Vth" << endl;
 			}
-			PrintDeviceWithMaxConnections(deviceParent_v[device_it], myConnections, errorFile);
+			PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
 			errorFile << endl;
 		}
 	}
@@ -1002,7 +1002,9 @@ void CCvcDb::FindFloatingInputErrors() {
 						deviceStatus_v[device_it][SIM_INACTIVE] = true;  // ignore true floating input gates (not possible floating)
 					}
 					if ( cvcParameters.cvcIgnoreVthFloating && IsAlwaysOff(myConnections) ) continue;  // skips Hi-Z input that is never on
-					if ( myHasLeakPath || connectionCount_v[net_it].SourceDrainCount() == 0 ) { // physically floating gates too
+					if ( ! myHasLeakPath && cvcParameters.cvcIgnoreNoLeakFloating
+							&& connectionCount_v[net_it].SourceDrainCount() == 0 ) continue;  // skip no leak floating
+					if ( myHasLeakPath || connectionCount_v[net_it].SourceDrainCount() == 0 ) {  // physically floating gates too
 //						CCircuit * myParent_p = instancePtr_v[deviceParent_v[device_it]]->master_p;
 						errorCount[HIZ_INPUT]++;
 						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
