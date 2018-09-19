@@ -145,6 +145,11 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 			if ( myParameterName == "expectMax" ) extraData->expectedMax = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, MAX_POWER, theModelListMap);
 			if ( myParameterName == "expectSim" ) extraData->expectedSim = thePowerMacroPtrMap.CalculateExpectedValue(myParameterValue, SIM_POWER, theModelListMap);
 			if ( myParameterName == "permit" || myParameterName == "prohibit" ) {
+				if ( thePowerMacroPtrMap.count(myParameterValue) && ! IsEmpty(thePowerMacroPtrMap[myParameterValue]->powerAlias()) ) {
+					extraData->family = thePowerMacroPtrMap[myParameterValue]->powerAlias();
+				} else {
+					extraData->family = myParameterValue;
+				}
 				extraData->family = myParameterValue;
 				relativeFriendly = ( myParameterName == "permit" ) ? true : false;
 			}
@@ -1117,9 +1122,27 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 			} else throw EPowerError("invalid operator: " + *token_pit);
 		} else if ( isalpha((*token_pit)[0]) ) { // power name
 			if ( this->count(*token_pit) > 0 ) { // power definition exists
-				if ( theType == MIN_POWER ) myVoltageStack.push_back(float((*this)[*token_pit]->minVoltage) / VOLTAGE_SCALE);
-				if ( theType == SIM_POWER ) myVoltageStack.push_back(float((*this)[*token_pit]->simVoltage) / VOLTAGE_SCALE);
-				if ( theType == MAX_POWER ) myVoltageStack.push_back(float((*this)[*token_pit]->maxVoltage) / VOLTAGE_SCALE);
+				if ( theType == MIN_POWER ) {
+					if ( (*this)[*token_pit]->minVoltage == UNKNOWN_VOLTAGE ) {
+						myVoltageStack.push_back(UNKNOWN_TOKEN);
+					} else {
+						myVoltageStack.push_back(float((*this)[*token_pit]->minVoltage) / VOLTAGE_SCALE);
+					}
+				}
+				if ( theType == SIM_POWER ) {
+					if ( (*this)[*token_pit]->minVoltage == UNKNOWN_VOLTAGE ) {
+						myVoltageStack.push_back(UNKNOWN_TOKEN);
+					} else {
+						myVoltageStack.push_back(float((*this)[*token_pit]->simVoltage) / VOLTAGE_SCALE);
+					}
+				}
+				if ( theType == MAX_POWER ) {
+					if ( (*this)[*token_pit]->minVoltage == UNKNOWN_VOLTAGE ) {
+						myVoltageStack.push_back(UNKNOWN_TOKEN);
+					} else {
+						myVoltageStack.push_back(float((*this)[*token_pit]->maxVoltage) / VOLTAGE_SCALE);
+					}
+				}
 				implicitFamily += "," + *token_pit;
 			} else if ( (*token_pit).substr(0,4) == "Vth[" && (*token_pit).back() == ']' ){
 				string myModelName = "M " + (*token_pit).substr(4, (*token_pit).length() - 5);
