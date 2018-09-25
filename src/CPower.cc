@@ -1130,14 +1130,14 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 					}
 				}
 				if ( theType == SIM_POWER ) {
-					if ( (*this)[*token_pit]->minVoltage == UNKNOWN_VOLTAGE ) {
+					if ( (*this)[*token_pit]->simVoltage == UNKNOWN_VOLTAGE ) {
 						myVoltageStack.push_back(UNKNOWN_TOKEN);
 					} else {
 						myVoltageStack.push_back(float((*this)[*token_pit]->simVoltage) / VOLTAGE_SCALE);
 					}
 				}
 				if ( theType == MAX_POWER ) {
-					if ( (*this)[*token_pit]->minVoltage == UNKNOWN_VOLTAGE ) {
+					if ( (*this)[*token_pit]->maxVoltage == UNKNOWN_VOLTAGE ) {
 						myVoltageStack.push_back(UNKNOWN_TOKEN);
 					} else {
 						myVoltageStack.push_back(float((*this)[*token_pit]->maxVoltage) / VOLTAGE_SCALE);
