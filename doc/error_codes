@@ -10,10 +10,12 @@ CL: Cutoff power leak
 CM: Cascode mos
 CP: Compare circuit. Analog circuit for comparing voltage.
 CS: Check control signals
+CU: Related to cut-off power
 CV: Capacitor voltage mismatch
 DC: Different capacitance in series capacitors
 DD: Double forward biased diode
 DT: Detect circuit.
+EC: Existing (Legacy) circuit
 FS: Forced short
 FU: Fuse related.
 FX: Caused by CVC circuit change
@@ -26,7 +28,6 @@ HV: High voltage
 HZ: High-Z input
 IO: I/O related
 IP: Uncheckable IP error
-LC: Legacy circuit
 LC: Logic conflict
 LG: Overvoltage error based on Lg
 LO: Logically ok.
