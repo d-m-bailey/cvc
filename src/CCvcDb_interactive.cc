@@ -1201,15 +1201,15 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 	myPowerFile << "#NO AUTO MACROS" << endl;
 	// print macro definitions
 	// really bad overkill
-	CPowerPtrVector myMacroPtr_v;
-	myMacroPtr_v.reserve(CPower::powerCount);
-	myMacroPtr_v.resize(CPower::powerCount, NULL);
+	vector<string> myMacro_v;
+	myMacro_v.reserve(CPower::powerCount);
+	myMacro_v.resize(CPower::powerCount, "");
 	for ( auto pair_pit = cvcParameters.cvcPowerMacroPtrMap.begin(); pair_pit != cvcParameters.cvcPowerMacroPtrMap.end(); pair_pit++ ) {
-		myMacroPtr_v[pair_pit->second->powerId] = pair_pit->second;
+		myMacro_v[pair_pit->second->powerId] = pair_pit->first;
 	}
 	for ( netId_t macro_it = 0; macro_it < CPower::powerCount; macro_it++ ) {
-		if ( myMacroPtr_v[macro_it] ) {
-			myPowerFile << "#define " << myMacroPtr_v[macro_it]->powerSignal() << " " << myMacroPtr_v[macro_it]->definition << endl;
+		if ( ! IsEmpty(myMacro_v[macro_it]) ) {
+			myPowerFile << "#define " << myMacro_v[macro_it] << " " << cvcParameters.cvcPowerMacroPtrMap[myMacro_v[macro_it]]->definition << endl;
 		}
 	}
 	CInstance * myInstance_p = instancePtr_v[theInstanceId];
@@ -1232,37 +1232,29 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 			string mySuffix = "";
 			if ( myDeviceCounts.nmosCount + myDeviceCounts.pmosCount + myDeviceCounts.resistorCount == 0 ) {
 				mySuffix = " input";
-			} else {
-				// for reference
+			} else {  // print ports that are not input for reference
 				myPowerFile << "#";
 			}
 			myPowerFile << mySignals_v[net_it] << mySuffix;
 			netId_t myMinNetId, myMaxNetId;
-			CPower * myMinPower_p, * myMaxPower_p;
+			CPower *myMinPower_p = NULL;
+			CPower *myMaxPower_p = NULL;
 			if ( theCurrentStage == STAGE_COMPLETE ) {
 				myMinNetId = minLeakNet_v[myGlobalNetId].finalNetId;
-				if ( myMinNetId == UNKNOWN_NET ) {
-					myMinPower_p = NULL;
-				} else {
+				if ( myMinNetId != UNKNOWN_NET ) {
 					myMinPower_p = leakVoltagePtr_v[myMinNetId];
 				}
 				myMaxNetId = maxLeakNet_v[myGlobalNetId].finalNetId;
-				if ( myMaxNetId == UNKNOWN_NET ) {
-					myMaxPower_p = NULL;
-				} else {
+				if ( myMaxNetId != UNKNOWN_NET ) {
 					myMaxPower_p = leakVoltagePtr_v[myMaxNetId];
 				}
 			} else {
 				myMinNetId = minNet_v[myGlobalNetId].finalNetId;
-				if ( myMinNetId == UNKNOWN_NET ) {
-					myMinPower_p = NULL;
-				} else {
+				if ( myMinNetId != UNKNOWN_NET ) {
 					myMinPower_p = netVoltagePtr_v[myMinNetId];
 				}
 				myMaxNetId = maxNet_v[myGlobalNetId].finalNetId;
-				if ( myMaxNetId == UNKNOWN_NET ) {
-					myMaxPower_p = NULL;
-				} else {
+				if ( myMaxNetId != UNKNOWN_NET ) {
 					myMaxPower_p = netVoltagePtr_v[myMaxNetId];
 				}
 			}
@@ -1270,8 +1262,10 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 			if ( myMinPower_p && myMinPower_p->minVoltage != UNKNOWN_VOLTAGE ) {
 				myPowerFile << " min@" << PrintParameter(myMinPower_p->minVoltage, VOLTAGE_SCALE);
 			}
-			if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId] && netVoltagePtr_v[mySimNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
-				myPowerFile << " sim@" << PrintParameter(netVoltagePtr_v[mySimNetId]->simVoltage, VOLTAGE_SCALE);
+			if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId] ) {
+				if ( netVoltagePtr_v[mySimNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
+					myPowerFile << " sim@" << PrintParameter(netVoltagePtr_v[mySimNetId]->simVoltage, VOLTAGE_SCALE);
+				}
 				if ( netVoltagePtr_v[mySimNetId]->type[HIZ_BIT] ) {
 					myPowerFile << " open";
 				}
@@ -1283,10 +1277,15 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 		}
 	}
 	// print internal definitions
+	unordered_set<text_t> myInternalDefinitions;  // only print internal definitions once
 	netId_t myFirstNetId = myInstance_p->firstNetId;
 	for ( netId_t net_it = myFirstNetId; net_it < netCount && IsSubcircuitOf(netParent_v[net_it], theInstanceId); net_it++ ) {
-		if ( netVoltagePtr_v[net_it] && ! IsEmpty(netVoltagePtr_v[net_it]->powerSignal()) ) {
-			myPowerFile << netVoltagePtr_v[net_it]->powerSignal() << " " << netVoltagePtr_v[net_it]->definition << endl;
+		if ( netVoltagePtr_v[net_it] ) {
+			text_t mySignal = netVoltagePtr_v[net_it]->powerSignal();
+			if ( ! IsEmpty(mySignal) && myInternalDefinitions.count(mySignal) == 0 ) {
+				myPowerFile << netVoltagePtr_v[net_it]->powerSignal() << " " << netVoltagePtr_v[net_it]->definition << endl;
+				myInternalDefinitions.insert(mySignal);
+			}
 		}
 	}
 	cout << "Wrote debug power file " << thePowerFileName << endl;

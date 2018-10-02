@@ -150,7 +150,6 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 				} else {
 					extraData->family = myParameterValue;
 				}
-				extraData->family = myParameterValue;
 				relativeFriendly = ( myParameterName == "permit" ) ? true : false;
 			}
 			myDefinition += " " + myParameterName + "@" + myParameterValue;

@@ -428,6 +428,12 @@ returnCode_t CCvcParameters::LoadPower() {
 				if (myPowerPtr->type != NO_TYPE || myPowerPtr->minVoltage != UNKNOWN_VOLTAGE || myPowerPtr->simVoltage != UNKNOWN_VOLTAGE || myPowerPtr->maxVoltage != UNKNOWN_VOLTAGE) {
 					cvcPowerPtrList.push_back(new CPower(myPowerPtr));  // duplicate CPower (not a bit-wise copy)
 				}
+				myMacroName = string(myPowerPtr->powerSignal());
+				if ( myMacroName[0] == '/' ) { // macros for top level nets that are not ports
+					myMacroName = myMacroName.substr(1);
+				}
+				myMacroDefinition = myInput;
+/*
 				if ( myAutoMacroFlag ) {
 					myMacroName = string(myPowerPtr->powerSignal());
 					if ( myMacroName[0] == '/' ) { // macros for top level nets that are not ports
@@ -437,10 +443,17 @@ returnCode_t CCvcParameters::LoadPower() {
 				} else {
 					myMacroName = "?";
 				}
+*/
 				delete myPowerPtr;
 			}
 			if ( myMacroName.find_first_of("(<[}/*@+-") > myMacroName.length() && isalpha(myMacroName[0]) ) { // no special characters in macro names
-				if ( cvcPowerMacroPtrMap.count(myMacroName) > 0 ) throw EPowerError("duplicate macro name: " + myMacroName);
+				if ( cvcPowerMacroPtrMap.count(myMacroName) > 0 ) {
+					if ( myAutoMacroFlag ) {
+						throw EPowerError("duplicate macro name: " + myMacroName);
+					} else {  // Ignore duplicate macro definitions when debugging subcircuits
+						continue;
+					}
+				}
 				cvcPowerMacroPtrMap[myMacroName] = new CPower(myMacroDefinition, cvcPowerMacroPtrMap, cvcModelListMap);
 			}
 		}
