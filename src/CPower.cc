@@ -1077,8 +1077,8 @@ string CPowerPtrMap::CalculateExpectedValue(string theEquation, netStatus_t theT
 }
 
 #define UNKNOWN_TOKEN (float(MAX_VOLTAGE) * 2)
-voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType, CModelListMap & theModelListMap, bool thePermitUndefinedFlag) {
-	implicitFamily = "";
+voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType, CModelListMap & theModelListMap, bool thePermitUndefinedFlag, bool theResetImplicitFlag) {
+	if ( theResetImplicitFlag) implicitFamily = "";
 	list<string> * myTokenList_p;
 	// exceptions cause memory leaks
 //	cout << "calculating " << theEquation << endl;
@@ -1146,6 +1146,10 @@ voltage_t CPowerPtrMap::CalculateVoltage(string theEquation, netStatus_t theType
 			} else if ( (*token_pit).substr(0,4) == "Vth[" && (*token_pit).back() == ']' ){
 				string myModelName = "M " + (*token_pit).substr(4, (*token_pit).length() - 5);
 				if ( theModelListMap.count(myModelName) > 0 ) {
+					if ( theModelListMap[myModelName].Vth == UNKNOWN_VOLTAGE ) {
+						theModelListMap[myModelName].Vth = CalculateVoltage(theModelListMap[myModelName].vthDefinition, SIM_POWER, theModelListMap, false, false);
+						// recursive call fails if contains undefined macros. does not reset implicit power list
+					}
 					myVoltageStack.push_back(float(theModelListMap[myModelName].Vth) / VOLTAGE_SCALE);
 				} else {
 					throw EModelError("power definition error: " + theEquation + " unknown Vth for " + myModelName.substr(2));

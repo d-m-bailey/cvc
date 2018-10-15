@@ -38,6 +38,8 @@
 #include "CDependencyMap.hh"
 #include "gzstream.h"
 
+extern char RESISTOR_TEXT[];
+
 class CShortVector : public vector<pair<netId_t, string> > {
 public:
 };

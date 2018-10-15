@@ -689,12 +689,12 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 					cout << "ERROR: Could not find " << myInstanceName << endl;
 					continue;
 				}
-				string myMode = "";
-				myInputStream >> myMode;
-				string myDebugCvcrcName = "debug.cvcrc." + myMode;
+				string myCell = "";
+				myInputStream >> myCell;
+				string myDebugCvcrcName = "debug.cvcrc." + myCell + "." + cvcParameters.cvcMode;
 				ofstream myDebugCvcrcFile(myDebugCvcrcName);
 				if ( myDebugCvcrcFile && myDebugCvcrcFile.good() ) {
-					CreateDebugCvcrcFile(myDebugCvcrcFile, myInstanceId, myMode, theCurrentStage);
+					CreateDebugCvcrcFile(myDebugCvcrcFile, myInstanceId, myCell, theCurrentStage);
 					cout << "Wrote debug cvcrc file " << myDebugCvcrcName << endl;
 				} else {
 					cout << "ERROR: Could not create cvcrc file " << myDebugCvcrcName << endl;
@@ -1171,25 +1171,37 @@ returnCode_t CCvcDb::CheckFuses() {
 	return ((myFuseError) ? FAIL : OK);
 }
 
-void CCvcDb::CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInstanceId, string theMode, int theCurrentStage) {
+void CCvcDb::CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInstanceId, string theCell, int theCurrentStage) {
 	theOutputFile << "# Debug cvcrc for " << HierarchyName(theInstanceId) << endl;
 	string mySubcircuitName = instancePtr_v[theInstanceId]->master_p->name;
 	theOutputFile << "CVC_TOP = '" << mySubcircuitName << "'" << endl;
 	PrintSubcircuitCdl(mySubcircuitName);
-	theOutputFile << "CVC_NETLIST = '" << mySubcircuitName + ".cdl" << "'" << endl;
-	theOutputFile << "CVC_MODE = '" << theMode << "'" << endl;
+	theOutputFile << "CVC_NETLIST = '" << mySubcircuitName << ".cdl" << "'" << endl;
+	theOutputFile << "CVC_MODE = '" << theCell << "." << cvcParameters.cvcMode << "'" << endl;
 	theOutputFile << "CVC_MODEL_FILE = '" << cvcParameters.cvcModelFilename << "'" << endl;
-	string myPowerFile = "power." + theMode + "." + cvcParameters.cvcMode;
+	string myPowerFile = "power." + theCell + "." + cvcParameters.cvcMode;
 	PrintInstancePowerFile(theInstanceId, myPowerFile, theCurrentStage);
 	theOutputFile << "CVC_POWER_FILE = '" << myPowerFile << "'" << endl;
 	theOutputFile << "CVC_FUSE_FILE = ''" << endl;
-	theOutputFile << "CVC_REPORT_FILE = '" << "debug_" + theMode + "_" + cvcParameters.cvcMode + ".log" << "'" << endl;
-	theOutputFile << "CVC_REPORT_TITLE = 'Debug " << mySubcircuitName << " mode " << theMode << " " << cvcParameters.cvcMode << "'" << endl;
+	theOutputFile << "CVC_REPORT_FILE = '" << "debug_" << theCell << "_" << cvcParameters.cvcMode << ".log" << "'" << endl;
+	theOutputFile << "CVC_REPORT_TITLE = 'Debug " << theCell << " mode " << cvcParameters.cvcMode << "'" << endl;
 	theOutputFile << "CVC_CIRCUIT_ERROR_LIMIT = '" << cvcParameters.cvcCircuitErrorLimit << "'" << endl;
 	theOutputFile << "CVC_SEARCH_LIMIT = '" << cvcParameters.cvcSearchLimit << "'" << endl;
 	theOutputFile << "CVC_LEAK_LIMIT = '" << cvcParameters.cvcLeakLimit << "'" << endl;
 	theOutputFile << "CVC_SOI = '" << (( cvcParameters.cvcSOI ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "CVC_SCRC = '" << (( cvcParameters.cvcSCRC ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_VTH_GATES = '" << (( cvcParameters.cvcVthGates ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_MIN_VTH_GATES = '" << (( cvcParameters.cvcMinVthGates ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_IGNORE_VTH_FLOATING = '" << (( cvcParameters.cvcIgnoreVthFloating ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_IGNORE_NO_LEAK_FLOATING = '" << (( cvcParameters.cvcIgnoreNoLeakFloating ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_LEAK_OVERVOLTAGE = '" << (( cvcParameters.cvcLeakOvervoltage ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_LOGIC_DIODES = '" << (( cvcParameters.cvcLogicDiodes ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_SHORT_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcShortErrorThreshold) << "'" << endl;
+	theOutputFile << "CVC_BIAS_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcBiasErrorThreshold) << "'" << endl;
+	theOutputFile << "CVC_FORWARD_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcForwardErrorThreshold) << "'" << endl;
+	theOutputFile << "CVC_GATE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcGateErrorThreshold) << "'" << endl;
+	theOutputFile << "CVC_LEAK?_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcLeakErrorThreshold) << "'" << endl;
+	theOutputFile << "CVC_EXPECTED_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcExpectedErrorThreshold) << "'" << endl;
 }
 
 void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerFileName, int theCurrentStage) {
@@ -1214,11 +1226,14 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 	}
 	CInstance * myInstance_p = instancePtr_v[theInstanceId];
 	CCircuit * myCircuit_p = myInstance_p->master_p;
+	const text_t myResistorText = CPower::powerDefinitionText.SetTextAddress(RESISTOR_TEXT);
 	// print port power and input definitions
 	vector<text_t> mySignals_v;
 	mySignals_v.reserve(myCircuit_p->localSignalIdMap.size());
 	for (auto signal_net_pair_pit = myCircuit_p->localSignalIdMap.begin(); signal_net_pair_pit != myCircuit_p->localSignalIdMap.end(); signal_net_pair_pit++) {
-		mySignals_v[signal_net_pair_pit->second] = signal_net_pair_pit->first;
+		if ( signal_net_pair_pit->first != myResistorText ) {
+			mySignals_v[signal_net_pair_pit->second] = signal_net_pair_pit->first;
+		}
 	}
 	for ( netId_t net_it = 0; net_it < myInstance_p->master_p->portCount; net_it++ ) {
 		netId_t myGlobalNetId = GetEquivalentNet(myInstance_p->localToGlobalNetId_v[net_it]);
@@ -1282,8 +1297,8 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 	for ( netId_t net_it = myFirstNetId; net_it < netCount && IsSubcircuitOf(netParent_v[net_it], theInstanceId); net_it++ ) {
 		if ( netVoltagePtr_v[net_it] ) {
 			text_t mySignal = netVoltagePtr_v[net_it]->powerSignal();
-			if ( ! IsEmpty(mySignal) && myInternalDefinitions.count(mySignal) == 0 ) {
-				myPowerFile << netVoltagePtr_v[net_it]->powerSignal() << " " << netVoltagePtr_v[net_it]->definition << endl;
+			if ( ! IsEmpty(mySignal) && mySignal != myResistorText && myInternalDefinitions.count(mySignal) == 0 ) {
+				myPowerFile << mySignal << " " << netVoltagePtr_v[net_it]->definition << endl;
 				myInternalDefinitions.insert(mySignal);
 			}
 		}

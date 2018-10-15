@@ -62,7 +62,7 @@ CModel::CModel(string theParameterString) {
 		myParameterName = theParameterString.substr(myStringBegin, myEqualIndex - myStringBegin);
 		myParameterValue = theParameterString.substr(myEqualIndex + 1, myStringEnd - (myEqualIndex + 1));
 		if (myParameterName == "Vth") {
-			Vth = String_to_Voltage(myParameterValue);
+			vthDefinition = myParameterValue; // String_to_Voltage(myParameterValue);
 		} else if (myParameterName == "Vgs") {
 			maxVgsDefinition = myParameterValue; // String_to_Voltage(myParameterValue);
 		} else if (myParameterName == "Vds") {
@@ -199,7 +199,7 @@ void CModel::Print(ostream & theLogFile, bool thePrintDeviceListFlag, string the
 	theLogFile << " Parameters>";
 	switch (type) {
 		case NMOS: case PMOS: case LDDN: case LDDP: {
-			theLogFile << " Vth=" << PrintParameter(Vth, VOLTAGE_SCALE);
+			theLogFile << " Vth=" << PrintToleranceParameter(vthDefinition, Vth, VOLTAGE_SCALE);
 			if ( ! IsEmpty(maxVdsDefinition) ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
 			if ( ! IsEmpty(maxVgsDefinition) ) theLogFile << " Vgs=" << PrintToleranceParameter(maxVgsDefinition, maxVgs, VOLTAGE_SCALE);
 			if ( ! IsEmpty(maxVbgDefinition) ) theLogFile << " Vbg=" << PrintToleranceParameter(maxVbgDefinition, maxVbg, VOLTAGE_SCALE);
@@ -286,15 +286,15 @@ void CModelListMap::AddModel(string theParameterString) {
 		string myModelKey = myNewModel.baseType + " " + myNewModel.name;
 		try {
 			this->at(myModelKey).push_back(myNewModel);
-			if ( (*this)[myModelKey].Vth != myNewModel.Vth ) {
+			if ( (*this)[myModelKey].vthDefinition != myNewModel.vthDefinition ) {
 				cout << "Vth mismatch for " << myNewModel.name << " ignored. ";
-				cout << (*this)[myModelKey].Vth << "!=" << myNewModel.Vth << endl;
+				cout << (*this)[myModelKey].vthDefinition << "!=" << myNewModel.vthDefinition << endl;
 			}
 		}
 		catch (const out_of_range& oor_exception) {
 			//(*this)[myModelKey] = *(new CModelList);
 			(*this)[myModelKey].push_back(myNewModel);
-			(*this)[myModelKey].Vth = myNewModel.Vth;
+			(*this)[myModelKey].vthDefinition = myNewModel.vthDefinition;
 		}
 	}
 	catch (EModelError & myError) {
@@ -385,6 +385,10 @@ returnCode_t CModelListMap::SetVoltageTolerances(teestream & theReportFile, CPow
 	for (CModelListMap::iterator modelList_pit = begin(); modelList_pit != end(); modelList_pit++) {
 		for (CModelList::iterator model_pit = modelList_pit->second.begin(); model_pit != modelList_pit->second.end(); model_pit++) {
 			try {
+				if ( ! IsEmpty(model_pit->vthDefinition) ) {
+					model_pit->Vth = thePowerMacroPtrMap.CalculateVoltage(model_pit->vthDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
+					if ( model_pit->Vth == UNKNOWN_VOLTAGE ) model_pit->validModel = false;
+				}
 				if ( ! IsEmpty(model_pit->maxVbgDefinition) ) {
 					model_pit->maxVbg = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbgDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
 					if ( model_pit->maxVbg == UNKNOWN_VOLTAGE ) model_pit->validModel = false;

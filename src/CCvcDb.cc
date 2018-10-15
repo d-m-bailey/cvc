@@ -33,7 +33,7 @@
 #include "CConnection.hh"
 
 extern set<modelType_t> FUSE_MODELS;
-char RESISTOR_TEXT[] = "resistor";
+char RESISTOR_TEXT[] = " resistor";  // leading space to deferentiate from normal signals
 
 void CCvcDb::ReportSimShort(deviceId_t theDeviceId, voltage_t theMainVoltage, voltage_t theShortVoltage, string theCalculation) {
 	static CFullConnection myConnections;

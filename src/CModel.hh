@@ -43,6 +43,8 @@ public:
 	string	maxVbsDefinition = "";
 	string	maxVbgDefinition = "";
 
+	string	vthDefinition = "";
+
 	voltage_t	maxVds = UNKNOWN_VOLTAGE;
 	voltage_t	maxVgs = UNKNOWN_VOLTAGE;
 	voltage_t	maxVbs = UNKNOWN_VOLTAGE;
@@ -82,7 +84,8 @@ public:
 
 class CModelList : public list<CModel> {
 public:
-	int	Vth;
+	int		Vth = UNKNOWN_VOLTAGE;
+	string	vthDefinition;
 };
 
 class CTextModelPtrMap : public unordered_map<text_t, CModel *> {
