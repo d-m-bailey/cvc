@@ -1178,6 +1178,7 @@ returnCode_t CCvcDb::SetInstancePower() {
 		forward_list<instanceId_t> myInstanceIdList = FindInstanceIds((*instance_ppit)->instanceName);  // expands buses and hierarchy
 		for ( auto instanceId_pit = myInstanceIdList.begin(); instanceId_pit != myInstanceIdList.end(); instanceId_pit++ ) {
 			CPowerPtrMap myLocalMacroPtrMap;
+			logFile << " Setting power for instance " << HierarchyName(*instanceId_pit) << endl;
 			for ( auto power_pit = (*instance_ppit)->powerList.begin(); power_pit != (*instance_ppit)->powerList.end(); power_pit++ ) {
 				CPower * myPower_p = new CPower(*power_pit, myLocalMacroPtrMap, cvcParameters.cvcModelListMap);
 				string myOriginalPower = myPower_p->powerSignal();
@@ -1200,6 +1201,7 @@ returnCode_t CCvcDb::SetInstancePower() {
 					if ( myPower_p->type[POWER_BIT] && isalpha(myOriginalPower[0]) ) {
 						if ( netVoltagePtr_v[myNetId] && netVoltagePtr_v[myNetId]->type[POWER_BIT] ) {  // regular power definitions become macros
 							myLocalMacroPtrMap[myOriginalPower] = netVoltagePtr_v[myNetId];
+							logFile << "  " << myOriginalPower << " = " << NetName(myNetId) << endl;
 						} else {  // top instance power nets must be already defined
 							reportFile << "ERROR: Instance power signal " << myPower_p->powerSignal() << " not defined in parent " << NetName(myNetId) << endl;
 							myPowerError = true;

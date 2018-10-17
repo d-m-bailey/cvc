@@ -789,10 +789,11 @@ void CCvcDb::FindForwardBiasDiodes() {
 		if ( IsNmos_(deviceType_v[device_it]) || IsPmos_(deviceType_v[device_it]) ) continue;
 		if ( myDevice_p->model_p->diodeList.empty() ) continue;
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
+		bool myErrorFlag = false;
 		for ( auto diode_pit = myDevice_p->model_p->diodeList.begin(); diode_pit != myDevice_p->model_p->diodeList.end(); diode_pit++ ) {
+			if ( myErrorFlag ) continue;  // only one error per device
 			SetDiodeConnections((*diode_pit), myConnections, myDiodeConnections);  // switch connections for diodes
 			if ( GetEquivalentNet(myDiodeConnections.originalSourceId) == GetEquivalentNet(myDiodeConnections.originalDrainId) ) continue;
-			bool myErrorFlag = false;
 			bool myUnrelatedFlag = false;
 			if ( myDiodeConnections.CheckTerminalMinMaxVoltages(SOURCE | DRAIN) ) {
 				voltage_t mySourceVoltage = UNKNOWN_VOLTAGE, myDrainVoltage = UNKNOWN_VOLTAGE;

@@ -1297,7 +1297,8 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 	for ( netId_t net_it = myFirstNetId; net_it < netCount && IsSubcircuitOf(netParent_v[net_it], theInstanceId); net_it++ ) {
 		if ( netVoltagePtr_v[net_it] ) {
 			text_t mySignal = netVoltagePtr_v[net_it]->powerSignal();
-			if ( ! IsEmpty(mySignal) && mySignal != myResistorText && myInternalDefinitions.count(mySignal) == 0 ) {
+			if ( ! IsEmpty(mySignal) && mySignal != myResistorText && netVoltagePtr_v[net_it]->simCalculationType != ESTIMATED_CALCULATION
+					&& myInternalDefinitions.count(mySignal) == 0 ) {  // do not print resistor calculations, latch/scrc estimates, or duplicates
 				myPowerFile << mySignal << " " << netVoltagePtr_v[net_it]->definition << endl;
 				myInternalDefinitions.insert(mySignal);
 			}
