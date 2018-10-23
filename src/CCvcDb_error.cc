@@ -899,10 +899,13 @@ void CCvcDb::FindNmosPossibleLeakErrors() {
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 		if ( IsKnownVoltage_(myConnections.simGateVoltage) ) continue;
 		if ( myConnections.CheckTerminalMinVoltages(SOURCE | DRAIN) == true ) {
-			voltage_t myMaxLeakGateVoltage = MaxLeakVoltage(myConnections.gateId);
-			if ( myMaxLeakGateVoltage != UNKNOWN_VOLTAGE
-					&& myMaxLeakGateVoltage <= myConnections.minSourceVoltage + myConnections.device_p->model_p->Vth
-					&& myMaxLeakGateVoltage <= myConnections.minDrainVoltage + myConnections.device_p->model_p->Vth ) {
+			voltage_t myMaxGateVoltage = MaxVoltage(myConnections.gateId);
+			if ( myMaxGateVoltage == UNKNOWN_VOLTAGE ) {
+				myMaxGateVoltage = MaxLeakVoltage(myConnections.gateId);
+			}
+			if ( myMaxGateVoltage != UNKNOWN_VOLTAGE
+					&& myMaxGateVoltage <= myConnections.minSourceVoltage + myConnections.device_p->model_p->Vth
+					&& myMaxGateVoltage <= myConnections.minDrainVoltage + myConnections.device_p->model_p->Vth ) {
 				continue;  // always off
 			}
 		}
@@ -948,10 +951,13 @@ void CCvcDb::FindPmosPossibleLeakErrors() {
 		MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 		if ( IsKnownVoltage_(myConnections.simGateVoltage) ) continue;
 		if ( myConnections.CheckTerminalMaxVoltages(SOURCE | DRAIN) == true ) {
-			voltage_t myMinLeakGateVoltage = MinLeakVoltage(myConnections.gateId);
-			if ( myMinLeakGateVoltage != UNKNOWN_VOLTAGE
-					&& myMinLeakGateVoltage >= myConnections.maxSourceVoltage + myConnections.device_p->model_p->Vth
-					&& myMinLeakGateVoltage >= myConnections.maxDrainVoltage + myConnections.device_p->model_p->Vth ) {
+			voltage_t myMinGateVoltage = MinVoltage(myConnections.gateId);
+			if ( myMinGateVoltage == UNKNOWN_VOLTAGE ) {
+				myMinGateVoltage = MinLeakVoltage(myConnections.gateId);
+			}
+			if ( myMinGateVoltage != UNKNOWN_VOLTAGE
+					&& myMinGateVoltage >= myConnections.maxSourceVoltage + myConnections.device_p->model_p->Vth
+					&& myMinGateVoltage >= myConnections.maxDrainVoltage + myConnections.device_p->model_p->Vth ) {
 				continue;  // always off
 			}
 		}
