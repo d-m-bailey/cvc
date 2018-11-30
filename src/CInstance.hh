@@ -26,6 +26,7 @@
 
 #include "Cvc.hh"
 
+#include <unordered_map>
 #include "CCircuit.hh"
 
 class CCvcDb;
@@ -35,6 +36,7 @@ public:
 	deviceId_t	firstDeviceId = 0;
 	instanceId_t	firstSubcircuitId = 0;
 	netId_t		firstNetId = 0;
+	instanceId_t	parallelInstanceCount = 0;
 
 	CNetIdVector	localToGlobalNetId_v;
 
@@ -49,6 +51,8 @@ public:
 
 class CInstancePtrVector : public vector<CInstance *> {
 public:
+	unordered_map<string, CInstance *> parallelInstanceMap;
+
 	~CInstancePtrVector();
 	void Clear();
 };

@@ -1017,6 +1017,10 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal, instanceId_t theParent)
 			}
 			for (auto instanceId_pit = mySearchInstanceIdList.begin(); instanceId_pit != mySearchInstanceIdList.end(); instanceId_pit++) {
 //				bool myCheckTopPort = ( *instanceId_pit == 0 );
+				if ( ! instancePtr_v[*instanceId_pit] ) {
+					cout << "Warning: can not define nets in parallel instances " << thePowerSignal << endl;
+					continue;
+				}
 				CTextNetIdMap * mySignalIdMap_p = &(instancePtr_v[*instanceId_pit]->master_p->localSignalIdMap);
 				for ( auto signalIdPair_pit = mySignalIdMap_p->begin(); signalIdPair_pit != mySignalIdMap_p->end(); signalIdPair_pit++ ) {
 					if ( myExactMatch ) { // exact match
