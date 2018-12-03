@@ -36,7 +36,10 @@ public:
 	deviceId_t	firstDeviceId = 0;
 	instanceId_t	firstSubcircuitId = 0;
 	netId_t		firstNetId = 0;
-	instanceId_t	parallelInstanceCount = 0;
+	union {
+		instanceId_t  parallelInstanceCount = 0;  // parallel (maybe) instances kept
+		instanceId_t  parallelInstanceId;  // for parallel instances deleted
+	};
 
 	CNetIdVector	localToGlobalNetId_v;
 
@@ -44,15 +47,15 @@ public:
 	CCircuit * master_p = NULL;
 
 	void AssignTopGlobalIDs(CCvcDb * theCvcDb_p, CCircuit * theMaster_p);
-	void AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInstanceId, const CDevice * theSubcircuit_p, const instanceId_t theParentId, const CInstance * theParent_p);
+	void AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInstanceId, CDevice * theSubcircuit_p, const instanceId_t theParentId,
+			CInstance * theParent_p, unordered_map<string, instanceId_t> & theParallelInstanceMap, bool isParallel);
+	bool IsParallelInstance() { return (localToGlobalNetId_v.size() == 0); };
 
 	void Print(const instanceId_t theInstanceId, const string theIndentation = "");
 };
 
 class CInstancePtrVector : public vector<CInstance *> {
 public:
-	unordered_map<string, CInstance *> parallelInstanceMap;
-
 	~CInstancePtrVector();
 	void Clear();
 };

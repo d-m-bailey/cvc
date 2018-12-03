@@ -26,6 +26,7 @@
 
 #include "Cvc.hh"
 
+class CCvcDb;
 #include "CInstance.hh"
 #include "CCircuit.hh"
 #include "CModel.hh"
@@ -366,6 +367,7 @@ public:
 	bool IsAlwaysOff(CFullConnection& theConnections);
 	bool IsOneConnectionNet(netId_t theNetId);
 	void SetDiodeConnections(pair<int, int> diode_pit, CFullConnection & myConnections, CFullConnection & myDiodeConnections);
+	int CalculateMFactor(instanceId_t theInstanceId);
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);
@@ -400,14 +402,14 @@ public:
 	string PrintVoltage(voltage_t theVoltage, CPower * thePower_p);
 
 	void PrintDeviceWithAllConnections(instanceId_t theInstanceId, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage = false);
-	void PrintDeviceWithMinMaxConnections(instanceId_t theInstanceId, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage = false);
-	void PrintDeviceWithMinSimConnections(instanceId_t theInstanceId, CFullConnection& theConnections, ogzstream& theErrorFile);
-	void PrintDeviceWithSimMaxConnections(instanceId_t theInstanceId, CFullConnection& theConnections, ogzstream& theErrorFile);
-	void PrintDeviceWithMinConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile);
-	void PrintDeviceWithMaxConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile);
+//	void PrintDeviceWithMinMaxConnections(instanceId_t theInstanceId, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage = false);
+//	void PrintDeviceWithMinSimConnections(instanceId_t theInstanceId, CFullConnection& theConnections, ogzstream& theErrorFile);
+//	void PrintDeviceWithSimMaxConnections(instanceId_t theInstanceId, CFullConnection& theConnections, ogzstream& theErrorFile);
+//	void PrintDeviceWithMinConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile);
+//	void PrintDeviceWithMaxConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile);
 	void PrintDeviceWithSimConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile);
-	void PrintDeviceWithMinGateAndSimConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile);
-	void PrintDeviceWithMaxGateAndSimConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile);
+//	void PrintDeviceWithMinGateAndSimConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile);
+//	void PrintDeviceWithMaxGateAndSimConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile);
 
 	void PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage = false);
 	void PrintMinMaxTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage = false);

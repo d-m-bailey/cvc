@@ -2075,7 +2075,7 @@ void CCvcDb::SetResistorVoltagesByPower() {
 //	minimumEventQueue.Print();
 //	maximumEventQueue.Print();
 	CalculateResistorVoltages();
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Resistor Errors");
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Resistor Errors");
 	if ( gDebug_cvc ) {
 		PrintVirtualNets(minNet_v, "(minimum r)");
 		PrintVirtualNets(maxNet_v, "(maximum r)");
@@ -2447,8 +2447,8 @@ void CCvcDb::SetInitialMinMaxPower() {
 		}
 	}
 	// Reset min/max voltage conflict errors
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Power/Ground path through fuse", FUSE_MODELS);
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! ... voltage already set");
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Power/Ground path through fuse", FUSE_MODELS);
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! ... voltage already set");
 //	errorFile << "! Finished" << endl << endl;
 //	if ( ! isFixedSimNet ) cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile); // Bad LDD connections (first pass)
 	CheckEstimateDependencies();

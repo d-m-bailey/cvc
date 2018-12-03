@@ -82,8 +82,15 @@ void CCvcDb::FindInstances(string theSubcircuit, bool thePrintCircuitFlag) {
 	try {
 		CCircuit * myCircuit_p = cvcCircuitList.FindCircuit(theSubcircuit);
 		for ( auto instance_pit = myCircuit_p->instanceId_v.begin(); instance_pit != myCircuit_p->instanceId_v.end(); instance_pit++ ) {
-			reportFile << HierarchyName(*instance_pit, thePrintCircuitFlag) << endl;
-			myInstanceCount++;
+			int myMFactor = CalculateMFactor(*instance_pit);
+			reportFile << HierarchyName(*instance_pit, thePrintCircuitFlag);
+			if ( myMFactor > 1 ) {
+				reportFile << " {m=" <<  myMFactor << "}";
+				myInstanceCount += myMFactor;
+			} else {
+				myInstanceCount++;
+			}
+			reportFile << endl;
 		}
 		reportFile << "found " << myInstanceCount << " instances" << endl;
 	}
@@ -130,8 +137,9 @@ void CCvcDb::FindNets(string theName, instanceId_t theInstanceId, bool thePrintC
 
 void CCvcDb::ShowNets(size_t & theNetCount, regex & theSearchPattern, instanceId_t theInstanceId, bool thePrintCircuitFlag) {
 	// updates theNetCount
-	CInstance * myInstance_p = instancePtr_v[theInstanceId];
 	if ( instancePtr_v[theInstanceId] == NULL ) return;
+	if ( instancePtr_v[theInstanceId]->IsParallelInstance() ) return;
+	CInstance * myInstance_p = instancePtr_v[theInstanceId];
 	if ( myInstance_p->master_p->subcircuitPtr_v.size() == 0 && myInstance_p->master_p->devicePtr_v.size() == 0 ) return;
 	// cout << myInstance_p->master_p->name << " count " << myInstance_p->master_p->localSignalIdMap.size() << endl; cout.flush();
 	for( auto signalMap_pit = myInstance_p->master_p->localSignalIdMap.begin(); signalMap_pit != myInstance_p->master_p->localSignalIdMap.end(); signalMap_pit++ ) {
@@ -283,6 +291,10 @@ return myShortString;
 }
 
 void CCvcDb::PrintNets(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag, bool theIsValidPowerFlag) {
+	if ( instancePtr_v[theCurrentInstanceId]->IsParallelInstance() ) {
+		reportFile << "Parallel Instance: " << HierarchyName(theCurrentInstanceId, thePrintSubcircuitNameFlag) << endl;
+		return;
+	}
 	CCircuit * myMasterCircuit_p = instancePtr_v[theCurrentInstanceId]->master_p;
 	CTextVector mySignal_v;
 	stringstream myNetString;
@@ -336,6 +348,10 @@ void CCvcDb::PrintNets(instanceId_t theCurrentInstanceId, string theFilter, bool
 }
 
 void CCvcDb::PrintDevices(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag, bool theIsValidModelFlag) {
+	if ( instancePtr_v[theCurrentInstanceId]->IsParallelInstance() ) {
+		reportFile << "Parallel Instance: " << HierarchyName(theCurrentInstanceId, thePrintSubcircuitNameFlag) << endl;
+		return;
+	}
 	string	myParameters = "";
 	stringstream myDeviceString;
 	vector<string> mySearchList;
@@ -371,6 +387,10 @@ void CCvcDb::PrintDevices(instanceId_t theCurrentInstanceId, string theFilter, b
 }
 
 void CCvcDb::PrintInstances(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag) {
+	if ( instancePtr_v[theCurrentInstanceId]->IsParallelInstance() ) {
+		reportFile << "Parallel Instance: " << HierarchyName(theCurrentInstanceId, thePrintSubcircuitNameFlag) << endl;
+		return;
+	}
 	string	myMasterName = "";
 	stringstream myInstanceString;
 	vector<string> mySearchList;
@@ -460,6 +480,10 @@ netId_t CCvcDb::FindNet(instanceId_t theCurrentInstanceId, string theNetName, bo
 			myCurrentInstanceId = FindHierarchy(theCurrentInstanceId, mySearchHierarchy, true, false);
 		}
 		if ( myCurrentInstanceId == UNKNOWN_INSTANCE ) throw out_of_range("not found");
+		if ( instancePtr_v[theCurrentInstanceId]->IsParallelInstance() ) {
+			reportFile << "Parallel Instance: " << HierarchyName(theCurrentInstanceId) << endl;
+			return ( UNKNOWN_NET );
+		}
 		CCircuit * myCircuit_p = instancePtr_v[myCurrentInstanceId]->master_p;
 		string myParentName = HierarchyName(myCurrentInstanceId, false) + HIERARCHY_DELIMITER;
 		myNetName = theNetName.substr(myParentName.length() - myInitialHierarchy.length());
@@ -492,6 +516,10 @@ deviceId_t CCvcDb::FindDevice(instanceId_t theCurrentInstanceId, string theDevic
 			myCurrentInstanceId = FindHierarchy(theCurrentInstanceId, mySearchHierarchy, true, false);
 		}
 		if ( myCurrentInstanceId == UNKNOWN_INSTANCE ) throw out_of_range("not found");
+		if ( instancePtr_v[theCurrentInstanceId]->IsParallelInstance() ) {
+			reportFile << "Parallel Instance: " << HierarchyName(theCurrentInstanceId) << endl;
+			return ( UNKNOWN_NET );
+		}
 		CCircuit * myCircuit_p = instancePtr_v[myCurrentInstanceId]->master_p;
 		string myParentName = HierarchyName(myCurrentInstanceId, false) + HIERARCHY_DELIMITER;
 		myDeviceName = theDeviceName.substr(myParentName.length() - myInitialHierarchy.length());
@@ -1172,6 +1200,10 @@ returnCode_t CCvcDb::CheckFuses() {
 }
 
 void CCvcDb::CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInstanceId, string theCell, int theCurrentStage) {
+	if ( instancePtr_v[theInstanceId]->IsParallelInstance() ) {
+		cout << "Cannot create debug file for parallel instance" << endl;
+		return;
+	}
 	theOutputFile << "# Debug cvcrc for " << HierarchyName(theInstanceId) << endl;
 	string mySubcircuitName = instancePtr_v[theInstanceId]->master_p->name;
 	theOutputFile << "CVC_TOP = '" << mySubcircuitName << "'" << endl;

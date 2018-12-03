@@ -225,13 +225,17 @@ void CCvcDb::PrintFlatCdl() {
 
 	CCircuit * myMaster_p;
 	for (instanceId_t instance_it = 0; instance_it < instancePtr_v.size(); instance_it++) {
+		if ( instancePtr_v[instance_it]->IsParallelInstance() ) continue;
 		myMaster_p = instancePtr_v[instance_it]->master_p;
 		for (deviceId_t device_it = 0; device_it < myMaster_p->devicePtr_v.size(); device_it++) {
 			PrintNewCdlLine(myMaster_p->devicePtr_v[device_it]->parameters[0] + DeviceName(instancePtr_v[instance_it]->firstDeviceId + device_it, PRINT_CIRCUIT_OFF));
 			for (netId_t net_it = 0; net_it < myMaster_p->devicePtr_v[device_it]->signalId_v.size(); net_it++) {
 				PrintCdlLine(NetName(instancePtr_v[instance_it]->localToGlobalNetId_v[myMaster_p->devicePtr_v[device_it]->signalId_v[net_it]]));
 			}
-			PrintCdlLine(myMaster_p->devicePtr_v[device_it]->parameters + 2);
+			PrintCdlLine(myMaster_p->devicePtr_v[device_it]->parameters + 2);  // skip first 2 characters of parameter string
+			if ( instancePtr_v[instance_it]->parallelInstanceCount > 1 ) {
+				PrintCdlLine("M=" + to_string<instanceId_t> (instancePtr_v[instance_it]->parallelInstanceCount));
+			}
 			PrintCdlLine(string(""));
 		}
 	}
@@ -520,7 +524,9 @@ void CCvcDb::PrintVirtualNets(CVirtualNetVector& theVirtualNet_v, string theTitl
 }
 
 void CCvcDb::PrintDeviceWithAllConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage) {
+	int myMFactor = CalculateMFactor(theParentId);
 	errorFile << DeviceName(theConnections.device_p->name, theParentId, PRINT_CIRCUIT_ON) << " " << theConnections.device_p->parameters;
+	if ( myMFactor > 1 ) errorFile << " {m=" << myMFactor << "}";
 	errorFile << " (r=" << parameterResistanceMap[theConnections.device_p->parameters] << ")" << endl;
 	switch ( theConnections.device_p->model_p->type ) {
 		case NMOS: case PMOS: case LDDN: case LDDP: {
@@ -547,6 +553,7 @@ void CCvcDb::PrintDeviceWithAllConnections(instanceId_t theParentId, CFullConnec
 	}
 }
 
+/*
 void CCvcDb::PrintDeviceWithMinMaxConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage) {
 	errorFile << DeviceName(theConnections.device_p->name, theParentId, PRINT_CIRCUIT_ON) << " " << theConnections.device_p->parameters;
 	errorFile << " (r=" << parameterResistanceMap[theConnections.device_p->parameters] << ")" << endl;
@@ -686,9 +693,12 @@ void CCvcDb::PrintDeviceWithMinConnections(instanceId_t theParentId, CFullConnec
 		}
 	}
 }
+*/
 
 void CCvcDb::PrintDeviceWithSimConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile) {
+	int myMFactor = CalculateMFactor(theParentId);
 	errorFile << DeviceName(theConnections.device_p->name, theParentId, PRINT_CIRCUIT_ON) << " " << theConnections.device_p->parameters;
+	if ( myMFactor > 1 ) errorFile << " {m=" << myMFactor << "}";
 	errorFile << " (r=" << parameterResistanceMap[theConnections.device_p->parameters] << ")" << endl;
 	switch ( theConnections.device_p->model_p->type ) {
 		case NMOS: case PMOS: case LDDN: case LDDP: {
@@ -715,6 +725,7 @@ void CCvcDb::PrintDeviceWithSimConnections(instanceId_t theParentId, CFullConnec
 	}
 }
 
+/*
 void CCvcDb::PrintDeviceWithMinGateAndSimConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile) {
 	errorFile << DeviceName(theConnections.device_p->name, theParentId, PRINT_CIRCUIT_ON) << " " << theConnections.device_p->parameters;
 	errorFile << " (r=" << parameterResistanceMap[theConnections.device_p->parameters] << ")" << endl;
@@ -770,6 +781,7 @@ void CCvcDb::PrintDeviceWithMaxGateAndSimConnections(instanceId_t theParentId, C
 		}
 	}
 }
+*/
 
 string CCvcDb::PrintVoltage(voltage_t theVoltage) {
 	if ( theVoltage == UNKNOWN_VOLTAGE ) {

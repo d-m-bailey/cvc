@@ -1001,7 +1001,9 @@ bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
 size_t CCvcDb::IncrementDeviceError(deviceId_t theDeviceId) {
 	CInstance * myInstance_p = instancePtr_v[deviceParent_v[theDeviceId]];
 	CCircuit * myParent_p = myInstance_p->master_p;
-	return(myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId] ++);
+	int myMFactor = CalculateMFactor(deviceParent_v[theDeviceId]);
+	myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId] += myMFactor;
+	return(myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId]);
 }
 
 list<string> * CCvcDb::SplitHierarchy(string theFullPath) {
@@ -1661,3 +1663,18 @@ void CCvcDb::SetDiodeConnections(pair<int, int> theDiodePair, CFullConnection & 
 		}
 	}
 }
+
+int CCvcDb::CalculateMFactor(instanceId_t theInstanceId) {
+	if (  instancePtr_v[theInstanceId]->IsParallelInstance() ) return 0;  // parallel/empty instances
+	int myMFactor = 1;
+	instanceId_t myInstanceId = theInstanceId;
+	while ( myInstanceId > 0 ) {
+		if ( instancePtr_v[myInstanceId]->parallelInstanceCount > 1 ) {
+			myMFactor *= instancePtr_v[myInstanceId]->parallelInstanceCount;
+		}
+		myInstanceId = instancePtr_v[myInstanceId]->parentId;
+	}
+	return myMFactor;
+}
+
+

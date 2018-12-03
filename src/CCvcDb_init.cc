@@ -370,6 +370,7 @@ void CCvcDb::SetEquivalentNets() {
 					deviceId_t myLocalDeviceId = myDevice_p->offset;
 					assert(myDevice_p->signalId_v.size() == 2);
 					for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
+						if ( instancePtr_v[myParent_p->instanceId_v[instance_it]]->IsParallelInstance() ) continue;  // parallel instances
 						if ( --myPrintCount <= 0 ) {
 							cout << "."; cout.flush();
 							myPrintCount = 10000;
@@ -415,7 +416,7 @@ void CCvcDb::SetEquivalentNets() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Switch shorts");
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Switch shorts");
 //	PrintEquivalentNets("before fix");
 	// following iterator must be int! netId_t results in infinite loop
 	for (int net_it = equivalentNet_v.size() - 1; net_it >= 0; net_it--) {
@@ -452,6 +453,7 @@ void CCvcDb::LinkDevices() {
 		CCircuit * myCircuit_p = *circuit_ppit;
 		if ( myCircuit_p->linked ) {
 			for (instanceId_t instance_it = 0; instance_it < myCircuit_p->instanceId_v.size(); instance_it++) {
+				if ( instancePtr_v[myCircuit_p->instanceId_v[instance_it]]->IsParallelInstance() ) continue;  // parallel instances
 				myInstanceCount++;
 				CInstance * myInstance_p = instancePtr_v[myCircuit_p->instanceId_v[instance_it]];
 				for (deviceId_t device_it = 0; device_it < myCircuit_p->devicePtr_v.size(); device_it++) {
@@ -879,6 +881,7 @@ forward_list<instanceId_t> CCvcDb::FindInstanceIds(string theHierarchy, instance
 				} else { // local circuit search
 					forward_list<instanceId_t> myNewSearchList;
 					for (auto instanceId_pit = mySearchInstanceIdList.begin(); instanceId_pit != mySearchInstanceIdList.end(); instanceId_pit++) {
+						if ( instancePtr_v[*instanceId_pit]->IsParallelInstance() ) continue;  // skip parallel instances
 						instanceId_t myParentsFirstSubcircuitId = instancePtr_v[*instanceId_pit]->firstSubcircuitId;
 						CCircuit * myCircuit = instancePtr_v[*instanceId_pit]->master_p;
 						for ( size_t subcircuit_it = 0; subcircuit_it < myCircuit->subcircuitPtr_v.size(); subcircuit_it++ ) {
@@ -912,6 +915,7 @@ forward_list<instanceId_t> CCvcDb::FindInstanceIds(string theHierarchy, instance
 				forward_list<instanceId_t> myNewSearchList;
 				bool myFoundMatch = false;
 				for (auto instanceId_pit = mySearchInstanceIdList.begin(); instanceId_pit != mySearchInstanceIdList.end(); instanceId_pit++) {
+					if ( instancePtr_v[*instanceId_pit]->IsParallelInstance() ) continue;  // skip parallel instances
 					instanceId_t myParentsFirstSubcircuitId = instancePtr_v[*instanceId_pit]->firstSubcircuitId;
 					CCircuit * myCircuit = instancePtr_v[*instanceId_pit]->master_p;
 					for ( auto instance_pit = myCircuit->subcircuitPtr_v.begin(); instance_pit != myCircuit->subcircuitPtr_v.end(); instance_pit++ ) {
@@ -1017,7 +1021,7 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal, instanceId_t theParent)
 			}
 			for (auto instanceId_pit = mySearchInstanceIdList.begin(); instanceId_pit != mySearchInstanceIdList.end(); instanceId_pit++) {
 //				bool myCheckTopPort = ( *instanceId_pit == 0 );
-				if ( ! instancePtr_v[*instanceId_pit] ) {
+				if ( instancePtr_v[*instanceId_pit]->IsParallelInstance() ) {
 					cout << "Warning: can not define nets in parallel instances " << thePowerSignal << endl;
 					continue;
 				}

@@ -23,8 +23,10 @@
 
 #include "CCircuit.hh"
 
+class CCvcDb;
 #include "CDevice.hh"
 #include "CFixedText.hh"
+#include "CCvcDb.hh"
 
 text_t CCircuit::lastDeviceMap = NULL;
 CTextDeviceIdMap CCircuit::localDeviceIdMap;
@@ -254,8 +256,8 @@ CCircuit * CCircuitPtrList::FindCircuit(const string theSearchCircuitName) {
 */
 }
 
-void CCircuitPtrList::PrintAndResetCircuitErrors(deviceId_t theErrorLimit, ofstream & theLogFile, ogzstream & theErrorFile, string theSummaryHeading,
-		set<modelType_t> & theModelList) {
+void CCircuitPtrList::PrintAndResetCircuitErrors(CCvcDb * theCvcDb_p, deviceId_t theErrorLimit, ofstream & theLogFile, ogzstream & theErrorFile,
+		string theSummaryHeading, set<modelType_t> & theModelList) {
 	list<string> myErrorSummaryList;
 //	theLogFile << theSummaryHeading << endl;
 	theErrorFile << theSummaryHeading << endl;
@@ -270,11 +272,15 @@ void CCircuitPtrList::PrintAndResetCircuitErrors(deviceId_t theErrorLimit, ofstr
 		for (size_t device_it = 0; device_it < (*circuit_ppit)->devicePtr_v.size(); device_it++) {
 			if ( (*circuit_ppit)->deviceErrorCount_v[device_it] > 0
 					&& ( theModelList.empty() || theModelList.count((*circuit_ppit)->devicePtr_v[device_it]->model_p->type) > 0 ) ) {
+				int myMFactor = 0;
+				for ( auto instance_pit = (*circuit_ppit)->instanceId_v.begin(); instance_pit != (*circuit_ppit)->instanceId_v.end(); instance_pit++) {
+					myMFactor += theCvcDb_p->CalculateMFactor(*instance_pit);
+				}
 				stringstream myErrorSummary;
 				myErrorSummary.str("");
 				myErrorSummary << "INFO: SUBCKT (" << (*circuit_ppit)->name << ")/" << (*circuit_ppit)->devicePtr_v[device_it]->name;
 				myErrorSummary << "(" << (*circuit_ppit)->devicePtr_v[device_it]->model_p->name << ")";
-				myErrorSummary << " error count " << (*circuit_ppit)->deviceErrorCount_v[device_it] << "/" << (*circuit_ppit)->instanceId_v.size();
+				myErrorSummary << " error count " << (*circuit_ppit)->deviceErrorCount_v[device_it] << "/" << myMFactor;
 				if ( theErrorLimit > 0 && (*circuit_ppit)->deviceErrorCount_v[device_it] > theErrorLimit ) {
 	//				theErrorFile << "INFO: SUBCKT " << (*circuit_ppit)->name << "/" << (*circuit_ppit)->devicePtr_v[device_it]->name << " error count ";
 	//				theErrorFile << (*circuit_ppit)->deviceErrorCount_v[device_it] << "/" << (*circuit_ppit)->instanceId_v.size();

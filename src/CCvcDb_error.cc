@@ -240,6 +240,7 @@ void CCvcDb::FindOverVoltageErrors(string theCheck, int theErrorIndex) {
 			while (myDevice_p) {
 				CCircuit * myParent_p = myDevice_p->parent_p;
 				for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
+					if  ( instancePtr_v[myParent_p->instanceId_v[instance_it]]->IsParallelInstance() ) continue;  // parallel/empty instances
 					CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
 					MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 					myConnections.SetMinMaxLeakVoltagesAndFlags(this);
@@ -269,7 +270,7 @@ void CCvcDb::FindOverVoltageErrors(string theCheck, int theErrorIndex) {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking " + theCheck + " overvoltage errors");
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking " + theCheck + " overvoltage errors");
 //	errorFile << "! Finished" << endl << endl;
 }
 
@@ -496,7 +497,7 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 			errorFile << endl;
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking nmos gate vs source errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking nmos gate vs source errors: ");
 }
 
 void CCvcDb::FindPmosGateVsSourceErrors() {
@@ -567,7 +568,7 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 			errorFile << endl;
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking pmos gate vs source errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking pmos gate vs source errors: ");
 }
 
 void CCvcDb::FindNmosSourceVsBulkErrors() {
@@ -671,7 +672,7 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking nmos source/drain vs bias errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking nmos source/drain vs bias errors: ");
 }
 
 void CCvcDb::FindPmosSourceVsBulkErrors() {
@@ -773,7 +774,7 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking pmos source/drain vs bias errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking pmos source/drain vs bias errors: ");
 }
 
 void CCvcDb::FindForwardBiasDiodes() {
@@ -883,7 +884,7 @@ void CCvcDb::FindForwardBiasDiodes() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking forward bias diode errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking forward bias diode errors: ");
 }
 
 void CCvcDb::FindNmosPossibleLeakErrors() {
@@ -935,7 +936,7 @@ void CCvcDb::FindNmosPossibleLeakErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking nmos possible leak errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking nmos possible leak errors: ");
 }
 
 void CCvcDb::FindPmosPossibleLeakErrors() {
@@ -987,7 +988,7 @@ void CCvcDb::FindPmosPossibleLeakErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking pmos possible leak errors: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking pmos possible leak errors: ");
 }
 
 void CCvcDb::FindFloatingInputErrors() {
@@ -1047,7 +1048,7 @@ void CCvcDb::FindFloatingInputErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking mos floating input errors:");
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking mos floating input errors:");
 //	errorFile << "! Finished" << endl << endl;
 }
 
@@ -1184,6 +1185,7 @@ void CCvcDb::FindLDDErrors() {
 					CCircuit * myParent_p = myDevice_p->parent_p;
 	//				deviceId_t myLocalDeviceId = myParent_p->localDeviceIdMap[myDevice_p->name];
 					for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
+						if  ( instancePtr_v[myParent_p->instanceId_v[instance_it]]->IsParallelInstance() ) continue;  // parallel/empty instances
 						CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
 						MapDeviceNets(myInstance_p, myDevice_p, myConnections);
 						if ( model_pit->type == LDDN ) {
@@ -1236,7 +1238,7 @@ void CCvcDb::FindLDDErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking LDD errors for model: ");
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking LDD errors for model: ");
 }
 
 /*

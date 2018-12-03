@@ -106,9 +106,9 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 			AssignGlobalIDs();
 			reportFile << PrintProgress(&lastSnapshot, "DB ") << endl;
 		}
-		reportFile << "CVC: " << topCircuit_p->subcircuitCount << " instances, "
-				<< topCircuit_p->netCount << " nets, " << topCircuit_p->deviceCount
-				<< " devices." << endl;
+		reportFile << "CVC: " << topCircuit_p->subcircuitCount << "(" << subcircuitCount << ") instances, "
+			<< topCircuit_p->netCount << "(" << netCount << ") nets, "
+			<< topCircuit_p->deviceCount << "(" << deviceCount << ") devices." << endl;
 
 /// Stage 1) Set power and model
 		if ( powerFileStatus == OK ) {
@@ -193,7 +193,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// - missing bulk connection check
 		SaveMinMaxLeakVoltages();
 		SetSimPower(POWER_NETS_ONLY);
-		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Logic shorts 1");
+		cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Logic shorts 1");
 		reportFile << PrintProgress(&lastSnapshot, "SIM1 ") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( ! cvcParameters.cvcSOI ) {
@@ -219,7 +219,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 			SetSimPower(ALL_NETS_AND_FUSE);
 			reportFile << PrintProgress(&lastSnapshot, "LATCH ") << endl;
 		}
-		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Logic shorts 2");
+		cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Logic shorts 2");
 		if ( detectErrorFlag ) {
 			FindLDDErrors();
 			FindForwardBiasDiodes();

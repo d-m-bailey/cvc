@@ -26,7 +26,9 @@
 
 #include "Cvc.hh"
 
+class CCvcDb;
 #include "CDevice.hh"
+#include "CInstance.hh"
 #include "CFixedText.hh"
 #include "gzstream.h"
 
@@ -99,8 +101,8 @@ public:
 	void Print(const string theIndentation = "", const string theHeading = "CircuitList>");
 //	void CreateDatabase(const string theTopBlockName);
 	CCircuit * FindCircuit(const string theSearchCircuit);
-	void PrintAndResetCircuitErrors(deviceId_t theErrorLimit, ofstream & theLogFile, ogzstream & theErrorFile, string theSummaryHeading = "",
-			set<modelType_t> & theModelList = emptyModelList);
+	void PrintAndResetCircuitErrors(CCvcDb * theCvcDb_p, deviceId_t theErrorLimit, ofstream & theLogFile, ogzstream & theErrorFile,
+			string theSummaryHeading = "", set<modelType_t> & theModelList = emptyModelList);
 };
 
 
