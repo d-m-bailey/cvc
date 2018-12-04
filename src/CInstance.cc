@@ -62,7 +62,6 @@ void CInstance::AssignTopGlobalIDs(CCvcDb * theCvcDb_p, CCircuit * theMaster_p) 
 		if (theMaster_p->subcircuitPtr_v[subcircuit_it]->master_p->deviceCount > 0) {
 			myNewInstanceId = firstSubcircuitId + subcircuit_it;
 			theCvcDb_p->instancePtr_v[myNewInstanceId] = new CInstance;
-			theCvcDb_p->instancePtr_v[myNewInstanceId]->master_p = theMaster_p->subcircuitPtr_v[subcircuit_it]->master_p;
 			theCvcDb_p->instancePtr_v[myNewInstanceId]->AssignGlobalIDs(theCvcDb_p, myNewInstanceId, theMaster_p->subcircuitPtr_v[subcircuit_it], 0,
 					this, myParallelInstanceMap, NOT_PARALLEL);
 		}
@@ -82,15 +81,16 @@ void CInstance::AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInsta
 
 	parentId = theParentId;
 	if ( ! isParallel ) {
-		string myKey = theSubcircuit_p->CreatePortKey(theParent_p->localToGlobalNetId_v);
-		if ( ! myKey.empty() ) {
+		if ( theSubcircuit_p->signalId_v.size() <= theCvcDb_p->cvcParameters.cvcParallelCircuitPortLimit ) {
+			string myKey = theSubcircuit_p->CreatePortKey(theParent_p->localToGlobalNetId_v);
 			if ( theParallelInstanceMap.count(myKey) > 0 ) {  // skip parallel circuits
 				theCvcDb_p->instancePtr_v[theParallelInstanceMap[myKey]]->parallelInstanceCount++;
 				theCvcDb_p->debugFile << "DEBUG: found parallel instance at " << theCvcDb_p->HierarchyName(theInstanceId) << endl;
 				parallelInstanceId = theParallelInstanceMap[myKey];
 				isParallel = true;
 			} else {
-				theCvcDb_p->instancePtr_v[theParallelInstanceMap[myKey]]->parallelInstanceCount = 1;
+				theParallelInstanceMap[myKey] = theInstanceId;
+				theCvcDb_p->instancePtr_v[theInstanceId]->parallelInstanceCount = 1;
 			}
 		}
 	}

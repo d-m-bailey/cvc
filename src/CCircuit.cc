@@ -272,15 +272,11 @@ void CCircuitPtrList::PrintAndResetCircuitErrors(CCvcDb * theCvcDb_p, deviceId_t
 		for (size_t device_it = 0; device_it < (*circuit_ppit)->devicePtr_v.size(); device_it++) {
 			if ( (*circuit_ppit)->deviceErrorCount_v[device_it] > 0
 					&& ( theModelList.empty() || theModelList.count((*circuit_ppit)->devicePtr_v[device_it]->model_p->type) > 0 ) ) {
-				int myMFactor = 0;
-				for ( auto instance_pit = (*circuit_ppit)->instanceId_v.begin(); instance_pit != (*circuit_ppit)->instanceId_v.end(); instance_pit++) {
-					myMFactor += theCvcDb_p->CalculateMFactor(*instance_pit);
-				}
 				stringstream myErrorSummary;
 				myErrorSummary.str("");
 				myErrorSummary << "INFO: SUBCKT (" << (*circuit_ppit)->name << ")/" << (*circuit_ppit)->devicePtr_v[device_it]->name;
 				myErrorSummary << "(" << (*circuit_ppit)->devicePtr_v[device_it]->model_p->name << ")";
-				myErrorSummary << " error count " << (*circuit_ppit)->deviceErrorCount_v[device_it] << "/" << myMFactor;
+				myErrorSummary << " error count " << (*circuit_ppit)->deviceErrorCount_v[device_it] << "/" << (*circuit_ppit)->instanceId_v.size();
 				if ( theErrorLimit > 0 && (*circuit_ppit)->deviceErrorCount_v[device_it] > theErrorLimit ) {
 	//				theErrorFile << "INFO: SUBCKT " << (*circuit_ppit)->name << "/" << (*circuit_ppit)->devicePtr_v[device_it]->name << " error count ";
 	//				theErrorFile << (*circuit_ppit)->deviceErrorCount_v[device_it] << "/" << (*circuit_ppit)->instanceId_v.size();

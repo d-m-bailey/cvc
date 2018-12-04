@@ -352,7 +352,7 @@ public:
 	bool PathContains(CVirtualNetVector& theSearchVector, netId_t theSearchNet, netId_t theTargetNet);
 	bool PathCrosses(CVirtualNetVector& theSearchVector, netId_t theSearchNet, CVirtualNetVector& theTargetVector, netId_t theTargetNet);
 	bool HasActiveConnection(netId_t theNet);
-	size_t IncrementDeviceError(deviceId_t theDeviceId);
+	size_t IncrementDeviceError(deviceId_t theDeviceId, int theErrorIndex);
 	eventKey_t SimKey(eventKey_t theCurrentKey, resistance_t theIncrement);
 	bool IsDerivedFromFloating(CVirtualNetVector& theVirtualNet_v, netId_t theNetId);
 	bool HasActiveConnections(netId_t theNetId);
@@ -433,6 +433,7 @@ public:
 	instanceId_t FindHierarchy(instanceId_t theCurrentInstanceId, string theHierarchy, bool theAllowPartialMatch = false, bool thePrintUnmatchFlag = true);
 	string ShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag);
 	string LeakShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag);
+	void PrintParallelInstance(instanceId_t theInstanceId, bool thePrintSubcircuitNameFlag);
 	void PrintNets(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag, bool theIsValidPowerFlag);
 	void PrintDevices(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag, bool theIsValidModelFlag);
 	void PrintInstances(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag);

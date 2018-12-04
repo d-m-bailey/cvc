@@ -87,6 +87,8 @@ void CCvcDb::FindInstances(string theSubcircuit, bool thePrintCircuitFlag) {
 			if ( myMFactor > 1 ) {
 				reportFile << " {m=" <<  myMFactor << "}";
 				myInstanceCount += myMFactor;
+			} else if ( instancePtr_v[*instance_pit]->IsParallelInstance() ) {
+				reportFile << " {parallel}";
 			} else {
 				myInstanceCount++;
 			}
@@ -287,12 +289,25 @@ string CCvcDb::LeakShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag
 		}
 		myShortString += myStandardDefinition;
 	}
-return myShortString;
+	return myShortString;
+}
+
+void CCvcDb::PrintParallelInstance(instanceId_t theInstanceId, bool thePrintSubcircuitNameFlag) {
+	reportFile << "Parallel Instance: " << HierarchyName(theInstanceId, thePrintSubcircuitNameFlag) << endl;
+	if  ( instancePtr_v[theInstanceId]->parallelInstanceId != 0 ) {
+		reportFile << "Merged with: " << HierarchyName(instancePtr_v[theInstanceId]->parallelInstanceId, thePrintSubcircuitNameFlag) << endl;
+	} else {
+		instanceId_t myInstanceId = theInstanceId;
+		while ( instancePtr_v[myInstanceId]->IsParallelInstance() && instancePtr_v[myInstanceId]->parallelInstanceId == 0 ) {
+			myInstanceId = instancePtr_v[myInstanceId]->parentId;
+		}
+		reportFile << "Merged at: " << HierarchyName(instancePtr_v[myInstanceId]->parallelInstanceId, thePrintSubcircuitNameFlag) << endl;
+	}
 }
 
 void CCvcDb::PrintNets(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag, bool theIsValidPowerFlag) {
 	if ( instancePtr_v[theCurrentInstanceId]->IsParallelInstance() ) {
-		reportFile << "Parallel Instance: " << HierarchyName(theCurrentInstanceId, thePrintSubcircuitNameFlag) << endl;
+		PrintParallelInstance(theCurrentInstanceId, thePrintSubcircuitNameFlag);
 		return;
 	}
 	CCircuit * myMasterCircuit_p = instancePtr_v[theCurrentInstanceId]->master_p;
@@ -349,7 +364,7 @@ void CCvcDb::PrintNets(instanceId_t theCurrentInstanceId, string theFilter, bool
 
 void CCvcDb::PrintDevices(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag, bool theIsValidModelFlag) {
 	if ( instancePtr_v[theCurrentInstanceId]->IsParallelInstance() ) {
-		reportFile << "Parallel Instance: " << HierarchyName(theCurrentInstanceId, thePrintSubcircuitNameFlag) << endl;
+		PrintParallelInstance(theCurrentInstanceId, thePrintSubcircuitNameFlag);
 		return;
 	}
 	string	myParameters = "";
@@ -388,7 +403,7 @@ void CCvcDb::PrintDevices(instanceId_t theCurrentInstanceId, string theFilter, b
 
 void CCvcDb::PrintInstances(instanceId_t theCurrentInstanceId, string theFilter, bool thePrintSubcircuitNameFlag) {
 	if ( instancePtr_v[theCurrentInstanceId]->IsParallelInstance() ) {
-		reportFile << "Parallel Instance: " << HierarchyName(theCurrentInstanceId, thePrintSubcircuitNameFlag) << endl;
+		PrintParallelInstance(theCurrentInstanceId, thePrintSubcircuitNameFlag);
 		return;
 	}
 	string	myMasterName = "";
@@ -481,7 +496,7 @@ netId_t CCvcDb::FindNet(instanceId_t theCurrentInstanceId, string theNetName, bo
 		}
 		if ( myCurrentInstanceId == UNKNOWN_INSTANCE ) throw out_of_range("not found");
 		if ( instancePtr_v[theCurrentInstanceId]->IsParallelInstance() ) {
-			reportFile << "Parallel Instance: " << HierarchyName(theCurrentInstanceId) << endl;
+			PrintParallelInstance(theCurrentInstanceId, false);
 			return ( UNKNOWN_NET );
 		}
 		CCircuit * myCircuit_p = instancePtr_v[myCurrentInstanceId]->master_p;
@@ -517,8 +532,8 @@ deviceId_t CCvcDb::FindDevice(instanceId_t theCurrentInstanceId, string theDevic
 		}
 		if ( myCurrentInstanceId == UNKNOWN_INSTANCE ) throw out_of_range("not found");
 		if ( instancePtr_v[theCurrentInstanceId]->IsParallelInstance() ) {
-			reportFile << "Parallel Instance: " << HierarchyName(theCurrentInstanceId) << endl;
-			return ( UNKNOWN_NET );
+			PrintParallelInstance(theCurrentInstanceId, false);
+			return ( UNKNOWN_DEVICE );
 		}
 		CCircuit * myCircuit_p = instancePtr_v[myCurrentInstanceId]->master_p;
 		string myParentName = HierarchyName(myCurrentInstanceId, false) + HIERARCHY_DELIMITER;
@@ -1201,7 +1216,8 @@ returnCode_t CCvcDb::CheckFuses() {
 
 void CCvcDb::CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInstanceId, string theCell, int theCurrentStage) {
 	if ( instancePtr_v[theInstanceId]->IsParallelInstance() ) {
-		cout << "Cannot create debug file for parallel instance" << endl;
+		reportFile << "Cannot create debug file for parallel instance" << endl;
+		PrintParallelInstance(theInstanceId, false);
 		return;
 	}
 	theOutputFile << "# Debug cvcrc for " << HierarchyName(theInstanceId) << endl;
@@ -1234,6 +1250,7 @@ void CCvcDb::CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInst
 	theOutputFile << "CVC_GATE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcGateErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_LEAK?_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcLeakErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_EXPECTED_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcExpectedErrorThreshold) << "'" << endl;
+	theOutputFile << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParameters.cvcParallelCircuitPortLimit << "'" << endl;
 }
 
 void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerFileName, int theCurrentStage) {

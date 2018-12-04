@@ -396,8 +396,8 @@ void CCvcDb::SetEquivalentNets() {
 							myConnections.simDrainPower_p = netVoltagePtr_v[myConnections.masterSimDrainNet.finalNetId];
 							myConnections.deviceId = myDeviceId;
 							myConnections.device_p = myDevice_p;
-							errorCount[LEAK]++;
-							if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
+//							errorCount[LEAK]++;
+							if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, LEAK) < cvcParameters.cvcCircuitErrorLimit ) {
 								errorFile << "! Short Detected: " << endl;
 								if ( myConnections.simSourceVoltage == myConnections.simDrainVoltage ) {
 									errorFile << "Unrelated power error" << endl;
@@ -1583,8 +1583,8 @@ bool CCvcDb::SetLatchPower() {
 			}
 		}
 		if ( myNmosVoltage != UNKNOWN_VOLTAGE && myPmosVoltage != UNKNOWN_VOLTAGE && myNmosVoltage != myPmosVoltage ) {
-			errorCount[LEAK]++;
-			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(mySampleNmos) < cvcParameters.cvcCircuitErrorLimit ) {
+//			errorCount[LEAK]++;
+			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(mySampleNmos, LEAK) < cvcParameters.cvcCircuitErrorLimit ) {
 				CFullConnection myConnections;
 				MapDeviceNets(mySampleNmos, myConnections);
 				errorFile << "! Short Detected: " << PrintVoltage(myNmosVoltage) << " to " << PrintVoltage(myPmosVoltage) << " at n/pmux" << endl;

@@ -107,13 +107,14 @@ void CDevicePtrVector::Print(CTextVector& theSignalName_v, CCircuit * theParent_
 }
 
 string CDevice::CreatePortKey(CNetIdVector & theLocalToGlobalNetId_v) {
-	if ( signalId_v.size() > 10 ) return "";
+//	if ( signalId_v.size() > 10 ) return "";
 	stringstream myPortKey;
 	myPortKey << masterName << hex;
 	for ( int port_it = 0; port_it < (int) signalId_v.size(); port_it++ ) {
 		myPortKey << " " << theLocalToGlobalNetId_v[signalId_v[port_it]];
 	}
-	return myPortKey.str();
+	string myReturnString = myPortKey.str();
+	return myReturnString;
 }
 
 

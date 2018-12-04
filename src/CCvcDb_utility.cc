@@ -998,11 +998,12 @@ bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
 	return false;
 }
 
-size_t CCvcDb::IncrementDeviceError(deviceId_t theDeviceId) {
+size_t CCvcDb::IncrementDeviceError(deviceId_t theDeviceId, int theErrorIndex) {
 	CInstance * myInstance_p = instancePtr_v[deviceParent_v[theDeviceId]];
 	CCircuit * myParent_p = myInstance_p->master_p;
 	int myMFactor = CalculateMFactor(deviceParent_v[theDeviceId]);
 	myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId] += myMFactor;
+	errorCount[theErrorIndex] += myMFactor;
 	return(myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId]);
 }
 

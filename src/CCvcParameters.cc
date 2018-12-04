@@ -114,6 +114,7 @@ void CCvcParameters::ResetEnvironment() {
 	cvcLeakErrorThreshold = defaultErrorThreshold;
 	cvcExpectedErrorThreshold = defaultErrorThreshold;
 	//! Ignore errors with voltage difference less than the threshold. Default is 0, flag errors regardless of voltage difference.
+	cvcParallelCircuitPortLimit = defaultParallelCircuitPortLimit;
 }
 
 void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
@@ -143,6 +144,7 @@ void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
 	theOutputFile << "CVC_GATE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcGateErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_LEAK?_ERROR_THRESHOLD = '" << Voltage_to_float(cvcLeakErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_EXPECTED_ERROR_THRESHOLD = '" << Voltage_to_float(cvcExpectedErrorThreshold) << "'" << endl;
+	theOutputFile << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParallelCircuitPortLimit << "'" << endl;
 	theOutputFile << "End of parameters" << endl << endl;
 }
 
@@ -179,6 +181,7 @@ void CCvcParameters::PrintDefaultEnvironment() {
 	myDefaultCvcrc << "CVC_GATE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcGateErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_LEAK?_ERROR_THRESHOLD = '" << Voltage_to_float(cvcLeakErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_EXPECTED_ERROR_THRESHOLD = '" << Voltage_to_float(cvcExpectedErrorThreshold) << "'" << endl;
+	myDefaultCvcrc << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParallelCircuitPortLimit << "'" << endl;
 	myDefaultCvcrc.close();
 }
 
@@ -271,6 +274,8 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 			cvcLeakErrorThreshold = String_to_Voltage(string(myBuffer));
 		} else if ( myVariable == "CVC_EXPECTED_ERROR_THRESHOLD" ) {
 			cvcExpectedErrorThreshold = String_to_Voltage(string(myBuffer));
+		} else if ( myVariable == "CVC_PARALLEL_CIRCUIT_PORT_LIMIT" ) {
+			cvcParallelCircuitPortLimit = from_string<int>(myBuffer);
 		}
 	}
 	if ( ! IsEmpty(theReportPrefix) ) {

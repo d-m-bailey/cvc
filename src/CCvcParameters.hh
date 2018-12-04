@@ -49,6 +49,7 @@ public:
 	const bool defaultLeakOvervoltage = true;
 	const bool defaultLogicDiodes = false;
 	const voltage_t defaultErrorThreshold = 0;
+	const size_t defaultParallelCircuitPortLimit = 0;
 
 	string	cvcReportTitle;
 
@@ -88,6 +89,7 @@ public:
 	voltage_t	cvcGateErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcLeakErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcExpectedErrorThreshold = defaultErrorThreshold;
+	size_t	cvcParallelCircuitPortLimit = defaultParallelCircuitPortLimit;
 
 	string	cvcLastTopBlock;
 	string	cvcLastNetlistFilename;
