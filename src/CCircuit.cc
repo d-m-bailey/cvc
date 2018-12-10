@@ -295,3 +295,8 @@ void CCircuitPtrList::PrintAndResetCircuitErrors(CCvcDb * theCvcDb_p, deviceId_t
 //	theLogFile << endl << "! Finished" << endl << endl;
 	theErrorFile << endl<< "! Finished" << endl << endl;
 }
+ 
+void CCircuit::AllocateInstances(CCvcDb * theCvcDb_p, instanceId_t theFirstInstanceId) {
+	instanceId_v.reserve(instanceCount);
+	instanceHashId_v.resize(instanceCount, UNKNOWN_DEVICE);
+}

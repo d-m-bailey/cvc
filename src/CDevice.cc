@@ -23,6 +23,7 @@
 
 #include "CDevice.hh"
 
+#include "CCvcDb.hh"
 #include "CCircuit.hh"
 
 CDevice::~CDevice() {
@@ -106,16 +107,49 @@ void CDevicePtrVector::Print(CTextVector& theSignalName_v, CCircuit * theParent_
 	}
 }
 
-string CDevice::CreatePortKey(CNetIdVector & theLocalToGlobalNetId_v) {
-//	if ( signalId_v.size() > 10 ) return "";
-	stringstream myPortKey;
-	myPortKey << masterName << hex;
-	for ( int port_it = 0; port_it < (int) signalId_v.size(); port_it++ ) {
-		myPortKey << " " << theLocalToGlobalNetId_v[signalId_v[port_it]];
+#define A_PRIME 0xcc9e2d51
+
+instanceId_t CDevice::MakePortHash(CNetIdVector & theLocalToGlobalNetId_v) {
+	instanceId_t myHash;
+	for ( netId_t port_it = 0; port_it < master_p->portCount; port_it++ ) {
+		myHash = myHash << 16 ^ theLocalToGlobalNetId_v[signalId_v[port_it]] ^ myHash;
+		myHash *= A_PRIME;
 	}
-	string myReturnString = myPortKey.str();
-	return myReturnString;
+	return ( myHash % master_p->instanceCount );
 }
 
+extern int gHashCollisionCount;
+extern int gMaxHashLength;
 
-
+instanceId_t CDevice::FindParallelInstance(CCvcDb * theCvcDb_p, instanceId_t theInstanceId, CNetIdVector & theLocalToGlobalNetId_v) {
+	// Executed once and only once for each instance
+	instanceId_t myKey = MakePortHash(theLocalToGlobalNetId_v);
+	assert(myKey != UNKNOWN_DEVICE && myKey < master_p->instanceCount );
+	if ( master_p->instanceHashId_v[myKey] == UNKNOWN_DEVICE ) {
+		master_p->instanceHashId_v[myKey] = theInstanceId;
+	} else {
+		instanceId_t myCheckInstanceId = master_p->instanceHashId_v[myKey];
+		CInstance * myInstance_p;
+		int myHashLength = 0;
+		do {
+			myInstance_p = theCvcDb_p->instancePtr_v[myCheckInstanceId];
+			if ( master_p != myInstance_p->master_p ) {
+				cout << "DEBUG: master mismatch at instance " << theInstanceId << " and " << myCheckInstanceId << endl;
+				cout << "  " << master_p->name << " != " << myInstance_p->master_p->name << endl;
+			}
+			for ( netId_t port_it = 0; port_it <= master_p->portCount; port_it++ ) {
+				if ( port_it == master_p->portCount ) {  // all ports match
+					return (myCheckInstanceId);
+				} else {
+					if (theLocalToGlobalNetId_v[signalId_v[port_it]] != myInstance_p->localToGlobalNetId_v[port_it]) break;
+				}
+			}
+			myHashLength++;
+			gHashCollisionCount++;
+			myCheckInstanceId = myInstance_p->nextHashedInstanceId;
+		} while ( myCheckInstanceId != UNKNOWN_DEVICE );
+		if ( gMaxHashLength < myHashLength ) gMaxHashLength = myHashLength;
+		myInstance_p->nextHashedInstanceId = theInstanceId;
+	}
+	return (theInstanceId);
+}

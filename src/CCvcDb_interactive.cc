@@ -1046,6 +1046,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				}
 			} else if ( myCommand == "q" || myCommand == "quit" ) {
 				RemoveLock();
+				Cleanup();
 				exit(0);
 			} else {
 				reportFile << "Unrecognized command '" << myCommand << "'" << endl;

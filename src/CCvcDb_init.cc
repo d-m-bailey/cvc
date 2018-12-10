@@ -965,6 +965,7 @@ forward_list<instanceId_t> CCvcDb::FindInstanceIds(string theHierarchy, instance
 	if ( myUnmatchedInstance != "" ) {  // not a complete match
 		mySearchInstanceIdList.clear();
 	}
+	delete myHierarchyList_p;
 	return mySearchInstanceIdList;
 }
 

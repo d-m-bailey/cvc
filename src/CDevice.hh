@@ -26,6 +26,7 @@
 
 #include "Cvc.hh"
 
+class CCvcDb;
 #include "CModel.hh"
 
 class CCircuit;
@@ -64,11 +65,13 @@ public:
 	inline bool IsResistor() { return name[0] == 'R'; }
 	inline bool IsSwitch() { return name[0] == 'S'; }
 	inline bool IsFuse() { return name[0] == 'F'; }
-	string CreatePortKey(CNetIdVector & theLocalToGlobalNetId_v);
 
 	void Print(CTextVector& theSignalName_v, const string theIndentation = "");
 	void Print(CTextVector& theSignalName_v, deviceId_t theDeviceId,
 			const string theIndentation = "");
+ 
+	instanceId_t MakePortHash(CNetIdVector & theLocalToGlobalNetId_v);
+	instanceId_t FindParallelInstance(CCvcDb * theCCvcDb_p, instanceId_t theInstanceId, CNetIdVector & theLocalToGlobalNetId_v);
 };
 
 class CDevicePtrList : public list<CDevice *> {

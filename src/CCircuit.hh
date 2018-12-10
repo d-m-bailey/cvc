@@ -50,6 +50,7 @@ public:
 	CDevicePtrVector	subcircuitPtr_v;
 	vector<deviceId_t>		deviceErrorCount_v;
 	CInstanceIdVector instanceId_v;
+	CInstanceIdVector instanceHashId_v;
 
 	netId_t	portCount = 0;
 	// total items for this circuit and all subcircuits
@@ -77,6 +78,7 @@ public:
 
 	void Print(const string theIndentation = "");
 
+	void AllocateInstances(CCvcDb * theCvcDb_p, instanceId_t theFirstInstanceId);
 };
 
 class CTextCircuitPtrMap : public unordered_map<text_t, CCircuit *> {

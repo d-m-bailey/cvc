@@ -25,9 +25,13 @@
 
 #include "CCvcDb.hh"
 #include "CCircuit.hh"
+#include "obstack.h"
 
 #define NOT_PARALLEL false
 
+int gHashCollisionCount;
+int gMaxHashLength;
+ 
 void CInstance::AssignTopGlobalIDs(CCvcDb * theCvcDb_p, CCircuit * theMaster_p) {
 
 	theMaster_p->instanceId_v.push_back(0);
@@ -57,40 +61,39 @@ void CInstance::AssignTopGlobalIDs(CCvcDb * theCvcDb_p, CCircuit * theMaster_p) 
 
 	instanceId_t myLastSubcircuitId = theMaster_p->subcircuitPtr_v.size();
 	instanceId_t myNewInstanceId;
-	unordered_map<string, instanceId_t> myParallelInstanceMap;
 	for (instanceId_t subcircuit_it = 0; subcircuit_it < myLastSubcircuitId; subcircuit_it++) {
 		if (theMaster_p->subcircuitPtr_v[subcircuit_it]->master_p->deviceCount > 0) {
 			myNewInstanceId = firstSubcircuitId + subcircuit_it;
+			CDevice * mySubcircuit_p = theMaster_p->subcircuitPtr_v[subcircuit_it];
+			if ( mySubcircuit_p->master_p->instanceId_v.size() == 0 ) mySubcircuit_p->master_p->AllocateInstances(theCvcDb_p, myNewInstanceId);
 			theCvcDb_p->instancePtr_v[myNewInstanceId] = new CInstance;
-			theCvcDb_p->instancePtr_v[myNewInstanceId]->AssignGlobalIDs(theCvcDb_p, myNewInstanceId, theMaster_p->subcircuitPtr_v[subcircuit_it], 0,
-					this, myParallelInstanceMap, NOT_PARALLEL);
+			theCvcDb_p->instancePtr_v[myNewInstanceId]->AssignGlobalIDs(theCvcDb_p, myNewInstanceId, mySubcircuit_p, 0, this, NOT_PARALLEL);
 		}
 	}
 	theCvcDb_p->netParent_v.shrink_to_fit();
 	theCvcDb_p->deviceParent_v.shrink_to_fit();
+	cout << "DEBUG: netParent size " << theCvcDb_p->netParent_v.size() << "; deviceParent size " << theCvcDb_p->deviceParent_v.size() << endl;
+	cout << "DEBUG: parallel collisions " << gHashCollisionCount << " max length " << gMaxHashLength << endl;
 }
 
 void CInstance::AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInstanceId, CDevice * theSubcircuit_p, const instanceId_t theParentId,
-		CInstance * theParent_p, unordered_map<string, instanceId_t> & theParallelInstanceMap, bool isParallel) {
-	//CCircuit * myMaster_p = theSubcircuit_p->master_p;
+		CInstance * theParent_p, bool isParallel) {
 	master_p = theSubcircuit_p->master_p;
-	if ( master_p->instanceId_v.size() == 0 ) {
-		master_p->instanceId_v.reserve(master_p->instanceCount);
-	}
+	instanceId_t myLastSubcircuitId = master_p->subcircuitPtr_v.size();
+	firstSubcircuitId = theCvcDb_p->subcircuitCount;
 	master_p->instanceId_v.push_back(theInstanceId);
 
 	parentId = theParentId;
 	if ( ! isParallel ) {
 		if ( theSubcircuit_p->signalId_v.size() <= theCvcDb_p->cvcParameters.cvcParallelCircuitPortLimit ) {
-			string myKey = theSubcircuit_p->CreatePortKey(theParent_p->localToGlobalNetId_v);
-			if ( theParallelInstanceMap.count(myKey) > 0 ) {  // skip parallel circuits
-				theCvcDb_p->instancePtr_v[theParallelInstanceMap[myKey]]->parallelInstanceCount++;
-				theCvcDb_p->debugFile << "DEBUG: found parallel instance at " << theCvcDb_p->HierarchyName(theInstanceId) << endl;
-				parallelInstanceId = theParallelInstanceMap[myKey];
-				isParallel = true;
-			} else {
-				theParallelInstanceMap[myKey] = theInstanceId;
+			instanceId_t myParallelInstance = theSubcircuit_p->FindParallelInstance(theCvcDb_p, theInstanceId, theParent_p->localToGlobalNetId_v);
+			if ( myParallelInstance == theInstanceId ) {  // skip parallel circuits
 				theCvcDb_p->instancePtr_v[theInstanceId]->parallelInstanceCount = 1;
+			} else {
+				theCvcDb_p->instancePtr_v[myParallelInstance]->parallelInstanceCount++;
+				theCvcDb_p->debugFile << "DEBUG: found parallel instance at " << theCvcDb_p->HierarchyName(theInstanceId) << endl;
+				parallelInstanceId = myParallelInstance;
+				isParallel = true;
 			}
 		}
 	}
@@ -111,21 +114,19 @@ void CInstance::AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInsta
 		theCvcDb_p->netCount += master_p->LocalNetCount();
 		theCvcDb_p->deviceCount += master_p->devicePtr_v.size();
 		theCvcDb_p->netParent_v.resize(theCvcDb_p->netCount, theInstanceId);
-		//      theCvcDb_p->subcircuitParent.resize(theCvcDb_p->subcircuitCount, theParentId);
 		theCvcDb_p->deviceParent_v.resize(theCvcDb_p->deviceCount, theInstanceId);
 	}
 
-	firstSubcircuitId = theCvcDb_p->subcircuitCount;
 	theCvcDb_p->subcircuitCount += master_p->subcircuitPtr_v.size();
 
-	instanceId_t myLastSubcircuitId = master_p->subcircuitPtr_v.size();
 	instanceId_t myNewInstanceId;
 	for (instanceId_t subcircuit_it = 0; subcircuit_it < myLastSubcircuitId; subcircuit_it++) {
-		if (master_p->subcircuitPtr_v[subcircuit_it]->master_p->deviceCount > 0) {
-			myNewInstanceId = firstSubcircuitId + subcircuit_it;
+	myNewInstanceId = firstSubcircuitId + subcircuit_it;
+	CDevice * mySubcircuit_p = master_p->subcircuitPtr_v[subcircuit_it];
+	if (mySubcircuit_p->master_p->deviceCount > 0) {
+		if ( mySubcircuit_p->master_p->instanceId_v.size() == 0 ) mySubcircuit_p->master_p->AllocateInstances(theCvcDb_p, myNewInstanceId);
 			theCvcDb_p->instancePtr_v[myNewInstanceId] = new CInstance;
-			theCvcDb_p->instancePtr_v[myNewInstanceId]->AssignGlobalIDs(theCvcDb_p, myNewInstanceId, master_p->subcircuitPtr_v[subcircuit_it], theInstanceId,
-					this, theParallelInstanceMap, isParallel);
+			theCvcDb_p->instancePtr_v[myNewInstanceId]->AssignGlobalIDs(theCvcDb_p, myNewInstanceId, mySubcircuit_p, theInstanceId, this, isParallel);
 		}
 	}
 }
@@ -154,5 +155,4 @@ void CInstancePtrVector::Clear() {
 CInstancePtrVector::~CInstancePtrVector() {
 	Clear();
 }
-
 

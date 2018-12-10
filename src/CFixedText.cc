@@ -49,7 +49,8 @@ void CFixedText::Clear() {
 
 text_t CFixedText::SetTextAddress(const text_t theNewText){
 	text_t myTextAddress;
-	static string myKeyText;
+	//static string myKeyText;
+	string myKeyText;
 
 	// TODO: try with count for speed (2 hash lookups vs throwing error)
 	try {
@@ -67,7 +68,8 @@ text_t CFixedText::SetTextAddress(const text_t theNewText){
 
 text_t CFixedText::SetTextAddress(const string theType,	CTextList* theNewTextList) {
 	text_t myTextAddress;
-	static string myKeyText;
+	//static string myKeyText;
+	string myKeyText;
 	myKeyText = theType;
 	for (CTextList::iterator text_pit = theNewTextList->begin(); text_pit != theNewTextList->end(); text_pit++) {
 		myKeyText += " ";

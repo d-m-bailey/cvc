@@ -262,11 +262,11 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		reportFile << "CVC: Log output to " << cvcParameters.cvcReportFilename << endl;
 		reportFile << "CVC: End: " << CurrentTime() << endl;
 		errorFile.close();
+		debugFile.close();
 		if ( gInteractive_cvc ) InteractiveCvc(STAGE_COMPLETE);
 
 /// Clean-up
 		logFile.close();
-		debugFile.close();
 	}
 	Cleanup();
 	RemoveLock();

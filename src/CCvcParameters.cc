@@ -276,6 +276,11 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 			cvcExpectedErrorThreshold = String_to_Voltage(string(myBuffer));
 		} else if ( myVariable == "CVC_PARALLEL_CIRCUIT_PORT_LIMIT" ) {
 			cvcParallelCircuitPortLimit = from_string<int>(myBuffer);
+			if ( cvcParallelCircuitPortLimit > MAX_PARALLEL_CIRCUIT_PORT_LIMIT ) {
+				reportFile << "Warning: Parallel circuit port limit exceeds maximum " << cvcParallelCircuitPortLimit << " > " << MAX_PARALLEL_CIRCUIT_PORT_LIMIT << endl;
+				reportFile << "Parallel circuit port limit set to " << MAX_PARALLEL_CIRCUIT_PORT_LIMIT << endl;
+				cvcParallelCircuitPortLimit = MAX_PARALLEL_CIRCUIT_PORT_LIMIT;
+			}
 		}
 	}
 	if ( ! IsEmpty(theReportPrefix) ) {

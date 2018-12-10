@@ -80,7 +80,7 @@ public:
 	bool	cvcVthGates = defaultVthGates;
 	bool	cvcMinVthGates = defaultMinVthGates;
 	bool	cvcIgnoreVthFloating = defaultIgnoreVthFloating;
-	bool    cvcIgnoreNoLeakFloating = defaultIgnoreNoLeakFloating;
+	bool	cvcIgnoreNoLeakFloating = defaultIgnoreNoLeakFloating;
 	bool	cvcLeakOvervoltage = defaultLeakOvervoltage;
 	bool	cvcLogicDiodes = defaultLogicDiodes;
 	voltage_t	cvcShortErrorThreshold = defaultErrorThreshold;

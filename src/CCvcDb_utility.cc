@@ -1275,6 +1275,9 @@ deviceId_t CCvcDb::GetSeriesConnectedDevice(deviceId_t theDeviceId, netId_t theN
 }
 
 void CCvcDb::Cleanup() {
+	if ( logFile.is_open() ) logFile.close();
+	if ( errorFile.is_open() ) errorFile.close();
+	if ( debugFile.is_open() ) debugFile.close();
 	cvcParameters.cvcPowerPtrList.Clear(leakVoltagePtr_v, netVoltagePtr_v, netCount);  // defined power deleted here
 	int myDeleteCount = 0;
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {

@@ -43,12 +43,17 @@ public:
 
 	CNetIdVector	localToGlobalNetId_v;
 
+	/* The CInstance structure also doubles as a hash.
+	   Each master has a vector of instances.
+	*/
+	instanceId_t	nextHashedInstanceId = UNKNOWN_DEVICE;
+ 
 	instanceId_t	parentId = 0;
 	CCircuit * master_p = NULL;
 
 	void AssignTopGlobalIDs(CCvcDb * theCvcDb_p, CCircuit * theMaster_p);
 	void AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInstanceId, CDevice * theSubcircuit_p, const instanceId_t theParentId,
-			CInstance * theParent_p, unordered_map<string, instanceId_t> & theParallelInstanceMap, bool isParallel);
+		CInstance * theParent_p, bool isParallel);
 	bool IsParallelInstance() { return (localToGlobalNetId_v.size() == 0); };
 
 	void Print(const instanceId_t theInstanceId, const string theIndentation = "");

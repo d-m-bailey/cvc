@@ -701,6 +701,7 @@ void CPowerPtrList::Clear(CPowerPtrVector & theLeakVoltage_v, CPowerPtrVector & 
 		delete front();
 		pop_front();
 	}
+	CPower::powerDefinitionText.Clear();
 }
 
 void CPowerPtrMap::Clear() {

@@ -2135,7 +2135,7 @@ void CCvcDb::SetTrivialMinMaxPower() {
 		if ( minNet_v[net_it].nextNetId != net_it || maxNet_v[net_it].nextNetId != net_it ) continue; // already assigned
 //		if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->type[POWER_BIT] ) continue;  // skip power definitions
 		if ( netVoltagePtr_v[net_it]
-		        && ! ( netVoltagePtr_v[net_it]->minVoltage == UNKNOWN_VOLTAGE && netVoltagePtr_v[net_it]->minVoltage == UNKNOWN_VOLTAGE ) ) continue;  // skip defined min/max
+			&& ! ( netVoltagePtr_v[net_it]->minVoltage == UNKNOWN_VOLTAGE && netVoltagePtr_v[net_it]->minVoltage == UNKNOWN_VOLTAGE ) ) continue;  // skip defined min/max
 		if ( connectionCount_v[net_it].sourceCount + connectionCount_v[net_it].drainCount == 2 ) { // only hits master equivalent nets
 			if ( connectionCount_v[net_it].sourceDrainType[NMOS] && connectionCount_v[net_it].sourceDrainType[PMOS] ) {
 				myNmos = UNKNOWN_DEVICE;
