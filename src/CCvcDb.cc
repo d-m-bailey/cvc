@@ -2705,7 +2705,7 @@ void CCvcDb::ResetMinMaxPower() {
 	SetInitialMinMaxPower();
 }
 
-void CCvcDb::SetSimPower(propagation_t thePropagationType) {
+void CCvcDb::SetSimPower(propagation_t thePropagationType, CNetIdSet & theNewNetSet) {
 	reportFile << "CVC: Propagating Simulation voltages " << thePropagationType << "..." << endl;
 	simEventQueue.ResetQueue(deviceCount);
 	isFixedSimNet = false;
@@ -2715,6 +2715,7 @@ void CCvcDb::SetSimPower(propagation_t thePropagationType) {
 		if ( net_it != GetEquivalentNet(net_it) ) continue; // skip subordinate nets
 		// TODO: Change to GetMasterNet
 		mySimMasterNet(simNet_v, net_it);
+		if ( theNewNetSet.size() > 0 && theNewNetSet.count(net_it) == 0 ) continue;  // not relavant to this pass
 //		mySimMasterNet = CVirtualNet(simNet_v, net_it);
 		if ( netVoltagePtr_v[mySimMasterNet.finalNetId] == NULL ) continue;
 		CPower * myPower_p = netVoltagePtr_v[mySimMasterNet.finalNetId];

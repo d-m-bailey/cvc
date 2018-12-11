@@ -1515,13 +1515,25 @@ bool CCvcDb::IsSCRCPower(CPower * thePower_p) {
 
 #define MAX_LATCH_DEVICE_COUNT 6
 
-bool CCvcDb::SetLatchPower() {
+bool CCvcDb::SetLatchPower(int thePassCount, vector<bool> & theIgnoreNet_v, CNetIdSet & theNewNetSet) {
 	int myLatchCount = 0;
+	theNewNetSet.clear();
 	for (unsigned int net_it = 0; net_it < simNet_v.size(); net_it++) {
-		if ( simNet_v[net_it].finalNetId != net_it ) continue;  // already assigned
-		if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE ) continue;  // already defined
-		if ( connectionCount_v[net_it].sourceDrainType != NMOS_PMOS ) continue;  // not an output net
-		if ( connectionCount_v[net_it].SourceDrainCount() > MAX_LATCH_DEVICE_COUNT ) continue;  // only simple connections
+		if ( thePassCount == 1 ) {
+			if ( net_it != GetEquivalentNet(net_it)  // ignore shorted nets
+					|| connectionCount_v[net_it].sourceDrainType != NMOS_PMOS  // not an output net
+					|| connectionCount_v[net_it].SourceDrainCount() > MAX_LATCH_DEVICE_COUNT ) {  // only simple connections
+				theIgnoreNet_v[net_it] = true;
+			}
+		}
+		if ( theIgnoreNet_v[net_it]
+				|| simNet_v[net_it].finalNetId != net_it  // already assigned
+				|| ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE ) ) {  // already defined
+			theIgnoreNet_v[net_it] = true;
+			continue;
+		}
+//		if ( connectionCount_v[net_it].sourceDrainType != NMOS_PMOS ) continue;  // not an output net
+//		if ( connectionCount_v[net_it].SourceDrainCount() > MAX_LATCH_DEVICE_COUNT ) continue;  // only simple connections
 		int myNmosCount = 0;
 		int myPmosCount = 0;
 		netId_t myMinNet = minNet_v[net_it].finalNetId;
@@ -1606,6 +1618,7 @@ bool CCvcDb::SetLatchPower() {
 			}
 			myLatchCount++;
 			debugFile << "Added latch for " << NetName(net_it) << endl;
+			theNewNetSet.insert(net_it);
 		} else if ( myPmosVoltage != UNKNOWN_VOLTAGE ) {
 			if ( netVoltagePtr_v[net_it] ) {
 				assert(netVoltagePtr_v[net_it]->simVoltage == UNKNOWN_VOLTAGE);
@@ -1618,6 +1631,7 @@ bool CCvcDb::SetLatchPower() {
 			}
 			myLatchCount++;
 			debugFile << "Added latch for " << NetName(net_it) << endl;
+			theNewNetSet.insert(net_it);
 		}
 	}
 	reportFile << "Added " << myLatchCount << " latch voltages" << endl;

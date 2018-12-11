@@ -24,7 +24,7 @@
 #ifndef CVC_H_
 #define CVC_H_
 
-#define CVC_VERSION "0.17.4"
+#define CVC_VERSION "0.17.5"
 
 extern bool gDebug_cvc;
 extern bool gInterrupted;
@@ -179,6 +179,10 @@ public:
 };
 
 class CInstanceIdVector : public vector<instanceId_t> {
+public:
+};
+
+class CNetIdSet : public unordered_set<netId_t> {
 public:
 };
 

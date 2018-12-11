@@ -40,6 +40,7 @@ class CCvcDb;
 #include "gzstream.h"
 
 extern char RESISTOR_TEXT[];
+extern CNetIdSet EmptySet;
 
 class CShortVector : public vector<pair<netId_t, string> > {
 public:
@@ -223,7 +224,7 @@ public:
 	void SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool theExpectedHighInput, size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount);
 	bool IsSCRCLogicNet(netId_t theNetId);
 	bool IsSCRCPower(CPower * thePower_p);
-	bool SetLatchPower();
+	bool SetLatchPower(int thePassCount, vector<bool> & theIgnoreNet_v, CNetIdSet & theNewNetSet);
 	void FindLatchDevices(netId_t theNetId, mosData_t theNmosData_v[], mosData_t thePmosData_v[], int & theNmosCount, int & thePmosCount,
 		voltage_t theMinVoltage, voltage_t theMaxVoltage,
 		CDeviceIdVector & theFirstDrain_v, CDeviceIdVector & theNextDrain_v, CNetIdVector & theSourceNet_v);
@@ -304,7 +305,7 @@ public:
 	void SetResistorVoltagesByPower();
 	void ResetMinMaxPower();
 	void IgnoreUnusedDevices();
-	void SetSimPower(propagation_t thePropagationType);
+	void SetSimPower(propagation_t thePropagationType, CNetIdSet & theNewNetSet = EmptySet);
 
 	netId_t SetInverterInput(netId_t theNetId, netId_t theMaxNetId);
 	void SetInverterHighLow();

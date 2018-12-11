@@ -215,9 +215,12 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		SetSimPower(ALL_NETS_AND_FUSE);
 		reportFile << PrintProgress(&lastSnapshot, "SIM2 ") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
-		while ( SetLatchPower() ) {
-			SetSimPower(ALL_NETS_AND_FUSE);
-			reportFile << PrintProgress(&lastSnapshot, "LATCH ") << endl;
+		CNetIdSet myNewNetSet;
+		vector<bool> myIgnoreNet_v(simNet_v.size(), false);
+		int myPassCount = 0;
+		while ( SetLatchPower(++myPassCount, myIgnoreNet_v, myNewNetSet) ) {
+			SetSimPower(ALL_NETS_AND_FUSE, myNewNetSet);
+			reportFile << PrintProgress(&lastSnapshot, "LATCH " + to_string(myPassCount)) << endl;
 		}
 		cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Logic shorts 2");
 		if ( detectErrorFlag ) {

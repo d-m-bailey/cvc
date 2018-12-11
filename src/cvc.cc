@@ -46,6 +46,7 @@ HIST_ENTRY **gHistoryList; //!< readline history
 ///@{
 CStatus PMOS_ONLY, NMOS_ONLY, NMOS_PMOS, NO_TYPE; //, MIN_CHECK_BITS, MAX_CHECK_BITS;
 set<modelType_t> FUSE_MODELS;
+CNetIdSet EmptySet;
 ///@}
 
 CCvcDb	* gCvcDb; //!< CVC global database
