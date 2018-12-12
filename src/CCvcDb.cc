@@ -93,7 +93,7 @@ void CCvcDb::ReportShort(deviceId_t theDeviceId) {
 		myVthFlag = false;
 	} else {
 		myVthFlag = (IsNmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage - myMinVoltage == myConnections.device_p->model_p->Vth) ||
-				(IsPmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage - myMaxVoltage == myConnections.device_p->model_p->Vth);
+			(IsPmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage - myMaxVoltage == myConnections.device_p->model_p->Vth);
 		myLeakCurrent = myConnections.EstimatedCurrent(myVthFlag);
 	}
 	bool myUnrelatedFlag = ! myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, true);
@@ -212,7 +212,7 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 	//			}
 			} else if ( ! theEventQueue.virtualNet_v.IsTerminal(theConnections.sourceId)
 					&& ( theEventQueue.virtualNet_v.IsTerminal(theConnections.drainId)  // direct connections have precedence
-							|| theConnections.masterDrainNet.finalResistance + theConnections.resistance < theConnections.masterSourceNet.finalResistance ) ) {
+						|| theConnections.masterDrainNet.finalResistance + theConnections.resistance < theConnections.masterSourceNet.finalResistance ) ) {
 				myLastVirtualNet = theEventQueue.virtualNet_v[theConnections.sourceId];
 	//			bool myDirectReroute = theConnections.masterDrainNet.finalResistance == 0;
 				// lastUpdate changed due to virtual net rerouting
@@ -229,9 +229,9 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 			if ( deviceType_v[theDeviceId] != FUSE_OFF ) {
 				// TODO: should do relative check and/or alias check
 				if ( theConnections.sourcePower_p->type[HIZ_BIT] && theConnections.sourcePower_p->relativeFriendly
-						&& theConnections.sourcePower_p->family() == theConnections.drainPower_p->powerSignal() ) return;
+					&& theConnections.sourcePower_p->family() == theConnections.drainPower_p->powerSignal() ) return;
 				if ( theConnections.drainPower_p->type[HIZ_BIT] && theConnections.drainPower_p->relativeFriendly
-						&& theConnections.drainPower_p->family() == theConnections.sourcePower_p->powerSignal() ) return;
+					&& theConnections.drainPower_p->family() == theConnections.sourcePower_p->powerSignal() ) return;
 				ReportShort(theDeviceId);
 			}
 		} else {
@@ -248,7 +248,7 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						myPower_p->extraData->pullDownVoltage = theConnections.drainVoltage;
 						netStatus_v[theConnections.sourceId][NEEDS_MIN_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed min connection check for net: " << theConnections.sourceId << " "
-								<< theConnections.sourceVoltage << ">" << theConnections.drainVoltage << endl;
+							<< theConnections.sourceVoltage << ">" << theConnections.drainVoltage << endl;
 					} else if ( theConnections.sourceVoltage == theConnections.drainVoltage
 							&& theConnections.drainVoltage == myMaxVoltage && ! netStatus_v[theConnections.drainId][NEEDS_MIN_CONNECTION] ) {
 						// handles propagation through mos switch that might get deleted in second pass for HiZ power. (needs verification)
@@ -256,7 +256,7 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						myPower_p->extraData->pullDownVoltage = theConnections.drainVoltage;
 						netStatus_v[theConnections.sourceId][NEEDS_MIN_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed matching min connection check for net: " << theConnections.sourceId << " "
-								<< theConnections.sourceVoltage << endl;
+							<< theConnections.sourceVoltage << endl;
 					} else if ( ! leakVoltageSet && IsNmos_(deviceType_v[theDeviceId]) && LastNmosConnection(MIN_PENDING, theConnections.sourceId) ) {
 						// remove calculated net and reroute to drain. only for initial power prop.
 						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
@@ -283,7 +283,7 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						myPower_p->extraData->pullDownVoltage = theConnections.sourceVoltage;
 						netStatus_v[theConnections.drainId][NEEDS_MIN_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed min connection check for net: " << theConnections.drainId << " "
-								<< theConnections.drainVoltage << ">" << theConnections.sourceVoltage << endl;
+							<< theConnections.drainVoltage << ">" << theConnections.sourceVoltage << endl;
 					} else if ( theConnections.sourceVoltage == theConnections.drainVoltage
 							&& theConnections.sourceVoltage == myMaxVoltage && ! netStatus_v[theConnections.sourceId][NEEDS_MIN_CONNECTION] ) {
 						// handles propagation through mos switch that might get deleted in second pass for HiZ power. (needs verification)
@@ -291,7 +291,7 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						myPower_p->extraData->pullDownVoltage = theConnections.sourceVoltage;
 						netStatus_v[theConnections.drainId][NEEDS_MIN_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed matching min connection check for net: " << theConnections.drainId << " "
-								<< theConnections.drainVoltage << endl;
+							<< theConnections.drainVoltage << endl;
 					} else if ( ! leakVoltageSet && IsNmos_(deviceType_v[theDeviceId]) && LastNmosConnection(MIN_PENDING, theConnections.drainId) ) {
 						// remove calculated net and reroute to drain. only for initial power prop.
 						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
@@ -321,7 +321,7 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						myPower_p->extraData->pullUpVoltage = theConnections.drainVoltage;
 						netStatus_v[theConnections.sourceId][NEEDS_MAX_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed max connection check for net: " << theConnections.sourceId << " "
-								<< theConnections.sourceVoltage << "<" << theConnections.drainVoltage << endl;
+							<< theConnections.sourceVoltage << "<" << theConnections.drainVoltage << endl;
 					} else if ( theConnections.sourceVoltage == theConnections.drainVoltage
 							&& theConnections.drainVoltage == myMinVoltage && ! netStatus_v[theConnections.drainId][NEEDS_MAX_CONNECTION] ) {
 						// handles propagation through mos switch that might get deleted in second pass for HiZ power. (needs verification)
@@ -329,7 +329,7 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						myPower_p->extraData->pullUpVoltage = theConnections.drainVoltage;
 						netStatus_v[theConnections.sourceId][NEEDS_MAX_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed matching max connection check for net: " << theConnections.sourceId << " "
-								<< theConnections.sourceVoltage << endl;
+							<< theConnections.sourceVoltage << endl;
 					} else if ( ! leakVoltageSet && IsPmos_(deviceType_v[theDeviceId]) && LastPmosConnection(MAX_PENDING, theConnections.sourceId) ) {
 						// remove calculated net and reroute to drain. only for initial power prop.
 						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
@@ -356,7 +356,7 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						myPower_p->extraData->pullUpVoltage = theConnections.sourceVoltage;
 						netStatus_v[theConnections.drainId][NEEDS_MAX_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed max connection check for net: " << theConnections.drainId << " "
-								<< theConnections.drainVoltage << "<" << theConnections.sourceVoltage << endl;
+							<< theConnections.drainVoltage << "<" << theConnections.sourceVoltage << endl;
 					} else if ( theConnections.sourceVoltage == theConnections.drainVoltage
 							&& theConnections.drainVoltage == myMinVoltage && ! netStatus_v[theConnections.sourceId][NEEDS_MAX_CONNECTION] ) {
 						// handles propagation through mos switch that might get deleted in second pass for HiZ power. (needs verification)
@@ -364,7 +364,7 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						myPower_p->extraData->pullUpVoltage = theConnections.sourceVoltage;
 						netStatus_v[theConnections.drainId][NEEDS_MAX_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed matching max connection check for net: " << theConnections.drainId << " "
-								<< theConnections.drainVoltage << endl;
+							<< theConnections.drainVoltage << endl;
 					} else if ( ! leakVoltageSet && IsPmos_(deviceType_v[theDeviceId]) && LastPmosConnection(MAX_PENDING, theConnections.drainId) ) {
 						// remove calculated net and reroute to drain. only for initial power prop.
 						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
@@ -2447,7 +2447,7 @@ void CCvcDb::SetInitialMinMaxPower() {
 		}
 	}
 	// Reset min/max voltage conflict errors
-	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Power/Ground path through fuse", FUSE_MODELS);
+	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Power/Ground path through fuse", FUSE_ERROR - FUSE_ERROR, FUSE_MODELS);
 	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! ... voltage already set");
 //	errorFile << "! Finished" << endl << endl;
 //	if ( ! isFixedSimNet ) cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile); // Bad LDD connections (first pass)

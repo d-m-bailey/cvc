@@ -88,12 +88,12 @@ void CCircuit::LoadDevices(CDevicePtrList * theDevicePtrList_p) {
 	static int myPrintCount = 0;
 
 	devicePtr_v.reserve(theDevicePtrList_p->DeviceCount());
-	deviceErrorCount_v.resize(theDevicePtrList_p->DeviceCount(), 0);
+	deviceErrorCount_v.resize(theDevicePtrList_p->DeviceCount());
 	subcircuitPtr_v.reserve(theDevicePtrList_p->SubcircuitCount());
 	myCircuitCount++;
 	if ( ++myPrintCount >= 100000 ) {
-			cout << "Read " << myCircuitCount << " circuits, " << myInstanceCount << " instances, " << myDeviceCount << " devices\r" << std::flush;
-			myPrintCount = 0;
+		cout << "Read " << myCircuitCount << " circuits, " << myInstanceCount << " instances, " << myDeviceCount << " devices\r" << std::flush;
+		myPrintCount = 0;
 	}
 	CTextDeviceIdMap myDeviceIdMap;  // temporary map to check for duplicate device/instance names
 	for (CDevicePtrList::iterator device_ppit = theDevicePtrList_p->begin(); device_ppit != theDevicePtrList_p->end(); device_ppit++) {
@@ -257,7 +257,7 @@ CCircuit * CCircuitPtrList::FindCircuit(const string theSearchCircuitName) {
 }
 
 void CCircuitPtrList::PrintAndResetCircuitErrors(CCvcDb * theCvcDb_p, deviceId_t theErrorLimit, ofstream & theLogFile, ogzstream & theErrorFile,
-		string theSummaryHeading, set<modelType_t> & theModelList) {
+		string theSummaryHeading, int theErrorSubIndex, set<modelType_t> & theModelList) {
 	list<string> myErrorSummaryList;
 //	theLogFile << theSummaryHeading << endl;
 	theErrorFile << theSummaryHeading << endl;
@@ -270,19 +270,19 @@ void CCircuitPtrList::PrintAndResetCircuitErrors(CCvcDb * theCvcDb_p, deviceId_t
 		(*circuit_ppit)->errorCount = 0;
 */
 		for (size_t device_it = 0; device_it < (*circuit_ppit)->devicePtr_v.size(); device_it++) {
-			if ( (*circuit_ppit)->deviceErrorCount_v[device_it] > 0
+			if ( (*circuit_ppit)->deviceErrorCount_v[device_it][theErrorSubIndex] > 0
 					&& ( theModelList.empty() || theModelList.count((*circuit_ppit)->devicePtr_v[device_it]->model_p->type) > 0 ) ) {
 				stringstream myErrorSummary;
 				myErrorSummary.str("");
 				myErrorSummary << "INFO: SUBCKT (" << (*circuit_ppit)->name << ")/" << (*circuit_ppit)->devicePtr_v[device_it]->name;
 				myErrorSummary << "(" << (*circuit_ppit)->devicePtr_v[device_it]->model_p->name << ")";
-				myErrorSummary << " error count " << (*circuit_ppit)->deviceErrorCount_v[device_it] << "/" << (*circuit_ppit)->instanceId_v.size();
-				if ( theErrorLimit > 0 && (*circuit_ppit)->deviceErrorCount_v[device_it] > theErrorLimit ) {
+				myErrorSummary << " error count " << (*circuit_ppit)->deviceErrorCount_v[device_it][theErrorSubIndex] << "/" << (*circuit_ppit)->instanceId_v.size();
+				if ( theErrorLimit > 0 && (*circuit_ppit)->deviceErrorCount_v[device_it][theErrorSubIndex] > theErrorLimit ) {
 	//				theErrorFile << "INFO: SUBCKT " << (*circuit_ppit)->name << "/" << (*circuit_ppit)->devicePtr_v[device_it]->name << " error count ";
 	//				theErrorFile << (*circuit_ppit)->deviceErrorCount_v[device_it] << "/" << (*circuit_ppit)->instanceId_v.size();
 					myErrorSummary << " exceeded error limit " << theErrorLimit;
 				}
-				(*circuit_ppit)->deviceErrorCount_v[device_it] = 0;
+				(*circuit_ppit)->deviceErrorCount_v[device_it][theErrorSubIndex] = 0;
 				myErrorSummaryList.push_front(myErrorSummary.str());
 			}
 		}

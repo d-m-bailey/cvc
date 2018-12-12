@@ -525,9 +525,9 @@ void CCvcDb::PrintVirtualNets(CVirtualNetVector& theVirtualNet_v, string theTitl
 
 void CCvcDb::PrintDeviceWithAllConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage) {
 	int myMFactor = CalculateMFactor(theParentId);
-	errorFile << DeviceName(theConnections.device_p->name, theParentId, PRINT_CIRCUIT_ON) << " " << theConnections.device_p->parameters;
-	if ( myMFactor > 1 ) errorFile << " {m=" << myMFactor << "}";
-	errorFile << " (r=" << parameterResistanceMap[theConnections.device_p->parameters] << ")" << endl;
+	theErrorFile << DeviceName(theConnections.device_p->name, theParentId, PRINT_CIRCUIT_ON) << " " << theConnections.device_p->parameters;
+	if ( myMFactor > 1 ) theErrorFile << " {m=" << myMFactor << "}";
+	theErrorFile << " (r=" << parameterResistanceMap[theConnections.device_p->parameters] << ")" << endl;
 	switch ( theConnections.device_p->model_p->type ) {
 		case NMOS: case PMOS: case LDDN: case LDDP: {
 			PrintAllTerminalConnections(GATE, theConnections, theErrorFile, theIncludeLeakVoltage);
@@ -697,9 +697,9 @@ void CCvcDb::PrintDeviceWithMinConnections(instanceId_t theParentId, CFullConnec
 
 void CCvcDb::PrintDeviceWithSimConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile) {
 	int myMFactor = CalculateMFactor(theParentId);
-	errorFile << DeviceName(theConnections.device_p->name, theParentId, PRINT_CIRCUIT_ON) << " " << theConnections.device_p->parameters;
-	if ( myMFactor > 1 ) errorFile << " {m=" << myMFactor << "}";
-	errorFile << " (r=" << parameterResistanceMap[theConnections.device_p->parameters] << ")" << endl;
+	theErrorFile << DeviceName(theConnections.device_p->name, theParentId, PRINT_CIRCUIT_ON) << " " << theConnections.device_p->parameters;
+	if ( myMFactor > 1 ) theErrorFile << " {m=" << myMFactor << "}";
+	theErrorFile << " (r=" << parameterResistanceMap[theConnections.device_p->parameters] << ")" << endl;
 	switch ( theConnections.device_p->model_p->type ) {
 		case NMOS: case PMOS: case LDDN: case LDDP: {
 			PrintSimTerminalConnections(GATE, theConnections, theErrorFile);
@@ -813,7 +813,7 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 	resistance_t myMaxResistance;
 	switch (theTerminal) {
 		case GATE: {
-			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "B: " : "G: ");
+			theErrorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "B: " : "G: ");
 			myNetId = theConnections.originalGateId;
 			myMinNetId = theConnections.masterMinGateNet.finalNetId;
 			myMinResistance = theConnections.masterMinGateNet.finalResistance;
@@ -835,7 +835,7 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 			}
 		break; }
 		case SOURCE: {
-			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "C: " : "S: ");
+			theErrorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "C: " : "S: ");
 			myNetId = theConnections.originalSourceId;
 			myMinNetId = theConnections.masterMinSourceNet.finalNetId;
 			myMinResistance = theConnections.masterMinSourceNet.finalResistance;
@@ -857,7 +857,7 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 			}
 		break; }
 		case DRAIN: {
-			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "E: " : "D: ");
+			theErrorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "E: " : "D: ");
 			myNetId = theConnections.originalDrainId;
 			myMinNetId = theConnections.masterMinDrainNet.finalNetId;
 			myMinResistance = theConnections.masterMinDrainNet.finalResistance;
@@ -879,7 +879,7 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 			}
 		break; }
 		case BULK: {
-			errorFile << "B: ";
+			theErrorFile << "B: ";
 			myNetId = theConnections.originalBulkId;
 			myMinNetId = theConnections.masterMinBulkNet.finalNetId;
 			myMinResistance = theConnections.masterMinBulkNet.finalResistance;
@@ -902,12 +902,13 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 		break; }
 		default: { throw EDatabaseError("Invalid terminal type: " + theTerminal); }
 	}
-	errorFile << NetName(myNetId) << endl;
-	errorFile << " Min: " << NetName(myMinNetId) << NetVoltageSuffix(myMinPowerDelimiter, myMinVoltageString, myMinResistance, myMinLeakVoltageString) << endl;
-	errorFile << " Sim: " << NetName(mySimNetId) << NetVoltageSuffix(mySimPowerDelimiter, mySimVoltageString, mySimResistance) << endl;
-	errorFile << " Max: " << NetName(myMaxNetId) << NetVoltageSuffix(myMaxPowerDelimiter, myMaxVoltageString, myMaxResistance, myMaxLeakVoltageString) << endl;
+	theErrorFile << NetName(myNetId) << endl;
+	theErrorFile << " Min: " << NetName(myMinNetId) << NetVoltageSuffix(myMinPowerDelimiter, myMinVoltageString, myMinResistance, myMinLeakVoltageString) << endl;
+	theErrorFile << " Sim: " << NetName(mySimNetId) << NetVoltageSuffix(mySimPowerDelimiter, mySimVoltageString, mySimResistance) << endl;
+	theErrorFile << " Max: " << NetName(myMaxNetId) << NetVoltageSuffix(myMaxPowerDelimiter, myMaxVoltageString, myMaxResistance, myMaxLeakVoltageString) << endl;
 }
 
+/*
 void CCvcDb::PrintMinMaxTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage) {
 	netId_t myNetId, myMinNetId, myMaxNetId;
 	string myMinVoltageString, myMaxVoltageString;
@@ -1206,6 +1207,7 @@ void CCvcDb::PrintMaxTerminalConnections(terminal_t theTerminal, CFullConnection
 	errorFile << NetName(myNetId) << endl;
 	errorFile << " Max: " << NetName(myMaxNetId) << NetVoltageSuffix(myMaxPowerDelimiter, myMaxVoltageString, myMaxResistance) << endl;
 }
+*/
 
 void CCvcDb::PrintSimTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile) {
 	netId_t myNetId, mySimNetId;
@@ -1214,7 +1216,7 @@ void CCvcDb::PrintSimTerminalConnections(terminal_t theTerminal, CFullConnection
 	resistance_t mySimResistance;
 	switch (theTerminal) {
 		case GATE: {
-			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "B: " : "G: ");
+			theErrorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "B: " : "G: ");
 			myNetId = theConnections.originalGateId;
 			mySimNetId = theConnections.masterSimGateNet.finalNetId;
 			mySimResistance = theConnections.masterSimGateNet.finalResistance;
@@ -1222,7 +1224,7 @@ void CCvcDb::PrintSimTerminalConnections(terminal_t theTerminal, CFullConnection
 			mySimPowerDelimiter = PowerDelimiter_(theConnections.simGatePower_p, SIM_CALCULATED_BIT);
 		break; }
 		case SOURCE: {
-			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "C: " : "S: ");
+			theErrorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "C: " : "S: ");
 			myNetId = theConnections.originalSourceId;
 			mySimNetId = theConnections.masterSimSourceNet.finalNetId;
 			mySimResistance = theConnections.masterSimSourceNet.finalResistance;
@@ -1230,7 +1232,7 @@ void CCvcDb::PrintSimTerminalConnections(terminal_t theTerminal, CFullConnection
 			mySimPowerDelimiter = PowerDelimiter_(theConnections.simSourcePower_p, SIM_CALCULATED_BIT);
 		break; }
 		case DRAIN: {
-			errorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "E: " : "D: ");
+			theErrorFile << (theConnections.device_p->model_p->type == BIPOLAR ? "E: " : "D: ");
 			myNetId = theConnections.originalDrainId;
 			mySimNetId = theConnections.masterSimDrainNet.finalNetId;
 			mySimResistance = theConnections.masterSimDrainNet.finalResistance;
@@ -1238,7 +1240,7 @@ void CCvcDb::PrintSimTerminalConnections(terminal_t theTerminal, CFullConnection
 			mySimPowerDelimiter = PowerDelimiter_(theConnections.simDrainPower_p, SIM_CALCULATED_BIT);
 		break; }
 		case BULK: {
-			errorFile << "B: ";
+			theErrorFile << "B: ";
 			myNetId = theConnections.originalBulkId;
 			mySimNetId = theConnections.masterSimBulkNet.finalNetId;
 			mySimResistance = theConnections.masterSimBulkNet.finalResistance;
@@ -1247,8 +1249,8 @@ void CCvcDb::PrintSimTerminalConnections(terminal_t theTerminal, CFullConnection
 		break; }
 		default: { throw EDatabaseError("Invalid terminal type: " + theTerminal); }
 	}
-	errorFile << NetName(myNetId) << endl;
-	errorFile << " Sim: " << NetName(mySimNetId) << NetVoltageSuffix(mySimPowerDelimiter, mySimVoltageString, mySimResistance) << endl;
+	theErrorFile << NetName(myNetId) << endl;
+	theErrorFile << " Sim: " << NetName(mySimNetId) << NetVoltageSuffix(mySimPowerDelimiter, mySimVoltageString, mySimResistance) << endl;
 }
 
 void CCvcDb::PrintErrorTotals() {
