@@ -2447,7 +2447,7 @@ void CCvcDb::SetInitialMinMaxPower() {
 		}
 	}
 	// Reset min/max voltage conflict errors
-	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Power/Ground path through fuse", FUSE_MODELS);
+		cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Power/Ground path through fuse", FUSE_ERROR - FUSE_ERROR, FUSE_MODELS);
 	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! ... voltage already set");
 //	errorFile << "! Finished" << endl << endl;
 //	if ( ! isFixedSimNet ) cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile); // Bad LDD connections (first pass)

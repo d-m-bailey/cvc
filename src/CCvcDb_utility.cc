@@ -1001,10 +1001,14 @@ bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
 size_t CCvcDb::IncrementDeviceError(deviceId_t theDeviceId, int theErrorIndex) {
 	CInstance * myInstance_p = instancePtr_v[deviceParent_v[theDeviceId]];
 	CCircuit * myParent_p = myInstance_p->master_p;
+		int myErrorSubIndex = 0;
+		if ( theErrorIndex >= OVERVOLTAGE_VBG && theErrorIndex <= OVERVOLTAGE_VGS ) {
+				myErrorSubIndex = theErrorIndex - OVERVOLTAGE_VBG;
+		}
 	int myMFactor = CalculateMFactor(deviceParent_v[theDeviceId]);
-	myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId] += myMFactor;
+		myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex] += myMFactor;
 	errorCount[theErrorIndex] += myMFactor;
-	return(myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId]);
+		return(myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex]);
 }
 
 list<string> * CCvcDb::SplitHierarchy(string theFullPath) {

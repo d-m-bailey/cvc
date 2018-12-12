@@ -48,7 +48,7 @@ public:
 	CTextVector	internalSignal_v;
 	CDevicePtrVector	devicePtr_v;
 	CDevicePtrVector	subcircuitPtr_v;
-	vector<deviceId_t>		deviceErrorCount_v;
+		vector<array<deviceId_t, 4>>			deviceErrorCount_v;
 	CInstanceIdVector instanceId_v;
 	CInstanceIdVector instanceHashId_v;
 
@@ -104,7 +104,7 @@ public:
 //	void CreateDatabase(const string theTopBlockName);
 	CCircuit * FindCircuit(const string theSearchCircuit);
 	void PrintAndResetCircuitErrors(CCvcDb * theCvcDb_p, deviceId_t theErrorLimit, ofstream & theLogFile, ogzstream & theErrorFile,
-			string theSummaryHeading = "", set<modelType_t> & theModelList = emptyModelList);
+						string theSummaryHeading = "", int theSubErrorIndex = 0, set<modelType_t> & theModelList = emptyModelList);
 };
 
 

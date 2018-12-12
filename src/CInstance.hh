@@ -50,6 +50,7 @@ public:
  
 	instanceId_t	parentId = 0;
 	CCircuit * master_p = NULL;
+	bool	isMasked = false;
 
 	void AssignTopGlobalIDs(CCvcDb * theCvcDb_p, CCircuit * theMaster_p);
 	void AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInstanceId, CDevice * theSubcircuit_p, const instanceId_t theParentId,

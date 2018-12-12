@@ -238,10 +238,11 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		reportFile << PrintProgress(&lastSnapshot, "MIN/MAX2 ") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( detectErrorFlag ) {
-			FindOverVoltageErrors("Vbg", OVERVOLTAGE_VBG);
-			FindOverVoltageErrors("Vbs", OVERVOLTAGE_VBS);
-			FindOverVoltageErrors("Vds", OVERVOLTAGE_VDS);
-			FindOverVoltageErrors("Vgs", OVERVOLTAGE_VGS);
+						FindAllOverVoltageErrors();
+						//FindOverVoltageErrors("Vbg", OVERVOLTAGE_VBG);
+						//FindOverVoltageErrors("Vbs", OVERVOLTAGE_VBS);
+						//FindOverVoltageErrors("Vds", OVERVOLTAGE_VDS);
+						//FindOverVoltageErrors("Vgs", OVERVOLTAGE_VGS);
 			FindNmosPossibleLeakErrors();
 			FindPmosPossibleLeakErrors();
 			FindFloatingInputErrors();
