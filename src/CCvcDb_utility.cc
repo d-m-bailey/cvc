@@ -1006,9 +1006,10 @@ size_t CCvcDb::IncrementDeviceError(deviceId_t theDeviceId, int theErrorIndex) {
 		myErrorSubIndex = theErrorIndex - OVERVOLTAGE_VBG;
 	}
 	int myMFactor = CalculateMFactor(deviceParent_v[theDeviceId]);
+	int myLastErrorCount = myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex];
 	myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex] += myMFactor;
 	errorCount[theErrorIndex] += myMFactor;
-	return(myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex]);
+	return(myLastErrorCount + 1);
 }
 
 list<string> * CCvcDb::SplitHierarchy(string theFullPath) {
@@ -1676,12 +1677,17 @@ int CCvcDb::CalculateMFactor(instanceId_t theInstanceId) {
 	if (  instancePtr_v[theInstanceId]->IsParallelInstance() ) return 0;  // parallel/empty instances
 	int myMFactor = 1;
 	instanceId_t myInstanceId = theInstanceId;
+	if ( instancePtr_v[myInstanceId]->parallelInstanceCount > 1 ) {
+		myMFactor = instancePtr_v[myInstanceId]->parallelInstanceCount;
+	}
+/*
 	while ( myInstanceId > 0 ) {
 		if ( instancePtr_v[myInstanceId]->parallelInstanceCount > 1 ) {
 			myMFactor *= instancePtr_v[myInstanceId]->parallelInstanceCount;
 		}
 		myInstanceId = instancePtr_v[myInstanceId]->parentId;
 	}
+*/
 	return myMFactor;
 }
 

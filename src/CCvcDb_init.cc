@@ -368,7 +368,7 @@ void CCvcDb::SetEquivalentNets() {
 					CCircuit * myParent_p = myDevice_p->parent_p;
 //					deviceId_t myLocalDeviceId = myParent_p->localDeviceIdMap[myDevice_p->name];
 					deviceId_t myLocalDeviceId = myDevice_p->offset;
-					assert(myDevice_p->signalId_v.size() == 2);
+//					assert(myDevice_p->signalId_v.size() == 2);
 					for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
 						if ( instancePtr_v[myParent_p->instanceId_v[instance_it]]->IsParallelInstance() ) continue;  // parallel instances
 						if ( --myPrintCount <= 0 ) {
