@@ -104,6 +104,19 @@ voltage_t CCvcDb::MinSimVoltage(netId_t theNetId) {
 	return UNKNOWN_VOLTAGE;
 }
 
+resistance_t CCvcDb::MinResistance(netId_t theNetId) {
+	// resistance to minimum master net
+	if ( theNetId != UNKNOWN_NET ) {
+		static CVirtualNet myVirtualNet;
+		assert(theNetId == GetEquivalentNet(theNetId));
+		myVirtualNet(minNet_v, theNetId);
+		if ( myVirtualNet.finalNetId != UNKNOWN_NET ) {
+			return myVirtualNet.finalResistance;
+		}
+	}
+	return UNKNOWN_VOLTAGE;
+}
+
 voltage_t CCvcDb::MinLeakVoltage(netId_t theNetId) {
 	if ( theNetId != UNKNOWN_NET && leakVoltageSet ) {
 		netId_t myNetId = minLeakNet_v[theNetId].finalNetId;
@@ -281,6 +294,19 @@ voltage_t CCvcDb::MaxSimVoltage(netId_t theNetId) {
 				}
 			}
 			return myMaxVoltage;
+		}
+	}
+	return UNKNOWN_VOLTAGE;
+}
+
+resistance_t CCvcDb::MaxResistance(netId_t theNetId) {
+	// resistance to maximum master net
+	if ( theNetId != UNKNOWN_NET ) {
+		static CVirtualNet myVirtualNet;
+		assert(theNetId == GetEquivalentNet(theNetId));
+		myVirtualNet(maxNet_v, theNetId);
+		if ( myVirtualNet.finalNetId != UNKNOWN_NET ) {
+			return myVirtualNet.finalResistance;
 		}
 	}
 	return UNKNOWN_VOLTAGE;
@@ -1232,9 +1258,9 @@ void CCvcDb::RemoveInvalidPower(netId_t theNetId, size_t & theRemovedCount) {
 				CheckResistorOverflow_(maxNet_v[theNetId].finalResistance, theNetId, logFile);
 			}
 		}
-		if ( ! leakVoltageSet || leakVoltagePtr_v[theNetId] != myPower_p ) {  // delete unless leak voltage
-				delete myPower_p;
-		}
+//		if ( ! leakVoltageSet || leakVoltagePtr_v[theNetId] != myPower_p ) {  // delete unless leak voltage
+//				delete myPower_p;
+//		}
 	}
 }
 

@@ -97,7 +97,8 @@ void CCvcDb::ReportShort(deviceId_t theDeviceId) {
 		myLeakCurrent = myConnections.EstimatedCurrent(myVthFlag);
 	}
 	bool myUnrelatedFlag = ! myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, true);
-	if ( ExceedsLeakLimit_(myLeakCurrent)  // flag all leaks with large current
+	bool myCheckLeakLimit = cvcParameters.cvcShortErrorThreshold == 0 || myMaxVoltage - myMinVoltage > cvcParameters.cvcShortErrorThreshold;
+	if ( ( myCheckLeakLimit && ExceedsLeakLimit_(myLeakCurrent) ) // flag leaks with large current
 			|| myUnrelatedFlag  // flag leaks between unrelated power
 			|| ( myMaxVoltage != myMinVoltage && ! myVthFlag  // ignore leaks between same voltages or at Vth
 				&& ( ( IsExternalPower_(myConnections.simSourcePower_p)
@@ -489,7 +490,9 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 							&& ((myMaxConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
 								|| (myMaxConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) ) {
 						float myLeakCurrent = myMaxConnections.EstimatedMosDiodeCurrent(mySourceVoltage, theConnections);
-						if ( ExceedsLeakLimit_(myLeakCurrent) ) {
+						bool myCheckLeakCurrent = cvcParameters.cvcMosDiodeErrorThreshold == 0
+								|| abs(myMaxConnections.gateVoltage - myExpectedVoltage) > cvcParameters.cvcMosDiodeErrorThreshold;
+						if ( myCheckLeakCurrent && ExceedsLeakLimit_(myLeakCurrent) ) {
 							PrintMaxVoltageConflict(myTargetNetId, myMaxConnections, myExpectedVoltage, myLeakCurrent);
 	//						reportFile << "WARNING: Max voltage already set for " << NetName(myTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
 	//						reportFile << " at mos diode " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON);
@@ -582,7 +585,9 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 							&& ((myMinConnections.gateVoltage > myExpectedVoltage && IsNmos_(deviceType_v[theConnections.deviceId]))
 								|| (myMinConnections.gateVoltage < myExpectedVoltage && IsPmos_(deviceType_v[theConnections.deviceId])) ) ) {
 						float myLeakCurrent = myMinConnections.EstimatedMosDiodeCurrent(mySourceVoltage, theConnections);
-						if ( ExceedsLeakLimit_(myLeakCurrent) ) {
+						bool myCheckLeakCurrent = cvcParameters.cvcMosDiodeErrorThreshold == 0
+							|| abs(myMinConnections.gateVoltage - myExpectedVoltage) > cvcParameters.cvcMosDiodeErrorThreshold;
+						if ( myCheckLeakCurrent && ExceedsLeakLimit_(myLeakCurrent) ) {
 							PrintMinVoltageConflict(myTargetNetId, myMinConnections, myExpectedVoltage, myLeakCurrent);
 	//						reportFile << "WARNING: Min voltage already set for " << NetName(myTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
 	//						reportFile << " at mos diode " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON);
@@ -990,13 +995,20 @@ string CCvcDb::AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDevice
 			|| (theConnections.sourceVoltage != UNKNOWN_VOLTAGE && theConnections.drainVoltage == UNKNOWN_VOLTAGE) );
 	CPower * myPower_p = ( theDirection == SOURCE_TO_MASTER_DRAIN ) ? theConnections.sourcePower_p : theConnections.drainPower_p;
 	netId_t myTargetNet = ( theDirection == SOURCE_TO_MASTER_DRAIN ) ? theConnections.sourceId : theConnections.drainId;
+	resistance_t mySourceResistance = ( theDirection == SOURCE_TO_MASTER_DRAIN ) ? theConnections.masterDrainNet.finalResistance : theConnections.masterSourceNet.finalResistance;
+
 	voltage_t myMinTargetVoltage = MinSimVoltage(myTargetNet);
 	voltage_t myMaxTargetVoltage = MaxSimVoltage(myTargetNet);
+	resistance_t myMinTargetResistance = MinResistance(myTargetNet);
+	resistance_t myMaxTargetResistance = MaxResistance(myTargetNet);
 	voltage_t myOriginalVoltage = theVoltage;
-	if ( myMinTargetVoltage > myMaxTargetVoltage ) {
+	if ( myMinTargetVoltage != UNKNOWN_VOLTAGE && myMinTargetVoltage > myMaxTargetVoltage) {
 		voltage_t myTrueMinVoltage = myMaxTargetVoltage;
+		resistance_t myTrueMinResistance = myMaxTargetResistance;
 		myMaxTargetVoltage = myMinTargetVoltage;
+		myMaxTargetResistance = myMinTargetResistance;
 		myMinTargetVoltage = myTrueMinVoltage;
+		myMinTargetResistance = myTrueMinResistance;
 	}
 	string myCalculation = "";
 	if ( IsMos_(deviceType_v[theDeviceId]) ) {
@@ -1072,14 +1084,22 @@ string CCvcDb::AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDevice
 	if ( theVoltage == UNKNOWN_VOLTAGE ) return("");
 	if ( myMinTargetVoltage != UNKNOWN_VOLTAGE && theVoltage < myMinTargetVoltage ) {
 		myCalculation = " Limited sim to min" + myCalculation;
-		if ( thePropagationType != POWER_NETS_ONLY && myOriginalVoltage < myMinTargetVoltage ) ReportSimShort(theDeviceId, theVoltage, myMinTargetVoltage, myCalculation);
+		debugFile << myCalculation << " " << NetName(myTargetNet) << endl;
+		if ( thePropagationType != POWER_NETS_ONLY && myOriginalVoltage < myMinTargetVoltage
+				&& theConnections.EstimatedCurrent(theVoltage, myMinTargetVoltage, mySourceResistance, myMinTargetResistance) < cvcParameters.cvcLeakLimit ) {
+			ReportSimShort(theDeviceId, theVoltage, myMinTargetVoltage, myCalculation);
+		}
 		// voltage drops in first pass are skipped, only report original voltage limits
 		theVoltage = myMinTargetVoltage;
 	}
 	if ( myMaxTargetVoltage != UNKNOWN_VOLTAGE && theVoltage > myMaxTargetVoltage ) {
 		myCalculation = " Limited sim to max" + myCalculation;
-		if ( thePropagationType != POWER_NETS_ONLY && myOriginalVoltage > myMaxTargetVoltage ) ReportSimShort(theDeviceId, theVoltage, myMaxTargetVoltage, myCalculation);
-			// voltage drops in first pass are skipped, only report original voltage limits
+		debugFile << myCalculation << " " << NetName(myTargetNet) << endl;
+		if ( thePropagationType != POWER_NETS_ONLY && myOriginalVoltage > myMaxTargetVoltage
+				&& theConnections.EstimatedCurrent(theVoltage, myMaxTargetVoltage, mySourceResistance, myMaxTargetResistance) < cvcParameters.cvcLeakLimit ) {
+			ReportSimShort(theDeviceId, theVoltage, myMaxTargetVoltage, myCalculation);
+		}
+		// voltage drops in first pass are skipped, only report original voltage limits
 		theVoltage = myMaxTargetVoltage;
 	}
 	return(myCalculation);

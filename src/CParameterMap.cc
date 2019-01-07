@@ -110,6 +110,6 @@ resistance_t CParameterMap::CalculateResistance(string theEquation) {
 	if ( myResistanceStack.front() >= MAX_RESISTANCE ) {
 		return ( MAX_RESISTANCE );
 	} else {
-		return ( round(myResistanceStack.front()) );
+		return ( max(1, round(myResistanceStack.front())) );  // minimum resistance is 1 ohm
 	}
 }

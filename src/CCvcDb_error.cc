@@ -709,27 +709,32 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 			} else if ( myConnections.CheckTerminalMinVoltages(BULK | SOURCE) &&
 					( myConnections.minBulkVoltage - myConnections.minSourceVoltage > cvcParameters.cvcBiasErrorThreshold ||
 						( myConnections.minSourceVoltage == myConnections.minBulkVoltage &&
+							cvcParameters.cvcBiasErrorThreshold == 0 &&
 							myConnections.masterMinSourceNet.finalResistance < myConnections.masterMinBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
 			} else if (	myConnections.CheckTerminalMinVoltages(BULK | DRAIN) &&
 					( myConnections.minBulkVoltage - myConnections.minDrainVoltage > cvcParameters.cvcBiasErrorThreshold ||
 						( myConnections.minDrainVoltage == myConnections.minBulkVoltage &&
+							cvcParameters.cvcBiasErrorThreshold == 0 &&
 							myConnections.masterMinDrainNet.finalResistance < myConnections.masterMinBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
 			} else if (	myConnections.CheckTerminalSimVoltages(BULK | SOURCE) &&
 					( myConnections.simBulkVoltage - myConnections.simSourceVoltage > cvcParameters.cvcBiasErrorThreshold ||
 						( myConnections.simSourceVoltage == myConnections.simBulkVoltage &&
+							cvcParameters.cvcBiasErrorThreshold == 0 &&
 							myConnections.masterSimSourceNet.finalResistance < myConnections.masterSimBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
 			} else if (	myConnections.CheckTerminalSimVoltages(BULK | DRAIN) &&
 					( myConnections.simBulkVoltage - myConnections.simDrainVoltage > cvcParameters.cvcBiasErrorThreshold ||
 						( myConnections.simDrainVoltage == myConnections.simBulkVoltage &&
+							cvcParameters.cvcBiasErrorThreshold == 0 &&
 							myConnections.masterSimDrainNet.finalResistance < myConnections.masterSimBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
 			} else if (	myConnections.CheckTerminalMaxVoltages(BULK | SOURCE) &&
 					( ( myConnections.maxBulkVoltage - myConnections.maxSourceVoltage > cvcParameters.cvcBiasErrorThreshold &&
 							myConnections.maxSourcePower_p->defaultMaxNet != myConnections.bulkId ) ||
 						( myConnections.maxSourceVoltage == myConnections.maxBulkVoltage &&
+							cvcParameters.cvcBiasErrorThreshold == 0 &&
 							myConnections.maxSourceVoltage != myConnections.minBulkVoltage && // no leak path
 	//						myConnections.masterMinBulkNet.finalNetId != myConnections.masterMaxBulkNet.finalNetId &&
 							myConnections.masterMaxSourceNet.finalResistance > myConnections.masterMaxBulkNet.finalResistance &&
@@ -741,6 +746,7 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 					( ( myConnections.maxBulkVoltage - myConnections.maxDrainVoltage > cvcParameters.cvcBiasErrorThreshold &&
 							myConnections.maxDrainPower_p->defaultMaxNet != myConnections.bulkId ) ||
 						( myConnections.maxDrainVoltage == myConnections.maxBulkVoltage &&
+							cvcParameters.cvcBiasErrorThreshold == 0 &&
 							myConnections.maxDrainVoltage != myConnections.minBulkVoltage && // no leak path
 	//						myConnections.masterMinBulkNet.finalNetId != myConnections.masterMaxBulkNet.finalNetId &&
 							myConnections.masterMaxDrainNet.finalResistance > myConnections.masterMaxBulkNet.finalResistance &&
@@ -813,6 +819,7 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 					( ( myConnections.minSourceVoltage - myConnections.minBulkVoltage > cvcParameters.cvcBiasErrorThreshold &&
 							myConnections.minSourcePower_p->defaultMinNet != myConnections.bulkId ) ||
 						( myConnections.minSourceVoltage == myConnections.minBulkVoltage &&
+							cvcParameters.cvcBiasErrorThreshold == 0 &&
 	//						myConnections.masterMinBulkNet.finalNetId != myConnections.masterMaxBulkNet.finalNetId &&
 							myConnections.minSourceVoltage != myConnections.maxBulkVoltage && // no leak path
 							myConnections.masterMinSourceNet.finalResistance > myConnections.masterMinBulkNet.finalResistance &&
@@ -823,6 +830,7 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 					( ( myConnections.minDrainVoltage - myConnections.minBulkVoltage > cvcParameters.cvcBiasErrorThreshold &&
 							myConnections.minDrainPower_p->defaultMinNet != myConnections.bulkId ) ||
 						( myConnections.minDrainVoltage == myConnections.minBulkVoltage &&
+							cvcParameters.cvcBiasErrorThreshold == 0 &&
 	//						myConnections.masterMinBulkNet.finalNetId != myConnections.masterMaxBulkNet.finalNetId &&
 							myConnections.minDrainVoltage != myConnections.maxBulkVoltage && // no leak path
 							myConnections.masterMinDrainNet.finalResistance > myConnections.masterMinBulkNet.finalResistance &&
@@ -832,21 +840,25 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 			} else if (	myConnections.CheckTerminalSimVoltages(BULK | SOURCE) &&
 					( myConnections.simSourceVoltage - myConnections.simBulkVoltage > cvcParameters.cvcBiasErrorThreshold ||
 						( myConnections.simSourceVoltage == myConnections.simBulkVoltage &&
+							cvcParameters.cvcBiasErrorThreshold == 0 &&
 							myConnections.masterSimSourceNet.finalResistance < myConnections.masterSimBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
 			} else if (	myConnections.CheckTerminalSimVoltages(BULK | DRAIN) &&
 					( myConnections.simDrainVoltage - myConnections.simBulkVoltage > cvcParameters.cvcBiasErrorThreshold ||
 						( myConnections.simDrainVoltage == myConnections.simBulkVoltage &&
+							cvcParameters.cvcBiasErrorThreshold == 0 &&
 							myConnections.masterSimDrainNet.finalResistance < myConnections.masterSimBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
 			} else if (	myConnections.CheckTerminalMaxVoltages(BULK | SOURCE) &&
 					( myConnections.maxSourceVoltage - myConnections.maxBulkVoltage > cvcParameters.cvcBiasErrorThreshold ||
 						( myConnections.maxSourceVoltage == myConnections.maxBulkVoltage &&
+							cvcParameters.cvcBiasErrorThreshold == 0 &&
 							myConnections.masterMaxSourceNet.finalResistance < myConnections.masterMaxBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
 			} else if (	myConnections.CheckTerminalMaxVoltages(BULK | DRAIN) &&
 					( myConnections.maxDrainVoltage - myConnections.maxBulkVoltage > cvcParameters.cvcBiasErrorThreshold ||
 						( myConnections.maxDrainVoltage == myConnections.maxBulkVoltage &&
+							cvcParameters.cvcBiasErrorThreshold == 0 &&
 							myConnections.masterMaxDrainNet.finalResistance < myConnections.masterMaxBulkNet.finalResistance) ) ) {
 				myErrorFlag = true;
 			}

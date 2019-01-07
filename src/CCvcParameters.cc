@@ -1,7 +1,7 @@
 /*
  * Copyright (c) D. Mitch Bailey 2014.
  *
- * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2019 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -107,6 +107,7 @@ void CCvcParameters::ResetEnvironment() {
 	//! When true, detects worst case overvoltage errors. Default is to flag all errors including those not possible with current mode logic.
 	cvcLogicDiodes = defaultLogicDiodes;
 	//! When true, uses logic values, if known, for diode checks. Default is to ignore logic values.
+	cvcMosDiodeErrorThreshold = defaultErrorThreshold;
 	cvcShortErrorThreshold = defaultErrorThreshold;
 	cvcBiasErrorThreshold = defaultErrorThreshold;
 	cvcForwardErrorThreshold = defaultErrorThreshold;
@@ -138,6 +139,7 @@ void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
 	theOutputFile << "CVC_IGNORE_NO_LEAK_FLOATING = '" << (( cvcIgnoreNoLeakFloating ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "CVC_LEAK_OVERVOLTAGE = '" << (( cvcLeakOvervoltage ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "CVC_LOGIC_DIODES = '" << (( cvcLogicDiodes ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_MOS_DIODE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcMosDiodeErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_SHORT_ERROR_THRESHOLD = '" << Voltage_to_float(cvcShortErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_BIAS_ERROR_THRESHOLD = '" << Voltage_to_float(cvcBiasErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_FORWARD_ERROR_THRESHOLD = '" << Voltage_to_float(cvcForwardErrorThreshold) << "'" << endl;
@@ -175,6 +177,7 @@ void CCvcParameters::PrintDefaultEnvironment() {
 	myDefaultCvcrc << "CVC_IGNORE_NO_LEAK_FLOATING = '" << (( cvcIgnoreNoLeakFloating ) ? "true" : "false") << "'" << endl;
 	myDefaultCvcrc << "CVC_LEAK_OVERVOLTAGE = '" << (( cvcLeakOvervoltage ) ? "true" : "false") << "'" << endl;
 	myDefaultCvcrc << "CVC_LOGIC_DIODES = '" << (( cvcLogicDiodes ) ? "true" : "false") << "'" << endl;
+	myDefaultCvcrc << "CVC_MOS_DIODE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcMosDiodeErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_SHORT_ERROR_THRESHOLD = '" << Voltage_to_float(cvcShortErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_BIAS_ERROR_THRESHOLD = '" << Voltage_to_float(cvcBiasErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_FORWARD_ERROR_THRESHOLD = '" << Voltage_to_float(cvcForwardErrorThreshold) << "'" << endl;
@@ -262,6 +265,8 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 			cvcLeakOvervoltage = strcasecmp(myBuffer, "true") == 0;
 		} else if ( myVariable == "CVC_LOGIC_DIODES" ) {
 			cvcLogicDiodes = strcasecmp(myBuffer, "true") == 0;
+		} else if ( myVariable == "CVC_MOS_DIODE_ERROR_THRESHOLD" ) {
+			cvcMosDiodeErrorThreshold = String_to_Voltage(string(myBuffer));
 		} else if ( myVariable == "CVC_SHORT_ERROR_THRESHOLD" ) {
 			cvcShortErrorThreshold = String_to_Voltage(string(myBuffer));
 		} else if ( myVariable == "CVC_BIAS_ERROR_THRESHOLD" ) {

@@ -98,17 +98,15 @@ void CInstance::AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInsta
 		}
 		theCvcDb_p->debugFile << "DEBUG: found parallel instance in parallel instance at " << theCvcDb_p->HierarchyName(theInstanceId) << endl;
 	} else {
-		if ( ! isParallel ) {
-			if ( theSubcircuit_p->signalId_v.size() <= theCvcDb_p->cvcParameters.cvcParallelCircuitPortLimit ) {
-				myParallelInstance = theSubcircuit_p->FindParallelInstance(theCvcDb_p, theInstanceId, theParent_p->localToGlobalNetId_v);
-				if ( myParallelInstance == theInstanceId ) {
-					theCvcDb_p->instancePtr_v[theInstanceId]->parallelInstanceCount = 1;
-				} else {  // skip parallel circuits
-					theCvcDb_p->instancePtr_v[myParallelInstance]->parallelInstanceCount++;
-					theCvcDb_p->debugFile << "DEBUG: found parallel instance at " << theCvcDb_p->HierarchyName(theInstanceId) << endl;
-					parallelInstanceId = myParallelInstance;
-					isParallel = true;
-				}
+		if ( theSubcircuit_p->signalId_v.size() <= theCvcDb_p->cvcParameters.cvcParallelCircuitPortLimit ) {
+			myParallelInstance = theSubcircuit_p->FindParallelInstance(theCvcDb_p, theInstanceId, theParent_p->localToGlobalNetId_v);
+			if ( myParallelInstance == theInstanceId ) {
+				theCvcDb_p->instancePtr_v[theInstanceId]->parallelInstanceCount = 1;
+			} else {  // skip parallel circuits
+				theCvcDb_p->instancePtr_v[myParallelInstance]->parallelInstanceCount++;
+				theCvcDb_p->debugFile << "DEBUG: found parallel instance at " << theCvcDb_p->HierarchyName(theInstanceId) << endl;
+				parallelInstanceId = myParallelInstance;
+				isParallel = true;
 			}
 		}
 	}

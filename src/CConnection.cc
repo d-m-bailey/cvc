@@ -103,6 +103,10 @@ float CConnection::EstimatedMosDiodeCurrent(voltage_t theSourceVoltage, CConnect
 	return float(abs(theSourceVoltage-gateVoltage)) / (resistance + masterSourceNet.finalResistance + masterDrainNet.finalResistance) / VOLTAGE_SCALE ;
 }
 
+float CConnection::EstimatedCurrent(voltage_t theSourceVoltage, voltage_t theDrainVoltage, resistance_t theSourceResistance, resistance_t theDrainResistance) {
+	return float(abs(theSourceVoltage - theDrainVoltage)) / (resistance + theSourceResistance + theDrainResistance) / VOLTAGE_SCALE ;
+}
+
 float CFullConnection::EstimatedCurrent(bool theVthFlag) {
 	voltage_t mySourceVoltage, myDrainVoltage;
 //	float myCurrent;

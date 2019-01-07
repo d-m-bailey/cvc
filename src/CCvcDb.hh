@@ -320,12 +320,14 @@ public:
 	// CCvcDb-utility
 	voltage_t MinVoltage(netId_t theNetId, bool theSkipHiZFlag = false);
 	voltage_t MinSimVoltage(netId_t theNetId);
+	resistance_t MinResistance(netId_t theNetId);
 	voltage_t MinLeakVoltage(netId_t theNetId);
 	voltage_t SimVoltage(netId_t theNetId);
 	bool IsAlwaysOnCandidate(deviceId_t theDeviceId, shortDirection_t theDirection);
 	resistance_t SimResistance(netId_t theNetId);
 	voltage_t MaxVoltage(netId_t theNetId, bool theSkipHiZFlag = false);
 	voltage_t MaxSimVoltage(netId_t theNetId);
+	resistance_t MaxResistance(netId_t theNetId);
 	voltage_t MaxLeakVoltage(netId_t theNetId);
 	netId_t GetGreatestEquivalentNet(netId_t theNetId);
 	netId_t GetLeastEquivalentNet(netId_t theNetId);

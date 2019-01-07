@@ -83,6 +83,7 @@ public:
 	bool	cvcIgnoreNoLeakFloating = defaultIgnoreNoLeakFloating;
 	bool	cvcLeakOvervoltage = defaultLeakOvervoltage;
 	bool	cvcLogicDiodes = defaultLogicDiodes;
+	voltage_t	cvcMosDiodeErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcShortErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcBiasErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcForwardErrorThreshold = defaultErrorThreshold;
