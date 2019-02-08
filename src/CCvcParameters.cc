@@ -328,8 +328,12 @@ returnCode_t CCvcParameters::LoadModels() {
 	cvcModelListMap.Clear();
 	cvcModelListMap.filename = cvcModelFilename;
 	if ( myModelFile.fail() ) {
-		reportFile << "ERROR: Could not open " << cvcModelFilename << endl;
-		return (FAIL);
+		if ( gSetup_cvc ) {
+			return(OK);
+		} else {
+			reportFile << "ERROR: Could not open " << cvcModelFilename << endl;
+			return (FAIL);
+		}
 //		throw EFatalError("Could not open " + cvcModelFilename);
 //		exit(1);
 	}
@@ -385,8 +389,12 @@ returnCode_t CCvcParameters::LoadPower() {
 	cvcPowerFamilyMap.clear();
 	cvcPowerMacroPtrMap.clear();
 	if ( myPowerFile.fail() ) {
-		reportFile << "ERROR: Could not open " << cvcPowerFilename << endl;
-		return (FAIL);
+		if ( gSetup_cvc ) {
+			return(OK);
+		} else {
+			reportFile << "ERROR: Could not open " << cvcPowerFilename << endl;
+			return (FAIL);
+		}
 //		throw EFatalError("Could not open " + cvcPowerFilename);
 //		exit(1);
 	}

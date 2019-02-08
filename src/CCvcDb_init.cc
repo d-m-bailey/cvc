@@ -88,6 +88,9 @@ CCvcDb::CCvcDb(int argc, const char * argv[]) :
 			if ( ! IsAlphanumeric(reportPrefix) ) throw EFatalError("invalid prefix " + reportPrefix);
 		} else if ( strcmp(argv[cvcArgIndex], "-v") == 0 || strcmp(argv[cvcArgIndex], "--version") == 0 ) {
 			cout << "CVC: Circuit Validation Check  Version " << CVC_VERSION << endl;
+		} else if ( strcmp(argv[cvcArgIndex], "-s") == 0 || strcmp(argv[cvcArgIndex], "--setup") == 0 ) {
+			cout << "CVC: Creating setup files " << endl;
+			gSetup_cvc = true;
 		} else {
 			cout << "WARNING: unrecognized option " << argv[cvcArgIndex] << endl;
 		}
@@ -545,8 +548,10 @@ returnCode_t CCvcDb::SetDeviceModels() {
 //					parameterModelPtrMap[myDevice_p->parameters] = myDevice_p->model_p;
 //				}
 				if ( myDevice_p->model_p == NULL ) {
-					reportFile << "ERROR: No model match " << (*circuit_ppit)->name << "/" << myDevice_p->name;
-					reportFile << " " << myDevice_p->parameters << endl;
+					if ( ! gSetup_cvc ) {
+						reportFile << "ERROR: No model match " << (*circuit_ppit)->name << "/" << myDevice_p->name;
+						reportFile << " " << myDevice_p->parameters << endl;
+					}
 					string	myParameterString = trim_(string(myDevice_p->parameters));
 					myErrorModelSet.insert(myParameterString.substr(0, myParameterString.find(" ", 2)));
 					myModelError = true;
@@ -581,12 +586,14 @@ returnCode_t CCvcDb::SetDeviceModels() {
 	isDeviceModelSet = true;
 	if ( myModelError ) {
 		if ( ! myErrorModelSet.empty() ) {
-			reportFile << "Missing models" << endl;
+			reportFile << "Missing models" << endl << endl;
 			for ( auto model_pit = myErrorModelSet.begin(); model_pit != myErrorModelSet.end(); model_pit++) {
-				reportFile << *model_pit << endl;
+				reportFile << model_pit->substr(2) << " " << model_pit->substr(0,1) << endl;
 			}
 		}
-		reportFile << "ERROR: Model file problem" << endl;
+		if ( ! gSetup_cvc ) {
+			reportFile << endl << "ERROR: Model file problem" << endl;
+		}
 		return(FAIL);
 	} else {
 		return (cvcParameters.cvcModelListMap.SetVoltageTolerances(reportFile, cvcParameters.cvcPowerMacroPtrMap));
@@ -1696,5 +1703,137 @@ void CCvcDb::FindLatchDevices(netId_t theNetId, mosData_t theNmosData_v[], mosDa
 
 bool CCvcDb::IsOppositeLogic(netId_t theFirstNet, netId_t theSecondNet) {
 	return (inverterNet_v[theFirstNet] == theSecondNet || theFirstNet == inverterNet_v[theSecondNet]);
+}
+
+void CCvcDb::PrintNetSuggestions() {
+	reportFile << "CVC: Possible power definitions" << endl;
+	unordered_map<netId_t, pair<deviceId_t, deviceId_t>> myBulkCount;
+	CDeviceIdVector myNextBulk_v;
+	ResetVector<CDeviceIdVector>(myNextBulk_v, deviceCount, UNKNOWN_DEVICE);
+	for (deviceId_t device_it = 0; device_it < deviceCount; device_it++) {
+		if ( bulkNet_v[device_it] == UNKNOWN_NET ) continue;
+		if ( IsMos_(deviceType_v[device_it]) && sourceNet_v[device_it] != drainNet_v[device_it] ) {  // only count non-capacitor mosfet
+			if ( myBulkCount[bulkNet_v[device_it]].first++ > 0 ) {
+				myNextBulk_v[device_it] = myBulkCount[bulkNet_v[device_it]].second;
+			}
+			myBulkCount[bulkNet_v[device_it]].second = device_it;
+		}
+	}
+	map<string, deviceId_t> myDeviceCount;
+	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
+		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
+			myDeviceCount[model_pit->name] = 0;
+		}
+	}
+	reportFile << "CVC: Bulk > SD" << endl << endl;
+	for( auto net_it = 0; net_it < netCount; net_it++ ) {
+		if ( netVoltagePtr_v[net_it] ) continue;
+		if ( myBulkCount.count(net_it) && myBulkCount[net_it].first > connectionCount_v[net_it].SourceDrainCount() ) {
+			reportFile << NetName(net_it, PRINT_CIRCUIT_ON) << "    SD/bulk " << connectionCount_v[net_it].SourceDrainCount() << "/" << myBulkCount[net_it].first;
+			for ( auto count_pit = myDeviceCount.begin(); count_pit != myDeviceCount.end(); count_pit++ ) {
+				count_pit->second = 0;
+			}
+			deviceId_t device_it = myBulkCount[net_it].second;
+			while ( device_it != UNKNOWN_DEVICE ) {
+				CInstance * myInstance_p = instancePtr_v[deviceParent_v[device_it]];
+				deviceId_t myDeviceOffset = device_it - myInstance_p->firstDeviceId;
+				myDeviceCount[myInstance_p->master_p->devicePtr_v[myDeviceOffset]->model_p->name]++;
+				device_it = myNextBulk_v[device_it];
+			}
+			for ( auto count_pit = myDeviceCount.begin(); count_pit != myDeviceCount.end(); count_pit++ ) {
+				if ( count_pit->second > 0 ) {
+					reportFile << " " << count_pit->first << "(" << count_pit->second << ")";
+				}
+			}
+			reportFile << endl;
+		}
+/*
+		if ( myBulkCount.count(net_it) && myBulkCount[net_it] > connectionCount_v[net_it].SourceDrainCount() ) {
+			reportFile << NetName(net_it, PRINT_CIRCUIT_ON) << " SD/bulk " << connectionCount_v[net_it].SourceDrainCount() << "/" << myBulkCount[net_it];
+			for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
+				deviceId_t myDeviceCount = 0;
+				string myModelName;
+				for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
+					if ( IsMos_(model_pit->type) ) {
+						myModelName = model_pit->name;
+						CDevice * myDevice_p = model_pit->firstDevice_p;
+						while (myDevice_p) {
+							CCircuit * myParent_p = myDevice_p->parent_p;
+							deviceId_t myLocalDeviceId = myDevice_p->offset;
+							for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
+								CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
+								deviceId_t myDeviceId = myInstance_p->firstDeviceId + myLocalDeviceId;
+								if ( bulkNet_v[myDeviceId] == net_it ) {
+									myDeviceCount++;
+								}
+							}
+							myDevice_p = myDevice_p->nextDevice_p;
+						}
+					}
+				}
+				if ( myDeviceCount > 0 ) {
+					reportFile << " " << myModelName << "(" << myDeviceCount << ")";
+				}
+			}
+			reportFile << endl;
+		}
+*/
+	}
+	reportFile << endl;
+	reportFile << "CVC: INPUT PORTS" << endl << endl;
+	for( auto net_it = 0; net_it < topCircuit_p->portCount; net_it++ ) {
+		if ( netVoltagePtr_v[net_it] ) continue;
+		unordered_set<netId_t> myCheckedNets;
+		unordered_set<netId_t> myUncheckedNets;
+		myUncheckedNets.insert(net_it);
+		bool myIsPossibleInput = true;
+		bool myHasGateConnection = false;
+		if ( firstGate_v[net_it] == UNKNOWN_DEVICE && firstSource_v[net_it] == UNKNOWN_DEVICE && firstDrain_v[net_it] == UNKNOWN_DEVICE ) {
+			reportFile << NetName(net_it, PRINT_CIRCUIT_ON) << " NO_CONNECTIONS" << endl;
+		}
+		while( ! myUncheckedNets.empty() && myUncheckedNets.size() < 10 && myIsPossibleInput ) {  // 10 is arbitrary limit to prevent runaway
+			netId_t myCheckNet = *(myUncheckedNets.begin());
+			myCheckedNets.insert(myCheckNet);
+			myUncheckedNets.erase(myUncheckedNets.begin());
+			if ( firstGate_v[myCheckNet] != UNKNOWN_DEVICE ) {
+				myHasGateConnection = true;
+			}
+			//cout << "checked " << myCheckedNets.size() << " unchecked " << myUncheckedNets.size() << endl;
+			for ( deviceId_t device_it = firstSource_v[myCheckNet]; device_it != UNKNOWN_DEVICE && myIsPossibleInput; device_it = nextSource_v[device_it] ) {
+				netId_t mySearchNet = drainNet_v[device_it];
+				if ( ( IsMos_(deviceType_v[device_it]) && mySearchNet != gateNet_v[device_it] )
+						|| ( ! IsMos_(device_it) && netVoltagePtr_v[mySearchNet] ) ) {
+					myIsPossibleInput = false;
+				} else if ( ! IsMos_(deviceType_v[device_it]) ) {
+					if ( myCheckedNets.count(mySearchNet) == 0 && myUncheckedNets.count(mySearchNet) == 0 ) {
+						if ( myUncheckedNets.size() < 10 ) {
+							myUncheckedNets.insert(mySearchNet);
+						} else {
+							myIsPossibleInput = false;
+						}
+					}
+				}
+			}
+			for ( deviceId_t device_it = firstDrain_v[myCheckNet]; device_it != UNKNOWN_DEVICE && myIsPossibleInput; device_it = nextDrain_v[device_it] ) {
+				netId_t mySearchNet = sourceNet_v[device_it];
+				if ( ( IsMos_(deviceType_v[device_it]) && mySearchNet != gateNet_v[device_it] )
+						|| ( ! IsMos_(device_it) && netVoltagePtr_v[mySearchNet] ) ) {
+					myIsPossibleInput = false;
+				} else if ( ! IsMos_(deviceType_v[device_it]) ) {
+					if ( myCheckedNets.count(mySearchNet) == 0 && myUncheckedNets.count(mySearchNet) == 0 ) {
+						if ( myUncheckedNets.size() < 10 ) {
+							myUncheckedNets.insert(mySearchNet);
+						} else {
+							myIsPossibleInput = false;
+						}
+					}
+				}
+			}
+		}
+		if ( myIsPossibleInput && myHasGateConnection ) {
+			reportFile << NetName(net_it, PRINT_CIRCUIT_ON) << endl;
+		}
+	}
+	reportFile << endl;
 }
 

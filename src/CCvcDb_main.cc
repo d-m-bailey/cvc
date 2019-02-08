@@ -127,7 +127,11 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_START) == SKIP ) continue;
 		if ( modelFileStatus != OK || powerFileStatus != OK || fuseFileStatus != OK ) {
-			reportFile << "ERROR: skipped due to problems in model/power/fuse files" << endl;
+			if ( gSetup_cvc ) {
+				reportFile << endl << "CVC: Setup check complete." << endl;
+			} else {
+				reportFile << "ERROR: skipped due to problems in model/power/fuse files" << endl;
+			}
 			continue;
 		}
 
@@ -145,6 +149,9 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		cvcParameters.cvcPowerPtrList.SetPowerLimits(maxPower, minPower);
 		LinkDevices();
 		OverrideFuses();
+		if ( gSetup_cvc ) {
+			PrintNetSuggestions();
+		}
 		reportFile << PrintProgress(&lastSnapshot, "EQUIV ") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 //		DumpStatistics(parameterModelPtrMap, "parameter->model map", logFile);
@@ -152,6 +159,9 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		DumpStatistics(cvcCircuitList.circuitNameMap, "text->circuit map", logFile);
 		DumpStatistics(cvcCircuitList.cdlText.fixedTextToAddressMap, "string->text map", logFile);
 		if ( gInteractive_cvc && --gContinueCount < 1 && InteractiveCvc(STAGE_LINK) == SKIP ) {
+			continue;
+		}
+		if ( gSetup_cvc ) {
 			continue;
 		}
 

@@ -96,14 +96,16 @@ void CCvcDb::ReportShort(deviceId_t theDeviceId) {
 			(IsPmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage - myMaxVoltage == myConnections.device_p->model_p->Vth);
 		myLeakCurrent = myConnections.EstimatedCurrent(myVthFlag);
 	}
-	bool myUnrelatedFlag = ! myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, true);
+	bool myUnrelatedFlag = cvcParameters.cvcShortErrorThreshold == 0
+			&& ! myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, true);  // no unrelated checks for real sim checks
 	bool myCheckLeakLimit = cvcParameters.cvcShortErrorThreshold == 0 || myMaxVoltage - myMinVoltage > cvcParameters.cvcShortErrorThreshold;
 	if ( ( myCheckLeakLimit && ExceedsLeakLimit_(myLeakCurrent) ) // flag leaks with large current
 			|| myUnrelatedFlag  // flag leaks between unrelated power
 			|| ( myMaxVoltage != myMinVoltage && ! myVthFlag  // ignore leaks between same voltages or at Vth
 				&& ( ( IsExternalPower_(myConnections.simSourcePower_p)
 						&& IsExternalPower_(myConnections.simDrainPower_p)
-						&& myMaxVoltage - myMinVoltage > cvcParameters.cvcShortErrorThreshold )  // flag leaks between power nets
+						&& myMaxVoltage - myMinVoltage > cvcParameters.cvcShortErrorThreshold
+						&& ( cvcParameters.cvcShortErrorThreshold == 0 || ExceedsLeakLimit_(myLeakCurrent) ))  // flag leaks between power nets
 					|| myConnections.simSourcePower_p->flagAllShorts || myConnections.simDrainPower_p->flagAllShorts ) ) ) {  // flag nets for calculated logic levels
 //		errorCount[LEAK]++;
 		if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theDeviceId, LEAK) < cvcParameters.cvcCircuitErrorLimit ) {
@@ -1086,7 +1088,7 @@ string CCvcDb::AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDevice
 		myCalculation = " Limited sim to min" + myCalculation;
 		debugFile << myCalculation << " " << NetName(myTargetNet) << endl;
 		if ( thePropagationType != POWER_NETS_ONLY && myOriginalVoltage < myMinTargetVoltage
-				&& theConnections.EstimatedCurrent(theVoltage, myMinTargetVoltage, mySourceResistance, myMinTargetResistance) < cvcParameters.cvcLeakLimit ) {
+				&& theConnections.EstimatedCurrent(theVoltage, myMinTargetVoltage, mySourceResistance, myMinTargetResistance) > cvcParameters.cvcLeakLimit ) {
 			ReportSimShort(theDeviceId, theVoltage, myMinTargetVoltage, myCalculation);
 		}
 		// voltage drops in first pass are skipped, only report original voltage limits
@@ -1096,7 +1098,7 @@ string CCvcDb::AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDevice
 		myCalculation = " Limited sim to max" + myCalculation;
 		debugFile << myCalculation << " " << NetName(myTargetNet) << endl;
 		if ( thePropagationType != POWER_NETS_ONLY && myOriginalVoltage > myMaxTargetVoltage
-				&& theConnections.EstimatedCurrent(theVoltage, myMaxTargetVoltage, mySourceResistance, myMaxTargetResistance) < cvcParameters.cvcLeakLimit ) {
+				&& theConnections.EstimatedCurrent(theVoltage, myMaxTargetVoltage, mySourceResistance, myMaxTargetResistance) > cvcParameters.cvcLeakLimit ) {
 			ReportSimShort(theDeviceId, theVoltage, myMaxTargetVoltage, myCalculation);
 		}
 		// voltage drops in first pass are skipped, only report original voltage limits

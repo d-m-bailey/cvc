@@ -229,6 +229,7 @@ public:
 		voltage_t theMinVoltage, voltage_t theMaxVoltage,
 		CDeviceIdVector & theFirstDrain_v, CDeviceIdVector & theNextDrain_v, CNetIdVector & theSourceNet_v);
 	bool IsOppositeLogic(netId_t theFirstNet, netId_t theSecondNet);
+	void PrintNetSuggestions();
 
 	// error
 	void PrintFuseError(netId_t theTargetNetId, CConnection & theConnections);

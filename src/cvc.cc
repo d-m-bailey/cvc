@@ -38,6 +38,7 @@ char vv_suffix[2], vv_trailer[2];
 ///@}
 
 bool gDebug_cvc = false;
+bool gSetup_cvc = false;
 bool gInterrupted = false;  //!< for detecting interrupts
 
 HIST_ENTRY **gHistoryList; //!< readline history
