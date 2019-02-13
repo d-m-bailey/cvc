@@ -33,50 +33,43 @@
 #include "CConnection.hh"
 
 extern set<modelType_t> FUSE_MODELS;
-char RESISTOR_TEXT[] = " resistor";  // leading space to deferentiate from normal signals
+char RESISTOR_TEXT[] = " resistor";  // leading space to differentiate from normal signals
 
+/**
+ * \brief Report shorts during logic simulation propagation that involve limited voltages.
+ *
+ * A limited voltage is an unknown simulation voltage with a known min/max value that indicates a current leak (short).
+ * For example, a 1.2V power signal propagated to a net that has a max voltage of 1.0V would be flagged as a leak.
+ * Note: if the propagated voltage and limited voltage differ by exactly Vth, the short is ignored. This is the expected result of mos diodes.
+ */
 void CCvcDb::ReportSimShort(deviceId_t theDeviceId, voltage_t theMainVoltage, voltage_t theShortVoltage, string theCalculation) {
 	static CFullConnection myConnections;
-//	CCircuit * myParent_p = instancePtr_v[deviceParent_v[theDeviceId]]->master_p;
 	MapDeviceNets(theDeviceId, myConnections);
 	voltage_t myMaxVoltage = max(theMainVoltage, theShortVoltage);
 	voltage_t myMinVoltage = min(theMainVoltage, theShortVoltage);
-//	float myLeakCurrent;
-//	bool myVthFlag;
-//	if ( myMaxVoltage == UNKNOWN_VOLTAGE || myMinVoltage == UNKNOWN_VOLTAGE ) {
-//		myLeakCurrent = 0;
-//		myVthFlag = false;
-//	} else {
-//		myVthFlag = (IsNmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage - myMinVoltage == myConnections.device_p->model_p->Vth) ||
-//				(IsPmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage - myMaxVoltage == myConnections.device_p->model_p->Vth);
-//		myLeakCurrent = myConnections.EstimatedCurrent(myVthFlag);
-//	}
-//	if ( rint((myLeakCurrent - cvcParameters.cvcLeakLimit) * 1e6) / 1e6 > 0 ||
-//			! myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, true) ||
-//			(myConnections.simSourcePower_p->type[POWER_BIT] && myConnections.simDrainPower_p->type[POWER_BIT] && myMaxVoltage != myMinVoltage && ! myVthFlag) ) {
 	if ( abs(theMainVoltage - theShortVoltage) != abs(myConnections.device_p->model_p->Vth) &&
 			abs(theMainVoltage - theShortVoltage) > cvcParameters.cvcShortErrorThreshold ) {
-//		errorCount[LEAK]++;
-		if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theDeviceId, LEAK) < cvcParameters.cvcCircuitErrorLimit ) {
+		if ( IncrementDeviceError(theDeviceId, LEAK) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 			errorFile << "! Short Detected: " << PrintVoltage(myMaxVoltage) << " to " << PrintVoltage(myMinVoltage) << theCalculation << endl;
-//			if ( myVthFlag ) errorFile << " at Vth ";
-//			errorFile << " Estimated current: " << myLeakCurrent << endl;
-//			if ( IsNmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage == UNKNOWN_VOLTAGE && myConnections.minGateVoltage != UNKNOWN_VOLTAGE ) {
-//				PrintDeviceWithMinGateAndSimConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
-//			} else if ( IsPmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage == UNKNOWN_VOLTAGE && myConnections.maxGateVoltage != UNKNOWN_VOLTAGE ) {
-//				PrintDeviceWithMaxGateAndSimConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
-//			} else {
-				PrintDeviceWithAllConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
-//			}
+			PrintDeviceWithAllConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
 			errorFile << endl;
 		}
 	}
-//	}
 }
 
+/**
+ * \brief Report shorts during logic simulation propagation.
+ *
+ * Variables controlling short error detection:
+ * cvcShortErrorThreshold: only report errors between voltages exceeding threshold.
+ * cvcLeakLimit: minimum leak current for short detection.
+ * myVthFlag: true if gate-source voltage difference is exactly Vth.
+ * myLeakCurrent: rough estimate of leak current.
+ * myUnrelatedFlag: true if leaks between shorted nets are prohibited.
+ * Note: leaks between external power are always errors if threshold = 0.
+ */
 void CCvcDb::ReportShort(deviceId_t theDeviceId) {
 	static CFullConnection myConnections;
-//	CCircuit * myParent_p = instancePtr_v[deviceParent_v[theDeviceId]]->master_p;
 	MapDeviceNets(theDeviceId, myConnections);
 	voltage_t myMaxVoltage = max(myConnections.simSourceVoltage, myConnections.simDrainVoltage);
 	voltage_t myMinVoltage = min(myConnections.simSourceVoltage, myConnections.simDrainVoltage);
@@ -98,17 +91,14 @@ void CCvcDb::ReportShort(deviceId_t theDeviceId) {
 	}
 	bool myUnrelatedFlag = cvcParameters.cvcShortErrorThreshold == 0
 			&& ! myConnections.simSourcePower_p->IsRelatedPower(myConnections.simDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, true);  // no unrelated checks for real sim checks
-	bool myCheckLeakLimit = cvcParameters.cvcShortErrorThreshold == 0 || myMaxVoltage - myMinVoltage > cvcParameters.cvcShortErrorThreshold;
-	if ( ( myCheckLeakLimit && ExceedsLeakLimit_(myLeakCurrent) ) // flag leaks with large current
+	if ( ( myMaxVoltage - myMinVoltage > cvcParameters.cvcShortErrorThreshold && ExceedsLeakLimit_(myLeakCurrent) )  // flag leaks with large current
 			|| myUnrelatedFlag  // flag leaks between unrelated power
 			|| ( myMaxVoltage != myMinVoltage && ! myVthFlag  // ignore leaks between same voltages or at Vth
 				&& ( ( IsExternalPower_(myConnections.simSourcePower_p)
 						&& IsExternalPower_(myConnections.simDrainPower_p)
-						&& myMaxVoltage - myMinVoltage > cvcParameters.cvcShortErrorThreshold
-						&& ( cvcParameters.cvcShortErrorThreshold == 0 || ExceedsLeakLimit_(myLeakCurrent) ))  // flag leaks between power nets
+						&& cvcParameters.cvcShortErrorThreshold == 0 )  // flag all leaks between power nets if threshold = 0
 					|| myConnections.simSourcePower_p->flagAllShorts || myConnections.simDrainPower_p->flagAllShorts ) ) ) {  // flag nets for calculated logic levels
-//		errorCount[LEAK]++;
-		if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theDeviceId, LEAK) < cvcParameters.cvcCircuitErrorLimit ) {
+		if ( IncrementDeviceError(theDeviceId, LEAK) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 			errorFile << "! Short Detected: " << PrintVoltage(myMaxVoltage) << " to " << PrintVoltage(myMinVoltage);
 			if ( myVthFlag ) errorFile << " at Vth ";
 			errorFile << " Estimated current: " << AddSiSuffix(myLeakCurrent) << "A" << endl;
@@ -116,15 +106,6 @@ void CCvcDb::ReportShort(deviceId_t theDeviceId) {
 				errorFile << "Unrelated power error" << endl;
 			}
 			PrintDeviceWithAllConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
-/*
- 			if ( IsNmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage == UNKNOWN_VOLTAGE && myConnections.minGateVoltage != UNKNOWN_VOLTAGE ) {
-				PrintDeviceWithMinGateAndSimConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
-			} else if ( IsPmos_(deviceType_v[theDeviceId]) && myConnections.simGateVoltage == UNKNOWN_VOLTAGE && myConnections.maxGateVoltage != UNKNOWN_VOLTAGE ) {
-				PrintDeviceWithMaxGateAndSimConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
-			} else {
-				PrintDeviceWithSimConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
-			}
-*/
 			errorFile << endl;
 		}
 	}
@@ -147,8 +128,6 @@ bool CCvcDb::CheckConnectionReroute(CEventQueue & theEventQueue, CConnection& th
 	netId_t myNextDrainNet;
 	CPower * mySourcePower_p;
 	resistance_t myDrainResistance;
-//	if ( theEventQueue.queueType == MIN_QUEUE && ! IsNmos_(deviceType_v[theConnections.deviceId]) ) return false;
-//	if ( theEventQueue.queueType == MAX_QUEUE && ! IsPmos_(deviceType_v[theConnections.deviceId]) ) return false;
 	if ( theDirection == DRAIN_TO_MASTER_SOURCE ) {
 		myNextDrainNet = theEventQueue.virtualNet_v[theConnections.drainId].nextNetId;
 		mySourcePower_p = netVoltagePtr_v[theConnections.sourceId];
@@ -190,14 +169,12 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						&& theEventQueue.virtualNet_v.IsTerminal(theConnections.sourceId)
 						&& CheckConnectionReroute(theEventQueue, theConnections, DRAIN_TO_MASTER_SOURCE) ) {  // direct connections have precedence
 					// lastUpdate changed due to virtual net rerouting
-	//				if (gDebug_cvc) cout << "DEBUG: rerouting " << theConnections.drainId << " to " << theConnections.sourceId << " at " << theConnections.deviceId << endl;
 					theEventQueue.virtualNet_v.lastUpdate++;
 					ShortNets(theEventQueue, theDeviceId, theConnections, DRAIN_TO_MASTER_SOURCE);
 				} else if ( ! theEventQueue.virtualNet_v.IsTerminal(theConnections.sourceId)
 						&& theEventQueue.virtualNet_v.IsTerminal(theConnections.drainId)
 						&& CheckConnectionReroute(theEventQueue, theConnections, SOURCE_TO_MASTER_DRAIN) ) {  // direct connections have precedence
 					// lastUpdate changed due to virtual net rerouting
-	//				if (gDebug_cvc) cout << "DEBUG: rerouting " << theConnections.sourceId << " to " << theConnections.drainId << " at " << theConnections.deviceId << endl;
 					theEventQueue.virtualNet_v.lastUpdate++;
 					ShortNets(theEventQueue, theDeviceId, theConnections, SOURCE_TO_MASTER_DRAIN);
 				}
@@ -205,26 +182,20 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 					&& ( theEventQueue.virtualNet_v.IsTerminal(theConnections.sourceId)  // direct connections have precedence
 						|| theConnections.masterSourceNet.finalResistance + theConnections.resistance < theConnections.masterDrainNet.finalResistance ) ) {
 				myLastVirtualNet = theEventQueue.virtualNet_v[theConnections.drainId];
-	//			bool myDirectReroute = theConnections.masterSourceNet.finalResistance == 0;
 				// lastUpdate changed due to virtual net rerouting
 				theEventQueue.virtualNet_v.lastUpdate++;
 				ShortNets(theEventQueue, theDeviceId, theConnections, DRAIN_TO_MASTER_SOURCE);
-	//			if ( ! myDirectReroute ) {
-					ShiftVirtualNets(theEventQueue, theConnections.drainId, myLastVirtualNet,
-						theConnections.masterSourceNet.finalResistance + theConnections.resistance, theConnections.masterDrainNet.finalResistance);
-	//			}
+				ShiftVirtualNets(theEventQueue, theConnections.drainId, myLastVirtualNet,
+					theConnections.masterSourceNet.finalResistance + theConnections.resistance, theConnections.masterDrainNet.finalResistance);
 			} else if ( ! theEventQueue.virtualNet_v.IsTerminal(theConnections.sourceId)
 					&& ( theEventQueue.virtualNet_v.IsTerminal(theConnections.drainId)  // direct connections have precedence
 						|| theConnections.masterDrainNet.finalResistance + theConnections.resistance < theConnections.masterSourceNet.finalResistance ) ) {
 				myLastVirtualNet = theEventQueue.virtualNet_v[theConnections.sourceId];
-	//			bool myDirectReroute = theConnections.masterDrainNet.finalResistance == 0;
 				// lastUpdate changed due to virtual net rerouting
 				theEventQueue.virtualNet_v.lastUpdate++;
 				ShortNets(theEventQueue, theDeviceId, theConnections, SOURCE_TO_MASTER_DRAIN);
-	//			if ( ! myDirectReroute ) {
-					ShiftVirtualNets(theEventQueue, theConnections.sourceId, myLastVirtualNet,
-						theConnections.masterDrainNet.finalResistance + theConnections.resistance, theConnections.masterSourceNet.finalResistance);
-	//			}
+				ShiftVirtualNets(theEventQueue, theConnections.sourceId, myLastVirtualNet,
+					theConnections.masterDrainNet.finalResistance + theConnections.resistance, theConnections.masterSourceNet.finalResistance);
 			}
 		}
 	} else {
@@ -266,9 +237,6 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						myPower_p->extraData->pullDownVoltage = theConnections.drainVoltage;
 						theEventQueue.virtualNet_v.Set(theConnections.sourceId, theConnections.drainId, theConnections.resistance, ++theEventQueue.virtualNet_v.lastUpdate);
 						CheckResistorOverflow_(theEventQueue.virtualNet_v[theConnections.sourceId].finalResistance, theConnections.sourceId, logFile);
-//						theEventQueue.virtualNet_v[theConnections.sourceId].nextNetId = theConnections.drainId;
-//						theEventQueue.virtualNet_v[theConnections.sourceId].resistance = theConnections.resistance;
-//						theEventQueue.virtualNet_v.SetFinalNet(theConnections.sourceId);
 						if ( theConnections.sourceVoltage > theConnections.drainVoltage ) {
 							netStatus_v[theConnections.sourceId][NEEDS_MIN_CONNECTION] = false;
 							if ( gDebug_cvc ) cout << "DEBUG: rerouted min connection check for net: " <<  theConnections.sourceId << endl;
@@ -301,9 +269,6 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						myPower_p->extraData->pullDownVoltage = theConnections.sourceVoltage;
 						theEventQueue.virtualNet_v.Set(theConnections.drainId, theConnections.sourceId, theConnections.resistance, ++theEventQueue.virtualNet_v.lastUpdate);
 						CheckResistorOverflow_(theEventQueue.virtualNet_v[theConnections.drainId].finalResistance, theConnections.drainId, logFile);
-//						theEventQueue.virtualNet_v[theConnections.drainId].nextNetId = theConnections.sourceId;
-//						theEventQueue.virtualNet_v[theConnections.drainId].resistance = theConnections.resistance;
-//						theEventQueue.virtualNet_v.SetFinalNet(theConnections.drainId);
 						if ( theConnections.drainVoltage > theConnections.sourceVoltage ) {
 							netStatus_v[theConnections.drainId][NEEDS_MIN_CONNECTION] = false;
 							if ( gDebug_cvc ) cout << "DEBUG: rerouted min connection check for net: " <<  theConnections.drainId << endl;
@@ -339,9 +304,6 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						myPower_p->extraData->pullUpVoltage = theConnections.drainVoltage;
 						theEventQueue.virtualNet_v.Set(theConnections.sourceId, theConnections.drainId, theConnections.resistance, ++theEventQueue.virtualNet_v.lastUpdate);
 						CheckResistorOverflow_(theEventQueue.virtualNet_v[theConnections.sourceId].finalResistance, theConnections.sourceId, logFile);
-//						theEventQueue.virtualNet_v[theConnections.sourceId].nextNetId = theConnections.drainId;
-//						theEventQueue.virtualNet_v[theConnections.sourceId].resistance = theConnections.resistance;
-//						theEventQueue.virtualNet_v.SetFinalNet(theConnections.sourceId);
 						if ( theConnections.sourceVoltage < theConnections.drainVoltage ) {
 							netStatus_v[theConnections.sourceId][NEEDS_MAX_CONNECTION] = false;
 							if ( gDebug_cvc ) cout << "DEBUG: rerouted max connection check for net: " <<  theConnections.sourceId << endl;
@@ -374,9 +336,6 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						myPower_p->extraData->pullUpVoltage = theConnections.sourceVoltage;
 						theEventQueue.virtualNet_v.Set(theConnections.drainId, theConnections.sourceId, theConnections.resistance, ++theEventQueue.virtualNet_v.lastUpdate);
 						CheckResistorOverflow_(theEventQueue.virtualNet_v[theConnections.drainId].finalResistance, theConnections.drainId, logFile);
-//						theEventQueue.virtualNet_v[theConnections.drainId].nextNetId = theConnections.sourceId;
-//						theEventQueue.virtualNet_v[theConnections.drainId].resistance = theConnections.resistance;
-//						theEventQueue.virtualNet_v.SetFinalNet(theConnections.drainId);
 						if ( theConnections.drainVoltage < theConnections.sourceVoltage ) {
 							netStatus_v[theConnections.drainId][NEEDS_MAX_CONNECTION] = false;
 							if ( gDebug_cvc ) cout << "DEBUG: rerouted max connection check for net: " <<  theConnections.drainId << endl;
@@ -1598,8 +1557,7 @@ void CCvcDb::ShortSimNets(CEventQueue& theEventQueue, deviceId_t theDeviceId, CC
 	}
 	if ( theShortVoltage == myMasterVoltage ) {
 		if ( IsSCRCPower(myMasterPower_p) && connectionCount_v[mySlaveNet].sourceDrainType[NMOS] && connectionCount_v[mySlaveNet].sourceDrainType[PMOS] ) {
-//			errorCount[LEAK]++;
-			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theDeviceId, LEAK) < cvcParameters.cvcCircuitErrorLimit ) {
+			if ( IncrementDeviceError(theDeviceId, LEAK) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 				errorFile << "! Short Detected: SCRC " << PrintVoltage(myMasterVoltage) << " to output" << endl;
 				static CFullConnection myConnections;
 				MapDeviceNets(theDeviceId, myConnections);
@@ -2149,6 +2107,7 @@ void CCvcDb::SetTrivialMinMaxPower() {
 	resistance_t myNmosResistance, myPmosResistance;
 	int	myTrivialCount = 0;
 	int myPrintCount = 1000000;
+	set<string> myUndefinedPowerNets;
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 		if ( myPrintCount-- <= 0 ) {
 			cout << "."; cout.flush();
@@ -2229,11 +2188,25 @@ void CCvcDb::SetTrivialMinMaxPower() {
 							reportFile << " because " << inverterNet_v[net_it] << " ->inv-> " << net_it << " already set" << endl;
 						}
 					}
+				} else if ( gSetup_cvc ) {
+					if ( ! netVoltagePtr_v[myGroundNet] && connectionCount_v[myGroundNet].SourceDrainCount() > 5 ) {
+						myUndefinedPowerNets.insert(NetName(myGroundNet, PRINT_CIRCUIT_ON));
+					}
+					if ( ! netVoltagePtr_v[myPowerNet] && connectionCount_v[myPowerNet].SourceDrainCount() > 5 ) {
+						myUndefinedPowerNets.insert(NetName(myPowerNet, PRINT_CIRCUIT_ON));
+					}
 				}
 			}
 		}
 	}
 	reportFile << " found " << myTrivialCount << " trivial nets" << endl;
+	if ( ! myUndefinedPowerNets.empty() ) {
+		reportFile << endl << "CVC setup: Undefined inverter power" << endl << endl;
+		for ( auto net_pit = myUndefinedPowerNets.begin(); net_pit != myUndefinedPowerNets.end(); net_pit++ ) {
+			reportFile << *net_pit << endl;
+		}
+		reportFile << endl;
+	}
 }
 /*
 void CCvcDb::SetSemiTrivialMinMaxPower() {
@@ -2507,6 +2480,20 @@ void CCvcDb::SetInitialMinMaxPower() {
 	}
 	reportFile << endl;
 	isFixedMinNet = isFixedMaxNet = true;
+	if ( gSetup_cvc ) {
+		set<string> myUndefinedPowerNets;
+		for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+			if ( ! netVoltagePtr_v[net_it] || netVoltagePtr_v[net_it]->type[POWER_BIT] ) continue;
+			if ( connectionCount_v[net_it].SourceDrainCount() > 10 ) {
+				myUndefinedPowerNets.insert(NetName(net_it, PRINT_CIRCUIT_ON) + " " + to_string<size_t>(connectionCount_v[net_it].SourceDrainCount()));
+			}
+		}
+		reportFile << endl << "CVC SETUP: possible power nodes..." << endl << endl;
+		for ( auto item_pit = myUndefinedPowerNets.begin(); item_pit != myUndefinedPowerNets.end(); item_pit++ ) {
+			reportFile << *item_pit << endl;
+		}
+		reportFile << endl;
+	}
 	reportFile << "CVC: Ignoring non-conducting devices..." << endl;
 	// ignore devices with no leak paths
 	// really slow. has to calculate #device*#terminal instead of #net

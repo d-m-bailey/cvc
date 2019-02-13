@@ -161,9 +161,6 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		if ( gInteractive_cvc && --gContinueCount < 1 && InteractiveCvc(STAGE_LINK) == SKIP ) {
 			continue;
 		}
-		if ( gSetup_cvc ) {
-			continue;
-		}
 
 /// Stage 3) Calculate voltages across resistors
 /// - Calculated resistance
@@ -182,6 +179,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// - PMOS source-bulk errors\n
 /// - PMOS gate-source errors\n
 		ResetMinMaxPower();
+		if ( gSetup_cvc ) continue;
 		reportFile << PrintProgress(&lastSnapshot, "MIN/MAX1 ") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( detectErrorFlag ) {

@@ -34,8 +34,7 @@
 #include <stdio.h>
 
 void CCvcDb::PrintFuseError(netId_t theTargetNetId, CConnection & theConnections) {
-//	errorCount[FUSE_ERROR]++;
-	if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theConnections.deviceId, FUSE_ERROR) < cvcParameters.cvcCircuitErrorLimit ) {
+	if ( IncrementDeviceError(theConnections.deviceId, FUSE_ERROR) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 		CFullConnection myFullConnections;
 		CInstance * myInstance_p = instancePtr_v[deviceParent_v[theConnections.deviceId]];
 		CCircuit * myParent_p = myInstance_p->master_p;
@@ -55,8 +54,7 @@ void CCvcDb::PrintFuseError(netId_t theTargetNetId, CConnection & theConnections
 }
 
 void CCvcDb::PrintMinVoltageConflict(netId_t theTargetNetId, CConnection & theMinConnections, voltage_t theExpectedVoltage, float theLeakCurrent) {
-//	errorCount[MIN_VOLTAGE_CONFLICT]++;
-	if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theMinConnections.deviceId, MIN_VOLTAGE_CONFLICT) < cvcParameters.cvcCircuitErrorLimit ) {
+	if ( IncrementDeviceError(theMinConnections.deviceId, MIN_VOLTAGE_CONFLICT) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 		CFullConnection myFullConnections;
 		CInstance * myInstance_p = instancePtr_v[deviceParent_v[theMinConnections.deviceId]];
 		CCircuit * myParent_p = myInstance_p->master_p;
@@ -71,8 +69,7 @@ void CCvcDb::PrintMinVoltageConflict(netId_t theTargetNetId, CConnection & theMi
 }
 
 void CCvcDb::PrintMaxVoltageConflict(netId_t theTargetNetId, CConnection & theMaxConnections, voltage_t theExpectedVoltage, float theLeakCurrent) {
-//	errorCount[MAX_VOLTAGE_CONFLICT]++;
-	if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theMaxConnections.deviceId, MAX_VOLTAGE_CONFLICT) < cvcParameters.cvcCircuitErrorLimit ) {
+	if ( IncrementDeviceError(theMaxConnections.deviceId, MAX_VOLTAGE_CONFLICT) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 		CFullConnection myFullConnections;
 		CInstance * myInstance_p = instancePtr_v[deviceParent_v[theMaxConnections.deviceId]];
 		CCircuit * myParent_p = myInstance_p->master_p;
@@ -575,8 +572,7 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 		} else {
 			myUnrelatedFlag = true;  // if not relatives, always an error
 		}
-//		errorCount[NMOS_GATE_SOURCE]++;
-		if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, NMOS_GATE_SOURCE) < cvcParameters.cvcCircuitErrorLimit ) {
+		if ( IncrementDeviceError(myConnections.deviceId, NMOS_GATE_SOURCE) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 			if ( myUnrelatedFlag ) {
 				errorFile << "Unrelated power error" << endl;
 			} else if ( myConnections.minGatePower_p->type[REFERENCE_BIT] ) {
@@ -646,8 +642,7 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 		} else {
 			myUnrelatedFlag = true; // if not relatives, always an error
 		}
-//		errorCount[PMOS_GATE_SOURCE]++;
-		if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, PMOS_GATE_SOURCE) < cvcParameters.cvcCircuitErrorLimit ) {
+		if ( IncrementDeviceError(myConnections.deviceId, PMOS_GATE_SOURCE) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 			if ( myUnrelatedFlag ) {
 				errorFile << "Unrelated power error" << endl;
 			} else if ( myConnections.maxGatePower_p->type[REFERENCE_BIT] ) {
@@ -759,8 +754,7 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 			myUnrelatedFlag = true;
 		}
 		if ( myErrorFlag ) {
-//			errorCount[NMOS_SOURCE_BULK]++;
-			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, NMOS_SOURCE_BULK) < cvcParameters.cvcCircuitErrorLimit ) {
+			if ( IncrementDeviceError(myConnections.deviceId, NMOS_SOURCE_BULK) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 				if ( myUnrelatedFlag ) {
 					errorFile << "Unrelated power error" << endl;
 				}
@@ -867,8 +861,7 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 			myErrorFlag = true; // if not relatives, always an error
 		}
 		if ( myErrorFlag ) {
-//			errorCount[PMOS_SOURCE_BULK]++;
-			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, PMOS_SOURCE_BULK) < cvcParameters.cvcCircuitErrorLimit ) {
+			if ( IncrementDeviceError(myConnections.deviceId, PMOS_SOURCE_BULK) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 				if ( myUnrelatedFlag ) {
 					errorFile << "Unrelated power error" << endl;
 				}
@@ -976,8 +969,7 @@ void CCvcDb::FindForwardBiasDiodes() {
 				}
 			}
 			if ( myErrorFlag ) {
-//				errorCount[FORWARD_DIODE]++;
-				if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, FORWARD_DIODE) < cvcParameters.cvcCircuitErrorLimit ) {
+				if ( IncrementDeviceError(myConnections.deviceId, FORWARD_DIODE) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 					if ( myUnrelatedFlag ) {
 						errorFile << "Unrelated power error" << endl;
 					}
@@ -1032,8 +1024,7 @@ void CCvcDb::FindNmosPossibleLeakErrors() {
 			myErrorFlag = true;
 		}
 		if ( myErrorFlag ) {
-//			errorCount[NMOS_POSSIBLE_LEAK]++;
-			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, NMOS_POSSIBLE_LEAK) < cvcParameters.cvcCircuitErrorLimit ) {
+			if ( IncrementDeviceError(myConnections.deviceId, NMOS_POSSIBLE_LEAK) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 				PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
 				errorFile << endl;
 			}
@@ -1084,8 +1075,7 @@ void CCvcDb::FindPmosPossibleLeakErrors() {
 			myErrorFlag = true;
 		}
 		if ( myErrorFlag ) {
-//			errorCount[PMOS_POSSIBLE_LEAK]++;
-			if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, PMOS_POSSIBLE_LEAK) < cvcParameters.cvcCircuitErrorLimit ) {
+			if ( IncrementDeviceError(myConnections.deviceId, PMOS_POSSIBLE_LEAK) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 				PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
 				errorFile << endl;
 			}
@@ -1117,8 +1107,7 @@ void CCvcDb::FindFloatingInputErrors() {
 							&& connectionCount_v[net_it].SourceDrainCount() == 0 ) continue;  // skip no leak floating
 					if ( myHasLeakPath || connectionCount_v[net_it].SourceDrainCount() == 0 ) {  // physically floating gates too
 //						CCircuit * myParent_p = instancePtr_v[deviceParent_v[device_it]]->master_p;
-//						errorCount[HIZ_INPUT]++;
-						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, HIZ_INPUT) < cvcParameters.cvcCircuitErrorLimit ) {
+						if ( IncrementDeviceError(myConnections.deviceId, HIZ_INPUT) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 							if ( ! myHasLeakPath ) errorFile << "* No leak path" << endl;
 							if ( ! myFloatingFlag ) errorFile << "* Tri-state input" << endl;
 							PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
@@ -1141,8 +1130,7 @@ void CCvcDb::FindFloatingInputErrors() {
 				bool myHasLeakPath = HasLeakPath(myConnections);
 				if ( myHasLeakPath ) {
 	//						CCircuit * myParent_p = instancePtr_v[deviceParent_v[device_it]]->master_p;
-//					errorCount[HIZ_INPUT]++;
-					if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, HIZ_INPUT) < cvcParameters.cvcCircuitErrorLimit ) {
+					if ( IncrementDeviceError(myConnections.deviceId, HIZ_INPUT) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 						errorFile << "* Secondary HI-Z error" << endl;
 						PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
 						errorFile << endl;
@@ -1306,8 +1294,7 @@ void CCvcDb::FindLDDErrors() {
 										myConnections.masterMaxDrainNet.nextNetId != GetEquivalentNet(myConnections.sourceId)) ) { // NMOS max voltage resistance check is intentionally backwards
 								if ( !( IsKnownVoltage_(myConnections.simGateVoltage) &&
 										myConnections.simGateVoltage <= min(myConnections.minSourceVoltage, myConnections.minDrainVoltage) ) ) {
-//									errorCount[LDD_SOURCE]++;
-									if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, LDD_SOURCE) < cvcParameters.cvcCircuitErrorLimit ) {
+									if ( IncrementDeviceError(myConnections.deviceId, LDD_SOURCE) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 										PrintDeviceWithAllConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile);
 										errorFile << endl;
 									}
@@ -1328,8 +1315,7 @@ void CCvcDb::FindLDDErrors() {
 										myConnections.masterMinDrainNet.nextNetId != GetEquivalentNet(myConnections.sourceId)) ) { // PMOS max voltage resistance check is intentionally backwards
 								if ( !( IsKnownVoltage_(myConnections.simGateVoltage) &&
 										myConnections.simGateVoltage >= max(myConnections.maxSourceVoltage, myConnections.maxDrainVoltage) ) ) {
-//									errorCount[LDD_SOURCE]++;
-									if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, LDD_SOURCE) < cvcParameters.cvcCircuitErrorLimit ) {
+									if ( IncrementDeviceError(myConnections.deviceId, LDD_SOURCE) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 										PrintDeviceWithAllConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile);
 										errorFile << endl;
 									}

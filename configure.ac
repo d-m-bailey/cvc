@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT(CVC, [0.17.10], [cvc@shuharisystem.com])
+AC_INIT(CVC, [0.17.11], [cvc@shuharisystem.com])
 AC_CONFIG_SRCDIR(src)
 AC_CONFIG_HEADERS([config.h])
 AC_USE_SYSTEM_EXTENSIONS
