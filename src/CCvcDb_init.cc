@@ -1289,8 +1289,8 @@ returnCode_t CCvcDb::SetExpectedPower() {
 					reportFile << netVoltagePtr_v[*netId_pit]->powerSignal() << "(" << netVoltagePtr_v[*netId_pit]->definition;
 					reportFile << ")\" != \"" << myPower_p->powerSignal() << "(" << myPower_p->definition << ")\"" << endl;
 					myPowerError = true;
+					continue;
 				}
-				continue;
 			}
 			if ( netId_pit != myNetIdList->begin() ) {
 				myPower_p = new CPower(myPower_p, *netId_pit);
@@ -1725,7 +1725,7 @@ void CCvcDb::PrintNetSuggestions() {
 			myDeviceCount[model_pit->name] = 0;
 		}
 	}
-	reportFile << "CVC: Bulk > SD" << endl << endl;
+	reportFile << "CVC SETUP: Bulk > SD" << endl << endl;
 	for( auto net_it = 0; net_it < netCount; net_it++ ) {
 		if ( netVoltagePtr_v[net_it] ) continue;
 		if ( myBulkCount.count(net_it) && myBulkCount[net_it].first > connectionCount_v[net_it].SourceDrainCount() ) {
@@ -1780,7 +1780,7 @@ void CCvcDb::PrintNetSuggestions() {
 */
 	}
 	reportFile << endl;
-	reportFile << "CVC: INPUT PORTS" << endl << endl;
+	reportFile << "CVC SETUP: INPUT PORTS" << endl << endl;
 	for( auto net_it = 0; net_it < topCircuit_p->portCount; net_it++ ) {
 		if ( netVoltagePtr_v[net_it] ) continue;
 		unordered_set<netId_t> myCheckedNets;

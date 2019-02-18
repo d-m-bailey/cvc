@@ -2190,10 +2190,10 @@ void CCvcDb::SetTrivialMinMaxPower() {
 					}
 				} else if ( gSetup_cvc ) {
 					if ( ! netVoltagePtr_v[myGroundNet] && connectionCount_v[myGroundNet].SourceDrainCount() > 5 ) {
-						myUndefinedPowerNets.insert(NetName(myGroundNet, PRINT_CIRCUIT_ON));
+						myUndefinedPowerNets.insert(NetName(myGroundNet, PRINT_CIRCUIT_ON) + " " + to_string<deviceId_t>(connectionCount_v[myGroundNet].SourceDrainCount()) );
 					}
 					if ( ! netVoltagePtr_v[myPowerNet] && connectionCount_v[myPowerNet].SourceDrainCount() > 5 ) {
-						myUndefinedPowerNets.insert(NetName(myPowerNet, PRINT_CIRCUIT_ON));
+						myUndefinedPowerNets.insert(NetName(myPowerNet, PRINT_CIRCUIT_ON) + " " + to_string<deviceId_t>(connectionCount_v[myPowerNet].SourceDrainCount()) );
 					}
 				}
 			}
@@ -2201,7 +2201,7 @@ void CCvcDb::SetTrivialMinMaxPower() {
 	}
 	reportFile << " found " << myTrivialCount << " trivial nets" << endl;
 	if ( ! myUndefinedPowerNets.empty() ) {
-		reportFile << endl << "CVC setup: Undefined inverter power" << endl << endl;
+		reportFile << endl << "CVC SETUP: Undefined inverter power" << endl << endl;
 		for ( auto net_pit = myUndefinedPowerNets.begin(); net_pit != myUndefinedPowerNets.end(); net_pit++ ) {
 			reportFile << *net_pit << endl;
 		}
@@ -2484,7 +2484,12 @@ void CCvcDb::SetInitialMinMaxPower() {
 		set<string> myUndefinedPowerNets;
 		for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 			if ( ! netVoltagePtr_v[net_it] || netVoltagePtr_v[net_it]->type[POWER_BIT] ) continue;
-			if ( connectionCount_v[net_it].SourceDrainCount() > 10 ) {
+			if ( minNet_v[net_it].finalNetId != UNKNOWN_NET && maxNet_v[net_it].finalNetId != UNKNOWN_NET
+					&& netVoltagePtr_v[minNet_v[net_it].finalNetId] && netVoltagePtr_v[maxNet_v[net_it].finalNetId]
+					&& netVoltagePtr_v[minNet_v[net_it].finalNetId]->minVoltage != UNKNOWN_VOLTAGE
+					&& netVoltagePtr_v[maxNet_v[net_it].finalNetId]->maxVoltage != UNKNOWN_VOLTAGE
+					&& netVoltagePtr_v[minNet_v[net_it].finalNetId]->minVoltage <= netVoltagePtr_v[maxNet_v[net_it].finalNetId]->maxVoltage ) continue;
+			if ( connectionCount_v[net_it].SourceDrainCount() > 9 ) {
 				myUndefinedPowerNets.insert(NetName(net_it, PRINT_CIRCUIT_ON) + " " + to_string<size_t>(connectionCount_v[net_it].SourceDrainCount()));
 			}
 		}

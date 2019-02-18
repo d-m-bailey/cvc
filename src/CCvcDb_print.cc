@@ -162,8 +162,8 @@ string CCvcDb::NetName(CPower * thePowerPtr, bool thePrintCircuitFlag, bool theP
 }
 
 string CCvcDb::NetName(const netId_t theNetId, bool thePrintCircuitFlag, bool thePrintHierarchyFlag) {
-	instanceId_t myParentId = netParent_v[theNetId];
 	if ( theNetId == UNKNOWN_NET ) return "unknown";
+	instanceId_t myParentId = netParent_v[theNetId];
 	if ( myParentId == 0 && theNetId < instancePtr_v[myParentId]->master_p->portCount ) {
 		return instancePtr_v[myParentId]->master_p->internalSignal_v[theNetId] + NetAlias(theNetId, thePrintCircuitFlag);
 	} else {
@@ -401,6 +401,7 @@ void CCvcDb::PrintPowerList(ostream & theOutputFile, string theHeading, string t
 		(*power_ppit)->Print(theOutputFile, theIndentation + " ", myRealPowerName);
 	}
 	myLastPowerSignal = NULL;
+	theOutputFile << theIndentation << "> expected values" << endl;
 	for (auto power_ppit = cvcParameters.cvcExpectedLevelPtrList.begin(); power_ppit != cvcParameters.cvcExpectedLevelPtrList.end(); power_ppit++) {
 		myRealPowerName = NetName((*power_ppit)->netId);
 		if ( myLastPowerSignal != (*power_ppit)->powerSignal() && myRealPowerName != string((*power_ppit)->powerSignal()) ) {

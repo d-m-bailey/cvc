@@ -179,9 +179,9 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// - PMOS source-bulk errors\n
 /// - PMOS gate-source errors\n
 		ResetMinMaxPower();
-		if ( gSetup_cvc ) continue;
 		reportFile << PrintProgress(&lastSnapshot, "MIN/MAX1 ") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
+		if ( gSetup_cvc ) continue;
 		if ( detectErrorFlag ) {
 			//FindForwardBiasDiodes();
 			if ( ! cvcParameters.cvcSOI ) {
