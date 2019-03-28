@@ -116,6 +116,7 @@ void CCvcParameters::ResetEnvironment() {
 	cvcExpectedErrorThreshold = defaultErrorThreshold;
 	//! Ignore errors with voltage difference less than the threshold. Default is 0, flag errors regardless of voltage difference.
 	cvcParallelCircuitPortLimit = defaultParallelCircuitPortLimit;
+	cvcCellErrorLimitFile = defaultCellErrorLimitFile;
 }
 
 void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
@@ -147,6 +148,7 @@ void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
 	theOutputFile << "CVC_LEAK?_ERROR_THRESHOLD = '" << Voltage_to_float(cvcLeakErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_EXPECTED_ERROR_THRESHOLD = '" << Voltage_to_float(cvcExpectedErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParallelCircuitPortLimit << "'" << endl;
+	theOutputFile << "CVC_CELL_ERROR_LIMIT_FILE = '" << cvcCellErrorLimitFile << "'" << endl;
 	theOutputFile << "End of parameters" << endl << endl;
 }
 
@@ -185,6 +187,7 @@ void CCvcParameters::PrintDefaultEnvironment() {
 	myDefaultCvcrc << "CVC_LEAK?_ERROR_THRESHOLD = '" << Voltage_to_float(cvcLeakErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_EXPECTED_ERROR_THRESHOLD = '" << Voltage_to_float(cvcExpectedErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParallelCircuitPortLimit << "'" << endl;
+	myDefaultCvcrc << "CVC_CELL_ERROR_LIMIT_FILE = '" << cvcCellErrorLimitFile << "'" << endl;
 	myDefaultCvcrc.close();
 }
 
@@ -286,6 +289,8 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 				reportFile << "Parallel circuit port limit set to " << MAX_PARALLEL_CIRCUIT_PORT_LIMIT << endl;
 				cvcParallelCircuitPortLimit = MAX_PARALLEL_CIRCUIT_PORT_LIMIT;
 			}
+		} else if ( myVariable == "CVC_CELL_ERROR_LIMIT_FILE" ) {
+			cvcCellErrorLimitFile = myBuffer;
 		}
 	}
 	if ( ! IsEmpty(theReportPrefix) ) {
@@ -531,3 +536,4 @@ void CCvcParameters::PrintPowerList(ostream & theLogFile, string theIndentation)
 	}
 	theLogFile << theIndentation << "PowerList> end" << endl << endl;
 }
+

@@ -72,7 +72,8 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 ///	Read model and power settings.
 		modelFileStatus = cvcParameters.LoadModels();
 		powerFileStatus = cvcParameters.LoadPower();
-		if ( modelFileStatus != OK || powerFileStatus != OK ) { // Catch syntax problems before reading netlist
+		returnCode_t myCellErrorLimitStatus = LoadCellErrorLimits();
+		if ( modelFileStatus != OK || powerFileStatus != OK || myCellErrorLimitStatus != OK ) { // Catch syntax problems before reading netlist
 			if ( ! gInteractive_cvc ) {
 				reportFile << "ERROR: skipped due to problems in model/power files" << endl;
 				continue;
@@ -181,21 +182,25 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		ResetMinMaxPower();
 		reportFile << PrintProgress(&lastSnapshot, "MIN/MAX1 ") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
-		if ( gSetup_cvc ) continue;
 		if ( detectErrorFlag ) {
 			//FindForwardBiasDiodes();
 			if ( ! cvcParameters.cvcSOI ) {
 				FindNmosSourceVsBulkErrors();
 			}
-			FindNmosGateVsSourceErrors();
+			if ( ! gSetup_cvc ) {
+				FindNmosGateVsSourceErrors();
+			}
 			if ( ! cvcParameters.cvcSOI ) {
 				FindPmosSourceVsBulkErrors();
 			}
-			FindPmosGateVsSourceErrors();
+			if ( ! gSetup_cvc ) {
+				FindPmosGateVsSourceErrors();
+			}
 			reportFile << PrintProgress(&lastSnapshot, "ERROR ") << endl;
 		}
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_FIRST_MINMAX) == SKIP ) continue;
+		if ( gSetup_cvc ) continue;
 
 /// Stage 5) First sim propagation\n
 /// - missing bulk connection check

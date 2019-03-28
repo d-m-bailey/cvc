@@ -1032,10 +1032,27 @@ size_t CCvcDb::IncrementDeviceError(deviceId_t theDeviceId, int theErrorIndex) {
 		myErrorSubIndex = theErrorIndex - OVERVOLTAGE_VBG;
 	}
 	int myMFactor = CalculateMFactor(deviceParent_v[theDeviceId]);
-	int myLastErrorCount = myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex];
+	int myReturnCount = myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex] + 1;
+	string myKey = "";
+	deviceId_t myLimit = UNKNOWN_DEVICE;
+	if ( ! IsEmpty(cvcParameters.cvcCellErrorLimitFile) ) {
+		instanceId_t myAncestor = deviceParent_v[theDeviceId];
+		while ( myAncestor > 0 && instancePtr_v[myAncestor]->master_p->errorLimit == UNKNOWN_DEVICE ) {
+			myAncestor = instancePtr_v[myAncestor]->parentId;
+		}
+		if (myAncestor > 0) {
+			myKey = string(instancePtr_v[myAncestor]->master_p->name) + " " + string(myParent_p->name) + " "
+					+ to_string<deviceId_t>(theDeviceId - myInstance_p->firstDeviceId) + " " + to_string<int>(myErrorSubIndex);
+			myLimit = instancePtr_v[myAncestor]->master_p->errorLimit;
+			if ( cellErrorCountMap[myKey] > myLimit ) {
+				myReturnCount = UNKNOWN_DEVICE;
+			}
+			cellErrorCountMap[myKey] += myMFactor;
+		}
+	}
 	myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex] += myMFactor;
 	errorCount[theErrorIndex] += myMFactor;
-	return(myLastErrorCount + 1);
+	return(myReturnCount);
 }
 
 list<string> * CCvcDb::SplitHierarchy(string theFullPath) {

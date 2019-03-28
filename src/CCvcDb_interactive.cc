@@ -538,7 +538,7 @@ deviceId_t CCvcDb::FindDevice(instanceId_t theCurrentInstanceId, string theDevic
 		CCircuit * myCircuit_p = instancePtr_v[myCurrentInstanceId]->master_p;
 		string myParentName = HierarchyName(myCurrentInstanceId, false) + HIERARCHY_DELIMITER;
 		myDeviceName = theDeviceName.substr(myParentName.length() - myInitialHierarchy.length());
-		return instancePtr_v[myCurrentInstanceId]->firstDeviceId + myCircuit_p->GetLocalSubcircuitId(cvcCircuitList.cdlText.GetTextAddress(myDeviceName));
+		return instancePtr_v[myCurrentInstanceId]->firstDeviceId + myCircuit_p->GetLocalDeviceId(cvcCircuitList.cdlText.GetTextAddress(myDeviceName));
 	}
 	catch (const out_of_range& oor_exception) {
 		reportFile << "Could not find device " << HierarchyName(myCurrentInstanceId) << HIERARCHY_DELIMITER << myDeviceName << endl;
@@ -908,7 +908,11 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				myNumberString = "";
 				if ( myInputStream >> myNumberString ) {
 					myNumber = from_string<size_t>(myNumberString);
-					reportFile << "Device " << myNumber << ": " << DeviceName(myNumber, myPrintSubcircuitNameFlag) << endl;
+					if ( myNumber == 0 && myNumberString != "0" ) {
+						reportFile << "Invalid device number" << endl;
+					} else {
+						reportFile << "Device " << myNumber << ": " << DeviceName(myNumber, myPrintSubcircuitNameFlag) << endl;
+					}
 				} else {
 					myCommandMode = "pd";
 				}
@@ -916,7 +920,11 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				myNumberString = "";
 				if ( myInputStream >> myNumberString ) {
 					myNumber = from_string<size_t>(myNumberString);
-					reportFile << "Net " << myNumber << ": " << NetName(myNumber, myPrintSubcircuitNameFlag) << endl;
+					if ( myNumber == 0 && myNumberString != "0" ) {
+						reportFile << "Invalid net number" << endl;
+					} else {
+						reportFile << "Net " << myNumber << ": " << NetName(myNumber, myPrintSubcircuitNameFlag) << endl;
+					}
 				} else {
 					myCommandMode = "pn";
 				}
@@ -979,11 +987,18 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 						}
 						string mySimpleName = NetName(myEquivalentNetId, PRINT_CIRCUIT_OFF);
 						if ( leakVoltageSet && leakVoltagePtr_v[myEquivalentNetId] && leakVoltagePtr_v[myEquivalentNetId] != netVoltagePtr_v[myEquivalentNetId] ) {
-							reportFile << " leak definition " << leakVoltagePtr_v[myEquivalentNetId]->powerSignal() << LeakShortString(myEquivalentNetId, myPrintSubcircuitNameFlag) << endl;
+							reportFile << " leak definition " << leakVoltagePtr_v[myEquivalentNetId]->powerSignal()
+									<< LeakShortString(myEquivalentNetId, myPrintSubcircuitNameFlag) << endl;
+							reportFile << "  default min " << NetName(leakVoltagePtr_v[myEquivalentNetId]->defaultMinNet) << endl;
+							reportFile << "  default sim " << NetName(leakVoltagePtr_v[myEquivalentNetId]->defaultSimNet) << endl;
+							reportFile << "  default max " << NetName(leakVoltagePtr_v[myEquivalentNetId]->defaultMaxNet) << endl;
 						}
 						if ( powerFileStatus == OK && netVoltagePtr_v[myEquivalentNetId] ) {
 							if ( netVoltagePtr_v[myEquivalentNetId]->powerSignal() != mySimpleName ) {
 								reportFile << " base definition " << netVoltagePtr_v[myEquivalentNetId]->powerSignal();
+								reportFile << "  default min " << NetName(netVoltagePtr_v[myEquivalentNetId]->defaultMinNet) << endl;
+								reportFile << "  default sim " << NetName(netVoltagePtr_v[myEquivalentNetId]->defaultSimNet) << endl;
+								reportFile << "  default max " << NetName(netVoltagePtr_v[myEquivalentNetId]->defaultMaxNet) << endl;
 							}
 							reportFile << ShortString(myEquivalentNetId, myPrintSubcircuitNameFlag) << endl;
 						}

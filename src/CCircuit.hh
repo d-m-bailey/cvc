@@ -39,6 +39,7 @@ class CCircuit {
 	static text_t lastSubcircuitMap;
 	static CTextDeviceIdMap localSubcircuitIdMap;
 public:
+	deviceId_t errorLimit = UNKNOWN_DEVICE;
 	text_t name;
 	// local signal to local netID Map
 	CTextNetIdMap localSignalIdMap;

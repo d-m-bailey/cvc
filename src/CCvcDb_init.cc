@@ -989,6 +989,13 @@ returnCode_t CCvcDb::SetInstancePower() {
 		forward_list<instanceId_t> myInstanceIdList = FindInstanceIds((*instance_ppit)->instanceName);  // expands buses and hierarchy
 		for ( auto instanceId_pit = myInstanceIdList.begin(); instanceId_pit != myInstanceIdList.end(); instanceId_pit++ ) {
 			CPowerPtrMap myLocalMacroPtrMap;
+			for (auto powerMap_pit = cvcParameters.cvcPowerMacroPtrMap.begin(); powerMap_pit != cvcParameters.cvcPowerMacroPtrMap.end(); powerMap_pit++) {
+				// Add top macros
+				netId_t myNetId = FindNet(0, powerMap_pit->first, false);
+				if (myNetId == UNKNOWN_NET) {  // power definition does not exist, therefore this is macro
+					myLocalMacroPtrMap[powerMap_pit->first] = new CPower(powerMap_pit->second);
+				}
+			}
 			logFile << " Setting power for instance " << HierarchyName(*instanceId_pit) << endl;
 			for ( auto power_pit = (*instance_ppit)->powerList.begin(); power_pit != (*instance_ppit)->powerList.end(); power_pit++ ) {
 				CPower * myPower_p = new CPower(*power_pit, myLocalMacroPtrMap, cvcParameters.cvcModelListMap);
@@ -1032,8 +1039,10 @@ returnCode_t CCvcDb::SetInstancePower() {
 						}
 					} else {
 						if ( netVoltagePtr_v[myNetId] ) {
-							reportFile << "Warning: Duplicate power definition " << NetName(myNetId);
-							reportFile << " and " << myPower_p->powerSignal() << " of " << HierarchyName(*instanceId_pit) << " ignored" << endl;
+							if ( netVoltagePtr_v[myNetId]->definition != myPower_p->definition ) {
+								reportFile << "Warning: Duplicate power definition " << NetName(myNetId) << "(" << netVoltagePtr_v[myNetId]->definition << ")";
+								reportFile << " and " << myPower_p->powerSignal() << "(" << myPower_p->definition << ") of " << HierarchyName(*instanceId_pit) << " ignored" << endl;
+							}
 						} else {
 							cvcParameters.cvcPowerPtrList.push_back(myPower_p);
 							netVoltagePtr_v[myNetId] = myPower_p;
@@ -1532,5 +1541,36 @@ void CCvcDb::PrintNetSuggestions() {
 		}
 	}
 	reportFile << endl;
+}
+
+returnCode_t CCvcDb::LoadCellErrorLimits() {
+	if ( IsEmpty(cvcParameters.cvcCellErrorLimitFile) ) return OK;
+	igzstream myCellErrorLimitFile;
+	myCellErrorLimitFile.open(cvcParameters.cvcCellErrorLimitFile);
+	if ( myCellErrorLimitFile.fail() ) {
+		throw EFatalError("Could not open " + cvcParameters.cvcCellErrorLimitFile);
+		exit(1);
+	}
+	string myInput;
+
+	reportFile << "CVC: Reading cell error limit settings..." << endl;
+	string myCellName;
+	try {
+		while ( getline(myCellErrorLimitFile, myInput) ) {
+			int myCellNameStart = myInput.find_first_not_of(" \t\n");
+			int myCellNameEnd = myInput.find_first_of(" \t\n", myCellNameStart);
+			myCellName = myInput.substr(myCellNameStart, myCellNameEnd - myCellNameStart);
+			int myErrorLimit = from_string<int>(myInput.substr(myCellNameEnd));
+			CCircuit * theMaster_p = cvcCircuitList.FindCircuit(myCellName);
+			theMaster_p->errorLimit = myErrorLimit;
+			cout << "DEBUG: error limit for " << myCellName << " is " << myErrorLimit << endl;
+		}
+	}
+	catch (...) {
+		reportFile << "ERROR: Could not find error limit cell " << myCellName << " in netlist" << endl;
+		return FAIL;
+	}
+	myCellErrorLimitFile.close();
+	return OK;
 }
 

@@ -294,6 +294,7 @@ void CCircuitPtrList::PrintAndResetCircuitErrors(CCvcDb * theCvcDb_p, deviceId_t
 	}
 //	theLogFile << endl << "! Finished" << endl << endl;
 	theErrorFile << endl<< "! Finished" << endl << endl;
+	theCvcDb_p->cellErrorCountMap.clear();
 }
  
 void CCircuit::AllocateInstances(CCvcDb * theCvcDb_p, instanceId_t theFirstInstanceId) {

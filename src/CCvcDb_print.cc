@@ -1488,3 +1488,40 @@ void CCvcDb::PrintClassSizes() {
 	cout << "CVirtualNetMappedVector " << sizeof(class CVirtualNetMappedVector) << endl;
 	cout << "CVirtualNetVector " << sizeof(class CVirtualNetVector) << endl;
 }
+
+void CCvcDb::PrintNetWithModelCounts(netId_t theNetId, int theTerminals) {
+	map<string, deviceId_t> myDeviceCount;
+	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
+		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
+			myDeviceCount[model_pit->name] = 0;
+		}
+	}
+	if ( theTerminals & GATE ) {
+		for ( deviceId_t device_it = firstGate_v[theNetId]; device_it != UNKNOWN_NET; device_it = nextGate_v[device_it]) {
+			CInstance * myInstance_p = instancePtr_v[deviceParent_v[device_it]];
+			deviceId_t myDeviceOffset = device_it - myInstance_p->firstDeviceId;
+			myDeviceCount[myInstance_p->master_p->devicePtr_v[myDeviceOffset]->model_p->name]++;
+		}
+	}
+	if ( theTerminals & SOURCE ) {
+		for ( deviceId_t device_it = firstSource_v[theNetId]; device_it != UNKNOWN_NET; device_it = nextSource_v[device_it]) {
+			CInstance * myInstance_p = instancePtr_v[deviceParent_v[device_it]];
+			deviceId_t myDeviceOffset = device_it - myInstance_p->firstDeviceId;
+			myDeviceCount[myInstance_p->master_p->devicePtr_v[myDeviceOffset]->model_p->name]++;
+		}
+	}
+	if ( theTerminals & DRAIN ) {
+		for ( deviceId_t device_it = firstDrain_v[theNetId]; device_it != UNKNOWN_NET; device_it = nextDrain_v[device_it]) {
+			CInstance * myInstance_p = instancePtr_v[deviceParent_v[device_it]];
+			deviceId_t myDeviceOffset = device_it - myInstance_p->firstDeviceId;
+			myDeviceCount[myInstance_p->master_p->devicePtr_v[myDeviceOffset]->model_p->name]++;
+		}
+	}
+	reportFile << NetName(theNetId, PRINT_CIRCUIT_ON);
+	for ( auto count_pit = myDeviceCount.begin(); count_pit != myDeviceCount.end(); count_pit++ ) {
+		if ( count_pit->second > 0 ) {
+			reportFile << " " << count_pit->first << "(" << count_pit->second << ")";
+		}
+	}
+	reportFile << endl;
+}

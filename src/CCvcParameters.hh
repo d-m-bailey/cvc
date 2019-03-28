@@ -28,6 +28,7 @@
 
 #include "CModel.hh"
 #include "CPower.hh"
+#include "CCircuit.hh"
 
 #include <cstring>
 
@@ -50,6 +51,7 @@ public:
 	const bool defaultLogicDiodes = false;
 	const voltage_t defaultErrorThreshold = 0;
 	const size_t defaultParallelCircuitPortLimit = 0;
+	const string defaultCellErrorLimitFile = "";
 
 	string	cvcReportTitle;
 
@@ -71,6 +73,7 @@ public:
 	CPowerPtrMap	cvcPowerMacroPtrMap;
 	CInstancePowerPtrList	cvcInstancePowerPtrList;
 	CPowerFamilyMap cvcPowerFamilyMap;
+	unordered_map<string, int> cvcCellErrorLimit;
 	deviceId_t	cvcCircuitErrorLimit = defaultErrorLimit;
 	float	cvcLeakLimit = defaultLeakLimit;
 	size_t		cvcSearchLimit = defaultSearchLimit;
@@ -91,6 +94,7 @@ public:
 	voltage_t	cvcLeakErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcExpectedErrorThreshold = defaultErrorThreshold;
 	size_t	cvcParallelCircuitPortLimit = defaultParallelCircuitPortLimit;
+	string	cvcCellErrorLimitFile = defaultCellErrorLimitFile;
 
 	string	cvcLastTopBlock;
 	string	cvcLastNetlistFilename;
@@ -114,6 +118,7 @@ public:
 	void	AddTestPower();
 	void	SetHiZPropagation();
 	void	PrintPowerList(ostream & theLogFile, string theIndentation = "");
+
 };
 
 #endif /* CCVCPARAMETERS_HH_ */

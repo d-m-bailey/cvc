@@ -231,7 +231,9 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						netStatus_v[theConnections.sourceId][NEEDS_MIN_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed matching min connection check for net: " << theConnections.sourceId << " "
 							<< theConnections.sourceVoltage << endl;
-					} else if ( ! leakVoltageSet && IsNmos_(deviceType_v[theDeviceId]) && LastNmosConnection(MIN_PENDING, theConnections.sourceId) ) {
+					} else if ( ! leakVoltageSet
+							&& ( ( IsNmos_(deviceType_v[theDeviceId]) && LastNmosConnection(MIN_PENDING, theConnections.sourceId) )
+									|| theConnections.device_p->IsResistor() ) ) {
 						// remove calculated net and reroute to drain. only for initial power prop.
 						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
 						myPower_p->extraData->pullDownVoltage = theConnections.drainVoltage;
@@ -263,7 +265,9 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						netStatus_v[theConnections.drainId][NEEDS_MIN_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed matching min connection check for net: " << theConnections.drainId << " "
 							<< theConnections.drainVoltage << endl;
-					} else if ( ! leakVoltageSet && IsNmos_(deviceType_v[theDeviceId]) && LastNmosConnection(MIN_PENDING, theConnections.drainId) ) {
+					} else if ( ! leakVoltageSet
+							 && ( ( IsNmos_(deviceType_v[theDeviceId]) && LastNmosConnection(MIN_PENDING, theConnections.drainId) )
+									 || theConnections.device_p->IsResistor() ) ) {
 						// remove calculated net and reroute to drain. only for initial power prop.
 						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
 						myPower_p->extraData->pullDownVoltage = theConnections.sourceVoltage;
@@ -298,7 +302,9 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						netStatus_v[theConnections.sourceId][NEEDS_MAX_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed matching max connection check for net: " << theConnections.sourceId << " "
 							<< theConnections.sourceVoltage << endl;
-					} else if ( ! leakVoltageSet && IsPmos_(deviceType_v[theDeviceId]) && LastPmosConnection(MAX_PENDING, theConnections.sourceId) ) {
+					} else if ( ! leakVoltageSet
+							&& ( ( IsPmos_(deviceType_v[theDeviceId]) && LastPmosConnection(MAX_PENDING, theConnections.sourceId) )
+									|| theConnections.device_p->IsResistor() ) ) {
 						// remove calculated net and reroute to drain. only for initial power prop.
 						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
 						myPower_p->extraData->pullUpVoltage = theConnections.drainVoltage;
@@ -330,7 +336,9 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 						netStatus_v[theConnections.drainId][NEEDS_MAX_CONNECTION] = false;
 						if ( gDebug_cvc ) cout << "DEBUG: removed matching max connection check for net: " << theConnections.drainId << " "
 							<< theConnections.drainVoltage << endl;
-					} else if ( ! leakVoltageSet && IsPmos_(deviceType_v[theDeviceId]) && LastPmosConnection(MAX_PENDING, theConnections.drainId) ) {
+					} else if ( ! leakVoltageSet
+							&& ( ( IsPmos_(deviceType_v[theDeviceId]) && LastPmosConnection(MAX_PENDING, theConnections.drainId) )
+									|| theConnections.device_p->IsResistor() ) ) {
 						// remove calculated net and reroute to drain. only for initial power prop.
 						if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
 						myPower_p->extraData->pullUpVoltage = theConnections.sourceVoltage;
@@ -2189,6 +2197,15 @@ void CCvcDb::SetTrivialMinMaxPower() {
 						}
 					}
 				} else if ( gSetup_cvc ) {
+					CStatus myGateTypes;
+					for ( deviceId_t device_it = firstGate_v[net_it]; device_it != UNKNOWN_DEVICE; device_it = nextGate_v[device_it] ) {
+						if ( IsNmos_(deviceType_v[device_it]) ) {
+							myGateTypes[NMOS] = true;
+						} else if ( IsPmos_(deviceType_v[device_it]) ) {
+							myGateTypes[PMOS] = true;
+						}
+					}
+					if ( myGateTypes != NMOS_PMOS ) continue;  // Only flag if has connections to nmos and pmos gates.
 					if ( ! netVoltagePtr_v[myGroundNet] && connectionCount_v[myGroundNet].SourceDrainCount() > 5 ) {
 						myUndefinedPowerNets.insert(NetName(myGroundNet, PRINT_CIRCUIT_ON) + " " + to_string<deviceId_t>(connectionCount_v[myGroundNet].SourceDrainCount()) );
 					}

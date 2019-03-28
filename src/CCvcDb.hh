@@ -166,6 +166,8 @@ public:
 
 	map<netId_t, string> calculatedResistanceInfo_v;
 
+	unordered_map<string, deviceId_t> cellErrorCountMap;
+
 	ogzstream errorFile;
 	ofstream logFile;
 	teestream reportFile;
@@ -230,6 +232,7 @@ public:
 		CDeviceIdVector & theFirstDrain_v, CDeviceIdVector & theNextDrain_v, CNetIdVector & theSourceNet_v);
 	bool IsOppositeLogic(netId_t theFirstNet, netId_t theSecondNet);
 	void PrintNetSuggestions();
+	returnCode_t	LoadCellErrorLimits();
 
 	// error
 	void PrintFuseError(netId_t theTargetNetId, CConnection & theConnections);
@@ -434,6 +437,7 @@ public:
 	string NetVoltageSuffix(string theDelimiter, string theVoltage, resistance_t theResistance, string theLeakVoltage = "");
 	void PrintResistorOverflow(netId_t theNet, ofstream& theOutputFile);
 	void PrintClassSizes();
+	void PrintNetWithModelCounts(netId_t theNetId, int theTerminals);
 
 	// CCvcDb-interactive
 	void FindInstances(string theSubcircuit, bool thePrintCircuitFlag);

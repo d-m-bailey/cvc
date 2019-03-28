@@ -307,14 +307,14 @@ bool CPower::IsSamePower(CPower * theMatchPower) {
 }
 
 bool CPower::IsValidSubset(CPower * theMatchPower, voltage_t theThreshold) {
-	return ( theMatchPower->type == NO_TYPE &&
-			abs(minVoltage - theMatchPower->minVoltage) <= theThreshold &&
-			abs(simVoltage - theMatchPower->simVoltage) <= theThreshold &&
-			abs(maxVoltage - theMatchPower->maxVoltage) <= theThreshold &&
+	return ( (theMatchPower->type == NO_TYPE || (type[POWER_BIT] && theMatchPower->type[INPUT_BIT]) ) &&
+			(theMatchPower->minVoltage == UNKNOWN_VOLTAGE || abs(minVoltage - theMatchPower->minVoltage) <= theThreshold) &&
+			(theMatchPower->simVoltage == UNKNOWN_VOLTAGE || abs(simVoltage - theMatchPower->simVoltage) <= theThreshold) &&
+			(theMatchPower->maxVoltage == UNKNOWN_VOLTAGE || abs(maxVoltage - theMatchPower->maxVoltage) <= theThreshold) &&
 			theMatchPower->expectedMin() == "" &&
 			theMatchPower->expectedSim() == "" &&
 			theMatchPower->expectedMax() == "" &&
-			theMatchPower->family() == "");
+			IsRelative(theMatchPower, true, false));
 }
 
 void CPowerFamilyMap::AddFamily(string thePowerString) {
@@ -898,7 +898,9 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 //		myPower_p->type[SIM_CALCULATED_BIT] = true;
 	}
 	if ( theEventQueue.queueType == MIN_QUEUE ) {
-		if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) throw EDatabaseError("FindCalculatedPower: Min " + to_string<voltage_t>(myPower_p->minVoltage));
+		if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) {
+			throw EDatabaseError("CalculatePower: Min " + to_string<voltage_t>(myPower_p->minVoltage) + " at " + theCvcDb_p->NetName(theNetId));
+		}
 		myPower_p->minVoltage = theShortVoltage;
 		myPower_p->defaultMinNet = theDefaultNetId;
 		myPower_p->type[MIN_CALCULATED_BIT] = true;
@@ -919,7 +921,9 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 //		}
 	}
 	if ( theEventQueue.queueType == MAX_QUEUE ) {
-		if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) throw EDatabaseError("FindCalculatedPower: Max " + to_string<voltage_t>(myPower_p->maxVoltage));
+		if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) {
+			throw EDatabaseError("CalculatePower: Max " + to_string<voltage_t>(myPower_p->maxVoltage) + " at " + theCvcDb_p->NetName(theNetId));
+		}
 		myPower_p->maxVoltage = theShortVoltage;
 		myPower_p->defaultMaxNet = theDefaultNetId;
 		myPower_p->type[MAX_CALCULATED_BIT] = true;
@@ -940,7 +944,9 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 //		}
 	}
 	if ( theEventQueue.queueType == SIM_QUEUE ) {
-		if ( myPower_p->simVoltage != UNKNOWN_VOLTAGE ) throw EDatabaseError("FindCalculatedPower: Sim " + to_string<voltage_t>(myPower_p->simVoltage));
+		if ( myPower_p->simVoltage != UNKNOWN_VOLTAGE ) {
+			throw EDatabaseError("CalculatePower: Sim " + to_string<voltage_t>(myPower_p->simVoltage) + " at " + theCvcDb_p->NetName(theNetId));
+		}
 		myPower_p->simVoltage = theShortVoltage;
 		myPower_p->defaultSimNet = theDefaultNetId;
 		myPower_p->type[SIM_CALCULATED_BIT] = true;

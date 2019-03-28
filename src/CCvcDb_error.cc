@@ -661,6 +661,7 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 	CFullConnection myConnections;
 	reportFile << "! Checking nmos source/drain vs bias errors: " << endl << endl;
 	errorFile << "! Checking nmos source/drain vs bias errors: " << endl << endl;
+	unordered_set<netId_t> myProblemNets;
 	for ( deviceId_t device_it = 0; device_it < deviceCount; device_it++ ) {
 		CInstance * myInstance_p = instancePtr_v[deviceParent_v[device_it]];
 		CCircuit * myParent_p = myInstance_p->master_p;
@@ -670,6 +671,8 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 		if ( myConnections.sourceId == myConnections.drainId && myConnections.sourceId == myConnections.bulkId ) continue;  // ignore drain = source = bulk
 		bool myErrorFlag = false;
 		bool myUnrelatedFlag = false;
+		bool mySourceError = false;
+		bool myDrainError = false;
 		if ( ! myConnections.minBulkPower_p
 				|| (myConnections.minBulkPower_p->IsRelatedPower(myConnections.minSourcePower_p, netVoltagePtr_v, minNet_v, minNet_v, true, true)
 					&& myConnections.minBulkPower_p->IsRelatedPower(myConnections.minDrainPower_p, netVoltagePtr_v, minNet_v, minNet_v, true, true)) ) {
@@ -706,13 +709,13 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 						( myConnections.minSourceVoltage == myConnections.minBulkVoltage &&
 							cvcParameters.cvcBiasErrorThreshold == 0 &&
 							myConnections.masterMinSourceNet.finalResistance < myConnections.masterMinBulkNet.finalResistance) ) ) {
-				myErrorFlag = true;
+				mySourceError = true;
 			} else if (	myConnections.CheckTerminalMinVoltages(BULK | DRAIN) &&
 					( myConnections.minBulkVoltage - myConnections.minDrainVoltage > cvcParameters.cvcBiasErrorThreshold ||
 						( myConnections.minDrainVoltage == myConnections.minBulkVoltage &&
 							cvcParameters.cvcBiasErrorThreshold == 0 &&
 							myConnections.masterMinDrainNet.finalResistance < myConnections.masterMinBulkNet.finalResistance) ) ) {
-				myErrorFlag = true;
+				myDrainError = true;
 			} else if (	myConnections.CheckTerminalSimVoltages(BULK | SOURCE) &&
 					( myConnections.simBulkVoltage - myConnections.simSourceVoltage > cvcParameters.cvcBiasErrorThreshold ||
 						( myConnections.simSourceVoltage == myConnections.simBulkVoltage &&
@@ -753,7 +756,13 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 			myErrorFlag = true; // if not relatives, always an error
 			myUnrelatedFlag = true;
 		}
-		if ( myErrorFlag ) {
+		if ( gSetup_cvc ) {
+			if ( myDrainError ) {
+				myProblemNets.insert(myConnections.drainId);
+			} else if ( mySourceError ) {
+				myProblemNets.insert(myConnections.sourceId);
+			}
+		} else if ( myErrorFlag || myDrainError || mySourceError ) {
 			if ( IncrementDeviceError(myConnections.deviceId, NMOS_SOURCE_BULK) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 				if ( myUnrelatedFlag ) {
 					errorFile << "Unrelated power error" << endl;
@@ -763,13 +772,46 @@ void CCvcDb::FindNmosSourceVsBulkErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking nmos source/drain vs bias errors: ");
+	if ( gSetup_cvc ) {
+		reportFile << endl << "CVC SETUP: nmos bias problems" << endl << endl;
+		unordered_set<netId_t> myPrintedNets;
+		unordered_set<netId_t> myParentNets;
+		for ( auto net_pit = myProblemNets.begin(); net_pit != myProblemNets.end(); net_pit++ ) {
+			netId_t myNextNet = *net_pit;
+			while(myNextNet != minNet_v[myNextNet].nextNetId) {
+				myNextNet = minNet_v[myNextNet].nextNetId;
+				myParentNets.insert(myNextNet);
+			}
+		}
+		for ( auto net_pit = myProblemNets.begin(); net_pit != myProblemNets.end(); net_pit++ ) {
+			if ( myParentNets.count(*net_pit) ) continue;
+			netId_t traceNet_it = *net_pit;
+			reportFile << endl;
+			PrintNetWithModelCounts(traceNet_it, SOURCE | DRAIN);
+			while ( traceNet_it != minNet_v[traceNet_it].nextNetId ) {
+				traceNet_it = minNet_v[traceNet_it].nextNetId;
+				if ( traceNet_it == minNet_v[traceNet_it].nextNetId ) {
+					reportFile << NetName(traceNet_it, PRINT_CIRCUIT_ON) << endl;
+				} else {
+					PrintNetWithModelCounts(traceNet_it, SOURCE | DRAIN);
+					if ( myPrintedNets.count(traceNet_it) ) {
+						reportFile << "**********" << endl;
+						break;
+					}
+					myPrintedNets.insert(traceNet_it);
+				}
+			}
+		}
+	} else {
+		cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking nmos source/drain vs bias errors: ");
+	}
 }
 
 void CCvcDb::FindPmosSourceVsBulkErrors() {
 	CFullConnection myConnections;
 	reportFile << "! Checking pmos source/drain vs bias errors: " << endl << endl;
 	errorFile << "! Checking pmos source/drain vs bias errors: " << endl << endl;
+	unordered_set<netId_t> myProblemNets;
 	for ( deviceId_t device_it = 0; device_it < deviceCount; device_it++ ) {
 		CInstance * myInstance_p = instancePtr_v[deviceParent_v[device_it]];
 		CCircuit * myParent_p = myInstance_p->master_p;
@@ -779,6 +821,8 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 		if ( myConnections.sourceId == myConnections.drainId && myConnections.sourceId == myConnections.bulkId ) continue;  // ignore drain = source = bulk
 		bool myErrorFlag = false;
 		bool myUnrelatedFlag = false;
+		bool mySourceError = false;
+		bool myDrainError = false;
 		if ( ! myConnections.maxBulkPower_p
 				|| (myConnections.maxBulkPower_p->IsRelatedPower(myConnections.maxSourcePower_p, netVoltagePtr_v, maxNet_v, maxNet_v, true, true)
 					&& myConnections.maxBulkPower_p->IsRelatedPower(myConnections.maxDrainPower_p, netVoltagePtr_v, maxNet_v, maxNet_v, true, true)) ) {
@@ -848,19 +892,25 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 						( myConnections.maxSourceVoltage == myConnections.maxBulkVoltage &&
 							cvcParameters.cvcBiasErrorThreshold == 0 &&
 							myConnections.masterMaxSourceNet.finalResistance < myConnections.masterMaxBulkNet.finalResistance) ) ) {
-				myErrorFlag = true;
+				mySourceError = true;
 			} else if (	myConnections.CheckTerminalMaxVoltages(BULK | DRAIN) &&
 					( myConnections.maxDrainVoltage - myConnections.maxBulkVoltage > cvcParameters.cvcBiasErrorThreshold ||
 						( myConnections.maxDrainVoltage == myConnections.maxBulkVoltage &&
 							cvcParameters.cvcBiasErrorThreshold == 0 &&
 							myConnections.masterMaxDrainNet.finalResistance < myConnections.masterMaxBulkNet.finalResistance) ) ) {
-				myErrorFlag = true;
+				myDrainError = true;
 			}
 		} else {
 			myUnrelatedFlag = true;
 			myErrorFlag = true; // if not relatives, always an error
 		}
-		if ( myErrorFlag ) {
+		if ( gSetup_cvc ) {
+			if ( myDrainError ) {
+				myProblemNets.insert(myConnections.drainId);
+			} else if ( mySourceError ) {
+				myProblemNets.insert(myConnections.sourceId);
+			}
+		} else if ( myErrorFlag || myDrainError || mySourceError ) {
 			if ( IncrementDeviceError(myConnections.deviceId, PMOS_SOURCE_BULK) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 				if ( myUnrelatedFlag ) {
 					errorFile << "Unrelated power error" << endl;
@@ -870,7 +920,39 @@ void CCvcDb::FindPmosSourceVsBulkErrors() {
 			}
 		}
 	}
-	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking pmos source/drain vs bias errors: ");
+	if ( gSetup_cvc ) {
+		reportFile << endl << "CVC SETUP: pmos bias problems" << endl << endl;
+		unordered_set<netId_t> myPrintedNets;
+		unordered_set<netId_t> myParentNets;
+		for ( auto net_pit = myProblemNets.begin(); net_pit != myProblemNets.end(); net_pit++ ) {
+			netId_t myNextNet = *net_pit;
+			while(myNextNet != minNet_v[myNextNet].nextNetId) {
+				myNextNet = minNet_v[myNextNet].nextNetId;
+				myParentNets.insert(myNextNet);
+			}
+		}
+		for ( auto net_pit = myProblemNets.begin(); net_pit != myProblemNets.end(); net_pit++ ) {
+			if ( myParentNets.count(*net_pit) ) continue;
+			netId_t traceNet_it = *net_pit;
+			reportFile << endl;
+			PrintNetWithModelCounts(traceNet_it, SOURCE | DRAIN);
+			while ( traceNet_it != minNet_v[traceNet_it].nextNetId ) {
+				traceNet_it = minNet_v[traceNet_it].nextNetId;
+				if ( traceNet_it == minNet_v[traceNet_it].nextNetId ) {
+					reportFile << NetName(traceNet_it, PRINT_CIRCUIT_ON) << endl;
+				} else {
+					PrintNetWithModelCounts(traceNet_it, SOURCE | DRAIN);
+					if ( myPrintedNets.count(traceNet_it) ) {
+						reportFile << "**********" << endl;
+						break;
+					}
+					myPrintedNets.insert(traceNet_it);
+				}
+			}
+		}
+	} else {
+		cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking pmos source/drain vs bias errors: ");
+	}
 }
 
 void CCvcDb::FindForwardBiasDiodes() {
