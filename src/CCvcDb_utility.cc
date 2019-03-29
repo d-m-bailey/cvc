@@ -1032,7 +1032,7 @@ size_t CCvcDb::IncrementDeviceError(deviceId_t theDeviceId, int theErrorIndex) {
 		myErrorSubIndex = theErrorIndex - OVERVOLTAGE_VBG;
 	}
 	int myMFactor = CalculateMFactor(deviceParent_v[theDeviceId]);
-	int myReturnCount = myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex] + 1;
+	int myReturnCount = myParent_p->devicePrintCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex] + 1;
 	string myKey = "";
 	deviceId_t myLimit = UNKNOWN_DEVICE;
 	if ( ! IsEmpty(cvcParameters.cvcCellErrorLimitFile) ) {
@@ -1041,17 +1041,28 @@ size_t CCvcDb::IncrementDeviceError(deviceId_t theDeviceId, int theErrorIndex) {
 			myAncestor = instancePtr_v[myAncestor]->parentId;
 		}
 		if (myAncestor > 0) {
-			myKey = string(instancePtr_v[myAncestor]->master_p->name) + " " + string(myParent_p->name) + " "
-					+ to_string<deviceId_t>(theDeviceId - myInstance_p->firstDeviceId) + " " + to_string<int>(myErrorSubIndex);
 			myLimit = instancePtr_v[myAncestor]->master_p->errorLimit;
-			if ( cellErrorCountMap[myKey] > myLimit ) {
+			if ( myLimit > 0 ) {
+				myKey = string(instancePtr_v[myAncestor]->master_p->name) + " " + string(myParent_p->name) + " "
+						+ to_string<deviceId_t>(theDeviceId - myInstance_p->firstDeviceId) + " " + to_string<int>(myErrorSubIndex);
+				cellErrorCountMap[myKey]++;
+				if ( cellErrorCountMap[myKey] > myLimit ) {
+					myReturnCount = UNKNOWN_DEVICE;
+				} else {
+					myReturnCount = cellErrorCountMap[myKey];  // if limit is set, always print up to error limit
+				}
+			} else {  // no map entries needed if limit is 0
 				myReturnCount = UNKNOWN_DEVICE;
 			}
-			cellErrorCountMap[myKey] += myMFactor;
 		}
 	}
-	myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex] += myMFactor;
-	errorCount[theErrorIndex] += myMFactor;
+	if ( myLimit > 0 ) {
+		myParent_p->deviceErrorCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex] += myMFactor;
+		errorCount[theErrorIndex] += myMFactor;
+	}
+	if ( myReturnCount < UNKNOWN_DEVICE ) {
+		myParent_p->devicePrintCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex]++;
+	}
 	return(myReturnCount);
 }
 

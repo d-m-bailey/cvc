@@ -1563,7 +1563,7 @@ returnCode_t CCvcDb::LoadCellErrorLimits() {
 			int myErrorLimit = from_string<int>(myInput.substr(myCellNameEnd));
 			CCircuit * theMaster_p = cvcCircuitList.FindCircuit(myCellName);
 			theMaster_p->errorLimit = myErrorLimit;
-			cout << "DEBUG: error limit for " << myCellName << " is " << myErrorLimit << endl;
+			reportFile << "INFO: error limit for " << myCellName << " is " << myErrorLimit << endl;
 		}
 	}
 	catch (...) {

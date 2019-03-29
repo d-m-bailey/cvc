@@ -50,6 +50,7 @@ public:
 	CDevicePtrVector	devicePtr_v;
 	CDevicePtrVector	subcircuitPtr_v;
 	vector<array<deviceId_t, 4>>	deviceErrorCount_v;
+	vector<array<deviceId_t, 4>>    devicePrintCount_v;
 	CInstanceIdVector instanceId_v;
 	CInstanceIdVector instanceHashId_v;
 

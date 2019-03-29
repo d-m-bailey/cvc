@@ -72,8 +72,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 ///	Read model and power settings.
 		modelFileStatus = cvcParameters.LoadModels();
 		powerFileStatus = cvcParameters.LoadPower();
-		returnCode_t myCellErrorLimitStatus = LoadCellErrorLimits();
-		if ( modelFileStatus != OK || powerFileStatus != OK || myCellErrorLimitStatus != OK ) { // Catch syntax problems before reading netlist
+		if ( modelFileStatus != OK || powerFileStatus != OK ) { // Catch syntax problems before reading netlist
 			if ( ! gInteractive_cvc ) {
 				reportFile << "ERROR: skipped due to problems in model/power files" << endl;
 				continue;
@@ -84,6 +83,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		if ( cvcParameters.IsSameDatabase() ) {
 			reportFile << "CVC: Reusing " << cvcParameters.cvcTopBlock << " of "
 					<< cvcParameters.cvcNetlistFilename << endl;
+			// TODO: Reset error limits for cells
 /*
 			if ( isDeviceModelSet ) {
 				ResetMosFuse();
@@ -107,6 +107,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 			AssignGlobalIDs();
 			reportFile << PrintProgress(&lastSnapshot, "DB ") << endl;
 		}
+		returnCode_t myCellErrorLimitStatus = LoadCellErrorLimits();
 		reportFile << "CVC: " << topCircuit_p->subcircuitCount << "(" << subcircuitCount << ") instances, "
 			<< topCircuit_p->netCount << "(" << netCount << ") nets, "
 			<< topCircuit_p->deviceCount << "(" << deviceCount << ") devices." << endl;
