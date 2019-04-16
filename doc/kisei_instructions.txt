@@ -1,0 +1,41 @@
+#1 Run calibre extraction and lvs with automatch and hcells
+# filter kisei devices
+# no need to write output netlist
+# reduce series RES
+calibre -lvs -hier -automatch -hcell hcell chip.kisei.svrf | tee calibre_lvs.log1
+
+#2 Run calibre svs with new hcell file, removing unmatched hcells until lvs ok
+# filter kisei devices
+# no need to write output netlist
+# reduce series RES
+calibre -lvs -hier -hcell hcell.number chip.kisei-svs.svrf | tee calibre_lvs.log2
+
+#3 Run calibre svs to create cross reference
+# filter kisei devices
+# no need to write output netlist
+# reduce series RES
+calibre -lvs -hier -hcell hcell.number -nxf chip.kisei-svs.svrf | tee calibre_lvs.log3
+
+#4 Create output netlists
+# do not filter kisei devices
+# write output netlists
+# do not reduce series RES
+calibre -lvs -hier -hcell hcell.number chip.kisei-cvc.svrf | tee calibre_lvs.log4
+
+#5 Extract kisei devices from layout netlist and annotate net names
+# kisei.out is the list of cells to update in the netlist
+annotate_kisei top.lvs.rep.nxf < top.lay.net > kisei.out
+
+# cp kisei.out kisei.fix
+# fix it diff kisei.out kisei.fix
+
+#6 Add kisei devices to netlist.
+add_kisei kisei.fix < top.src.net > top.kisei.cdl
+
+sed 's/^\(.\)\1/\1/' top.kisei.cdl > top.fix.cdl
+#run svs on lay.net and fix.cdl
+
+#7 Run svs for top.cdl top.kisei.cdl
+# ignore kisei diodes.
+calibre -lvs -hier -hcell hcell.number net-kisei.svrf | tee calibre_lvs.log7
+

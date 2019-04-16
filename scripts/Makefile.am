@@ -1,5 +1,7 @@
 
-bin_SCRIPTS = calibre_cvc \
+bin_SCRIPTS = add_kisei \
+	annotate_kisei \
+	calibre_cvc \
 	clean_cvc_log \
 	cvc_probe.il \
 	cvc_select.tcl \

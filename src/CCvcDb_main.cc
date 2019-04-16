@@ -184,7 +184,9 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		reportFile << PrintProgress(&lastSnapshot, "MIN/MAX1 ") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( detectErrorFlag ) {
-			//FindForwardBiasDiodes();
+			if ( ! cvcParameters.cvcLogicDiodes ) {
+				FindForwardBiasDiodes();
+			}
 			if ( ! cvcParameters.cvcSOI ) {
 				FindNmosSourceVsBulkErrors();
 			}
@@ -239,7 +241,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Logic shorts 2");
 		if ( detectErrorFlag ) {
 			FindLDDErrors();
-			FindForwardBiasDiodes();
+//			FindForwardBiasDiodes();
 		}
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_SECOND_SIM) == SKIP ) continue;
@@ -255,6 +257,9 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		reportFile << PrintProgress(&lastSnapshot, "MIN/MAX2 ") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( detectErrorFlag ) {
+			if ( cvcParameters.cvcLogicDiodes ) {
+				FindForwardBiasDiodes();
+			}
 			FindAllOverVoltageErrors();
 			//FindOverVoltageErrors("Vbg", OVERVOLTAGE_VBG);
 			//FindOverVoltageErrors("Vbs", OVERVOLTAGE_VBS);

@@ -133,9 +133,14 @@ if [[ -f $OUTPUT.0 ]]; then
 	mv $OUTPUT.0 $OUTPUT.0.bak
 fi
 
-echo "Performing SVS..."
-calibre -hier -automatch -lvs -64 $rulefile > $log
-tail -15 $log
+which calibre &> /dev/null
+if [[ $? -eq 1 ]]; then
+	read -p "Run SVS and hit return..."
+else
+	echo "Performing SVS..."
+	calibre -hier -automatch -lvs -64 $rulefile > $log
+	tail -15 $log
+fi
 
 echo "Removing leading double characters and changing commented parameters ..."
 # ^RR -> R

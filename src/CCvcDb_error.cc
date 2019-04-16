@@ -1012,18 +1012,18 @@ void CCvcDb::FindForwardBiasDiodes() {
 					}
 				}
 				if ( mySourceVoltage == UNKNOWN_VOLTAGE ) {
-					if ( cvcParameters.cvcLogicDiodes && myDiodeConnections.simSourceVoltage != UNKNOWN_VOLTAGE ) {
-						mySourceVoltage = myDiodeConnections.simSourceVoltage;
-					} else {
+//					if ( cvcParameters.cvcLogicDiodes && myDiodeConnections.simSourceVoltage != UNKNOWN_VOLTAGE ) {
+//						mySourceVoltage = myDiodeConnections.simSourceVoltage;
+//					} else {
 						mySourceVoltage = myDiodeConnections.maxSourceVoltage;
-					}
+//					}
 				}
 				if ( myDrainVoltage == UNKNOWN_VOLTAGE ) {
-					if ( cvcParameters.cvcLogicDiodes && myDiodeConnections.simDrainVoltage != UNKNOWN_VOLTAGE ) {
-						myDrainVoltage = myDiodeConnections.simDrainVoltage;
-					} else {
+//					if ( cvcParameters.cvcLogicDiodes && myDiodeConnections.simDrainVoltage != UNKNOWN_VOLTAGE ) {
+//						myDrainVoltage = myDiodeConnections.simDrainVoltage;
+//					} else {
 						myDrainVoltage = myDiodeConnections.minDrainVoltage;
-					}
+//					}
 				}
 				if ( mySourceVoltage - myDrainVoltage > cvcParameters.cvcForwardErrorThreshold ) {
 					if ( myDiodeConnections.maxSourcePower_p->type[HIZ_BIT] || myDiodeConnections.minDrainPower_p->type[HIZ_BIT] ) {

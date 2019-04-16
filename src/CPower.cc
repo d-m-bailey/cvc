@@ -899,7 +899,8 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 	}
 	if ( theEventQueue.queueType == MIN_QUEUE ) {
 		if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) {
-			throw EDatabaseError("CalculatePower: Min " + to_string<voltage_t>(myPower_p->minVoltage) + " at " + theCvcDb_p->NetName(theNetId));
+			cout << "DEBUG: CalculatePower: Min " << to_string<voltage_t>(myPower_p->minVoltage) << " at " << theCvcDb_p->NetName(theNetId) << endl;
+			//throw EDatabaseError("CalculatePower: Min " + to_string<voltage_t>(myPower_p->minVoltage) + " at " + theCvcDb_p->NetName(theNetId));
 		}
 		myPower_p->minVoltage = theShortVoltage;
 		myPower_p->defaultMinNet = theDefaultNetId;
@@ -922,7 +923,8 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 	}
 	if ( theEventQueue.queueType == MAX_QUEUE ) {
 		if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) {
-			throw EDatabaseError("CalculatePower: Max " + to_string<voltage_t>(myPower_p->maxVoltage) + " at " + theCvcDb_p->NetName(theNetId));
+			cout << "DEBUG: CalculatePower: Max " << to_string<voltage_t>(myPower_p->maxVoltage) << " at " << theCvcDb_p->NetName(theNetId) << endl;
+			//throw EDatabaseError("CalculatePower: Max " + to_string<voltage_t>(myPower_p->maxVoltage) + " at " + theCvcDb_p->NetName(theNetId));
 		}
 		myPower_p->maxVoltage = theShortVoltage;
 		myPower_p->defaultMaxNet = theDefaultNetId;
