@@ -1174,11 +1174,17 @@ void CCvcDb::SetSCRCPower() {
 			if ( myAttemptCount == 0 ) {  // Could not set any gate nets, so set net directly
 				voltage_t myExpectedVoltage = IsSCRCPower(netVoltagePtr_v[minNet_v[net_it].finalNetId]) ?
 						netVoltagePtr_v[maxNet_v[net_it].finalNetId]->maxVoltage : netVoltagePtr_v[minNet_v[net_it].finalNetId]->minVoltage;
-				debugFile << "Forcing net " << NetName(net_it) << " to " << PrintVoltage(myExpectedVoltage) << endl;
-				netVoltagePtr_v[net_it] = new CPower(net_it, myExpectedVoltage, true);
-				netVoltagePtr_v[net_it]->extraData->powerSignal = CPower::powerDefinitionText.SetTextAddress(SCRC_FORCED_TEXT);
-				cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it]);
-				mySCRCSignalCount++;
+				if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE ) {
+					reportFile << "Warning: " << NetName(net_it) << ": voltage already set expected " << myExpectedVoltage;
+					reportFile << " found " << netVoltagePtr_v[net_it]->simVoltage << endl;
+					mySCRCIgnoreCount++;
+				} else {
+					debugFile << "Forcing net " << NetName(net_it) << " to " << PrintVoltage(myExpectedVoltage) << endl;
+					netVoltagePtr_v[net_it] = new CPower(net_it, myExpectedVoltage, true);
+					netVoltagePtr_v[net_it]->extraData->powerSignal = CPower::powerDefinitionText.SetTextAddress(SCRC_FORCED_TEXT);
+					cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it]);
+					mySCRCSignalCount++;
+				}
 			}
 		}
 	}

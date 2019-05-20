@@ -220,22 +220,21 @@ class SummaryTabContent(BoxLayout):
                     mySpinner.text = error_it
                     break
 
-    def SetTabColor(self, theTab):
+    def SetTabColor(self):
         """Set tab color based on percentage complete.
 
-        Inputs:
-          theTab: The tab containing text to be colored.
         Color is set on linear scale from red 0% to yellow 99.9%.
         At 100%, the color is set to green,
         unless there are uncommited or unmatched errors, in which case color is blue.
         """
+        myTab = self.tab
         if self.report.percentage == 1000:
             if self.report.errorCount['unmatched'] + self.report.errorCount['uncommitted'] > 0:
-                (theTab.r, theTab.g, theTab.b) = (0, 0, 1)  # blue
+                (myTab.r, myTab.g, myTab.b) = (0, 0, 1)  # blue
             else:
-                (theTab.r, theTab.g, theTab.b) = (0, 1, 0)  # green
+                (myTab.r, myTab.g, myTab.b) = (0, 1, 0)  # green
         else:
-            (theTab.r, theTab.g, theTab.b) = (1, self.report.percentage / 1000, 0)  # red - yellow
+            (myTab.r, myTab.g, myTab.b) = (1, self.report.percentage / 1000, 0)  # red - yellow
 
     def _SetTypeFilterCounts(self, theErrorList):
         """Set counts for type check box filters.
@@ -304,7 +303,7 @@ class SummaryTabContent(BoxLayout):
              'type': myFilteredList[index]['type'],
              'baseIndex': myFilteredList[index]['baseIndex']}
             for index in range(len(myFilteredList))]
-        self.SetTabColor(self.root.modePanelRef.current_tab)
+        self.SetTabColor()
         self.root.currentContent.report.CountErrors()
         self._SetTypeFilterCounts(self.root.currentContent.report.errorCount)
         self.root.ids.displayCount_id.text = str(len(myFilteredList))
@@ -344,7 +343,7 @@ class ReferenceModeButton(Button):
         """Toggle mode selection and update popup buttons."""
         self.is_selected = False if self.is_selected else True
         self.root.EnableReferenceButtons()
-
+        self.root.EnableOverwriteButtons()
 
 class HistoryTextInput(BoxLayout):
     """Implements text input with history and clear.
@@ -431,7 +430,8 @@ class SummaryWidget(Widget):
     Class variables:
       sectionFilter: Priority of section to filter on.
       checkValues: List of values of type filter check boxes.
-      copyValues: List of vaules of copy filter check boxes.
+      copyValues: List of values of copy filter check boxes.
+      overwriteValues: List of values of overwrite filter check boxes.
       modifiers: List of currently pressed 'shift' or 'control' keys.
       currentContent: Shortcut to content of the current tab of the mode panel.
       setSectionFlag: Flag to prevent recursion when setting sectionFilter.
@@ -462,11 +462,16 @@ class SummaryWidget(Widget):
       EnableButtons: Enable main screen buttons based on status.
       SetAllReferences: Set all references selected or unselected.
       EnableReferenceButtons: Enable copy buttons based on reference button status.
+      SetAllOverwrites: Set all references selected or unselected.
+      EnableOverwriteButtons: Enable copy buttons based on reference button status.
       SelectAll: Select all filtered display lines of the current type.
       DeselectAll: Unselect all selected filtered display lines.
       AddReferenceModes: Add a selectable mode button for each mode, except for the current mode.
+      AddOverwriteModes: Add a selectable mode button for each mode, except for the current mode.
       CopyReferences: Copy references from the current mode to selected modes based
         on copy filters.
+      OverwriteReferences: Copy/overwrite references from the current mode to selected modes based
+        on copy filters and displayed lines.
       CommitReferences: Commit selected references copied from other modes.
       DeleteSummary: Delete selected filtered display lines.
       AutoSaveSummary: Auto-save the summary file to a temporary file name at regular intervals,
@@ -481,6 +486,7 @@ class SummaryWidget(Widget):
     sectionFilter = None
     checkValues = {}
     copyValues = {}
+    overwriteValues = {}
     modifiers = {}
     currentContent = None
     setSectionFlag = False
@@ -505,10 +511,12 @@ class SummaryWidget(Widget):
             report_it.PrintTotals()
             myPanelHeader.text = report_it.modeName
             myPanelHeader.content = SummaryTabContent(report_it, self)
-            myPanelHeader.content.SetTabColor(myPanelHeader)
+            myPanelHeader.content.tab = myPanelHeader
+            myPanelHeader.content.SetTabColor()
             self.modePanelRef.add_widget(myPanelHeader)
         self.SetFilters('all', "show_", self.checkValues)
         self.SetFilters('all', "copy_", self.copyValues)
+        self.SetFilters('all', "overwrite_", self.overwriteValues)
         self.modePanelRef.set_def_tab(self.modePanelRef.tab_list[-1])
         self.currentContent = self.modePanelRef.current_tab.content
         Clock.schedule_interval(self.AutoSaveSummary, 300)
@@ -576,9 +584,9 @@ class SummaryWidget(Widget):
 
         Inputs:
           theValue: True or False.
-          theType: The type of check boxes - "show_" or "copy_".
+          theType: The type of check boxes - "show_", "copy_" or "overwrite_".
         Modifies:
-          show_* or copy_* check boxes.
+          show_*, copy_* or overwrite_* check boxes.
         """
         for check_it in self.ids:
             if check_it.startswith(theType):
@@ -591,10 +599,10 @@ class SummaryWidget(Widget):
         all and none checks are recalculated from the other values.
         Inputs:
           theId: Id of the the box clicked.
-          theType: The type of check boxes - "show_" or "copy_".
+          theType: The type of check boxes - "show_", "copy_" or "overwrite_".
           theValues: Array of check box values.
         Modifies:
-          show_* or copy_* check boxes.
+          show_*, copy_* or overwrite_* check boxes.
         """
         myId = theType + theId if theId else None
         myNewState = not self.ids[myId].checkRef.active if theId else None
@@ -630,6 +638,8 @@ class SummaryWidget(Widget):
             Clock.schedule_once(partial(self.ResetCheckboxes, self.checkValues))
         elif theType == 'copy_':
             Clock.schedule_once(partial(self.ResetCheckboxes, self.copyValues))
+        elif theType == 'overwrite_':
+            Clock.schedule_once(partial(self.ResetCheckboxes, self.overwriteValues))
 
     def ResetCheckboxes(self, theValues, *largs):
         """Set checkboxes to values in theValues."""
@@ -936,6 +946,32 @@ class SummaryWidget(Widget):
             self.ids.unselectAllModesButton.disabled = False
             self.ids.copyReferencesButton.disabled = False
 
+    def SetAllOverwrites(self, theValue):
+        """Set all overwrites selected or unselected.
+
+        Inputs:
+          theValue: If true, select all, else unselect all.
+        """
+        for child_it in self.ids.overwriteGrid_id.children:
+            child_it.is_selected = theValue
+        self.EnableOverwriteButtons()
+
+    def EnableOverwriteButtons(self):
+        """Enable copy buttons based on reference button status.
+
+        'Unselect All' enabled when something is selected.
+        'OK' enabled when something is type selected.
+        """
+        self.ids.unselectAllOverwritesButton.disabled = True
+        self.ids.overwriteReferencesButton.disabled = True
+        myHasSelection = False
+        for child_it in self.ids.overwriteGrid_id.children:
+            if child_it.is_selected:
+                myHasSelection = True
+        if myHasSelection:
+            self.ids.unselectAllOverwritesButton.disabled = False
+            self.ids.overwriteReferencesButton.disabled = False
+
     def SelectAll(self):
         """Select all filtered display lines of the current type."""
         myType = self.currentContent.viewRef.selectType
@@ -972,6 +1008,24 @@ class SummaryWidget(Widget):
                                            r=mode_it.r, g=mode_it.g, b=mode_it.b)
             theLayout.add_widget(myButton)
         self.EnableReferenceButtons()
+
+    def AddOverwriteModes(self, theLayout):
+        """Add a selectable mode button for each mode, except for the current mode.
+
+        Inputs:
+          theLayout: Layout to add mode buttons to.
+        """
+        theLayout.clear_widgets()
+        myCurrentMode = self.modePanelRef.current_tab.text
+        self.copyPopupRef.baseMode = myCurrentMode
+        for mode_it in self.modePanelRef.tab_list[::-1]:
+            # To get same order as main screen, reverse the order of the list.
+            if mode_it.text == myCurrentMode:  # don't add the copy source.
+                continue
+            myButton = ReferenceModeButton(text=mode_it.text, root=self,
+                                           r=mode_it.r, g=mode_it.g, b=mode_it.b)
+            theLayout.add_widget(myButton)
+        self.EnableOverwriteButtons()
 
     def CopyReferences(self):
         """Copy references from the current mode to selected modes based on copy filters.
@@ -1030,6 +1084,74 @@ class SummaryWidget(Widget):
                 myTargetIndex += 1
             child_it.content.report.CountErrors()
         self.copyPopupRef.dismiss()
+        self.changedFlag = self.autoSaveFlag = True
+
+    def OverwriteReferences(self):
+        """Overwrite displayed references from the current mode to selected modes
+          based on copy filters.
+
+        If the source is checked and the copy level filter is set,
+          copy reference and level, and set type to uncommitted.
+        If the source is comment and target is unmatched, copy type and reference.
+        """
+        mySelection = []
+        for child_it in self.ids.overwriteGrid_id.children:
+            if child_it.is_selected:
+                mySelection.append(child_it.text)
+        mySourceFilteredList = self.currentContent.filteredList
+        for child_it in self.modePanelRef.tab_list:
+            if child_it.content.report.modeName not in mySelection:
+                continue
+
+            myTargetDisplayList = child_it.content.report.displayList
+            self._AddUndo(child_it.content, myTargetDisplayList)
+            mySourceIndex = 0
+            myTargetIndex = 0
+            while (mySourceIndex < len(mySourceFilteredList)
+                   and myTargetIndex < len(myTargetDisplayList)):
+                mySourceError = mySourceFilteredList[mySourceIndex]
+                myTargetError = myTargetDisplayList[myTargetIndex]
+                myOrder = CompareErrors(mySourceError, myTargetError)
+                if myOrder == "<":
+                    mySourceIndex += 1
+                    continue
+
+                if myOrder == ">":
+                    myTargetIndex += 1
+                    continue
+
+                if mySourceError['type'] == 'checked':
+                    myUpdateOk = False
+                    if (mySourceError['level'] == 'ERROR'
+                        and self.overwriteValues['overwrite_ERROR']):
+                        myUpdateOk = True
+                    elif (mySourceError['level'] == 'Warning'
+                          and self.overwriteValues['overwrite_Warning']):
+                        myUpdateOk = True
+                    elif (mySourceError['level'] == 'Check'
+                          and self.overwriteValues['overwrite_Check']):
+                        myUpdateOk = True
+                    elif (mySourceError['level'] == 'ignore'
+                          and self.overwriteValues['overwrite_ignore']):
+                        myUpdateOk = True
+                    if myUpdateOk:
+                        if (myTargetError['type'] != mySourceError['type']
+                             or myTargetError['level'] != mySourceError['level']
+                             or myTargetError['reference'] != mySourceError['reference']):
+                            myTargetError['type'] = 'uncommitted'
+                            myTargetError['level'] = mySourceError['level']
+                            myTargetError['reference'] = "? " + mySourceError['reference']
+                elif (myTargetError['type'] == 'unmatched'
+                      and mySourceError['type'] == 'comment'
+                      and self.overwriteValues['overwrite_comment']):
+                    myTargetError['type'] = 'comment'
+                    myTargetError['level'] = 'unknown'
+                    myTargetError['reference'] = mySourceError['reference']
+                mySourceIndex += 1
+                myTargetIndex += 1
+            child_it.content.report.CountErrors()
+            child_it.content.SetTabColor()
+        self.overwritePopupRef.dismiss()
         self.changedFlag = self.autoSaveFlag = True
 
     def CommitReferences(self):

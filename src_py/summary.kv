@@ -2,7 +2,7 @@
 
 ##kivy file for SummaryApp used in check_cvc
 
-##Copyright 2016-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+##Copyright 2016-2019 D. Mitch Bailey  cvc at shuharisystem dot com
 ##
 ##This file is part of check_cvc.
 ##
@@ -206,6 +206,24 @@
         on_touch_down:
             if self.collide_point(*args[1].pos): app.SetCopyFilters(root.text)
 
+<OverwriteCheckBox@BoxLayout>:
+    orientation: 'vertical'
+    padding: 0, 0, 0, 4
+    text: ""
+    active: False
+    checkRef: check_id
+    color: 1, 1, 1, 1
+    Label:
+        text: root.text
+        size: self.texture_size
+        font_size: self.height*.8
+        color: root.color
+    CheckBox:
+        id: check_id
+        active: root.active
+        on_touch_down:
+            if self.collide_point(*args[1].pos): app.SetOverwriteFilters(root.text)
+
 <BasicCheckBox@BoxLayout>:
     orientation: 'vertical'
     padding: 0, 0, 0, 4
@@ -278,6 +296,7 @@
     referenceTextRef: referenceText_id
     commentTextRef: commentText_id
     copyPopupRef: copyPopup_id.__self__
+    overwritePopupRef: overwritePopup_id.__self__
     savePopupRef: savePopup_id.__self__
     exportPopupRef: exportPopup_id.__self__
     confirmSavePopupRef: confirmSavePopup_id.__self__
@@ -564,6 +583,14 @@
                 on_press:
                     root.copyPopupRef.open()
             Button:
+                id: overwriteButton
+                text: "Overwrite Checks"
+                size_hint_y: None
+                padding: 5, 5
+                size: self.texture_size
+                on_press:
+                    root.overwritePopupRef.open()
+            Button:
                 id: saveButton
                 text: "Save"
                 size_hint_y: None
@@ -688,6 +715,95 @@
                             padding: 5, 5
                             on_press:
                                 root.CopyReferences()
+            Popup:
+                id: overwritePopup_id
+                size_hint_x: 0.8
+                size_hint_y: 0.8
+                baseMode: ""
+                title: "Copy/overwrite checked references from " + self.baseMode + " mode to selected modes"
+                auto_dismiss: False
+                size: self.size
+                title_font: "RobotoMono-Regular"
+                on_parent:
+                    if self.parent == bottomButtons: self.parent.remove_widget(self)
+                on_open:
+                    root.AddOverwriteModes(overwriteGrid_id)
+                BoxLayout:
+                    orientation: 'vertical'
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        size_hint_y: None
+                        height: 35
+                        padding: 2, 2, 2, 2
+                        root: root
+                        Label:
+                            text: "Copy/overwrite"
+                            width: self.texture_size[0] + 10
+                            size_hint_x: None
+                        OverwriteCheckBox:
+                            text: 'all'
+                            id: overwrite_all
+                        OverwriteCheckBox:
+                            text: 'ERROR'
+                            id: overwrite_ERROR
+                            color: 1, 0, 0, 1
+                        OverwriteCheckBox:
+                            text: 'Warning'
+                            id: overwrite_Warning
+                            color: 1, 0.5, 0, 1
+                        OverwriteCheckBox:
+                            text: 'Check'
+                            id: overwrite_Check
+                            color: 1, 1, 0, 1
+                        OverwriteCheckBox:
+                            text: 'ignore'
+                            id: overwrite_ignore
+                            color: 0, 1, 0, 1
+                        OverwriteCheckBox:
+                            text: 'comment'
+                            id: overwrite_comment
+                        OverwriteCheckBox:
+                            text: 'none'
+                            id: overwrite_none
+                    GridLayout:
+                        id: overwriteGrid_id
+                        size_hint: 1, None
+                        col_force_default: True
+                        col_default_width: self.parent.width / 8.
+                        cols: 8
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        Button:
+                            text: 'Cancel'
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            padding: 5, 5
+                            on_press:
+                                root.overwritePopupRef.dismiss()
+                        Button:
+                            id: selectAllOverwritesButton
+                            text: 'Select All'
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            padding: 5, 5
+                            on_press:
+                                root.SetAllOverwrites(True)
+                        Button:
+                            id: unselectAllOverwritesButton
+                            text: 'Unselect All'
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            padding: 5, 5
+                            on_press:
+                                root.SetAllOverwrites(False)
+                        Button:
+                            id: overwriteReferencesButton
+                            text: 'OK'
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            padding: 5, 5
+                            on_press:
+                                root.OverwriteReferences()
             Popup:
                 id: savePopup_id
                 size_hint_x: 0.8
