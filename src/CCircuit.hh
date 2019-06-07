@@ -62,6 +62,7 @@ public:
 	instanceId_t	subcircuitCount = 0;
 	// the number of instantiations
 	instanceId_t	instanceCount = 0;
+	string	checksum = "";
 
 //	deviceId_t		errorCount = 0;
 //	deviceId_t		warningCount = 0;
@@ -105,6 +106,7 @@ public:
 	void Print(const string theIndentation = "", const string theHeading = "CircuitList>");
 //	void CreateDatabase(const string theTopBlockName);
 	CCircuit * FindCircuit(const string theSearchCircuit);
+	void SetChecksum(const string theSearchCircuit, const string theChecksum);
 	void PrintAndResetCircuitErrors(CCvcDb * theCvcDb_p, deviceId_t theErrorLimit, ofstream & theLogFile, ogzstream & theErrorFile,
 		string theSummaryHeading = "", int theSubErrorIndex = 0, set<modelType_t> & theModelList = emptyModelList);
 };

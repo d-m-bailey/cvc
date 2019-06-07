@@ -26,31 +26,6 @@
 #include "wordexp.h"
 #include "gzstream.h"
 
-/*
-CCvcParameters::CCvcParameters() {
-//	cvcDate = "20130731";
-//	cvcTopBlock = "CVC_TEST";
-//	cvcFileName = "CVC_TEST.cdl";
-//	cvcReportTitle = "CVC TEST CIRCUIT";
-//	cvcHtmlFilenameTemplate = cvcTopBlock + "_" + cvcDate + "_";
-}
-
-CCvcParameters::CCvcParameters(const int argc, const char * argv[]) {
-//	cvcDate = "20130731";
-//	cvcTopBlock = "CVC_TEST";
-//	cvcFileName = "CVC_TEST.cdl";
-//	cvcReportTitle = "CVC TEST CIRCUIT";
-//	cvcHtmlFilenameTemplate = cvcTopBlock +	"_" + cvcDate + "_";
-	if (argc > 1) {
-//		cvcFileName.assign(argv[1]);
-		LoadEnvironment(argv[1]);
-//		cvcFileName.assign(getenv("CVC_NETLIST"));
-	}
-	if (argc > 2 && strcmp(argv[2], "--debug") == 0) debug_cvc = true;
-
-}
-*/
-
 string CCvcParameters::CvcFileName() {
 	return cvcNetlistFilename;
 }
@@ -116,7 +91,11 @@ void CCvcParameters::ResetEnvironment() {
 	cvcExpectedErrorThreshold = defaultErrorThreshold;
 	//! Ignore errors with voltage difference less than the threshold. Default is 0, flag errors regardless of voltage difference.
 	cvcParallelCircuitPortLimit = defaultParallelCircuitPortLimit;
+	//! Port count limit for parallel cell processing
 	cvcCellErrorLimitFile = defaultCellErrorLimitFile;
+	//! Name of file containing list of cells with error limits
+	cvcCellChecksumFile = defaultCellChecksumFile;
+	//! Name of file containing list of checksums for each circuit
 }
 
 void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
@@ -149,6 +128,7 @@ void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
 	theOutputFile << "CVC_EXPECTED_ERROR_THRESHOLD = '" << Voltage_to_float(cvcExpectedErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParallelCircuitPortLimit << "'" << endl;
 	theOutputFile << "CVC_CELL_ERROR_LIMIT_FILE = '" << cvcCellErrorLimitFile << "'" << endl;
+	theOutputFile << "CVC_CELL_CHECKSUM_FILE = '" << cvcCellChecksumFile << "'" << endl;
 	theOutputFile << "End of parameters" << endl << endl;
 }
 
@@ -188,6 +168,7 @@ void CCvcParameters::PrintDefaultEnvironment() {
 	myDefaultCvcrc << "CVC_EXPECTED_ERROR_THRESHOLD = '" << Voltage_to_float(cvcExpectedErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParallelCircuitPortLimit << "'" << endl;
 	myDefaultCvcrc << "CVC_CELL_ERROR_LIMIT_FILE = '" << cvcCellErrorLimitFile << "'" << endl;
+	myDefaultCvcrc << "CVC_CELL_CHECKSUM_FILE = '" << cvcCellChecksumFile << "'" << endl;
 	myDefaultCvcrc.close();
 }
 
@@ -291,22 +272,13 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 			}
 		} else if ( myVariable == "CVC_CELL_ERROR_LIMIT_FILE" ) {
 			cvcCellErrorLimitFile = myBuffer;
+		} else if ( myVariable == "CVC_CELL_CHECKSUM_FILE" ) {
+			cvcCellChecksumFile = myBuffer;
 		}
 	}
 	if ( ! IsEmpty(theReportPrefix) ) {
 		cvcReportName = theReportPrefix + "-" + cvcReportName;
 	}
-/*
-	if ( gInteractive_cvc ) {
-		cvcReportName = "i-" + cvcReportName;
-//		size_t myBaseNameOffset = cvcReportFilename.find_last_of("/\\");
-//		if ( myBaseNameOffset < cvcReportFilename.length() ) {
-//			cvcReportFilename = cvcReportFilename.substr(0, myBaseNameOffset + 1) + "i-" + cvcReportFilename.substr(myBaseNameOffset + 1);
-//		} else {
-//			cvcReportFilename = "i-" + cvcReportFilename;
-//		}
-	}
-*/
 	cvcReportFilename = cvcReportDirectory + cvcReportName;
 	cvcLockFile = cvcReportDirectory + "." + cvcReportName;
 	myEnvironmentFile.close();
@@ -339,18 +311,12 @@ returnCode_t CCvcParameters::LoadModels() {
 			reportFile << "ERROR: Could not open " << cvcModelFilename << endl;
 			return (FAIL);
 		}
-//		throw EFatalError("Could not open " + cvcModelFilename);
-//		exit(1);
 	}
 	string myInput, myVariable, myValue;
-//	wordexp_t myWordExpansion;
-//	char myBuffer[1024];
 
 	reportFile << "CVC: Reading device model settings..." << endl;
 	cvcModelListMap.hasError = false;
 	while ( getline(myModelFile, myInput) ) {
-//		myModelFile.getline(myBuffer, 1024);
-//		myInput = myBuffer;
 		if ( myInput[0] == '#' ) continue; // skip comments
 		if ( myInput.find_first_not_of(" \t\n") > myInput.length() ) continue; // skip blank lines
 		cvcModelListMap.AddModel(myInput);
@@ -364,27 +330,6 @@ returnCode_t CCvcParameters::LoadModels() {
 	}
 
 }
-
-/*
-void CCvcParameters::AddTestPower() {
-
-	cvcPowerPtrList.push_back(new CPower("VDD 1.1"));
-	cvcPowerPtrList.push_back(new CPower("VSS -0.5"));
-	cvcPowerPtrList.push_back(new CPower("IN1 min@0.5 sim@1.2 max@1.8"));
-	cvcPowerPtrList.push_back(new CPower("IN2 min@0.5 max@1.2"));
-	cvcPowerPtrList.push_back(new CPower("OUT expect@1.3"));
-
-	cvcPowerPtrList.push_back(new CPower("VDD 1.2"));
-	cvcPowerPtrList.push_back(new CPower("VSS 0.0"));
-	cvcPowerPtrList.push_back(new CPower("VCC 3.3"));
-	cvcPowerPtrList.push_back(new CPower("VBB -0.5"));
-	cvcPowerPtrList.push_back(new CPower("INH min@0.0 sim@1.2 max@1.2"));
-	cvcPowerPtrList.push_back(new CPower("INL min@0.0 sim@0.0 max@1.2"));
-	cvcPowerPtrList.push_back(new CPower("INX min@0.0 max@1.2"));
-	cvcPowerPtrList.push_back(new CPower("OUTH expect@1.2"));
-	cvcPowerPtrList.push_back(new CPower("OUTL expect@0.0"));
-}
-*/
 
 returnCode_t CCvcParameters::LoadPower() {
 	igzstream myPowerFile;
@@ -400,11 +345,8 @@ returnCode_t CCvcParameters::LoadPower() {
 			reportFile << "ERROR: Could not open " << cvcPowerFilename << endl;
 			return (FAIL);
 		}
-//		throw EFatalError("Could not open " + cvcPowerFilename);
-//		exit(1);
 	}
 	string myInput, myVariable, myValue;
-//	wordexp_t myWordExpansion;
 
 	reportFile << "CVC: Reading power settings..." << endl;
 	bool myPowerErrorFlag = false;
@@ -417,26 +359,6 @@ returnCode_t CCvcParameters::LoadPower() {
 			if ( myInput[0] == '#' && ! (myIsMacro || myIsInstance) ) continue; // skip comments
 			if ( myInput.find_first_not_of(" \t\n") > myInput.length() ) continue; // skip blank lines
 			myInput = trim_(myInput);
-	/*  // handle bus signals in SetModePower
-			size_t mySignalEnd = myInput.find_first_of(" \t");
-			size_t myBusBegin = myInput.find_first_of("<");
-			size_t myBusDelimiter = myInput.find_first_of(":");
-			size_t myBusEnd = myInput.find_first_of(">");
-
-			if ( myBusBegin < myBusDelimiter && myBusDelimiter < myBusEnd && myBusEnd < mySignalEnd ) {
-	//			cout << "Adding bus power definition:" << myInput << endl;
-
-				string myBaseSignal = myInput.substr(0, myBusBegin + 1);
-				int myFirstBusIndex = from_string<int>(myInput.substr(myBusBegin + 1, myBusDelimiter - myBusBegin - 1));
-				int myLastBusIndex = from_string<int>(myInput.substr(myBusDelimiter + 1, myBusEnd - myBusDelimiter - 1));
-				for ( int myBusIndex = min(myFirstBusIndex, myLastBusIndex); myBusIndex <= max(myFirstBusIndex, myLastBusIndex); myBusIndex++ ) {
-					string myPowerDefinition = myBaseSignal + to_string<int>(myBusIndex) + myInput.substr(myBusEnd);
-					cvcPowerPtrList.push_back(new CPower(myPowerDefinition));
-	//				cout << "  Added:" << myPowerDefinition << endl;
-				}
-			} else
-	*/
-//			cout << "Power definition: " << myInput << endl;
 			string myMacroName = "";
 			string myMacroDefinition;
 			if ( myIsMacro ) {

@@ -2,7 +2,7 @@
 
 #   calibre_cvc: runs calibre svs to create a standardized netlist
 
-#   Copyright 2106-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+#   Copyright 2106-2019 D. Mitch Bailey  cvc at shuharisystem dot com
 
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -159,6 +159,29 @@ sed -e 's/^\(.\)\1/\1/' \
     -e 's/\$//g' \
     -e 's/\^SUB=/$SUB=/' $OUTPUT.0 | \
 $BOX_FILTER > $OUTPUT
+
+echo "Calculating cksums..."
+if [[ ! -d sub_split ]] ; then
+	mkdir sub_split
+fi
+
+csplit -s -f sub_split/sub -n 3 $OUTPUT "/^\.SUBCKT /" "{*}"
+
+for sub in sub_split/sub*; do
+	CIRCUIT=$(awk '/^\.SUBCKT/ {print $2; exit}' $sub)
+	sed -e '/^ *$/d' -e :a -e '$!N;s/\n+/ /; ta' -e 's/  */ /g' -e 'P;D' $sub | \
+		sort > sub_split/$CIRCUIT.cdl
+	rm $sub
+done
+
+DATE=${PWD##*/}
+
+echo "# Checksum file for $PRIMARY $DATE" > $PRIMARY.cksum
+
+cksum sub_split/* | \
+	sed -e 's,sub_split/,,' -e 's,\.cdl,,' >> $PRIMARY.cksum
+
+rm -rf sub_split
 
 if [[ ! -z "${compress+x}" ]]; then
 	gzip -f $OUTPUT

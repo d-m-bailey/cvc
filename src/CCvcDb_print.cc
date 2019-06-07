@@ -119,6 +119,7 @@ void CCvcDb::SetOutputFiles(string theReportFilename) {
 			remove(myBaseCompressedFilename.c_str());
 		}
 	}
+	cout << "DEBUG: report file '" << theReportFilename << "'" << endl;
 	logFile.open(theReportFilename);
 	if ( ! logFile.good() ) {
 		throw EFatalError("Could not open " + theReportFilename);

@@ -52,6 +52,7 @@ public:
 	const voltage_t defaultErrorThreshold = 0;
 	const size_t defaultParallelCircuitPortLimit = 0;
 	const string defaultCellErrorLimitFile = "";
+	const string defaultCellChecksumFile = "cell.cksum";
 
 	string	cvcReportTitle;
 
@@ -95,6 +96,7 @@ public:
 	voltage_t	cvcExpectedErrorThreshold = defaultErrorThreshold;
 	size_t	cvcParallelCircuitPortLimit = defaultParallelCircuitPortLimit;
 	string	cvcCellErrorLimitFile = defaultCellErrorLimitFile;
+	string	cvcCellChecksumFile = defaultCellChecksumFile;
 
 	string	cvcLastTopBlock;
 	string	cvcLastNetlistFilename;

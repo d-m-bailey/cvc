@@ -1554,7 +1554,7 @@ returnCode_t CCvcDb::LoadCellErrorLimits() {
 	igzstream myCellErrorLimitFile;
 	myCellErrorLimitFile.open(cvcParameters.cvcCellErrorLimitFile);
 	if ( myCellErrorLimitFile.fail() ) {
-		throw EFatalError("Could not open " + cvcParameters.cvcCellErrorLimitFile);
+		throw EFatalError("Could not open cell error limit file '" + cvcParameters.cvcCellErrorLimitFile + "'");
 		exit(1);
 	}
 	string myInput;
@@ -1578,5 +1578,32 @@ returnCode_t CCvcDb::LoadCellErrorLimits() {
 	}
 	myCellErrorLimitFile.close();
 	return OK;
+}
+
+void CCvcDb::LoadCellChecksums() {
+	if ( IsEmpty(cvcParameters.cvcCellChecksumFile) ) return;
+	igzstream myCellChecksumFile;
+	myCellChecksumFile.open(cvcParameters.cvcCellChecksumFile);
+	if ( myCellChecksumFile.fail() ) {
+		throw EFatalError("Could not open cell checksum file: '" + cvcParameters.cvcCellChecksumFile + "'");
+		exit(1);
+	}
+	string myInput;
+
+	reportFile << "CVC: Reading cell checksums..." << endl;
+	string myCellName;
+	while ( getline(myCellChecksumFile, myInput) ) {
+		int myCellNameStart = myInput.find_last_of(" ");
+		myCellName = myInput.substr(myCellNameStart + 1);
+		try {
+			CCircuit * theMaster_p = cvcCircuitList.FindCircuit(myCellName);
+			theMaster_p->checksum = myInput.substr(0, myCellNameStart);
+			debugFile << "INFO: checksum for " << myCellName << " is " << theMaster_p->checksum << endl;
+		}
+		catch (...) {
+			reportFile << "ERROR: Could not find checksum cell " << myCellName << " in netlist" << endl;
+		}
+	}
+	myCellChecksumFile.close();
 }
 

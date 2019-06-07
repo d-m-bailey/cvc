@@ -233,6 +233,7 @@ public:
 	bool IsOppositeLogic(netId_t theFirstNet, netId_t theSecondNet);
 	void PrintNetSuggestions();
 	returnCode_t	LoadCellErrorLimits();
+	void LoadCellChecksums();
 
 	// error
 	void PrintFuseError(netId_t theTargetNetId, CConnection & theConnections);

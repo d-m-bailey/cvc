@@ -100,7 +100,6 @@ void CCircuit::LoadDevices(CDevicePtrList * theDevicePtrList_p) {
 	for (CDevicePtrList::iterator device_ppit = theDevicePtrList_p->begin(); device_ppit != theDevicePtrList_p->end(); device_ppit++) {
 		myDevice_p = *device_ppit;
 		SetSignalIds(myDevice_p->signalList_p, myDevice_p->signalId_v);
-//		delete myDevice_p->signalList_p;
 		myDevice_p->parent_p = this;
 		if ( myDeviceIdMap.count(myDevice_p->name) ) {
 			cout << "ERROR: Duplicate instance " << myDevice_p->name << " in " << name << endl;
@@ -146,7 +145,6 @@ void CCircuit::CountObjectsAndLinkSubcircuits(unordered_map<text_t, CCircuit *> 
 			} else {
 				myChild_p->CountObjectsAndLinkSubcircuits(theCircuitNameMap);
 			}
-//			assert((*subcircuit_ppit)->signalId_v.size() == myChild_p->portCount);
 			if ( (*subcircuit_ppit)->signalId_v.size() != myChild_p->portCount ) {
 				stringstream myErrorMessage;
 				myErrorMessage << "port mismatch in " << (*subcircuit_ppit)->name << " " << (*subcircuit_ppit)->signalId_v.size() << ":" << myChild_p->portCount << endl;
@@ -232,45 +230,22 @@ void CCircuitPtrList::Print (const string theIndentation, const string theHeadin
 	cout << theIndentation << theHeading << " end" << endl << endl;
 }
 
-/*
-void CCircuitPtrList::CreateDatabase(const string theTopCircuitName) {
-	CCircuit * myTopCircuit = FindCircuit(theTopCircuitName);
-	myTopCircuit->CountObjectsAndLinkSubcircuits(circuitNameMap);
-	myTopCircuit->netCount += myTopCircuit->portCount;
-	myTopCircuit->subcircuitCount++;
-	myTopCircuit->instanceCount++;
-//	myTopCircuit->AssignGlobalId();
-}
-*/
-
 CCircuit * CCircuitPtrList::FindCircuit(const string theSearchCircuitName) {
+	// error handling in calling routine
 	return(circuitNameMap.at(cdlText.GetTextAddress(theSearchCircuitName)));
-/*  move error handling to calling routine
-	try {
-		return(circuitNameMap.at(cdlText.GetTextAddress(theSearchCircuitName)));
-	}
-	catch (const out_of_range& oor_exception) {
-//		cout << "** ERROR: could not find subcircuit: " << theSearchCircuitName << endl;
-		throw EFatalError("could not find subcircuit: " + theSearchCircuitName);
-//		exit(1);
-	}
-*/
+}
+
+void CCircuitPtrList::SetChecksum(const string theCircuitName, const string theChecksum) {
+	CCircuit * myCircuitPtr = FindCircuit(theCircuitName);
+	myCircuitPtr->checksum = theChecksum;
 }
 
 void CCircuitPtrList::PrintAndResetCircuitErrors(CCvcDb * theCvcDb_p, deviceId_t theErrorLimit, ofstream & theLogFile, ogzstream & theErrorFile,
 		string theSummaryHeading, int theErrorSubIndex, set<modelType_t> & theModelList) {
 	list<string> myErrorSummaryList;
-//	theLogFile << theSummaryHeading << endl;
 	theErrorFile << theSummaryHeading << endl;
 	for (auto circuit_ppit = begin(); circuit_ppit != end(); circuit_ppit++) {
 		if ( (*circuit_ppit)->instanceCount == 0 ) continue;  // ignore unused circuits
-/*
-		if ( theErrorLimit > 0 && (*circuit_ppit)->errorCount > theErrorLimit ) {
-			cout << "INFO: SUBCKT " << (*circuit_ppit)->name << " error count " << (*circuit_ppit)->errorCount << "/" << (*circuit_ppit)->instanceId_v.size();
-			cout << " exceeded error limit " << theErrorLimit << endl;
-		}
-		(*circuit_ppit)->errorCount = 0;
-*/
 		for (size_t device_it = 0; device_it < (*circuit_ppit)->devicePtr_v.size(); device_it++) {
 			if ( theModelList.empty() || theModelList.count((*circuit_ppit)->devicePtr_v[device_it]->model_p->type) > 0 ) {
 				if ( (*circuit_ppit)->devicePrintCount_v[device_it][theErrorSubIndex] > 0 ) {
@@ -280,10 +255,9 @@ void CCircuitPtrList::PrintAndResetCircuitErrors(CCvcDb * theCvcDb_p, deviceId_t
 					myErrorSummary << "(" << (*circuit_ppit)->devicePtr_v[device_it]->model_p->name << ")";
 					myErrorSummary << " error count " << (*circuit_ppit)->deviceErrorCount_v[device_it][theErrorSubIndex] << "/" << (*circuit_ppit)->instanceId_v.size();
 					if ( theErrorLimit > 0 && (*circuit_ppit)->deviceErrorCount_v[device_it][theErrorSubIndex] > theErrorLimit ) {
-		//				theErrorFile << "INFO: SUBCKT " << (*circuit_ppit)->name << "/" << (*circuit_ppit)->devicePtr_v[device_it]->name << " error count ";
-		//				theErrorFile << (*circuit_ppit)->deviceErrorCount_v[device_it] << "/" << (*circuit_ppit)->instanceId_v.size();
 						myErrorSummary << " exceeded error limit " << theErrorLimit;
 					}
+					myErrorSummary << " checksum(" << (*circuit_ppit)->checksum << ")";
 					myErrorSummaryList.push_front(myErrorSummary.str());
 				}
 				(*circuit_ppit)->deviceErrorCount_v[device_it][theErrorSubIndex] = 0;
@@ -293,10 +267,8 @@ void CCircuitPtrList::PrintAndResetCircuitErrors(CCvcDb * theCvcDb_p, deviceId_t
 	}
 	myErrorSummaryList.sort();
 	for ( auto error_pit = myErrorSummaryList.begin(); error_pit != myErrorSummaryList.end(); error_pit++ ) {
-//		theLogFile << (*error_pit) << endl;
 		theErrorFile << (*error_pit) << endl;
 	}
-//	theLogFile << endl << "! Finished" << endl << endl;
 	theErrorFile << endl<< "! Finished" << endl << endl;
 	theCvcDb_p->cellErrorCountMap.clear();
 }

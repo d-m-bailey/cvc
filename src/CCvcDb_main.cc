@@ -103,11 +103,15 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 			cvcParameters.SaveDatabaseParameters();
 			reportFile << "Cdl fixed data size " << cvcCircuitList.cdlText.Size() << endl;
 			reportFile << PrintProgress(&lastSnapshot, "CDL ") << endl;
+			LoadCellChecksums();
 			CountObjectsAndLinkSubcircuits();
 			AssignGlobalIDs();
 			reportFile << PrintProgress(&lastSnapshot, "DB ") << endl;
 		}
 		returnCode_t myCellErrorLimitStatus = LoadCellErrorLimits();
+		if ( myCellErrorLimitStatus != OK ) {
+			throw EFatalError("Could not load " + cvcParameters.cvcCellErrorLimitFile);
+		}
 		reportFile << "CVC: " << topCircuit_p->subcircuitCount << "(" << subcircuitCount << ") instances, "
 			<< topCircuit_p->netCount << "(" << netCount << ") nets, "
 			<< topCircuit_p->deviceCount << "(" << deviceCount << ") devices." << endl;
