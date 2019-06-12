@@ -25,6 +25,7 @@ from __future__ import print_function
 
 import re
 import os
+import pprint
 from operator import itemgetter
 
 import cvc_globals
@@ -44,6 +45,7 @@ class ResultFile():
       logFileRE: regular expression to get base log file name
       errorFileRE: regular expression to get error file name
       countRE: regular expression to get error counts
+      checksumRE: regular expression to get check sum
     Instance variables:
       topCell: Name of the top ciruit.
       modeName: Name of the CVC mode.
@@ -74,6 +76,7 @@ class ResultFile():
     logFileRE = re.compile("^CVC: Log output to (.*)")
     errorFileRE = re.compile("^CVC: Error output to (.*)")
     countRE = re.compile("^(.*INFO: .* error count )([0-9]+)/([0-9]+)")
+    checksumRE = re.compile("^.*INFO: .* (checksum\(.*\))")
     
     def __init__(self, theLogFileName):
         """Create ResultFile object from log file and error file.
@@ -160,6 +163,7 @@ class ResultFile():
                                 {'priority': error_it['priority'],
                                  'section': error_it['section'],
                                  'keyData': myErrorData,
+                                 'checksum': "checksum()",
                                  'data': myErrorData})
                         break
         except IOError:
@@ -195,16 +199,21 @@ class ResultFile():
                     if not myErrorData in myErrorDict:
                         myErrorDict[myErrorData] = True
                         myMatch = self.countRE.match(myErrorData)
+                        myChecksum = "checksum()"
                         if myMatch:
                             if myMatch.group(2) == myMatch.group(3):  # all instance have errors
                                 myKeyData = myMatch.group(1) + "all"
                             else:
                                 myKeyData = myMatch.group(1) + myMatch.group(2)
+                            myChecksumMatch = self.checksumRE.match(myErrorData)
+                            if myChecksumMatch:
+                                myChecksum = myChecksumMatch.group(1)
                         else:
                             myKeyData = myErrorData
                         self.errorList.append({'priority': myPriority,
                                                'section': mySection,
                                                'keyData': myKeyData,
+                                               'checksum': myChecksum,
                                                'data': myErrorData})
         except IOError:
             print("ERROR: Problem reading " + self.errorFileName)
@@ -320,13 +329,13 @@ class ResultFile():
         self.checkCount = {}
         self.errorDetails = []
         for error_it in ['ERROR', 'Warning', 'Check', 'ignore',
-                         'unchecked', 'uncommitted', 'unmatched', 'comment']:
+                         'unchecked', 'uncommitted', 'unconfirmed', 'unmatched', 'comment']:
             self.errorCount[error_it] = 0
         self.errorCount['all'] = len(self.displayList)
         for line_it in self.displayList:
             mySection = ""
             myType = line_it['type']
-            if myType in ['uncommitted', 'checked', 'unchecked']:
+            if myType in ['uncommitted', 'checked', 'unchecked', 'unconfirmed']:
                 mySection = cvc_globals.errorList[line_it['priority']]['section']
                 if myType == 'checked':
                     myType = line_it['level']
@@ -336,7 +345,7 @@ class ResultFile():
             if mySection and not mySection in self.errorCount:
                 self.errorCount[mySection] = 0
                 self.checkCount[mySection] = 0
-            if line_it['type'] in ['uncommitted', 'unchecked']:
+            if line_it['type'] in ['uncommitted', 'unchecked', 'unconfirmed']:
                 self.errorCount[mySection] += 1
             elif line_it['type'] == 'checked':
                 self.checkCount[mySection] += 1             
@@ -350,7 +359,7 @@ class ResultFile():
                                                         self.errorCount[mySection]))
                 myTotalErrors += self.errorCount[mySection]
                 myCheckedErrors += self.checkCount[mySection]
-        self.percentage = int(myCheckedErrors/myTotalErrors * 1000) if myTotalErrors != 0 else 0
+        self.percentage = int(myCheckedErrors/myTotalErrors * 1000) if myTotalErrors != 0 else 1000
         self.errorDetails.append("%s %5d/%d  %.1f%%" % ("Total", myCheckedErrors,
                                                         myTotalErrors, self.percentage / 10.0))
 
@@ -364,6 +373,7 @@ class ResultFile():
           'reference': from the matching summary entry
           'data': the display line text
           'level': for checked entries, 'ERROR' -> ... -> 'ignore'. for other entries, 'unknown'
+          'checksum': checksum from result file
           'type': see below
         There are 5 types of display lines:
           'comment'   : #comment [reference] level:section *:detail
@@ -392,6 +402,7 @@ class ResultFile():
                 myRecord['keyData'] = mySummaryItem['keyData']
                 myRecord['data'] = mySummaryItem['data']
                 myRecord['type'] = 'comment'
+                myRecord['checksum'] = ""
                 # For comments and unmatched, level data from summary item is ignored
                 if not myRecord['reference'].startswith("#"):  # summary is not a comment <- ng
                     myRecord['reference'] = "* " + myRecord['reference']
@@ -403,6 +414,7 @@ class ResultFile():
                 myRecord['keyData'] = myErrorItem['keyData']
                 myRecord['data'] = myErrorItem['data']
                 myRecord['type'] = 'unchecked'
+                myRecord['checksum'] = myErrorItem['checksum']
                 myErrorIndex += 1
             else:  # summary list and error list match
                 myRecord['priority'] = myErrorItem['priority']
@@ -410,10 +422,18 @@ class ResultFile():
                 myRecord['keyData'] = myErrorItem['keyData']
                 myRecord['data'] = myErrorItem['data']
                 myRecord['level'] = mySummaryItem['level']
+                myRecord['checksum'] = myErrorItem['checksum']
                 myRecord['type'] = 'checked'
                 if myRecord['reference'].startswith('#'):  # summary is a comment <- ng
                     myRecord['reference'] = "! " + myRecord['reference']
                     myRecord['type'] = 'unchecked'
+                elif not ( mySummaryItem['checksum'] == "checksum()" or
+                           myErrorItem['checksum'] == mySummaryItem['checksum'] ):
+                    if not myRecord['reference'].startswith("[?"):
+                        myRecord['reference'] = myRecord['reference'].replace("[", "[?")
+                    myRecord['type'] = 'unconfirmed'
+                elif myRecord['reference'].startswith("[?"):
+                    myRecord['type'] = 'unconfirmed'
                 mySummaryIndex += 1
                 myErrorIndex += 1
             self.displayList.append(myRecord)

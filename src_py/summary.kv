@@ -407,6 +407,9 @@
                     id: show_unchecked
                     text: 'unchecked'
                 FilterCheckBox:
+                    id: show_unconfirmed
+                    text: 'unconfirmed'
+                FilterCheckBox:
                     id: show_uncommitted
                     text: 'uncommitted'
                 FilterCheckBox:
@@ -501,8 +504,15 @@
                 on_press:
                     root.AddReference('ignore', root.referenceAction)
             Button:
+                id: confirmButton
+                text: "Confirm"
+                padding: 5, 5
+                size: self.texture_size
+                on_press:
+                    root.ConfirmReferences()
+            Button:
                 id: commitButton
-                text: "commit"
+                text: "Commit"
                 padding: 5, 5
                 size: self.texture_size
                 on_press:
@@ -631,7 +641,7 @@
                 size_hint_x: 0.8
                 size_hint_y: 0.8
                 baseMode: ""
-                title: "Copy checked references from " + self.baseMode + " mode to selected modes"
+                title: "Copy references from " + self.baseMode + " mode to selected modes"
                 auto_dismiss: False
                 size: self.size
                 title_font: "RobotoMono-Regular"
@@ -670,6 +680,9 @@
                             text: 'ignore'
                             id: copy_ignore
                             color: 0, 1, 0, 1                            
+                        CopyCheckBox:
+                            text: 'unconfirmed'
+                            id: copy_unconfirmed
                         CopyCheckBox:
                             text: 'comment'
                             id: copy_comment
@@ -720,7 +733,7 @@
                 size_hint_x: 0.8
                 size_hint_y: 0.8
                 baseMode: ""
-                title: "Copy/overwrite checked references from " + self.baseMode + " mode to selected modes"
+                title: "Copy/overwrite displayed references from " + self.baseMode + " mode to selected modes"
                 auto_dismiss: False
                 size: self.size
                 title_font: "RobotoMono-Regular"
@@ -759,6 +772,9 @@
                             text: 'ignore'
                             id: overwrite_ignore
                             color: 0, 1, 0, 1
+                        OverwriteCheckBox:
+                            text: 'unconfirmed'
+                            id: overwrite_unconfirmed
                         OverwriteCheckBox:
                             text: 'comment'
                             id: overwrite_comment

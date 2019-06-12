@@ -1593,6 +1593,7 @@ void CCvcDb::LoadCellChecksums() {
 	reportFile << "CVC: Reading cell checksums..." << endl;
 	string myCellName;
 	while ( getline(myCellChecksumFile, myInput) ) {
+		if ( myInput.substr(0, 1) == "#" ) continue;
 		int myCellNameStart = myInput.find_last_of(" ");
 		myCellName = myInput.substr(myCellNameStart + 1);
 		try {
