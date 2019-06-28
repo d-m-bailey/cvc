@@ -1267,6 +1267,7 @@ void CCvcDb::CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInst
 	theOutputFile << "CVC_LEAK?_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcLeakErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_EXPECTED_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcExpectedErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParameters.cvcParallelCircuitPortLimit << "'" << endl;
+	theOutputFile << "CVC_CELL_CHECKSUM_FILE = '" << cvcParameters.cvcCellChecksumFile << "'" << endl;
 }
 
 void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerFileName, int theCurrentStage) {

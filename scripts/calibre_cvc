@@ -165,12 +165,18 @@ if [[ ! -d sub_split ]] ; then
 	mkdir sub_split
 fi
 
-csplit -s -f sub_split/sub -n 3 $OUTPUT "/^\.SUBCKT /" "{*}"
+awk '\
+/^+/ { printf("\\=%s", $0); next } \
+ { printf("\n%s", $0) } \
+END { printf("\n") }' $OUTPUT | \
+	sed -e '/^ *$/d' \
+	    -e 's/\\=+/ /g' \
+	    -e 's/  */ /g' | \
+	csplit -s -f sub_split/sub -n 7 - "/^\.SUBCKT /" "{*}"
 
 for sub in sub_split/sub*; do
 	CIRCUIT=$(awk '/^\.SUBCKT/ {print $2; exit}' $sub)
-	sed -e '/^ *$/d' -e :a -e '$!N;s/\n+/ /; ta' -e 's/  */ /g' -e 'P;D' $sub | \
-		sort > sub_split/$CIRCUIT.cdl
+	sort $sub > sub_split/$CIRCUIT.cdl
 	rm $sub
 done
 

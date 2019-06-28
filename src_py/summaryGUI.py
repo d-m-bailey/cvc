@@ -7,7 +7,7 @@
       HistoryTextInput: Implements text input with history and clear.
       SummaryWidget: Root widget handles filters, error totals, error displays and buttons.
 
-    Copyright 2106-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+    Copyright 2106-2019 D. Mitch Bailey  cvc at shuharisystem dot com
 
     This file is part of check_cvc.
 
@@ -500,6 +500,7 @@ class SummaryWidget(Widget):
     autoSaveFlag = False
     referenceAction = None
     errorLevel = None
+    commentRE = re.compile("^#[^ ]* ")
 
     def __init__(self, theApp, theSummaryList, theReportList, **kwargs):
         """Initialize root widget with summary and report data.
@@ -712,7 +713,6 @@ class SummaryWidget(Widget):
             myData = myList.data[record_it]
             myIndex = myData['baseIndex']
             myDisplayList[myIndex]['level'] = theLevel
-            myDisplayList[myIndex]['type'] = 'checked'
             if theReferenceAction == 'replace':
                 myDisplayList[myIndex]['reference'] = myReference + " " + theLevel
             else:  # 'keep'
@@ -722,10 +722,6 @@ class SummaryWidget(Widget):
                 myDisplayList[myIndex]['type'] = 'unconfirmed'
             else:
                 myDisplayList[myIndex]['type'] = 'checked'
-709d
-497c
-    commentRE = re.compile("^#[^ ]* ")
-
         myContent.report.CountErrors()
         myContent.RedisplayErrors()
         self.changedFlag = self.autoSaveFlag = True
@@ -1339,7 +1335,7 @@ class SummaryWidget(Widget):
                     # unmatched lines without references are always deleted
                     myDeletedLineCount += 1
                     del myList[line_it]
-                else:
+                elif myLine['reference'].startswith("* "):
                     # This is temporary. Must restore after save.
                     myLine['reference'] = myLine['reference'][2:]  # remove "* "
         return myDeletedLineCount

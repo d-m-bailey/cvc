@@ -52,7 +52,7 @@ public:
 	const voltage_t defaultErrorThreshold = 0;
 	const size_t defaultParallelCircuitPortLimit = 0;
 	const string defaultCellErrorLimitFile = "";
-	const string defaultCellChecksumFile = "cell.cksum";
+	const string defaultCellChecksumFile = "";
 
 	string	cvcReportTitle;
 

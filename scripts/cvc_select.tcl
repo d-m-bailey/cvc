@@ -13,6 +13,8 @@ proc load_selection {} {
 
 	set visu [Gui:GetMainVisualizer]
 
+	Gui:ActivateTab $visu Search&Cone
+
 	set db [Gui:GetDataBase $visu]
 	set topoid [Gui:GetCurrentModule $visu]
 	if { $topoid == "" } {
@@ -55,8 +57,6 @@ proc load_selection {} {
 	#lappend oidList "inst $topcell $path $mySelection"
 	#Gui:AppendCone $visu $oidList
 	Gui:AppendCone $visu $parentList
-
-	Gui:ActivateTab $visu Search&Cone
 }
 
 proc toggle_selection {} {
