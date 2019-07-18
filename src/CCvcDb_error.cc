@@ -323,7 +323,7 @@ void CCvcDb::FindAllOverVoltageErrors() {
 					myConnections.SetMinMaxLeakVoltagesAndFlags(this);
 					//string myErrorExplanation = "";
 					if ( model_pit->maxVbg != UNKNOWN_VOLTAGE ) FindVbgError(myVbgErrorFile, model_pit->maxVbg, myConnections, myInstanceId, myVbgDisplayParameter);
-					if ( model_pit->maxVbs != UNKNOWN_VOLTAGE ) FindVbgError(myVbsErrorFile, model_pit->maxVbs, myConnections, myInstanceId, myVbsDisplayParameter);
+					if ( model_pit->maxVbs != UNKNOWN_VOLTAGE ) FindVbsError(myVbsErrorFile, model_pit->maxVbs, myConnections, myInstanceId, myVbsDisplayParameter);
 					if ( model_pit->maxVds != UNKNOWN_VOLTAGE ) FindVdsError(myVdsErrorFile, model_pit->maxVds, myConnections, myInstanceId, myVdsDisplayParameter);
 					if ( model_pit->maxVgs != UNKNOWN_VOLTAGE ) FindVgsError(myVgsErrorFile, model_pit->maxVgs, myConnections, myInstanceId, myVgsDisplayParameter);
 

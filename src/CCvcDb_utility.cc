@@ -1267,6 +1267,11 @@ void CCvcDb::RemoveInvalidPower(netId_t theNetId, size_t & theRemovedCount) {
 			reportFile << "WARNING: Invalid Min/Max on top level port: " << NetName(theNetId) << " Min/Max: " << myMinVoltage << "/" << myMaxVoltage << endl;
 		}
 		CPower * myPower_p = netVoltagePtr_v[theNetId];
+		if ( ! ( (myPower_p->type[MIN_CALCULATED_BIT] || myPower_p->minVoltage == UNKNOWN_VOLTAGE)
+				&& (myPower_p->type[MAX_CALCULATED_BIT] || myPower_p->maxVoltage == UNKNOWN_VOLTAGE) ) ) {
+			reportFile << "WARNING: ignoring setting for " << myPower_p->powerSignal() << " at ";
+			myPower_p->Print(reportFile, "", NetName(theNetId));
+		}
 		netVoltagePtr_v[theNetId] = NULL;
 		theRemovedCount++;
 		// replace deleted voltage with known voltage

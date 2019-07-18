@@ -895,7 +895,8 @@ returnCode_t CCvcDb::SetModePower() {
  				bool myPowerConflict = false;
  				if ( myPower_p->expectedMin() != "" ) {
  					if ( netVoltagePtr_v[*netId_pit]->expectedMin() == "" ) {
- 						logFile << "INFO: Override expectedMin for " << NetName(*netId_pit) << " from " << myPower_p->definition << endl;
+ 						logFile << "INFO: Override expectedMin for " << NetName(*netId_pit) << " from ";
+ 						logFile << myPower_p->powerSignal() << " " << myPower_p->definition << endl;
  						netVoltagePtr_v[*netId_pit]->expectedMin() = myPower_p->expectedMin();
  					} else if ( netVoltagePtr_v[*netId_pit]->expectedMin() != myPower_p->expectedMin() ) {
  						myPowerConflict = true;
@@ -903,7 +904,8 @@ returnCode_t CCvcDb::SetModePower() {
  				}
  				if ( myPower_p->expectedSim() != "" ) {
  					if ( netVoltagePtr_v[*netId_pit]->expectedSim() == "" ) {
- 						logFile << "INFO: Override expectedSim for " << NetName(*netId_pit) << " from " << myPower_p->definition << endl;
+ 						logFile << "INFO: Override expectedSim for " << NetName(*netId_pit) << " from ";
+ 						logFile << myPower_p->powerSignal() << " " << myPower_p->definition << endl;
  						netVoltagePtr_v[*netId_pit]->expectedSim() = myPower_p->expectedSim();
  					} else if ( netVoltagePtr_v[*netId_pit]->expectedSim() != myPower_p->expectedSim() ) {
  						myPowerConflict = true;
@@ -911,7 +913,8 @@ returnCode_t CCvcDb::SetModePower() {
  				}
  				if ( myPower_p->expectedMax() != "" ) {
  					if ( netVoltagePtr_v[*netId_pit]->expectedMax() == "" ) {
- 						logFile << "INFO: Override expectedMax for " << NetName(*netId_pit) << " from " << myPower_p->definition << endl;
+ 						logFile << "INFO: Override expectedMax for " << NetName(*netId_pit) << " from ";
+ 						logFile << myPower_p->powerSignal() << " " << myPower_p->definition << endl;
  						netVoltagePtr_v[*netId_pit]->expectedMax() = myPower_p->expectedMax();
  					} else if ( netVoltagePtr_v[*netId_pit]->expectedMax() != myPower_p->expectedMax() ) {
  						myPowerConflict = true;
@@ -919,7 +922,8 @@ returnCode_t CCvcDb::SetModePower() {
  				}
  				if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) {
  					if ( netVoltagePtr_v[*netId_pit]->minVoltage == UNKNOWN_VOLTAGE ) {
- 						logFile << "INFO: Override minVoltage for " << NetName(*netId_pit) << " from " << myPower_p->definition << endl;
+ 						logFile << "INFO: Override minVoltage for " << NetName(*netId_pit) << " from ";
+ 						logFile << myPower_p->powerSignal() << " " << myPower_p->definition << endl;
  						netVoltagePtr_v[*netId_pit]->minVoltage = myPower_p->minVoltage;
  					} else if ( netVoltagePtr_v[*netId_pit]->minVoltage != myPower_p->minVoltage ) {
  						myPowerConflict = true;
@@ -927,7 +931,8 @@ returnCode_t CCvcDb::SetModePower() {
  				}
  				if ( myPower_p->simVoltage != UNKNOWN_VOLTAGE ) {
  					if ( netVoltagePtr_v[*netId_pit]->simVoltage == UNKNOWN_VOLTAGE ) {
- 						logFile << "INFO: Override simVoltage for " << NetName(*netId_pit) << " from " << myPower_p->definition << endl;
+ 						logFile << "INFO: Override simVoltage for " << NetName(*netId_pit) << " from ";
+ 						logFile << myPower_p->powerSignal() << " " << myPower_p->definition << endl;
  						netVoltagePtr_v[*netId_pit]->simVoltage = myPower_p->simVoltage;
  					} else if ( netVoltagePtr_v[*netId_pit]->simVoltage != myPower_p->simVoltage ) {
  						myPowerConflict = true;
@@ -935,7 +940,8 @@ returnCode_t CCvcDb::SetModePower() {
  				}
  				if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) {
  					if ( netVoltagePtr_v[*netId_pit]->maxVoltage == UNKNOWN_VOLTAGE ) {
- 						logFile << "INFO: Override maxVoltage for " << NetName(*netId_pit) << " from " << myPower_p->definition << endl;
+ 						logFile << "INFO: Override maxVoltage for " << NetName(*netId_pit) << " from ";
+ 						logFile << myPower_p->powerSignal() << " " << myPower_p->definition << endl;
  						netVoltagePtr_v[*netId_pit]->maxVoltage = myPower_p->maxVoltage;
  					} else if ( netVoltagePtr_v[*netId_pit]->maxVoltage != myPower_p->maxVoltage ) {
  						myPowerConflict = true;
@@ -1602,7 +1608,12 @@ void CCvcDb::LoadCellChecksums() {
 			debugFile << "INFO: checksum for " << myCellName << " is " << theMaster_p->checksum << endl;
 		}
 		catch (...) {
-			reportFile << "ERROR: Could not find checksum cell " << myCellName << " in netlist" << endl;
+			logFile << "Warning: Could not find checksum cell " << myCellName << " in netlist" << endl;
+		}
+	}
+	for ( auto circuit_ppit = cvcCircuitList.begin(); circuit_ppit != cvcCircuitList.end(); circuit_ppit++ ) {
+		if ( (*circuit_ppit)->checksum.empty() ) {
+			reportFile << "Warning: Could not find checksum for netlist cell " << (*circuit_ppit)->name << endl;
 		}
 	}
 	myCellChecksumFile.close();

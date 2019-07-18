@@ -995,7 +995,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 						}
 						if ( powerFileStatus == OK && netVoltagePtr_v[myEquivalentNetId] ) {
 							if ( netVoltagePtr_v[myEquivalentNetId]->powerSignal() != mySimpleName ) {
-								reportFile << " base definition " << netVoltagePtr_v[myEquivalentNetId]->powerSignal();
+								reportFile << " base definition " << netVoltagePtr_v[myEquivalentNetId]->powerSignal() << endl;
 								reportFile << "  default min " << NetName(netVoltagePtr_v[myEquivalentNetId]->defaultMinNet) << endl;
 								reportFile << "  default sim " << NetName(netVoltagePtr_v[myEquivalentNetId]->defaultSimNet) << endl;
 								reportFile << "  default max " << NetName(netVoltagePtr_v[myEquivalentNetId]->defaultMaxNet) << endl;
