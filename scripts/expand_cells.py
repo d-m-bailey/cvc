@@ -36,13 +36,15 @@ def ReadCellOverrides(theOverrideCellFileName):
     EXPAND cell1 <- cell1 will be expanded (flattened) unconditionally (LVS EXCLUDE HCELL)
     KEEP cell2   <- cell2 will remain in the final hierarchy unless parameterized
     IGNORE cell3 <- contents of cell3 will be removed from the final netlist (LVS BOX CELL)
+    MOSFET cell4 <- cell4 will be treated as a mosfet
+    RESISTOR cell5 <- cell4 will be treated as a resistor
     # comment
 
     Other formats result in fatal errors.
     Duplicate settings that don't match also result in fatal errors.
     """
     myCellOverrides = {}
-    myOverrideFilterRE = re.compile('^(EXPAND|KEEP|IGNORE)\s+(\S+)$')
+    myOverrideFilterRE = re.compile('^(EXPAND|KEEP|IGNORE|MOSFET|RESISTOR)\s+(\S+)')
     myCommentRE = re.compile('^#')
     myOverrideError = False
     myCellOverrideFile = OpenFile(theOverrideCellFileName)
@@ -111,13 +113,30 @@ def ReadNetlist(theCDLFileName, theCellOverrideList):
         myLongLines.append(myLine)
     return myLongLines
 
+def CountResistor(theCircuit, theLine, theRE):
+    myMatch = theRE.search(theLine)
+    if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D resistor.
+        theCircuit['resistor_count'] += 1
+    else:
+        theCircuit['other_count'] += 1
+
+def CountMosfet(theCircuit, theLine, theRE):
+    myMatch = theRE.search(theLine)
+    if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D MOS.
+        myMosModel = myMatch.group(3)
+        if myMosModel not in theCircuit['mos_models']:
+            theCircuit['mos_models'][myMosModel] = 0
+        theCircuit['mos_models'][myMosModel] += 1
+    else:
+        theCircuit['other_count'] += 1
+
 def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
     """Count instances, mos models, resistor in each subckt and return hierarchy dictionary."""
     mySubcktStartRE = re.compile("^\.[sS][uU][bB][cC][kK][tT]\s+(\S+)")
     mySubcktEndRE = re.compile("^\.[eE][nN][dD][sS]")
     myPinRE = re.compile("\$PINS")
-    myMosRE = re.compile("^[mM]\S*\s+(\S+)\s+\S+\s+(\S+)\s+\S+\s+(\S+)")
-    myResistorRE = re.compile("^[rR]\S*\s+(\S+)\s+(\S+)")
+    myMosRE = re.compile("^[mMxX]\S*\s+(\S+)\s+\S+\s+(\S+)\s+\S+\s+(\S+)")
+    myResistorRE = re.compile("^[rRxX]\S*\s+(\S+)\s+(\S+)")
     myParameterRE = re.compile("([^=\s]+=[^=\s]+)|(\$\S+)")
     myCircuit = None
     for line_it in theSubcircuits:
@@ -140,24 +159,18 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
             else:
                 myInstance = myWordList[-1]
             myInstance = myInstance.replace("/", "")
-            if myInstance not in myCircuit['instances']:
-                myCircuit['instances'][myInstance] = 0
-            myCircuit['instances'][myInstance] += 1
-        elif line_it.startswith("M") or line_it.startswith("m"):
-            myMatch = myMosRE.search(line_it)
-            if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D MOS.
-                myMosModel = myMatch.group(3)
-                if myMosModel not in myCircuit['mos_models']:
-                    myCircuit['mos_models'][myMosModel] = 0
-                myCircuit['mos_models'][myMosModel] += 1
+            if myInstance in theCellOverrideList and theCellOverrideList[myInstance] == 'RESISTOR':
+                CountResistor(myCircuit, line_it, myResistorRE)
+            elif myInstance in theCellOverrideList and theCellOverrideList[myInstance] == 'MOSFET':
+                CountMosfet(myCircuit, line_it, myMosRE)
+            elif myInstance not in myCircuit['instances']:
+                myCircuit['instances'][myInstance] = 1
             else:
-                myCircuit['other_count'] += 1
+                myCircuit['instances'][myInstance] += 1
         elif line_it.startswith("R") or line_it.startswith("r"):
-            myMatch = myResistorRE.search(line_it)
-            if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D resistor.
-                myCircuit['resistor_count'] += 1
-            else:
-                myCircuit['other_count'] += 1
+            CountResistor(myCircuit, line_it, myResistorRE)
+        elif line_it.startswith("M") or line_it.startswith("m"):
+            CountMosfet(myCircuit, line_it, myMosRE)
         elif line_it.startswith("."):
             myMatch = mySubcktStartRE.search(line_it)
             if myMatch:

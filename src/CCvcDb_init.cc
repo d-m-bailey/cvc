@@ -1477,7 +1477,10 @@ void CCvcDb::PrintNetSuggestions() {
 	reportFile << "CVC SETUP: bulk > SD" << endl << endl;
 	for( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 		if ( netVoltagePtr_v[net_it] ) continue;
-		if ( myBulkCount.count(net_it) && myBulkCount[net_it].first > connectionCount_v[net_it].SourceDrainCount() ) {
+		if ( myBulkCount.count(net_it)
+				&& ( myBulkCount[net_it].first > connectionCount_v[net_it].SourceDrainCount()
+						|| ( net_it < topCircuit_p->portCount  // for top ports, also flag bulk = source counts
+								&& myBulkCount[net_it].first == connectionCount_v[net_it].SourceDrainCount() ) ) ) {
 			reportFile << NetName(net_it, PRINT_CIRCUIT_ON) << "    SD/bulk " << connectionCount_v[net_it].SourceDrainCount() << "/" << myBulkCount[net_it].first;
 			for ( auto count_pit = myDeviceCount.begin(); count_pit != myDeviceCount.end(); count_pit++ ) {
 				count_pit->second = 0;
@@ -1501,6 +1504,7 @@ void CCvcDb::PrintNetSuggestions() {
 	reportFile << "CVC SETUP: input ports" << endl << endl;
 	for( netId_t net_it = 0; net_it < topCircuit_p->portCount; net_it++ ) {
 		if ( netVoltagePtr_v[net_it] ) continue;
+		if ( net_it != GetEquivalentNet(net_it) ) continue;  // skip shorted nets
 		unordered_set<netId_t> myCheckedNets;
 		unordered_set<netId_t> myUncheckedNets;
 		myUncheckedNets.insert(net_it);
