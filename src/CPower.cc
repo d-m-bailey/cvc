@@ -164,10 +164,14 @@ CPower::CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModel
 				if ( IsEmpty(powerAlias()) ) {
 					SetPowerAlias(thePowerString, myAliasBegin);
 				}
+			} else if ( myParameterName == "analog" ) {
+				type[ANALOG_BIT] = true;
 			} else if ( myParameterName == "resistor" ) {
 				type[RESISTOR_BIT] = true;
+/*
 			} else if ( myParameterName == "reference" ) {
 				type[REFERENCE_BIT] = true;
+*/
 			} else if ( myParameterName == "open" ) {
 //				type[FIXED_BIT] = true;
 				type[HIZ_BIT] = true;

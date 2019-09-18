@@ -80,6 +80,7 @@ public:
 //	CVirtualNet();
 //	CVirtualNet(CVirtualNetVector& theVirtualNet_v, netId_t theNetId);
 //	void GetMasterNet(CVirtualNetVector& theVirtualNet_v, netId_t theNetId);
+	void Print(ostream& theOutputFile);
 };
 
 class CVirtualNetVector : public vector<CVirtualNet> {

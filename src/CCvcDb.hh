@@ -145,6 +145,8 @@ public:
 	CEventQueue minEventQueue;
 	CEventQueue simEventQueue;
 
+	unordered_set<deviceId_t> mosDiodeSet;
+
 //	vector<voltage_t>	voltage;
 
 	uintmax_t	deviceCount;
@@ -213,6 +215,7 @@ public:
 	deviceId_t FindUniqueSourceDrainConnectedDevice(netId_t theNetId);
 	void ShortNonConductingResistor(deviceId_t theDeviceId, netId_t theFirstNet, netId_t theSecondNet, shortDirection_t theDirection);
 	void ShortNonConductingResistors();
+	void SetResistorVoltagesForMosSwitches();
 	forward_list<instanceId_t> FindInstanceIds(string theHierarchy, instanceId_t theParent = 0);
 	set<netId_t> * FindNetIds(string thePowerSignal, instanceId_t theParent = 0);
 	returnCode_t SetModePower();

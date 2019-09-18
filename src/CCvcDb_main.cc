@@ -155,6 +155,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		cvcParameters.cvcPowerPtrList.SetPowerLimits(maxPower, minPower);
 		LinkDevices();
 		OverrideFuses();
+		mosDiodeSet.clear();
 		if ( gSetup_cvc ) {
 			PrintNetSuggestions();
 		}
@@ -171,6 +172,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// Stage 3) Calculate voltages across resistors
 /// - Calculated resistance
 		ShortNonConductingResistors();
+//		SetResistorVoltagesForMosSwitches();
 		SetResistorVoltagesByPower();
 		reportFile << PrintProgress(&lastSnapshot, "RES ") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;

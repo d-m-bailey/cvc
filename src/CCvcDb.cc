@@ -437,13 +437,16 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 		if ( IsMos_(deviceType_v[theDeviceId]) ) {
 			voltage_t mySourceVoltage;
 			netId_t myTargetNetId = UNKNOWN_NET;
+			netId_t mySourceNetId;
 			calculationType_t myCalculationType;
 			if ( theConnections.sourceId == theConnections.gateId ) {
 				myTargetNetId = theConnections.sourceId;
+				mySourceNetId = theConnections.drainId;
 				mySourceVoltage = theConnections.drainVoltage;
 				myCalculationType = theConnections.drainPower_p->minCalculationType;
 			} else if ( theConnections.drainId == theConnections.gateId ) {
 				myTargetNetId = theConnections.drainId;
+				mySourceNetId = theConnections.sourceId;
 				mySourceVoltage = theConnections.sourceVoltage;
 				myCalculationType = theConnections.sourcePower_p->minCalculationType;
 			}
@@ -461,7 +464,7 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 						float myLeakCurrent = myMaxConnections.EstimatedMosDiodeCurrent(mySourceVoltage, theConnections);
 						bool myCheckLeakCurrent = cvcParameters.cvcMosDiodeErrorThreshold == 0
 								|| abs(myMaxConnections.gateVoltage - myExpectedVoltage) > cvcParameters.cvcMosDiodeErrorThreshold;
-						if ( myCheckLeakCurrent && ExceedsLeakLimit_(myLeakCurrent) ) {
+						if ( myCheckLeakCurrent && ExceedsLeakLimit_(myLeakCurrent) && netVoltagePtr_v[mySourceNetId] ) {  // no errors if not direct propagation
 							PrintMaxVoltageConflict(myTargetNetId, myMaxConnections, myExpectedVoltage, myLeakCurrent);
 	//						reportFile << "WARNING: Max voltage already set for " << NetName(myTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
 	//						reportFile << " at mos diode " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON);
@@ -532,13 +535,16 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 		if ( IsMos_(deviceType_v[theDeviceId]) ) {
 			voltage_t mySourceVoltage;
 			netId_t myTargetNetId = UNKNOWN_NET;
+			netId_t mySourceNetId;
 			calculationType_t myCalculationType;
 			if ( theConnections.sourceId == theConnections.gateId ) {
 				myTargetNetId = theConnections.sourceId;
+				mySourceNetId = theConnections.drainId;
 				mySourceVoltage = theConnections.drainVoltage;
 				myCalculationType = theConnections.drainPower_p->maxCalculationType;
 			} else if ( theConnections.drainId == theConnections.gateId ) {
 				myTargetNetId = theConnections.drainId;
+				mySourceNetId = theConnections.sourceId;
 				mySourceVoltage = theConnections.sourceVoltage;
 				myCalculationType = theConnections.sourcePower_p->maxCalculationType;
 			}
@@ -556,7 +562,7 @@ bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId,
 						float myLeakCurrent = myMinConnections.EstimatedMosDiodeCurrent(mySourceVoltage, theConnections);
 						bool myCheckLeakCurrent = cvcParameters.cvcMosDiodeErrorThreshold == 0
 							|| abs(myMinConnections.gateVoltage - myExpectedVoltage) > cvcParameters.cvcMosDiodeErrorThreshold;
-						if ( myCheckLeakCurrent && ExceedsLeakLimit_(myLeakCurrent) ) {
+						if ( myCheckLeakCurrent && ExceedsLeakLimit_(myLeakCurrent) && netVoltagePtr_v[mySourceNetId] ) {  // no errors if not direct propagation
 							PrintMinVoltageConflict(myTargetNetId, myMinConnections, myExpectedVoltage, myLeakCurrent);
 	//						reportFile << "WARNING: Min voltage already set for " << NetName(myTargetNetId, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF);
 	//						reportFile << " at mos diode " << DeviceName(theConnections.deviceId, PRINT_CIRCUIT_ON);
@@ -2000,11 +2006,14 @@ void CCvcDb::CalculateResistorVoltages() {
 	netId_t myLastPowerNet;
 	vector<bool> myPrintedPower(netCount, false);
 	for (auto power_ppit = cvcParameters.cvcPowerPtrList.begin(); power_ppit != cvcParameters.cvcPowerPtrList.end(); power_ppit++) {
-		if ( (*power_ppit)->type[RESISTOR_BIT] && IsCalculatedVoltage_((*power_ppit)) && ! myPrintedPower[(*power_ppit)->netId] ) {
+		if ( myPrintedPower[(*power_ppit)->netId] ) continue;  // already printed
+		if ( (*power_ppit)->type[RESISTOR_BIT] ) {
 			netId_t myPowerNet = (*power_ppit)->netId;
 			if ( netVoltagePtr_v[myPowerNet]->simVoltage == UNKNOWN_VOLTAGE ) {
-				reportFile << "WARNING: Could not calculate explicit resistor voltage for " << NetName((*power_ppit)->netId, PRINT_CIRCUIT_ON) << endl;
-			} else {
+				if ( ! IsEmpty(netVoltagePtr_v[myPowerNet]->definition) ) {
+					reportFile << "WARNING: Could not calculate explicit resistor voltage for " << NetName((*power_ppit)->netId, PRINT_CIRCUIT_ON) << endl;
+				}
+			} else if ( IsCalculatedVoltage_((*power_ppit)) ) {
 				if ( netVoltagePtr_v[myPowerNet] != *power_ppit ) continue; // skip unused power nodes
 				netId_t myNextNet = minNet_v[myPowerNet].nextNetId;
 				while ( netVoltagePtr_v[myNextNet] && netVoltagePtr_v[myNextNet]->simVoltage != UNKNOWN_VOLTAGE && ! minNet_v.IsTerminal(myNextNet) ) {
@@ -2779,6 +2788,8 @@ void CCvcDb::SetSimPower(propagation_t thePropagationType, CNetIdSet & theNewNet
 void CCvcDb::CheckConnections() {
 //	resistance_t myResistance;
 	static CVirtualNet myVirtualNet;
+	static CVirtualNet myMinNet;
+	static CVirtualNet myMaxNet;
 	unordered_map<netId_t, pair<deviceId_t, deviceId_t>> myBulkCount;
 //	vector<deviceId_t> myBulkCount;
 //	vector<deviceId_t> myBulkDevice;
@@ -2808,6 +2819,12 @@ void CCvcDb::CheckConnections() {
 			} else if ( ! myPower_p
 					|| ( myPower_p->simVoltage == UNKNOWN_VOLTAGE
 						&& ( myPower_p->minVoltage == UNKNOWN_VOLTAGE || myPower_p->maxVoltage == UNKNOWN_VOLTAGE ) ) ) {  // no error for missing bias if min/max defined.
+				myMinNet(minNet_v, net_it);
+				myMaxNet(maxNet_v, net_it);
+				if ( myMinNet.finalNetId != UNKNOWN_NET
+						&& netVoltagePtr_v[myMinNet.finalNetId]
+						&& netVoltagePtr_v[myMinNet.finalNetId]->minVoltage != UNKNOWN_VOLTAGE
+						&& myMinNet.finalNetId == myMaxNet.finalNetId ) continue;  // bias with min/max to same voltage not error
 				reportFile << "WARNING: missing bias (" << myBulkCount[net_it].first << ") " << NetName(net_it, PRINT_CIRCUIT_ON);
 				reportFile << " at " << DeviceName(myBulkCount[net_it].second, PRINT_CIRCUIT_ON, PRINT_HIERARCHY_OFF) << endl;
 			} else if ( IsCalculatedVoltage_(myPower_p) ) {

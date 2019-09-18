@@ -530,6 +530,7 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 		bool myVthFlag = false;
 		bool myUnrelatedFlag = false;
 		if ( ! myConnections.minGatePower_p ) continue;
+		if ( myConnections.minGatePower_p->type[ANALOG_BIT] && ! cvcParameters.cvcAnalogGates ) continue;  // ignore analog gate errors
 		if ( myConnections.minGatePower_p->IsRelatedPower(myConnections.minSourcePower_p, netVoltagePtr_v, minNet_v, minNet_v, true, true)
 				&& myConnections.minGatePower_p->IsRelatedPower(myConnections.minDrainPower_p, netVoltagePtr_v, minNet_v, minNet_v, true, true) ) {
 			// if relatives (default), then checks are conditional
@@ -575,8 +576,10 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 		if ( IncrementDeviceError(myConnections.deviceId, NMOS_GATE_SOURCE) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 			if ( myUnrelatedFlag ) {
 				errorFile << "Unrelated power error" << endl;
+/*
 			} else if ( myConnections.minGatePower_p->type[REFERENCE_BIT] ) {
 				errorFile << "Gate reference signal" << endl;
+*/
 			} else if ( myVthFlag ) {
 				errorFile << "Gate-source = Vth" << endl;
 			}
@@ -600,6 +603,7 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 		bool myVthFlag = false;
 		bool myUnrelatedFlag = false;
 		if ( ! myConnections.maxGatePower_p ) continue;
+		if ( myConnections.maxGatePower_p->type[ANALOG_BIT] && ! cvcParameters.cvcAnalogGates ) continue;  // ignore analog gate errors
 		if ( myConnections.maxGatePower_p->IsRelatedPower(myConnections.maxSourcePower_p, netVoltagePtr_v, maxNet_v, maxNet_v, true, true)
 				&& myConnections.maxGatePower_p->IsRelatedPower(myConnections.maxDrainPower_p, netVoltagePtr_v, maxNet_v, maxNet_v, true, true) ) {
 			// if relatives (default), then checks are conditional
@@ -645,8 +649,10 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 		if ( IncrementDeviceError(myConnections.deviceId, PMOS_GATE_SOURCE) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 			if ( myUnrelatedFlag ) {
 				errorFile << "Unrelated power error" << endl;
+/*
 			} else if ( myConnections.maxGatePower_p->type[REFERENCE_BIT] ) {
 				errorFile << "Gate reference signal" << endl;
+*/
 			} else if ( myVthFlag ) {
 				errorFile << "Gate-source = Vth" << endl;
 			}

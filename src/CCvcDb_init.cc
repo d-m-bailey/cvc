@@ -669,6 +669,24 @@ void CCvcDb::ShortNonConductingResistors() {
 	}
 }
 
+void CCvcDb::SetResistorVoltagesForMosSwitches() {
+	for (CPowerPtrList::iterator power_ppit = cvcParameters.cvcPowerPtrList.begin(); power_ppit != cvcParameters.cvcPowerPtrList.end(); power_ppit++) {
+		// should only be defined voltages at this time.
+		CPower * myPower_p = * power_ppit;
+//		if ( ! myPower_p->type[EXPECTED_ONLY_BIT] ) {
+		netId_t myNetId = myPower_p->netId;
+		if ( ! myPower_p->type[POWER_BIT] ) continue;  // only process power
+		for (deviceId_t device_it = firstSource_v[myNetId]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it]) {
+			switch(deviceType_v[device_it]) {
+			case NMOS: case PMOS: case LDDN: case LDDP:
+				break;
+			default:
+				break;
+			}
+		}
+	}
+}
+
 forward_list<instanceId_t> CCvcDb::FindInstanceIds(string theHierarchy, instanceId_t theParent) {
 	list<string> * myHierarchyList_p = SplitHierarchy(theHierarchy);
 	forward_list<instanceId_t> mySearchInstanceIdList;
@@ -1180,10 +1198,12 @@ void CCvcDb::SetSCRCPower() {
 			if ( myAttemptCount == 0 ) {  // Could not set any gate nets, so set net directly
 				voltage_t myExpectedVoltage = IsSCRCPower(netVoltagePtr_v[minNet_v[net_it].finalNetId]) ?
 						netVoltagePtr_v[maxNet_v[net_it].finalNetId]->maxVoltage : netVoltagePtr_v[minNet_v[net_it].finalNetId]->minVoltage;
-				if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE ) {
-					reportFile << "Warning: " << NetName(net_it) << ": voltage already set expected " << myExpectedVoltage;
-					reportFile << " found " << netVoltagePtr_v[net_it]->simVoltage << endl;
-					mySCRCIgnoreCount++;
+				if ( netVoltagePtr_v[net_it] ) {
+					if ( netVoltagePtr_v[net_it]->simVoltage != myExpectedVoltage ) {
+						reportFile << "Warning: " << NetName(net_it) << ": voltage already set expected " << myExpectedVoltage;
+						reportFile << " found " << netVoltagePtr_v[net_it]->simVoltage << endl;
+						mySCRCIgnoreCount++;
+					}
 				} else {
 					debugFile << "Forcing net " << NetName(net_it) << " to " << PrintVoltage(myExpectedVoltage) << endl;
 					netVoltagePtr_v[net_it] = new CPower(net_it, myExpectedVoltage, true);

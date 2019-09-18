@@ -112,6 +112,7 @@ else
 fi
 
 sed -e 's/[   ][      ]*/ /g' \
+	-e 's/^#!/\/\/&/I' \
 	-e 's/^ *LAYOUT PRIMARY/\/\/&/I' \
 	-e 's/^ *LAYOUT PATH/\/\/&/I' \
 	-e 's/^ *SOURCE PRIMARY/\/\/&/I' \
@@ -139,7 +140,12 @@ if [[ $? -eq 1 ]]; then
 else
 	echo "Performing SVS..."
 	calibre -hier -automatch -lvs -64 $rulefile > $log
+	calibreStatus=$?
 	tail -15 $log
+	if [[ $calibreStatus -ne 0 ]]; then
+		echo "ERROR: Calibre status $calibreStatus"
+		exit 1
+	fi
 fi
 
 echo "Removing leading double characters and changing commented parameters ..."

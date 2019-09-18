@@ -176,6 +176,11 @@ void CVirtualNetVector::Set(netId_t theNetId, netId_t theNextNet, resistance_t t
 //	cout << "Setting virtual net " << theNetId << " -> " << theNextNet << "@" << theResistance << " final -> " << myFinalNetId << "@" << myFinalResistance << endl;
 }
 
+void CVirtualNet::Print(ostream& theOutputFile) {
+	theOutputFile << "Next net(R) " << nextNetId << "(" << resistance << ")";
+	theOutputFile << " final net(R) " << finalNetId << "(" << finalResistance << ")" << endl;
+}
+
 /*void CVirtualNetVector::SetFinalNet(netId_t theNetId) {
 	netId_t myFinalNetId;
 	resistance_t myFinalResistance;

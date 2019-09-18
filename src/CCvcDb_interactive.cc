@@ -883,10 +883,10 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				}
 			} else if ( myCommand == "dumpunknownlogicalnets" || myCommand == "duln" ) {
 				if ( myInputStream >> myFileName ) {
-					if ( theCurrentStage >= STAGE_FIRST_SIM ) {
+					if ( theCurrentStage >= STAGE_FIRST_MINMAX ) {
 						DumpUnknownLogicalNets(myFileName, myPrintSubcircuitNameFlag);
 					} else {
-						reportFile << "ERROR: Can only dump unknown logical nets after first sim stage" << endl;
+						reportFile << "ERROR: Can only dump unknown logical nets after first min/max stage" << endl;
 					}
 				} else {
 					reportFile << "ERROR: no unknown logical net file name" << endl;
@@ -1153,6 +1153,8 @@ void CCvcDb::DumpAnalogNets(string theFileName, bool thePrintCircuitFlag) {
 
 void CCvcDb::DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag) {
 	ofstream myDumpFile(theFileName);
+	CVirtualNet myMinNet;
+	CVirtualNet myMaxNet;
 	if ( myDumpFile.fail() ) {
 		reportFile << "ERROR: Could not open " << theFileName << endl;
 		return;
@@ -1178,8 +1180,17 @@ void CCvcDb::DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag
 		CDeviceCount myDeviceCount(net_it, this);
 //		cout << "pmos " << myDeviceCount.pmosCount << ": nmos " << myDeviceCount.nmosCount << endl;
 		if ( myDeviceCount.pmosCount == 0 || myDeviceCount.nmosCount == 0 ) continue;  // skip non logic output
+		myMinNet(minNet_v, net_it);
+		myMaxNet(maxNet_v, net_it);
+		if ( myMinNet.finalNetId == UNKNOWN_NET
+			|| myMaxNet.finalNetId == UNKNOWN_NET
+			|| myMinNet.finalNetId == net_it
+			|| myMaxNet.finalNetId == net_it
+			|| myMinNet.finalNetId == myMaxNet.finalNetId ) continue;  // invalid min/max
 //		cout << "cmos - clear" << endl;
-		myDumpFile << NetName(net_it, thePrintCircuitFlag) << endl;
+		myDumpFile << NetName(net_it, thePrintCircuitFlag);
+		myDumpFile << " min " << NetName(myMinNet.finalNetId, thePrintCircuitFlag);
+		myDumpFile << " max " << NetName(myMaxNet.finalNetId, thePrintCircuitFlag) << endl;
 		myNetCount++;
 	}
 	reportFile << "total nets written: " << myNetCount << endl;
@@ -1260,6 +1271,8 @@ void CCvcDb::CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInst
 	theOutputFile << "CVC_IGNORE_NO_LEAK_FLOATING = '" << (( cvcParameters.cvcIgnoreNoLeakFloating ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "CVC_LEAK_OVERVOLTAGE = '" << (( cvcParameters.cvcLeakOvervoltage ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "CVC_LOGIC_DIODES = '" << (( cvcParameters.cvcLogicDiodes ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_ANALOG_GATES = '" << (( cvcParameters.cvcAnalogGates ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_MOS_DIODE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcMosDiodeErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_SHORT_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcShortErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_BIAS_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcBiasErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_FORWARD_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcForwardErrorThreshold) << "'" << endl;
@@ -1267,6 +1280,7 @@ void CCvcDb::CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInst
 	theOutputFile << "CVC_LEAK?_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcLeakErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_EXPECTED_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcExpectedErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParameters.cvcParallelCircuitPortLimit << "'" << endl;
+	theOutputFile << "CVC_CELL_ERROR_LIMIT_FILE = '" << cvcParameters.cvcCellErrorLimitFile << "'" << endl;
 	theOutputFile << "CVC_CELL_CHECKSUM_FILE = '" << cvcParameters.cvcCellChecksumFile << "'" << endl;
 }
 

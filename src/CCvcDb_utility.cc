@@ -1378,7 +1378,13 @@ deviceId_t CCvcDb::CountBulkConnections(netId_t theNetId) {
 }
 
 bool CCvcDb::IsAnalogNet(netId_t theNetId) {
-	bool myIsAnalogNet = false;
+	assert(GetEquivalentNet(theNetId) == theNetId);
+	CVirtualNet myMinNet;
+	CVirtualNet myMaxNet;
+	myMinNet(minNet_v, theNetId);
+	myMaxNet(maxNet_v, theNetId);
+	bool myIsAnalogNet = ( netVoltagePtr_v[myMinNet.finalNetId] && netVoltagePtr_v[myMinNet.finalNetId]->type[ANALOG_BIT] )
+			|| ( netVoltagePtr_v[myMaxNet.finalNetId] && netVoltagePtr_v[myMaxNet.finalNetId]->type[ANALOG_BIT] );
 	deviceId_t device_it = firstSource_v[theNetId];
 	while ( ! myIsAnalogNet && device_it != UNKNOWN_DEVICE ) {
 		if ( GetEquivalentNet(drainNet_v[device_it]) != theNetId ) {

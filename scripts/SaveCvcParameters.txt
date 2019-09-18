@@ -1,4 +1,4 @@
-'    SaveCvcParameters VBA excel macro Version 0.12.23
+'    SaveCvcParameters VBA excel macro Version 0.17.15
 '
 '    Macro to convert excel book power or model sheets to text parameter files for CVC.
 '
@@ -16,16 +16,16 @@
 '
 '    You should have received a copy of the GNU General Public License
 '    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+ 
 Option Explicit
-
+ 
 Dim gCurrentDirectory As String
 Dim gPowerFilePrefix As String
 Dim gModelFile As String
 Dim gModes() As String
 Dim gNetType() As String
 Dim gNetName() As String
-
+ 
 Sub SaveCVCPowerFiles()
     'Check that power directory is defined and writable
     'Requires 'Power file prefix' text in one cell with actual name of
@@ -36,11 +36,11 @@ Sub SaveCVCPowerFiles()
     Dim myAddress As String
     Dim powerFileDirectory As String
     Dim modelFile As String
-
+ 
     gCurrentDirectory = ActiveWorkbook.Path
     On Error Resume Next
     On Error GoTo 0
-
+ 
     Set foundRange = FindFirst("Power file prefix")
     If foundRange Is Nothing Then
         MsgBox "Missing 'Power file prefix'"
@@ -64,7 +64,7 @@ Sub SaveCVCPowerFiles()
         End If
     End If
 End Sub
-
+ 
 Sub SaveCVCModelFile()
     'Check that model file is defined and writable
     'Requires 'Model file' text in one cell with actual name of
@@ -77,7 +77,7 @@ Sub SaveCVCModelFile()
     Dim powerFileDirectory As String
     Dim modelFile As String
     Dim fileError As Boolean
-
+ 
     gCurrentDirectory = ActiveWorkbook.Path
     fileError = False
     On Error Resume Next
@@ -106,7 +106,7 @@ Sub SaveCVCModelFile()
         End If
     End If
 End Sub
-
+ 
 Private Function StandardPath(thePath As String) As String
     'Return path as subdirectory of current directory.
     'Parent directories not allowed.
@@ -116,12 +116,12 @@ Private Function StandardPath(thePath As String) As String
         StandardPath = gCurrentDirectory & "\" & thePath
     End If
 End Function
-
+ 
 Private Sub WritePowerFiles(mySheetName As String)
     'Write power files to power directory
     Dim myRange As Range
     Dim myLastRow As Integer
-
+ 
     Sheets(mySheetName).Select
     Set myRange = FindFirst("Net")
     If myRange Is Nothing Then
@@ -132,17 +132,17 @@ Private Sub WritePowerFiles(mySheetName As String)
         Exit Sub
     End If
     MsgBox "Writing power files with prefix " & gPowerFilePrefix
-
+ 
     Call GetModes(myRange)
     Call GetNets(myRange)
     Call WriteOnePowerFile(myRange)
 End Sub
-
+ 
 Sub GetModes(theRange As Range)
     'Set gModes
     'Read until blank or 'Comment'
     Dim myModeCount As Integer
-
+ 
     myModeCount = 0
     While (theRange.Offset(0, myModeCount + 2).Value <> "" _
             And theRange.Offset(0, myModeCount + 2).Value <> "Comment")
@@ -151,7 +151,7 @@ Sub GetModes(theRange As Range)
         gModes(myModeCount) = theRange.Offset(0, myModeCount + 1).Value
     Wend
 End Sub
-
+ 
 Sub GetNets(theRange As Range)
     'Set gNetName, gNetType
     'Format:  Net Type
@@ -159,14 +159,15 @@ Sub GetNets(theRange As Range)
     'Rows with blank types are comments
     Dim myNetCount As Integer
     Dim myBlankRowCount As Integer
-
+ 
     myBlankRowCount = 0
     myNetCount = 0
-    While (theRange.Offset(myNetCount + 1, 0) <> "History" And myBlankRowCount < 100)
+    While (theRange.Offset(myNetCount + 1, 0) <> "History" And myBlankRowCount < 1000)
         myNetCount = myNetCount + 1
         ReDim Preserve gNetName(1 To myNetCount)
         ReDim Preserve gNetType(1 To myNetCount)
-        If theRange.Offset(myNetCount, 0) = "" Then
+        If theRange.Offset(myNetCount, 0).EntireRow.Hidden _
+                Or theRange.Offset(myNetCount, 0) = "" Then
             myBlankRowCount = myBlankRowCount + 1
             gNetType(myNetCount) = "blank"
         ElseIf theRange.Offset(myNetCount, 1) = "" Then
@@ -180,50 +181,52 @@ Sub GetNets(theRange As Range)
         End If
     Wend
 End Sub
-
+ 
 Sub WriteOnePowerFile(theRange As Range)
     'Write one power file to power file directory
     Dim myModeIndex As Integer
     Dim myNetIndex As Integer
     Dim myPowerFileName As String
-
+ 
     For myModeIndex = LBound(gModes) To UBound(gModes)
-        myPowerFileName = gPowerFilePrefix & gModes(myModeIndex)
-        Open myPowerFileName For Output As #1
-        For myNetIndex = LBound(gNetName) To UBound(gNetName)
-            If gNetType(myNetIndex) = "blank" Then
-'                Print #1, ""; vbLf;
-            ElseIf gNetType(myNetIndex) = "comment" Then
-                Print #1, "#"; gNetName(myNetIndex); vbLf;
-            ElseIf theRange.Offset(myNetIndex, myModeIndex + 1) = "" _
-                    And Not gNetType(myNetIndex) = "resistor" Then
-                Print #1, "#"; gNetName(myNetIndex); vbLf;
-            ElseIf theRange.Offset(myNetIndex, myModeIndex + 1) = "-" Then
-                Print #1, "#"; gNetName(myNetIndex); " -"; vbLf;
-            ElseIf gNetType(myNetIndex) = "circuit" Then
-                Print #1, "#instance "; "*(" & gNetName(myNetIndex) & ") " _
-                    & "power." & theRange.Offset(myNetIndex, myModeIndex + 1); vbLf;
-            ElseIf gNetType(myNetIndex) = "instance" Then
-                Print #1, "#instance "; gNetName(myNetIndex); " " _
-                    & "power." & theRange.Offset(myNetIndex, myModeIndex + 1); vbLf;
-            ElseIf gNetType(myNetIndex) = "internal" Then
-                Print #1, gNetName(myNetIndex); " " _
-                    & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
-            ElseIf gNetType(myNetIndex) = "macro" Then
-                Print #1, "#define "; gNetName(myNetIndex); " " _
-                    & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
-            ElseIf gNetType(myNetIndex) = "family" Then
-                Print #1, "#define family "; gNetName(myNetIndex); " " _
-                    & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
-            Else
-                Print #1, gNetName(myNetIndex); " "; gNetType(myNetIndex); " " _
-                    & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
-            End If
-        Next myNetIndex
-        Close #1
+        If Not theRange.Offset(0, myModeIndex + 1).EntireColumn.Hidden Then
+            myPowerFileName = gPowerFilePrefix & gModes(myModeIndex)
+            Open myPowerFileName For Output As #1
+            For myNetIndex = LBound(gNetName) To UBound(gNetName)
+                If gNetType(myNetIndex) = "blank" Then
+    '                Print #1, ""; vbLf;
+                ElseIf gNetType(myNetIndex) = "comment" Then
+                    Print #1, "#"; gNetName(myNetIndex); vbLf;
+                ElseIf theRange.Offset(myNetIndex, myModeIndex + 1) = "" _
+                        And Not gNetType(myNetIndex) = "resistor" Then
+                    Print #1, "#"; gNetName(myNetIndex); vbLf;
+                ElseIf theRange.Offset(myNetIndex, myModeIndex + 1) = "-" Then
+                    Print #1, "#"; gNetName(myNetIndex); " -"; vbLf;
+                ElseIf gNetType(myNetIndex) = "circuit" Then
+                    Print #1, "#instance "; "*(" & gNetName(myNetIndex) & ") " _
+                        & "power." & theRange.Offset(myNetIndex, myModeIndex + 1); vbLf;
+                ElseIf gNetType(myNetIndex) = "instance" Then
+                    Print #1, "#instance "; gNetName(myNetIndex); " " _
+                        & "power." & theRange.Offset(myNetIndex, myModeIndex + 1); vbLf;
+                ElseIf gNetType(myNetIndex) = "internal" Then
+                    Print #1, gNetName(myNetIndex); " " _
+                        & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
+                ElseIf gNetType(myNetIndex) = "macro" Then
+                    Print #1, "#define "; gNetName(myNetIndex); " " _
+                        & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
+                ElseIf gNetType(myNetIndex) = "family" Then
+                    Print #1, "#define family "; gNetName(myNetIndex); " " _
+                        & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
+                Else
+                    Print #1, gNetName(myNetIndex); " "; gNetType(myNetIndex); " " _
+                        & PowerDefinition(theRange.Offset(myNetIndex, myModeIndex + 1)); vbLf;
+                End If
+            Next myNetIndex
+            Close #1
+        End If
     Next myModeIndex
 End Sub
-
+ 
 Private Function PowerDefinition(thePowerText As String) As String
     'Return formatted power definition
     'Ex. VSS|VDD|VDD -> min@VSS sim@VDD max@VDD
@@ -231,7 +234,7 @@ Private Function PowerDefinition(thePowerText As String) As String
     Dim myMinPower As String
     Dim mySimPower As String
     Dim myMaxPower As String
-
+ 
     PowerDefinition = ""
     myPower = Split(thePowerText, "|")
     If LBound(myPower) = UBound(myPower) Then
@@ -257,9 +260,9 @@ Private Function PowerDefinition(thePowerText As String) As String
     ElseIf Not thePowerText = "" Then
         MsgBox "Invalid power definition" & thePowerText
     End If
-   
+  
 End Function
-
+ 
 Private Function ReformatPower(thePowerText As String, theType As String) As String
     'Return formatted power definition for 1 type. 'min', 'sim', 'max'
     'prefixes: '?' expect, '=' permitted, '!' prohibited
@@ -277,14 +280,14 @@ Private Function ReformatPower(thePowerText As String, theType As String) As Str
         ReformatPower = theType & "@" & thePowerText
     End If
 End Function
-
+ 
 Private Sub WriteModelFile(mySheetName As String)
     'Write the model file
     'Format: Device Type <parameter>
     Dim myRange As Range
     Dim myModeCount As Integer
     Dim myRowIndex As Integer
-
+ 
     Sheets(mySheetName).Select
     Set myRange = FindFirst("Device")
     If myRange Is Nothing Then
@@ -295,15 +298,17 @@ Private Sub WriteModelFile(mySheetName As String)
         Exit Sub
     End If
     MsgBox "Writing model file to " & gModelFile
-
+ 
     Dim myBlankCount As Integer
     Dim myParameters() As String
-
+ 
     Open gModelFile For Output As #1
     myBlankCount = 0
     myRowIndex = 0
-    While myBlankCount < 100 And Not myRange.Offset(myRowIndex, 0) = "History"
-        If myRange.Offset(myRowIndex, 0) = "Device" _
+    While myBlankCount < 1000 And Not myRange.Offset(myRowIndex, 0) = "History"
+        If myRange.Offset(myRowIndex, 0).EntireRow.Hidden Then
+            myBlankCount = myBlankCount + 1
+        ElseIf myRange.Offset(myRowIndex, 0) = "Device" _
                 And myRange.Offset(myRowIndex, 1) = "Type" Then
             myParameters = GetParameters(myRange, myRowIndex)
             myBlankCount = 0
@@ -320,12 +325,12 @@ Private Sub WriteModelFile(mySheetName As String)
     Wend
     Close #1
 End Sub
-
+ 
 Private Function GetParameters(theRange As Range, theIndex As Integer) As Variant
     'Return a list of parameters in a device definition row
     Dim myParameterCount As Integer
     Dim myParameters() As String
-
+ 
     myParameterCount = 0
     While (theRange.Offset(theIndex, myParameterCount + 2).Value <> "" _
             And theRange.Offset(theIndex, myParameterCount + 2).Value <> "Comment")
@@ -335,12 +340,12 @@ Private Function GetParameters(theRange As Range, theIndex As Integer) As Varian
     Wend
     GetParameters = myParameters
 End Function
-
+ 
 Private Sub PrintDeviceDetails(theRange As Range, theRow As Integer, theParameters() As String)
     'Print one device line
     Dim myModel As String
     Dim myType As String
-
+ 
     myModel = theRange.Offset(theRow, 0)
     myType = theRange.Offset(theRow, 1)
     If Left(myModel, 1) = "#" Then
@@ -350,7 +355,8 @@ Private Sub PrintDeviceDetails(theRange As Range, theRow As Integer, theParamete
     Print #1, myType; " "; myModel;
     Dim myParameterIndex As Integer
     For myParameterIndex = LBound(theParameters) To UBound(theParameters)
-        If theRange.Offset(theRow, myParameterIndex + 1) <> "" Then
+        If (Not theRange.Offset(theRow, myParameterIndex + 1).EntireColumn.Hidden) _
+                And theRange.Offset(theRow, myParameterIndex + 1) <> "" Then
             If theParameters(myParameterIndex) = "condition" Then
                 Print #1, " condition=("; theRange.Offset(theRow, myParameterIndex + 1); ")";
             ElseIf theParameters(myParameterIndex) = "diode" Then
@@ -363,7 +369,7 @@ Private Sub PrintDeviceDetails(theRange As Range, theRow As Integer, theParamete
     Next myParameterIndex
     Print #1, vbLf;
 End Sub
-
+ 
 Private Function FindFirst(theString As String) As Range
     'Return first cell in sheet that exactly matches theString
     Set FindFirst = ActiveSheet.Cells.Find(What:=theString, LookIn:=xlFormulas, _
@@ -371,12 +377,12 @@ Private Function FindFirst(theString As String) As Range
         MatchCase:=False, MatchByte:=False, SearchFormat:=False, _
         After:=Cells(1, 1))
 End Function
-
+ 
 Private Function FolderExists(strFolderPath As String) As Boolean
     'Check that folder exists and is writable
     Dim myFileAttr As Integer
     Dim myCurrentPath As String
-
+ 
     FolderExists = False
     On Error Resume Next
     myFileAttr = GetAttr(strFolderPath)
@@ -384,16 +390,16 @@ Private Function FolderExists(strFolderPath As String) As Boolean
         And ((myFileAttr And vbReadOnly) = 0)
     On Error GoTo 0
 End Function
-
+ 
 Private Function FileWritable(strFileName As String) As Boolean
     'Check that parent path exists and is writable
     FileWritable = FolderExists(FolderFromPath(strFileName))
 End Function
-
+ 
 Private Function FileNameFromPath(strFullPath As String) As String
     'Return base file name
     Dim I As Integer
-
+ 
     For I = Len(strFullPath) To 1 Step -1
         If Mid(strFullPath, I, 1) = "\" Then
             FileNameFromPath = Right(strFullPath, Len(strFullPath) - I)
@@ -401,11 +407,11 @@ Private Function FileNameFromPath(strFullPath As String) As String
         End If
     Next
 End Function
-
+ 
 Private Function FolderFromPath(strFullPath As String) As String
     'Return parent path
     Dim I As Integer
-
+ 
     FolderFromPath = "."
     For I = Len(strFullPath) To 1 Step -1
         If Mid(strFullPath, I, 1) = "\" Then
@@ -414,14 +420,14 @@ Private Function FolderFromPath(strFullPath As String) As String
         End If
     Next
 End Function
-
+ 
 Sub Reformat()
     'Reformat the csv file output of check_cvc
-
+ 
     'Fix scrolling header
     ActiveSheet.Range("E2").Select
     ActiveWindow.FreezePanes = True
-
+ 
     'Reformat header
     ActiveSheet.Range("1:1").Select
     With Selection
@@ -441,7 +447,7 @@ Sub Reformat()
         .Orientation = 45
     End With
     ActiveSheet.Cells.EntireColumn.AutoFit
-
+ 
     'Sort data
     ActiveWorkbook.Worksheets(ActiveSheet.Name).Sort.SortFields.Clear
     ActiveWorkbook.Worksheets(ActiveSheet.Name).Sort.SortFields.Add Key _
@@ -463,7 +469,7 @@ Sub Reformat()
         .SortMethod = xlPinYin
         .Apply
     End With
-
+ 
     'Color error types
     ActiveSheet.Columns("B:B").Select
     Selection.FormatConditions.Add Type:=xlCellValue, Operator:=xlEqual, _
@@ -494,7 +500,7 @@ Sub Reformat()
         .Color = 255
         .TintAndShade = 0
     End With
-
+ 
     'Re-enter data with leading ' (on initial open, ' displays before data. e.g. '2/2.
     'Re-entering data hides the initial '.)
     Dim myDataRow As Integer, myDataColumn As Integer
@@ -504,8 +510,7 @@ Sub Reformat()
                 ActiveSheet.Cells(myDataRow, myDataColumn).Value
         Next
     Next
-
+ 
 End Sub
-
+ 
 '234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
-
