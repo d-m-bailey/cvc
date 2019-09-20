@@ -88,9 +88,11 @@ void CCvcParameters::ResetEnvironment() {
 	cvcShortErrorThreshold = defaultErrorThreshold;
 	cvcBiasErrorThreshold = defaultErrorThreshold;
 	cvcForwardErrorThreshold = defaultErrorThreshold;
+	cvcFloatingErrorThreshold = defaultErrorThreshold;
 	cvcGateErrorThreshold = defaultErrorThreshold;
 	cvcLeakErrorThreshold = defaultErrorThreshold;
 	cvcExpectedErrorThreshold = defaultErrorThreshold;
+	cvcOvervoltageErrorThreshold = defaultErrorThreshold;
 	//! Ignore errors with voltage difference less than the threshold. Default is 0, flag errors regardless of voltage difference.
 	cvcParallelCircuitPortLimit = defaultParallelCircuitPortLimit;
 	//! Port count limit for parallel cell processing
@@ -126,9 +128,11 @@ void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
 	theOutputFile << "CVC_SHORT_ERROR_THRESHOLD = '" << Voltage_to_float(cvcShortErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_BIAS_ERROR_THRESHOLD = '" << Voltage_to_float(cvcBiasErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_FORWARD_ERROR_THRESHOLD = '" << Voltage_to_float(cvcForwardErrorThreshold) << "'" << endl;
+	theOutputFile << "CVC_FLOATING_ERROR_THRESHOLD = '" << Voltage_to_float(cvcFloatingErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_GATE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcGateErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_LEAK?_ERROR_THRESHOLD = '" << Voltage_to_float(cvcLeakErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_EXPECTED_ERROR_THRESHOLD = '" << Voltage_to_float(cvcExpectedErrorThreshold) << "'" << endl;
+	theOutputFile << "CVC_OVERVOLTAGE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcOvervoltageErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParallelCircuitPortLimit << "'" << endl;
 	theOutputFile << "CVC_CELL_ERROR_LIMIT_FILE = '" << cvcCellErrorLimitFile << "'" << endl;
 	theOutputFile << "CVC_CELL_CHECKSUM_FILE = '" << cvcCellChecksumFile << "'" << endl;
@@ -167,9 +171,11 @@ void CCvcParameters::PrintDefaultEnvironment() {
 	myDefaultCvcrc << "CVC_SHORT_ERROR_THRESHOLD = '" << Voltage_to_float(cvcShortErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_BIAS_ERROR_THRESHOLD = '" << Voltage_to_float(cvcBiasErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_FORWARD_ERROR_THRESHOLD = '" << Voltage_to_float(cvcForwardErrorThreshold) << "'" << endl;
+	myDefaultCvcrc << "CVC_FLOATING_ERROR_THRESHOLD = '" << Voltage_to_float(cvcFloatingErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_GATE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcGateErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_LEAK?_ERROR_THRESHOLD = '" << Voltage_to_float(cvcLeakErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_EXPECTED_ERROR_THRESHOLD = '" << Voltage_to_float(cvcExpectedErrorThreshold) << "'" << endl;
+	myDefaultCvcrc << "CVC_OVERVOLTAGE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcOvervoltageErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParallelCircuitPortLimit << "'" << endl;
 	myDefaultCvcrc << "CVC_CELL_ERROR_LIMIT_FILE = '" << cvcCellErrorLimitFile << "'" << endl;
 	myDefaultCvcrc << "CVC_CELL_CHECKSUM_FILE = '" << cvcCellChecksumFile << "'" << endl;
@@ -263,12 +269,16 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 			cvcBiasErrorThreshold = String_to_Voltage(string(myBuffer));
 		} else if ( myVariable == "CVC_FORWARD_ERROR_THRESHOLD" ) {
 			cvcForwardErrorThreshold = String_to_Voltage(string(myBuffer));
+		} else if ( myVariable == "CVC_FLOATING_ERROR_THRESHOLD" ) {
+			cvcFloatingErrorThreshold = String_to_Voltage(string(myBuffer));
 		} else if ( myVariable == "CVC_GATE_ERROR_THRESHOLD" ) {
 			cvcGateErrorThreshold = String_to_Voltage(string(myBuffer));
 		} else if ( myVariable == "CVC_LEAK?_ERROR_THRESHOLD" ) {
 			cvcLeakErrorThreshold = String_to_Voltage(string(myBuffer));
 		} else if ( myVariable == "CVC_EXPECTED_ERROR_THRESHOLD" ) {
 			cvcExpectedErrorThreshold = String_to_Voltage(string(myBuffer));
+		} else if ( myVariable == "CVC_OVERVOLTAGE_ERROR_THRESHOLD" ) {
+			cvcOvervoltageErrorThreshold = String_to_Voltage(string(myBuffer));
 		} else if ( myVariable == "CVC_PARALLEL_CIRCUIT_PORT_LIMIT" ) {
 			cvcParallelCircuitPortLimit = from_string<int>(myBuffer);
 			if ( cvcParallelCircuitPortLimit > MAX_PARALLEL_CIRCUIT_PORT_LIMIT ) {

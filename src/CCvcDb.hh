@@ -319,6 +319,9 @@ public:
 	void CalculateResistorVoltages();
 	void SetResistorVoltagesByPower();
 	void ResetMinMaxPower();
+	void SetAnalogNets();
+	void PropagateAnalogNetType(netId_t theNetId, int theGateCount);
+	void PropagateAnalogNetTypeByTerminal(netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, int theGateCount);
 	void IgnoreUnusedDevices();
 	void SetSimPower(propagation_t thePropagationType, CNetIdSet & theNewNetSet = EmptySet);
 

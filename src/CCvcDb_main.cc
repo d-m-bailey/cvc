@@ -187,6 +187,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// - PMOS source-bulk errors\n
 /// - PMOS gate-source errors\n
 		ResetMinMaxPower();
+		SetAnalogNets();
 		reportFile << PrintProgress(&lastSnapshot, "MIN/MAX1 ") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( detectErrorFlag ) {

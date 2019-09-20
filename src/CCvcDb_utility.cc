@@ -983,6 +983,8 @@ bool CCvcDb::HasLeakPath(CFullConnection & theConnections) {
 	}
 	if ( theConnections.simSourcePower_p && theConnections.simSourcePower_p->defaultSimNet == theConnections.drainId ) return false;  // ignore leaks to own calculated voltage
 	if ( theConnections.simDrainPower_p && theConnections.simDrainPower_p->defaultSimNet == theConnections.sourceId ) return false;  // ignore leaks to own calculated voltage
+	if ( theConnections.simSourceVoltage != UNKNOWN_VOLTAGE
+			&& abs(theConnections.simSourceVoltage - theConnections.simDrainVoltage) < cvcParameters.cvcFloatingErrorThreshold ) return false;  // ignore leaks less than threshold
 	netId_t myMinSourceNet = minNet_v[theConnections.sourceId].nextNetId;
 	netId_t myMaxSourceNet = maxNet_v[theConnections.sourceId].nextNetId;
 	netId_t myMinDrainNet = minNet_v[theConnections.drainId].nextNetId;
@@ -1379,6 +1381,7 @@ deviceId_t CCvcDb::CountBulkConnections(netId_t theNetId) {
 
 bool CCvcDb::IsAnalogNet(netId_t theNetId) {
 	assert(GetEquivalentNet(theNetId) == theNetId);
+	return(netStatus_v[theNetId][ANALOG]);
 	CVirtualNet myMinNet;
 	CVirtualNet myMaxNet;
 	myMinNet(minNet_v, theNetId);

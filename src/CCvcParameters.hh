@@ -93,9 +93,11 @@ public:
 	voltage_t	cvcShortErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcBiasErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcForwardErrorThreshold = defaultErrorThreshold;
+	voltage_t	cvcFloatingErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcGateErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcLeakErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcExpectedErrorThreshold = defaultErrorThreshold;
+	voltage_t	cvcOvervoltageErrorThreshold = defaultErrorThreshold;
 	size_t	cvcParallelCircuitPortLimit = defaultParallelCircuitPortLimit;
 	string	cvcCellErrorLimitFile = defaultCellErrorLimitFile;
 	string	cvcCellChecksumFile = defaultCellChecksumFile;

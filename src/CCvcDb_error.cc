@@ -84,6 +84,7 @@ void CCvcDb::PrintMaxVoltageConflict(netId_t theTargetNetId, CConnection & theMa
 }
 
 void CCvcDb::FindVbgError(ogzstream & theErrorFile, voltage_t theParameter, CFullConnection & theConnections, instanceId_t theInstanceId, string theDisplayParameter) {
+	theParameter += cvcParameters.cvcOvervoltageErrorThreshold;
 	if ( ( theConnections.validMaxGate && theConnections.validMinBulk
 				&& abs(theConnections.maxGateVoltage - theConnections.minBulkVoltage) > theParameter )
 			|| ( theConnections.validMinGate && theConnections.validMaxBulk
@@ -108,6 +109,7 @@ void CCvcDb::FindVbgError(ogzstream & theErrorFile, voltage_t theParameter, CFul
 }
 
 void CCvcDb::FindVbsError(ogzstream & theErrorFile, voltage_t theParameter, CFullConnection & theConnections, instanceId_t theInstanceId, string theDisplayParameter) {
+	theParameter += cvcParameters.cvcOvervoltageErrorThreshold;
 	if ( ( theConnections.validMaxSource && theConnections.validMinBulk
 				&& abs(theConnections.maxSourceVoltage - theConnections.minBulkVoltage) > theParameter )
 			|| ( theConnections.validMinSource && theConnections.validMaxBulk
@@ -144,6 +146,7 @@ void CCvcDb::FindVbsError(ogzstream & theErrorFile, voltage_t theParameter, CFul
 }
 
 void CCvcDb::FindVdsError(ogzstream & theErrorFile, voltage_t theParameter, CFullConnection & theConnections, instanceId_t theInstanceId, string theDisplayParameter) {
+	theParameter += cvcParameters.cvcOvervoltageErrorThreshold;
 	if ( ( theConnections.validMinSource && theConnections.validMaxDrain
 				&& abs(theConnections.minSourceVoltage - theConnections.maxDrainVoltage) > theParameter )
 			|| ( theConnections.validMaxSource && theConnections.validMinDrain
@@ -174,6 +177,7 @@ void CCvcDb::FindVdsError(ogzstream & theErrorFile, voltage_t theParameter, CFul
 }
 
 void CCvcDb::FindVgsError(ogzstream & theErrorFile, voltage_t theParameter, CFullConnection & theConnections, instanceId_t theInstanceId, string theDisplayParameter) {
+	theParameter += cvcParameters.cvcOvervoltageErrorThreshold;
 	if ( ( theConnections.validMinGate && theConnections.validMaxSource
 				&& abs(theConnections.minGateVoltage - theConnections.maxSourceVoltage) > theParameter )
 			|| ( theConnections.validMaxGate && theConnections.validMinSource

@@ -1109,8 +1109,7 @@ void CCvcDb::DumpAnalogNets(string theFileName, bool thePrintCircuitFlag) {
 	size_t myNetCount = 0;
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 		if ( net_it != GetEquivalentNet(net_it) ) continue;  // skip shorted nets
-		if ( netVoltagePtr_v[net_it]
-			&& ( netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE || netVoltagePtr_v[net_it]->type[POWER_BIT] ) ) continue;  // skip defined sim voltages and power
+		if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->type[POWER_BIT] ) continue;  // skip power
 /*
 		bool myIsAnalog = false;
 		deviceId_t device_it = firstSource_v[net_it];
@@ -1175,7 +1174,9 @@ void CCvcDb::DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag
 //		cout << "logic - clear" << endl;
 		if ( simNet_v[net_it].finalNetId != net_it ) continue;  // skip known values
 //		cout << "unknown - clear" << endl;
-		if ( inverterNet_v[net_it] != UNKNOWN_NET && inverterNet_v[net_it] >= topCircuit_p->portCount ) continue;  // skip inverter output unless inverter input is chip input
+		if ( inverterNet_v[net_it] != UNKNOWN_NET
+			&& inverterNet_v[net_it] >= topCircuit_p->portCount
+			&& ! netStatus_v[inverterNet_v[net_it]][ANALOG] ) continue;  // skip inverter output unless inverter input is chip input or analog signal
 //		cout << "inverter - clear" << endl;
 		CDeviceCount myDeviceCount(net_it, this);
 //		cout << "pmos " << myDeviceCount.pmosCount << ": nmos " << myDeviceCount.nmosCount << endl;
@@ -1276,9 +1277,11 @@ void CCvcDb::CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInst
 	theOutputFile << "CVC_SHORT_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcShortErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_BIAS_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcBiasErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_FORWARD_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcForwardErrorThreshold) << "'" << endl;
+	theOutputFile << "CVC_FLOATING_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcFloatingErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_GATE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcGateErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_LEAK?_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcLeakErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_EXPECTED_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcExpectedErrorThreshold) << "'" << endl;
+	theOutputFile << "CVC_OVERVOLTAGE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcParameters.cvcOvervoltageErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParameters.cvcParallelCircuitPortLimit << "'" << endl;
 	theOutputFile << "CVC_CELL_ERROR_LIMIT_FILE = '" << cvcParameters.cvcCellErrorLimitFile << "'" << endl;
 	theOutputFile << "CVC_CELL_CHECKSUM_FILE = '" << cvcParameters.cvcCellChecksumFile << "'" << endl;

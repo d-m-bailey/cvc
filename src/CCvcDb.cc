@@ -1214,6 +1214,7 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 						if ( myMinDrainVoltage == UNKNOWN_VOLTAGE ) {
 //							netVoltagePtr_v[myDrainNetId] = cvcParameters.cvcPowerPtrList.FindCalculatedPower(minEventQueue, netVoltagePtr_v[myDrainNetId], myEventKey, myDrainNetId, mySourceNetId, this);
 							netVoltagePtr_v.CalculatePower(minEventQueue, myEventKey, myDrainNetId, mySourceNetId, this, myAdjustedCalculation);
+							netVoltagePtr_v[myDrainNetId]->type[ANALOG_BIT] = true;
 							if ( gDebug_cvc ) cout << "DEBUG: Calculated power at net: " << myDrainNetId << " MIN " << myEventKey << endl;
 							// do not increment lastUpdate
 							minNet_v.Set(myDrainNetId, myDrainNetId, parameterResistanceMap[myConnections.device_p->parameters] * 100, minNet_v.lastUpdate);
@@ -1252,6 +1253,7 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 						if ( myMaxDrainVoltage == UNKNOWN_VOLTAGE ) {
 //							netVoltagePtr_v[myDrainNetId] = cvcParameters.cvcPowerPtrList.FindCalculatedPower(maxEventQueue, netVoltagePtr_v[myDrainNetId], myEventKey, myDrainNetId, mySourceNetId, this);
 							netVoltagePtr_v.CalculatePower(maxEventQueue, myEventKey, myDrainNetId, mySourceNetId, this, myAdjustedCalculation);
+							netVoltagePtr_v[myDrainNetId]->type[ANALOG_BIT] = true;
 							if ( gDebug_cvc ) cout << "DEBUG: Calculated power at net: " << myDrainNetId << " MAX " << myEventKey << endl;
 							// do not increment lastUpdate
 							maxNet_v.Set(myDrainNetId, myDrainNetId, parameterResistanceMap[myConnections.device_p->parameters] * 100, maxNet_v.lastUpdate);
@@ -1925,6 +1927,7 @@ void CCvcDb::CalculateResistorVoltage(netId_t theNetId, voltage_t theMinVoltage,
 		myPower_p->type[MIN_CALCULATED_BIT] = true;
 	//	myPower_p->type[SIM_CALCULATED_BIT] = true;
 		myPower_p->type[MAX_CALCULATED_BIT] = true;
+		myPower_p->type[ANALOG_BIT] = true;
 		string myDefinition = myPower_p->definition + (" calculation=> " + myCalculation);
 		myPower_p->definition = CPower::powerDefinitionText.SetTextAddress((text_t)myDefinition.c_str());
 //		cvcParameters.cvcPowerPtrList.push_back(new CPower(theNetId, NetName(theNetId), myNewVoltage, minNet_v[theNetId].finalNetId, maxNet_v[theNetId].finalNetId, myCalculation));
@@ -2743,6 +2746,79 @@ void CCvcDb::ResetMinMaxPower() {
 	RestoreQueue(maxEventQueue, maxEventQueue, MAX_PENDING);
 */
 	SetInitialMinMaxPower();
+}
+ 
+void CCvcDb::SetAnalogNets() {
+	for (netId_t net_it = 0; net_it < netCount; net_it++) {
+		if ( net_it != GetEquivalentNet(net_it) ) continue;  // skip subordinate nets
+		// if ( netStatus_v[net_it][ANALOG] ) continue;  // skip already set
+		if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->type[POWER_BIT] ) continue;  // skip power
+		bool myIsAnalogNet = false;
+		deviceId_t device_it = firstSource_v[net_it];
+		while ( ! myIsAnalogNet && device_it != UNKNOWN_DEVICE ) {
+			if ( GetEquivalentNet(drainNet_v[device_it]) != net_it ) {
+				switch( deviceType_v[device_it] ) {
+				case NMOS: case LDDN: case PMOS: case LDDP: {
+					if ( GetEquivalentNet(gateNet_v[device_it]) == net_it) myIsAnalogNet = true;
+					break;
+				}
+				case RESISTOR: { myIsAnalogNet = true; break; }
+				default: break;
+				}
+			}
+			device_it = nextSource_v[device_it];
+		}
+		device_it = firstDrain_v[net_it];
+		while ( ! myIsAnalogNet && device_it != UNKNOWN_DEVICE ) {
+			if ( GetEquivalentNet(sourceNet_v[device_it]) != net_it ) {
+				switch( deviceType_v[device_it] ) {
+				case NMOS: case LDDN: case PMOS: case LDDP: {
+					if ( GetEquivalentNet(gateNet_v[device_it]) == net_it) myIsAnalogNet = true;
+					break;
+				}
+				case RESISTOR: { myIsAnalogNet = true; break; }
+				default: break;
+				}
+			}
+			device_it = nextDrain_v[device_it];
+		}
+		if ( myIsAnalogNet ) {
+			PropagateAnalogNetType(net_it, 0);
+		}
+	}
+	for (CPowerPtrList::iterator power_ppit = cvcParameters.cvcPowerPtrList.begin(); power_ppit != cvcParameters.cvcPowerPtrList.end(); power_ppit++) {
+		if ( (*power_ppit)->type[ANALOG_BIT] ) {
+			PropagateAnalogNetType(GetEquivalentNet((*power_ppit)->netId), 0);
+		}
+	}
+}
+ 
+void CCvcDb::PropagateAnalogNetType(netId_t theNetId, int theGateCount) {
+	// must propagate through gates for all base analog nets (source/drain may have already been propagated)
+	bool myIsAlreadyAnalog = netStatus_v[theNetId][ANALOG];
+	netStatus_v[theNetId][ANALOG] = true;
+	if ( theGateCount < 1 ) {
+		PropagateAnalogNetTypeByTerminal(theNetId, firstGate_v, nextGate_v, theGateCount + 1);
+	}
+	if ( ! myIsAlreadyAnalog ) {
+		PropagateAnalogNetTypeByTerminal(theNetId, firstSource_v, nextSource_v, theGateCount);
+		PropagateAnalogNetTypeByTerminal(theNetId, firstDrain_v, nextDrain_v, theGateCount);
+	}
+}
+ 
+void CCvcDb::PropagateAnalogNetTypeByTerminal(netId_t theNetId, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, int theGateCount) {
+	for (deviceId_t device_it = theFirstDevice_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theNextDevice_v[device_it]) {
+		netId_t mySourceId = GetEquivalentNet(sourceNet_v[device_it]);
+		netId_t myDrainId = GetEquivalentNet(drainNet_v[device_it]);
+		if ( mySourceId != myDrainId ) {
+			if ( ! ( netVoltagePtr_v[mySourceId] || netStatus_v[mySourceId][ANALOG] ) ) {  // ignore power and already set
+				PropagateAnalogNetType(mySourceId, theGateCount);
+			}
+			if ( ! ( netVoltagePtr_v[myDrainId] || netStatus_v[myDrainId][ANALOG] ) ) {  // ignore power and already set
+				PropagateAnalogNetType(myDrainId, theGateCount);
+			}
+		}
+	}
 }
 
 void CCvcDb::SetSimPower(propagation_t thePropagationType, CNetIdSet & theNewNetSet) {
