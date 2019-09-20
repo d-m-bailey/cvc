@@ -57,6 +57,7 @@ RI: Reference input.
 SC: SCRC error
 SF: Secondary floating error
 SL: Standby leak
+SO: Simulation OK
 SP: SCRC power error
 ST: Setup problem
 TR: Trimming short
