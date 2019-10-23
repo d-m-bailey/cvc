@@ -156,6 +156,7 @@ public:
 	void SetUnknownVoltage();
 	void SetMinMaxLeakVoltagesAndFlags(CCvcDb * theCvcDb);
 	bool IsPossibleHiZ(CCvcDb * theCvcDb);
+	bool IsTransferGate(deviceId_t theNmos, deviceId_t thePmos, CCvcDb * theCvcDb);
 	bool IsPumpCapacitor();
 
 };

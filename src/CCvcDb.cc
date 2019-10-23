@@ -2129,6 +2129,7 @@ void CCvcDb::SetTrivialMinMaxPower() {
 	int myPrintCount = 1000000;
 	set<string> myUndefinedPowerNets;
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+		if ( net_it != GetEquivalentNet(net_it) ) continue;
 		if ( myPrintCount-- <= 0 ) {
 			cout << "."; cout.flush();
 			myPrintCount = 1000000;
@@ -2914,7 +2915,22 @@ void CCvcDb::CheckConnections() {
 	}
 }
 
+void CCvcDb::SetInverterHighLow(netId_t theNetId, netId_t theMaxNetId) {
+	bool myDebug = false;
+	if ( inverterNet_v[theNetId] == UNKNOWN_NET ) {
+		return;
+	} else if ( inverterNet_v[theNetId] == theMaxNetId ) { // prevent looping
+		return;
+	} else {
+		netId_t myInputId = inverterNet_v[theNetId];
+		SetInverterHighLow(myInputId, max(theMaxNetId, myInputId));
+		highLow_v[theNetId] = ! highLow_v[myInputId];
+		if ( myDebug ) cout << "Net " << theNetId << " input " << inverterNet_v[theNetId] << " " << highLow_v[theNetId] << " " << myInputId << endl;
+	}
+}
+
 netId_t CCvcDb::SetInverterInput(netId_t theNetId, netId_t theMaxNetId) {
+	bool myDebug = false;
 	if ( inverterNet_v[theNetId] == UNKNOWN_NET ) {
 		return(theNetId);
 	} else if ( inverterNet_v[theNetId] == theMaxNetId ) { // prevent looping
@@ -2922,17 +2938,30 @@ netId_t CCvcDb::SetInverterInput(netId_t theNetId, netId_t theMaxNetId) {
 	} else {
 		netId_t myInputId = inverterNet_v[theNetId];
 		inverterNet_v[theNetId] = SetInverterInput(myInputId, max(theMaxNetId, myInputId));
-		highLow_v[theNetId] = ! highLow_v[myInputId];
+		if ( myDebug ) cout << "Net " << theNetId << " input " << inverterNet_v[theNetId] << " " << highLow_v[theNetId] << " " << myInputId << endl;
 		return(inverterNet_v[theNetId]);
 	}
 }
 
-void CCvcDb::SetInverterHighLow() {
+void CCvcDb::SetInverters() {
+	bool myDebug = false;
 	for( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+		if ( net_it != GetEquivalentNet(net_it) ) continue;
+		myDebug = false;
+		if ( myDebug ) cout << endl << "Starting " << net_it << endl;
+		if ( inverterNet_v[net_it] != UNKNOWN_NET ) {
+			netId_t myInputId = inverterNet_v[net_it];
+			SetInverterHighLow(myInputId, max(net_it, myInputId));
+			highLow_v[net_it] = ! highLow_v[myInputId];
+		}
+	}
+	for( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+		if ( net_it != GetEquivalentNet(net_it) ) continue;
+		myDebug = false;
+		if ( myDebug ) cout << endl << "Starting " << net_it << endl;
 		if ( inverterNet_v[net_it] != UNKNOWN_NET ) {
 			netId_t myInputId = inverterNet_v[net_it];
 			inverterNet_v[net_it] = SetInverterInput(myInputId, max(net_it, myInputId));
-			highLow_v[net_it] = ! highLow_v[myInputId];
 		}
 	}
 }

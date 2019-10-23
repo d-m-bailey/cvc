@@ -960,7 +960,8 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 							reportFile << " = " << NetName(myEquivalentNetId, myPrintSubcircuitNameFlag) << endl;
 						}
 						if ( inverterNet_v[myEquivalentNetId] != UNKNOWN_NET ) {
-							string myInversion = " - ";
+							string myInversion =  ( theCurrentStage < STAGE_COMPLETE ) ? " - " :
+								(highLow_v[myEquivalentNetId]) ? " + " : " - ";
 							for( netId_t net_it = inverterNet_v[myEquivalentNetId]; net_it != UNKNOWN_NET; net_it = inverterNet_v[net_it] ) {
 								reportFile << myInversion << NetName(net_it, myPrintSubcircuitNameFlag) << endl;
 								myInversion = ( myInversion == " - " ? " + " : " - " );

@@ -325,8 +325,9 @@ public:
 	void IgnoreUnusedDevices();
 	void SetSimPower(propagation_t thePropagationType, CNetIdSet & theNewNetSet = EmptySet);
 
+	void SetInverterHighLow(netId_t theNetId, netId_t theMaxNetId);
 	netId_t SetInverterInput(netId_t theNetId, netId_t theMaxNetId);
-	void SetInverterHighLow();
+	void SetInverters();
 
 	// CCvcDb-utility
 	voltage_t MinVoltage(netId_t theNetId, bool theSkipHiZFlag = false);

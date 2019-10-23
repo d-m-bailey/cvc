@@ -260,7 +260,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// - floating gate errors\n
 /// - expected value errors
 		ResetMinMaxPower();
-		SetInverterHighLow();
+		SetInverters();
 		reportFile << PrintProgress(&lastSnapshot, "MIN/MAX2 ") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( detectErrorFlag ) {
