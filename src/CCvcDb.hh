@@ -103,12 +103,12 @@ public:
 	CVirtualNetVector	maxNet_v;
 //	CVirtualNetVector	initialMaxNet_v;
 //	CVirtualNetVector	initialMinNet_v;
-	CVirtualNetMappedVector	initialSimNet_v;
+//	CVirtualNetMappedVector	initialSimNet_v;
 //	CVirtualNetVector	logicMaxNet_v;
 //	CVirtualNetVector	logicMinNet_v;
 //	CVirtualNetVector	logicSimNet_v;
-	CVirtualNetMappedVector	maxLeakNet_v;
-	CVirtualNetMappedVector	minLeakNet_v;
+//	CVirtualNetMappedVector	maxLeakNet_v;
+//	CVirtualNetMappedVector	minLeakNet_v;
 //	CVirtualNetVector	fixedMaxNet_v;
 //	CVirtualNetVector	fixedMinNet_v;
 //	CVirtualNetVector	fixedSimNet_v;
@@ -446,6 +446,7 @@ public:
 	void PrintResistorOverflow(netId_t theNet, ofstream& theOutputFile);
 	void PrintClassSizes();
 	void PrintNetWithModelCounts(netId_t theNetId, int theTerminals);
+	void PrintBackupNet(CVirtualNetVector& theVirtualNet_v, netId_t theNetId, string theTitle, ostream& theOutputFile);
 
 	// CCvcDb-interactive
 	void FindInstances(string theSubcircuit, bool thePrintCircuitFlag);

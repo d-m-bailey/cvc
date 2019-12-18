@@ -68,9 +68,9 @@ CCvcDb::CCvcDb(int argc, const char * argv[]) :
 		minNet_v(MIN_CALCULATED_BIT),
 		simNet_v(SIM_CALCULATED_BIT),
 		maxNet_v(MAX_CALCULATED_BIT),
-		initialSimNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_SHARED, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
-		maxLeakNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_SHARED, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
-		minLeakNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_SHARED, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
+//		initialSimNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_SHARED, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
+//		maxLeakNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_SHARED, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
+//		minLeakNet_v(mmap_allocator<CVirtualNet>("", READ_WRITE_SHARED, 0, MAP_WHOLE_FILE | ALLOW_REMAP | BYPASS_FILE_POOL)),
 		maxEventQueue(MAX_QUEUE, MAX_INACTIVE, MAX_PENDING, maxNet_v, netVoltagePtr_v),
 		minEventQueue(MIN_QUEUE, MIN_INACTIVE, MIN_PENDING, minNet_v, netVoltagePtr_v),
 		simEventQueue(SIM_QUEUE, SIM_INACTIVE, SIM_PENDING, simNet_v, netVoltagePtr_v),
@@ -148,8 +148,11 @@ void CCvcDb::AssignGlobalIDs() {
 void CCvcDb::ResetMinSimMaxAndQueues() {
 	isFixedEquivalentNet = false;
 	ResetVector<CVirtualNetVector>(maxNet_v, netCount);
+	maxNet_v.ClearUpdateArray();
 	ResetVector<CVirtualNetVector>(minNet_v, netCount);
+	minNet_v.ClearUpdateArray();
 	ResetVector<CVirtualNetVector>(simNet_v, netCount);
+	simNet_v.ClearUpdateArray();
 	for (netId_t net_it = 0; net_it < netCount; net_it++) { // process all nets. before equivalency processing
 		minNet_v.Set(net_it, net_it, 0, 0);
 		simNet_v.Set(net_it, net_it, 0, 0);

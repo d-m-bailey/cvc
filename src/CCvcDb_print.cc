@@ -1526,3 +1526,17 @@ void CCvcDb::PrintNetWithModelCounts(netId_t theNetId, int theTerminals) {
 	}
 	reportFile << endl;
 }
+
+void CCvcDb::PrintBackupNet(CVirtualNetVector& theVirtualNet_v, netId_t theNetId, string theTitle, ostream& theOutputFile) {
+	theOutputFile << theTitle << endl;
+	theOutputFile << NetName(theNetId) << endl;
+	netId_t myNetId = GetEquivalentNet(theNetId);
+	if ( myNetId != theNetId ) cout << "=>" << NetName(myNetId) << endl;
+	while ( myNetId != theVirtualNet_v[myNetId].backupNetId ) {
+		theOutputFile << "->" << NetName(theVirtualNet_v[myNetId].backupNetId) << " r=" << theVirtualNet_v[myNetId].backupResistance << endl;
+		myNetId = theVirtualNet_v[myNetId].backupNetId;
+	}
+	if ( leakVoltagePtr_v[myNetId] ) leakVoltagePtr_v[myNetId]->Print(theOutputFile);
+	theOutputFile << endl;
+}
+

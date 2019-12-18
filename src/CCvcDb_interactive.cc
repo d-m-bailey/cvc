@@ -1005,14 +1005,14 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 						}
 						reportFile << endl;
 						if ( theCurrentStage >= STAGE_COMPLETE ) {
-							if ( minLeakNet_v[myEquivalentNetId].nextNetId != myNetId )
-								PrintVirtualNet<CVirtualNetMappedVector>(minLeakNet_v, myNetId, "Initial min path", reportFile);
-							if ( maxLeakNet_v[myEquivalentNetId].nextNetId != myNetId )
-								PrintVirtualNet<CVirtualNetMappedVector>(maxLeakNet_v, myNetId, "Initial max path", reportFile);
+							if ( minNet_v[myEquivalentNetId].backupNetId != myNetId )
+								PrintBackupNet(minNet_v, myNetId, "Initial min path", reportFile);
+							if ( maxNet_v[myEquivalentNetId].backupNetId != myNetId )
+								PrintBackupNet(maxNet_v, myNetId, "Initial max path", reportFile);
 						}
 						if ( theCurrentStage >= STAGE_SECOND_SIM ) {
-							if ( initialSimNet_v[myEquivalentNetId].nextNetId != myNetId )
-								PrintVirtualNet<CVirtualNetMappedVector>(initialSimNet_v, myNetId, "Initial sim path", reportFile);
+							if ( simNet_v[myEquivalentNetId].backupNetId != myNetId )
+								PrintBackupNet(simNet_v, myNetId, "Initial sim path", reportFile);
 	/* 3pass
 							if ( logicMinNet_v[myNetId].nextNetId != myNetId )
 								PrintVirtualNet(logicMinNet_v, myNetId, "Logic min path", cout);
@@ -1339,11 +1339,11 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 			CPower *myMinPower_p = NULL;
 			CPower *myMaxPower_p = NULL;
 			if ( theCurrentStage == STAGE_COMPLETE ) {
-				myMinNetId = minLeakNet_v[myGlobalNetId].finalNetId;
+				myMinNetId = minNet_v[myGlobalNetId].backupNetId;
 				if ( myMinNetId != UNKNOWN_NET ) {
 					myMinPower_p = leakVoltagePtr_v[myMinNetId];
 				}
-				myMaxNetId = maxLeakNet_v[myGlobalNetId].finalNetId;
+				myMaxNetId = maxNet_v[myGlobalNetId].backupNetId;
 				if ( myMaxNetId != UNKNOWN_NET ) {
 					myMaxPower_p = leakVoltagePtr_v[myMaxNetId];
 				}

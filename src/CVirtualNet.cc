@@ -55,7 +55,9 @@ void CVirtualNet::operator= (CVirtualNet& theEqualNet) {
 	resistance = theEqualNet.resistance;
 	finalNetId = theEqualNet.finalNetId;
 	finalResistance = theEqualNet.finalResistance;
-	lastUpdate = theEqualNet.lastUpdate;
+	backupNetId = theEqualNet.backupNetId;
+	backupResistance = theEqualNet.backupResistance;
+//	lastUpdate = theEqualNet.lastUpdate;
 }
 
 CVirtualNet& CVirtualNet::operator() (CVirtualNetVector& theVirtualNet_v, netId_t theNetId) {
@@ -66,7 +68,9 @@ CVirtualNet& CVirtualNet::operator() (CVirtualNetVector& theVirtualNet_v, netId_
 		gVirtualNetAccessCount++;
 		nextNetId = theVirtualNet_v[theNetId].nextNetId;
 		resistance = theVirtualNet_v[theNetId].resistance;
-		if ( theVirtualNet_v[theNetId].lastUpdate < theVirtualNet_v.lastUpdate ) {
+//		cout << "DEBUG: lastUpdate_v size " << theVirtualNet_v.lastUpdate_v.size() << endl;
+		if ( theVirtualNet_v.lastUpdate_v.size() > 0
+				&& theVirtualNet_v.lastUpdate_v[theNetId] < theVirtualNet_v.lastUpdate ) {
 			gVirtualNetUpdateCount++;
 			int myLinkCount = 0;
 			finalNetId = theNetId;
@@ -90,11 +94,11 @@ CVirtualNet& CVirtualNet::operator() (CVirtualNetVector& theVirtualNet_v, netId_
 //			}
 //			assert(nextNetId == theVirtualNet_v[theNetId].finalNetId);
 //			assert(resistance == theVirtualNet_v[theNetId].finalResistance);
-			lastUpdate = theVirtualNet_v[theNetId].lastUpdate = theVirtualNet_v.lastUpdate;
+			theVirtualNet_v.lastUpdate_v[theNetId] = theVirtualNet_v.lastUpdate;
 		} else {
 			finalNetId = theVirtualNet_v[theNetId].finalNetId;
 			finalResistance = theVirtualNet_v[theNetId].finalResistance;
-			lastUpdate = theVirtualNet_v[theNetId].lastUpdate;
+//			lastUpdate = theVirtualNet_v[theNetId].lastUpdate;
 		}
 		assert(finalResistance < MAX_RESISTANCE);
 	}
@@ -172,8 +176,15 @@ void CVirtualNetVector::Set(netId_t theNetId, netId_t theNextNet, resistance_t t
 	(*this)[theNetId].finalNetId = myFinalNetId;
 	(*this)[theNetId].finalResistance = myFinalResistance;
 	lastUpdate = theTime;
-	(*this)[theNetId].lastUpdate = theTime;
+	(*this).lastUpdate_v[theNetId] = theTime;
 //	cout << "Setting virtual net " << theNetId << " -> " << theNextNet << "@" << theResistance << " final -> " << myFinalNetId << "@" << myFinalResistance << endl;
+}
+
+void CVirtualNet::Copy(const CVirtualNet& theBase) {
+	nextNetId = theBase.nextNetId;
+	resistance = theBase.resistance;
+	finalNetId = theBase.finalNetId;
+	finalResistance = theBase.finalResistance;
 }
 
 void CVirtualNet::Print(ostream& theOutputFile) {
@@ -282,4 +293,9 @@ void CVirtualNetVector::DebugVirtualNet(netId_t theNetId, string theTitle, ostre
 	theOutputFile << endl;
 }
 
-
+void CVirtualNetVector::BackupVirtualNets() {
+	for ( auto net_pit = begin(); net_pit != end(); net_pit++ ) {
+		net_pit->backupNetId = net_pit->finalNetId;
+		net_pit->backupResistance = net_pit->finalResistance;
+	}
+}

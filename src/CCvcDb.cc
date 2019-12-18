@@ -2567,6 +2567,8 @@ void CCvcDb::IgnoreUnusedDevices() {
 void CCvcDb::ResetMinMaxPower() {
 	minEventQueue.ResetQueue(deviceCount);
 	maxEventQueue.ResetQueue(deviceCount);
+	minNet_v.InitializeUpdateArray();
+	maxNet_v.InitializeUpdateArray();
 	for (deviceId_t device_it = 0; device_it < deviceCount; device_it++) {
 		deviceStatus_v[device_it][MIN_INACTIVE] = deviceStatus_v[device_it][MAX_INACTIVE] = deviceStatus_v[device_it][SIM_INACTIVE];
 	}
@@ -2578,15 +2580,15 @@ void CCvcDb::ResetMinMaxPower() {
 			if ( simNet_v[net_it].finalNetId == UNKNOWN_NET
 					|| ! netVoltagePtr_v[simNet_v[net_it].finalNetId]
 					|| netVoltagePtr_v[simNet_v[net_it].finalNetId]->simVoltage == UNKNOWN_VOLTAGE ) {
-				minNet_v[net_it] = simNet_v[net_it];
-				maxNet_v[net_it] = simNet_v[net_it];
+				minNet_v[net_it].Copy(simNet_v[net_it]);
+				maxNet_v[net_it].Copy(simNet_v[net_it]);
 			} else {
 				if ( minNet_v[net_it].finalNetId == UNKNOWN_NET
 						|| ! netVoltagePtr_v[minNet_v[net_it].finalNetId]
 						|| netVoltagePtr_v[minNet_v[net_it].finalNetId]->minVoltage == UNKNOWN_VOLTAGE
 						|| ( netVoltagePtr_v[simNet_v[net_it].finalNetId]->minVoltage != UNKNOWN_VOLTAGE
 								&& netVoltagePtr_v[minNet_v[net_it].finalNetId]->minVoltage <= netVoltagePtr_v[simNet_v[net_it].finalNetId]->minVoltage ) ) {
-					minNet_v[net_it] = simNet_v[net_it];
+					minNet_v[net_it].Copy(simNet_v[net_it]);
 				} else {
 					minNet_v.Set(net_it, net_it, 0, 0);
 				}
@@ -2595,7 +2597,7 @@ void CCvcDb::ResetMinMaxPower() {
 					|| netVoltagePtr_v[maxNet_v[net_it].finalNetId]->maxVoltage == UNKNOWN_VOLTAGE
 					|| ( netVoltagePtr_v[maxNet_v[net_it].finalNetId]->maxVoltage != UNKNOWN_VOLTAGE
 							&& netVoltagePtr_v[maxNet_v[net_it].finalNetId]->maxVoltage >= netVoltagePtr_v[simNet_v[net_it].finalNetId]->maxVoltage ) ) {
-					maxNet_v[net_it] = simNet_v[net_it];
+					maxNet_v[net_it].Copy(simNet_v[net_it]);
 				} else {
 					maxNet_v.Set(net_it, net_it, 0, 0);
 				}
@@ -2643,7 +2645,7 @@ void CCvcDb::ResetMinMaxPower() {
 				if ( minNet_v.IsTerminal(net_it) ) { // save resistances for calculated power
 					minNet_v[net_it].resistance = minNet_v[net_it].finalResistance;
 				}
-				minNet_v[net_it].lastUpdate = 0;
+//				minNet_v[net_it].lastUpdate = 0;
 			} else {
 				minNet_v.Set(net_it, net_it, 0, 0);
 //				RecalculateFinalResistance(minEventQueue, net_it);
@@ -2657,7 +2659,7 @@ void CCvcDb::ResetMinMaxPower() {
 				if ( maxNet_v.IsTerminal(net_it) ) { // save resistances for calculated power
 					maxNet_v[net_it].resistance = maxNet_v[net_it].finalResistance;
 				}
-				maxNet_v[net_it].lastUpdate = 0;
+//				maxNet_v[net_it].lastUpdate = 0;
 			} else {
 				maxNet_v.Set(net_it, net_it, 0, 0);
 //				RecalculateFinalResistance(maxEventQueue, net_it);
@@ -2747,6 +2749,8 @@ void CCvcDb::ResetMinMaxPower() {
 	RestoreQueue(maxEventQueue, maxEventQueue, MAX_PENDING);
 */
 	SetInitialMinMaxPower();
+	minNet_v.ClearUpdateArray();
+	maxNet_v.ClearUpdateArray();
 }
  
 void CCvcDb::SetAnalogNets() {
@@ -2825,10 +2829,11 @@ void CCvcDb::PropagateAnalogNetTypeByTerminal(netId_t theNetId, CDeviceIdVector&
 void CCvcDb::SetSimPower(propagation_t thePropagationType, CNetIdSet & theNewNetSet) {
 	reportFile << "CVC: Propagating Simulation voltages " << thePropagationType << "..." << endl;
 	simEventQueue.ResetQueue(deviceCount);
+	simNet_v.InitializeUpdateArray();
 	isFixedSimNet = false;
 	CVirtualNet mySimMasterNet;
 	for (netId_t net_it = 0; net_it < netCount; net_it++) {
-		simNet_v[net_it].lastUpdate = 0;
+//		simNet_v.lastUpdate[net_it] = 0;
 		if ( net_it != GetEquivalentNet(net_it) ) continue; // skip subordinate nets
 		// TODO: Change to GetMasterNet
 		mySimMasterNet(simNet_v, net_it);
@@ -2860,6 +2865,7 @@ void CCvcDb::SetSimPower(propagation_t thePropagationType, CNetIdSet & theNewNet
 //		fixedSimNet_v[net_it].GetMasterNet(simNet_v, net_it);
 	}
 	isFixedSimNet = true;
+	simNet_v.ClearUpdateArray();
 }
 
 void CCvcDb::CheckConnections() {

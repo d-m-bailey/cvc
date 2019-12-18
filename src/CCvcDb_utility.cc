@@ -119,7 +119,7 @@ resistance_t CCvcDb::MinResistance(netId_t theNetId) {
 
 voltage_t CCvcDb::MinLeakVoltage(netId_t theNetId) {
 	if ( theNetId != UNKNOWN_NET && leakVoltageSet ) {
-		netId_t myNetId = minLeakNet_v[theNetId].finalNetId;
+		netId_t myNetId = minNet_v[theNetId].backupNetId;
 //		CVirtualNet myVirtualNet(minLeakNet_v, theNetId);
 		assert(theNetId == GetEquivalentNet(theNetId));
 		if ( myNetId != UNKNOWN_NET ) {
@@ -315,7 +315,7 @@ resistance_t CCvcDb::MaxResistance(netId_t theNetId) {
 voltage_t CCvcDb::MaxLeakVoltage(netId_t theNetId) {
 	if ( theNetId != UNKNOWN_NET && leakVoltageSet ) {
 		assert(theNetId == GetEquivalentNet(theNetId));
-		netId_t myNetId = maxLeakNet_v[theNetId].finalNetId;
+		netId_t myNetId = maxNet_v[theNetId].backupNetId;
 //		CVirtualNet myVirtualNet(maxLeakNet_v, theNetId);
 		if ( myNetId != UNKNOWN_NET ) {
 			if ( leakVoltagePtr_v[myNetId] ) {
@@ -1034,7 +1034,7 @@ size_t CCvcDb::IncrementDeviceError(deviceId_t theDeviceId, int theErrorIndex) {
 		myErrorSubIndex = theErrorIndex - OVERVOLTAGE_VBG;
 	}
 	int myMFactor = CalculateMFactor(deviceParent_v[theDeviceId]);
-	int myReturnCount = myParent_p->devicePrintCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex] + 1;
+	size_t myReturnCount = myParent_p->devicePrintCount_v[theDeviceId - myInstance_p->firstDeviceId][myErrorSubIndex] + 1;
 	string myKey = "";
 	deviceId_t myLimit = UNKNOWN_DEVICE;
 	if ( ! IsEmpty(cvcParameters.cvcCellErrorLimitFile) ) {
@@ -1088,14 +1088,17 @@ list<string> * CCvcDb::SplitHierarchy(string theFullPath) {
 void CCvcDb::SaveMinMaxLeakVoltages() {
 	leakVoltageSet = true;
 	cout << "Saving min/max voltages..." << endl;
-	minLeakNet_v = minNet_v;
-	maxLeakNet_v = maxNet_v;
+//	minLeakNet_v = minNet_v;
+//	maxLeakNet_v = maxNet_v;
+	minNet_v.BackupVirtualNets();
+	maxNet_v.BackupVirtualNets();
 	leakVoltagePtr_v = netVoltagePtr_v;
 }
 
 void CCvcDb::SaveInitialVoltages() {
 	cout << "Saving simulation voltages..." << endl;
-	initialSimNet_v = simNet_v;
+//	initialSimNet_v = simNet_v;
+	simNet_v.BackupVirtualNets();
 	initialVoltagePtr_v = netVoltagePtr_v;
 }
 

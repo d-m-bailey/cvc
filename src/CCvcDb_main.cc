@@ -226,8 +226,8 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 				&& InteractiveCvc(STAGE_FIRST_SIM) == SKIP ) continue;
 		SaveInitialVoltages();
 		if ( gDebug_cvc ) {
-			PrintAllVirtualNets<CVirtualNetMappedVector>(
-					minLeakNet_v, simNet_v, maxLeakNet_v, "(1)");
+			PrintAllVirtualNets<CVirtualNetVector>(
+					minNet_v, simNet_v, maxNet_v, "(1)");
 		}
 
 /// Stage 6) Second sim propagation\n
