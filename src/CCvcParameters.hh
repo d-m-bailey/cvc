@@ -54,6 +54,7 @@ public:
 	const size_t defaultParallelCircuitPortLimit = 0;
 	const string defaultCellErrorLimitFile = "";
 	const string defaultCellChecksumFile = "";
+	const size_t defaultLargeCircuitSize = 10e6;
 
 	string	cvcReportTitle;
 
@@ -101,6 +102,7 @@ public:
 	size_t	cvcParallelCircuitPortLimit = defaultParallelCircuitPortLimit;
 	string	cvcCellErrorLimitFile = defaultCellErrorLimitFile;
 	string	cvcCellChecksumFile = defaultCellChecksumFile;
+	size_t	cvcLargeCircuitSize = defaultLargeCircuitSize;
 
 	string	cvcLastTopBlock;
 	string	cvcLastNetlistFilename;

@@ -136,6 +136,7 @@ void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
 	theOutputFile << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParallelCircuitPortLimit << "'" << endl;
 	theOutputFile << "CVC_CELL_ERROR_LIMIT_FILE = '" << cvcCellErrorLimitFile << "'" << endl;
 	theOutputFile << "CVC_CELL_CHECKSUM_FILE = '" << cvcCellChecksumFile << "'" << endl;
+	theOutputFile << "CVC_LARGE_CIRCUIT_SIZE = '" << cvcLargeCircuitSize << "'" << endl;
 	theOutputFile << "End of parameters" << endl << endl;
 }
 
@@ -179,6 +180,7 @@ void CCvcParameters::PrintDefaultEnvironment() {
 	myDefaultCvcrc << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParallelCircuitPortLimit << "'" << endl;
 	myDefaultCvcrc << "CVC_CELL_ERROR_LIMIT_FILE = '" << cvcCellErrorLimitFile << "'" << endl;
 	myDefaultCvcrc << "CVC_CELL_CHECKSUM_FILE = '" << cvcCellChecksumFile << "'" << endl;
+	myDefaultCvcrc << "CVC_LARGE_CIRCUIT_SIZE = '" << cvcLargeCircuitSize << "'" << endl;
 	myDefaultCvcrc.close();
 }
 
@@ -290,6 +292,8 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 			cvcCellErrorLimitFile = myBuffer;
 		} else if ( myVariable == "CVC_CELL_CHECKSUM_FILE" ) {
 			cvcCellChecksumFile = myBuffer;
+		} else if ( myVariable == "CVC_LARGE_CIRCUIT_SIZE" ) {
+			cvcLargeCircuitSize = from_string<size_t>(myBuffer);;
 		}
 	}
 	if ( ! IsEmpty(theReportPrefix) ) {

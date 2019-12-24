@@ -1296,9 +1296,9 @@ void CCvcDb::RemoveInvalidPower(netId_t theNetId, size_t & theRemovedCount) {
 				CheckResistorOverflow_(maxNet_v[theNetId].finalResistance, theNetId, logFile);
 			}
 		}
-//		if ( ! leakVoltageSet || leakVoltagePtr_v[theNetId] != myPower_p ) {  // delete unless leak voltage
-//				delete myPower_p;
-//		}
+		if ( ! leakVoltageSet || leakVoltagePtr_v[theNetId] != myPower_p ) {  // delete unless leak voltage
+				delete myPower_p;
+		}
 	}
 }
 

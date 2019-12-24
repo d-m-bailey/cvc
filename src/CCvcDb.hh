@@ -447,6 +447,7 @@ public:
 	void PrintClassSizes();
 	void PrintNetWithModelCounts(netId_t theNetId, int theTerminals);
 	void PrintBackupNet(CVirtualNetVector& theVirtualNet_v, netId_t theNetId, string theTitle, ostream& theOutputFile);
+	void PrintLargeCircuits();
 
 	// CCvcDb-interactive
 	void FindInstances(string theSubcircuit, bool thePrintCircuitFlag);

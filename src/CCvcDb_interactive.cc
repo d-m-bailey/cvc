@@ -721,7 +721,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 					reportFile << "Could not open " << myFileName << endl;
 				}
 			} else if ( myCommand == "debug" ) {
-				if ( theCurrentStage < STAGE_SECOND_SIM ) {
+				if ( theCurrentStage < STAGE_FIRST_SIM ) {
 					reportFile << "ERROR: Can only debug after final sim." << endl;
 					continue;
 				}
@@ -1286,6 +1286,7 @@ void CCvcDb::CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInst
 	theOutputFile << "CVC_PARALLEL_CIRCUIT_PORT_LIMIT = '" << cvcParameters.cvcParallelCircuitPortLimit << "'" << endl;
 	theOutputFile << "CVC_CELL_ERROR_LIMIT_FILE = '" << cvcParameters.cvcCellErrorLimitFile << "'" << endl;
 	theOutputFile << "CVC_CELL_CHECKSUM_FILE = '" << cvcParameters.cvcCellChecksumFile << "'" << endl;
+	theOutputFile << "CVC_LARGE_CIRCUIT_SIZE = '" << cvcParameters.cvcLargeCircuitSize << "'" << endl;
 }
 
 void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerFileName, int theCurrentStage) {
