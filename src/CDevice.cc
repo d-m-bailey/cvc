@@ -110,7 +110,7 @@ void CDevicePtrVector::Print(CTextVector& theSignalName_v, CCircuit * theParent_
 #define A_PRIME 0xcc9e2d51
 
 instanceId_t CDevice::MakePortHash(CNetIdVector & theLocalToGlobalNetId_v) {
-	instanceId_t myHash;
+	instanceId_t myHash = 0;
 	for ( netId_t port_it = 0; port_it < master_p->portCount; port_it++ ) {
 		myHash = myHash << 16 ^ theLocalToGlobalNetId_v[signalId_v[port_it]] ^ myHash;
 		myHash *= A_PRIME;

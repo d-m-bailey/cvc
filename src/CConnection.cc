@@ -465,7 +465,11 @@ bool CFullConnection::IsPossibleHiZ(CCvcDb * theCvcDb) {
 			? ("-" + to_string<netId_t>(myGateNet)) \
 			: (((theCvcDb->highLow_v[myGateNet]) ? "-" : "+") + to_string<netId_t>(theCvcDb->inverterNet_v[myGateNet]));
 		if (myDebug) cout << "** Nmos clocked inverter input:" << myGateNet << ":" << (theCvcDb->highLow_v[myGateNet] ? "+" : "-") << theCvcDb->inverterNet_v[myGateNet] << endl;
-		if ( myPmosInputs.count(myGoal) )  return true;  // look for opposite logic
+		if ( myPmosInputs.count(myGoal) ) {
+			CFullConnection myTristateConnections;
+			theCvcDb->MapDeviceNets(*device_pit, myTristateConnections);
+			if ( myTristateConnections.simGateVoltage == UNKNOWN_VOLTAGE )  return true;  // look for unknown opposite logic
+		}
 	}
 	return(false);
 }

@@ -1526,3 +1526,15 @@ void CCvcDb::PrintNetWithModelCounts(netId_t theNetId, int theTerminals) {
 	}
 	reportFile << endl;
 }
+
+void CCvcDb::PrintLargeCircuits() {
+	for ( auto circuit_ppit = cvcCircuitList.begin(); circuit_ppit != cvcCircuitList.end(); circuit_ppit++ ) {
+		if ( (*circuit_ppit)->deviceCount > cvcParameters.cvcLargeCircuitSize ) {
+			for ( auto instance_pit = (*circuit_ppit)->instanceId_v.begin(); instance_pit != (*circuit_ppit)->instanceId_v.end(); instance_pit++ ) {
+				reportFile << "INFO: Large circuit " << HierarchyName(*instance_pit, true, true) << " device count " << (*circuit_ppit)->deviceCount << endl;
+			}
+		}
+	}
+}
+
+

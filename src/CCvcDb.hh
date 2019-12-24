@@ -446,6 +446,7 @@ public:
 	void PrintResistorOverflow(netId_t theNet, ofstream& theOutputFile);
 	void PrintClassSizes();
 	void PrintNetWithModelCounts(netId_t theNetId, int theTerminals);
+	void PrintLargeCircuits();
 
 	// CCvcDb-interactive
 	void FindInstances(string theSubcircuit, bool thePrintCircuitFlag);

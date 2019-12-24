@@ -1141,6 +1141,7 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 	eventKey_t myEventKey;
 //	int myDeviceCount = 0;
 	string myAdjustedCalculation;
+	int myGateBiasCount = 0;
 	calculationType_t myCalculationType = UNKNOWN_CALCULATION;
 	for (deviceId_t device_it = theFirstDevice_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theNextDevice_v[device_it]) {
 		if ( deviceStatus_v[device_it][theEventQueue.inactiveBit] || deviceStatus_v[device_it][theEventQueue.pendingBit] ) {
@@ -1153,8 +1154,10 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 
 			if ( IsIrrelevant(theEventQueue, device_it, myConnections, theEventKey, ENQUEUE) ) {
 				deviceStatus_v[device_it][theEventQueue.inactiveBit] = true;
-			} else if ( myConnections.sourceVoltage != UNKNOWN_VOLTAGE || myConnections.drainVoltage != UNKNOWN_VOLTAGE ) { // ignore bias/gate only changes
+			} else if ( myConnections.sourceVoltage == UNKNOWN_VOLTAGE && myConnections.drainVoltage == UNKNOWN_VOLTAGE ) { // ignore bias/gate only changes
 //				if ( theEventQueue.queueType == SIM_QUEUE && myConnections.gateVoltage == UNKNOWN_VOLTAGE && IsMos_(deviceType_v[device_it]) ) continue;
+				myGateBiasCount++;
+			} else {
 				myEventKey = theEventKey;
 				if ( myConnections.sourceVoltage == UNKNOWN_VOLTAGE || myConnections.drainVoltage == UNKNOWN_VOLTAGE ) { // Adjust key for non-shorts
 					shortDirection_t myDirection;
@@ -1297,6 +1300,9 @@ void CCvcDb::EnqueueAttachedDevicesByTerminal(CEventQueue& theEventQueue, netId_
 			assert(myDeviceCount < 50000 );
 		}
 */
+	}
+	if ( myGateBiasCount > 10000 && theEventQueue.queueType != SIM_QUEUE ) {
+		reportFile << "WARNING: large non-power gate/bias net " << NetName(theNetId) << " at " << DeviceName(theFirstDevice_v[theNetId]) << endl;
 	}
 }
 
@@ -2448,7 +2454,11 @@ void CCvcDb::SetInitialMinMaxPower() {
 */
 	minEventQueue.queueStart = true;
 	maxEventQueue.queueStart = true;
-	while (minEventQueue.QueueSize() + maxEventQueue.QueueSize() > 0) {
+	long myLoopCount = minEventQueue.QueueSize() + maxEventQueue.QueueSize();
+	long myDequeueCount = 0;
+	bool myProcessingMinQueue = false;
+	//while (minEventQueue.QueueSize() + maxEventQueue.QueueSize() > 0) {
+	while ( myLoopCount > 0 ) {
 /*
 		if ( --myPrintCounter <= 0 ) {
 			cout << "	Event Queue Size(min/max): " << minEventQueue.mainQueue.size() << "+" << minEventQueue.delayQueue.size();
@@ -2462,13 +2472,34 @@ void CCvcDb::SetInitialMinMaxPower() {
 //		if (debug_cvc) maxEventQueue.Print("Max queue");
 
 		// main queues first, then by size
-		if ((minEventQueue.IsNextMainQueue() == maxEventQueue.IsNextMainQueue() && minEventQueue.QueueSize() > maxEventQueue.QueueSize())
-				|| (minEventQueue.IsNextMainQueue() && ! maxEventQueue.IsNextMainQueue()) ) {
+		if ( myDequeueCount == 0 ) {
+			if ((minEventQueue.IsNextMainQueue() == maxEventQueue.IsNextMainQueue() && minEventQueue.QueueSize() > maxEventQueue.QueueSize())
+					|| (minEventQueue.IsNextMainQueue() && ! maxEventQueue.IsNextMainQueue()) ) {
+				myProcessingMinQueue = true;
+				myDequeueCount = ( minEventQueue.IsNextMainQueue() ) ?
+					minEventQueue.mainQueue.begin()->second.eventListSize :
+					minEventQueue.delayQueue.begin()->second.eventListSize;
+			} else {
+				myProcessingMinQueue = false;
+				myDequeueCount = ( maxEventQueue.IsNextMainQueue() ) ?
+					maxEventQueue.mainQueue.begin()->second.eventListSize :
+					maxEventQueue.delayQueue.begin()->second.eventListSize;
+			}
+		}
+		//if ((minEventQueue.IsNextMainQueue() == maxEventQueue.IsNextMainQueue() && minEventQueue.QueueSize() > maxEventQueue.QueueSize())
+			//|| (minEventQueue.IsNextMainQueue() && ! maxEventQueue.IsNextMainQueue()) ) {
+		assert(myDequeueCount);
+		if ( myProcessingMinQueue ) {
 //			cout << "Min:" << minimumEventQueue.GetEvent() << endl;
 			PropagateMinMaxVoltages(minEventQueue);
 		} else {
 //			cout << "Max:" << maximumEventQueue.GetEvent() << endl;
 			PropagateMinMaxVoltages(maxEventQueue);
+		}
+		myDequeueCount --;
+		myLoopCount --;
+		if ( myLoopCount < 1 ) {
+			myLoopCount = minEventQueue.QueueSize() + maxEventQueue.QueueSize();
 		}
 	}
 	// Reset min/max voltage conflict errors

@@ -106,6 +106,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 			LoadCellChecksums();
 			CountObjectsAndLinkSubcircuits();
 			AssignGlobalIDs();
+			PrintLargeCircuits();
 			reportFile << PrintProgress(&lastSnapshot, "DB ") << endl;
 		}
 		returnCode_t myCellErrorLimitStatus = LoadCellErrorLimits();
