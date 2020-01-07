@@ -417,7 +417,7 @@ bool CFullConnection::IsPossibleHiZ(CCvcDb * theCvcDb) {
 	set<string> myNmosInputs;
 	bool myDebug = false;
 	if ( theCvcDb->connectionCount_v[this->gateId].SourceDrainCount() > myCheckLimit ) return(false);
-	if ( theCvcDb->netVoltagePtr_v[gateId] && theCvcDb->netVoltagePtr_v[gateId]->type[INPUT_BIT] ) return(false);  // input ports not possible Hi-Z
+	if ( theCvcDb->netVoltagePtr_v[gateId].full && theCvcDb->netVoltagePtr_v[gateId].full->type[INPUT_BIT] ) return(false);  // input ports not possible Hi-Z
 	myNetsToCheck.push_back(this->gateId);
 	AddConnectedDevices(this->gateId, myPmosToCheck, myNmosToCheck, myResistorToCheck, theCvcDb->firstSource_v, theCvcDb->nextSource_v, theCvcDb->deviceType_v);
 	AddConnectedDevices(this->gateId, myPmosToCheck, myNmosToCheck, myResistorToCheck, theCvcDb->firstDrain_v, theCvcDb->nextDrain_v, theCvcDb->deviceType_v);

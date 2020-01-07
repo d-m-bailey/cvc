@@ -141,7 +141,7 @@ void CCvcDb::SetOutputFiles(string theReportFilename) {
 
 string CCvcDb::NetAlias(netId_t theNetId, bool thePrintCircuitFlag) {
 	string myAlias = "";
-	CPower * myPower_p = netVoltagePtr_v[theNetId];
+	CPower * myPower_p = netVoltagePtr_v[theNetId].full;
 	if ( myPower_p && ! IsEmpty(myPower_p->powerAlias()) && myPower_p->powerAlias() != myPower_p->powerSignal() ) myAlias = "~>" + string(myPower_p->powerAlias());
 	return (thePrintCircuitFlag) ? myAlias : "";
 }
@@ -448,8 +448,8 @@ void CCvcDb::Print(const string theIndentation, const string theHeading) {
 	}
 	for (netId_t net_it = 0; net_it < netCount; net_it++) {
 		cout << myIndentation + " Net " << net_it << ":" << NetName(net_it) << endl;
-		if ( netVoltagePtr_v[net_it] ) {
-			netVoltagePtr_v[net_it]->Print(cout, myIndentation + "  ");
+		if ( netVoltagePtr_v[net_it].full ) {
+			netVoltagePtr_v[net_it].full->Print(cout, myIndentation + "  ");
 //			if ( IsCalculatedVoltage_(netVoltagePtr_v[net_it]) ) {
 //				netVoltagePtr_v[net_it]->Print(cout, myIndentation + "  =>");
 //			} else {
@@ -496,23 +496,24 @@ void CCvcDb::PrintVirtualNets(CVirtualNetVector& theVirtualNet_v, string theTitl
 	netId_t myEquivalentNet;
 	for ( netId_t net_it = 0; net_it < theVirtualNet_v.size(); net_it++ ) {
 		myEquivalentNet = equivalentNet_v[theVirtualNet_v[net_it].nextNetId];
-		if ( netVoltagePtr_v[myEquivalentNet] && netVoltagePtr_v[myEquivalentNet]->netId != UNKNOWN_NET ) {
-			myEquivalentNet = netVoltagePtr_v[myEquivalentNet]->netId;
+		CPower * myPower_p = netVoltagePtr_v[myEquivalentNet].full;
+		if ( myPower_p && myPower_p->netId != UNKNOWN_NET ) {
+			myEquivalentNet = myPower_p->netId;
 		}
 		cout << theIndentation + "  ";
 		if ( net_it == myEquivalentNet ) {
-			if ( netVoltagePtr_v[net_it] ) {
+			if ( myPower_p ) {
 				cout << net_it << "=>";
-				if ( netVoltagePtr_v[net_it]->minVoltage != UNKNOWN_VOLTAGE ) {
-					cout << netVoltagePtr_v[net_it]->minVoltage;
+				if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) {
+					cout << myPower_p->minVoltage;
 				}
 				cout << "/";
-				if ( netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE ) {
-					cout << netVoltagePtr_v[net_it]->simVoltage;
+				if ( myPower_p->simVoltage != UNKNOWN_VOLTAGE ) {
+					cout << myPower_p->simVoltage;
 				}
 				cout << "/";
-				if ( netVoltagePtr_v[net_it]->maxVoltage != UNKNOWN_VOLTAGE ) {
-					cout << netVoltagePtr_v[net_it]->maxVoltage;
+				if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) {
+					cout << myPower_p->maxVoltage;
 				}
 				cout << endl;
 			} else {
@@ -1536,7 +1537,7 @@ void CCvcDb::PrintBackupNet(CVirtualNetVector& theVirtualNet_v, netId_t theNetId
 		theOutputFile << "->" << NetName(theVirtualNet_v[myNetId].backupNetId) << " r=" << theVirtualNet_v[myNetId].backupResistance << endl;
 		myNetId = theVirtualNet_v[myNetId].backupNetId;
 	}
-	if ( leakVoltagePtr_v[myNetId] ) leakVoltagePtr_v[myNetId]->Print(theOutputFile);
+	if ( leakVoltagePtr_v[myNetId].full ) leakVoltagePtr_v[myNetId].full->Print(theOutputFile);
 	theOutputFile << endl;
 }
 

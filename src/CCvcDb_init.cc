@@ -180,27 +180,29 @@ void CCvcDb::ResetMinSimMaxAndQueues() {
 
 CPower * CCvcDb::SetMasterPower(netId_t theFirstNetId, netId_t theSecondNetId, bool & theSamePowerFlag) {
 	theSamePowerFlag = false;
-	if ( netVoltagePtr_v[theFirstNetId] == NULL ) return netVoltagePtr_v[theSecondNetId];
-	if ( netVoltagePtr_v[theSecondNetId] == NULL ) return netVoltagePtr_v[theFirstNetId];
-	if ( netVoltagePtr_v[theFirstNetId]->IsSamePower(netVoltagePtr_v[theSecondNetId]) ) {
+	CPower * myFirstPower_p = netVoltagePtr_v[theFirstNetId].full;
+	CPower * mySecondPower_p = netVoltagePtr_v[theSecondNetId].full;
+	if ( myFirstPower_p == NULL ) return mySecondPower_p;
+	if ( mySecondPower_p == NULL ) return myFirstPower_p;
+	if ( myFirstPower_p->IsSamePower(mySecondPower_p) ) {
 		theSamePowerFlag = true;
 		return NULL;
 	}
-	if ( netVoltagePtr_v[theFirstNetId]->IsValidSubset(netVoltagePtr_v[theSecondNetId], cvcParameters.cvcShortErrorThreshold) ) {
+	if ( myFirstPower_p->IsValidSubset(mySecondPower_p, cvcParameters.cvcShortErrorThreshold) ) {
 		theSamePowerFlag = true;
-		return netVoltagePtr_v[theFirstNetId];
+		return myFirstPower_p;
 	}
-	if ( netVoltagePtr_v[theSecondNetId]->IsValidSubset(netVoltagePtr_v[theFirstNetId], cvcParameters.cvcShortErrorThreshold) ) {
+	if ( mySecondPower_p->IsValidSubset(myFirstPower_p, cvcParameters.cvcShortErrorThreshold) ) {
 		theSamePowerFlag = true;
-		return netVoltagePtr_v[theSecondNetId];
+		return mySecondPower_p;
 	}
 	throw EEquivalenceError();
 }
 
 // unused
 netId_t CCvcDb::MasterPowerNet(netId_t theFirstNetId, netId_t theSecondNetId) {
-	if ( netVoltagePtr_v[theFirstNetId] == NULL ) return theSecondNetId;
-	if ( netVoltagePtr_v[theSecondNetId] == NULL ) return theFirstNetId;
+	if ( netVoltagePtr_v[theFirstNetId].full == NULL ) return theSecondNetId;
+	if ( netVoltagePtr_v[theSecondNetId].full == NULL ) return theFirstNetId;
 	throw EEquivalenceError();
 }
 
@@ -221,12 +223,12 @@ void CCvcDb::MakeEquivalentNets(CNetMap & theNetMap, netId_t theFirstNetId, netI
 	}
 	bool mySamePowerFlag;
 	CPower * myMasterPower_p = SetMasterPower(theFirstNetId, theSecondNetId, mySamePowerFlag);
-	netId_t myMinorNetId = ( netVoltagePtr_v[myGreaterNetId] == myMasterPower_p ) ? myLesserNetId : myGreaterNetId;
+	netId_t myMinorNetId = ( netVoltagePtr_v[myGreaterNetId].full == myMasterPower_p ) ? myLesserNetId : myGreaterNetId;
 	if ( mySamePowerFlag ) { // skip to short same definition
 		if ( myMasterPower_p ) {  // ignore near subset
 			reportFile << endl << "INFO: Power definition ignored at " << DeviceName(theDeviceId, PRINT_CIRCUIT_ON) << endl;
-			reportFile << " net " << NetName(GetEquivalentNet(myMinorNetId)) << " (" << netVoltagePtr_v[myMinorNetId]->definition << ")" << endl;
-			reportFile << " shorted to " << NetName(myMasterPower_p->netId) << " (" << netVoltagePtr_v[myMasterPower_p->netId]->definition << ")" << endl;
+			reportFile << " net " << NetName(GetEquivalentNet(myMinorNetId)) << " (" << netVoltagePtr_v[myMinorNetId].full->definition << ")" << endl;
+			reportFile << " shorted to " << NetName(myMasterPower_p->netId) << " (" << netVoltagePtr_v[myMasterPower_p->netId].full->definition << ")" << endl;
 		} else {
 			reportFile << endl << "INFO: Short between same power definitions ignored at " << DeviceName(theDeviceId, PRINT_CIRCUIT_ON);
 			reportFile << " net " << NetName(GetEquivalentNet(theFirstNetId), PRINT_CIRCUIT_ON) << " <-> " << NetName(GetEquivalentNet(theSecondNetId), PRINT_CIRCUIT_ON) << endl;
@@ -234,9 +236,9 @@ void CCvcDb::MakeEquivalentNets(CNetMap & theNetMap, netId_t theFirstNetId, netI
 		}
 	}
 	if ( myMasterPower_p ) {
-		netVoltagePtr_v[myMinorNetId] = myMasterPower_p;
+		netVoltagePtr_v[myMinorNetId].full = myMasterPower_p;
 		for ( auto net_pit = theNetMap[myMinorNetId].begin(); net_pit != theNetMap[myMinorNetId].end(); net_pit++ ) {
-			netVoltagePtr_v[*net_pit] = myMasterPower_p;
+			netVoltagePtr_v[*net_pit].full = myMasterPower_p;
 		}
 	}
 	theNetMap[myLesserNetId].push_front(myGreaterNetId);
@@ -287,8 +289,8 @@ void CCvcDb::SetEquivalentNets() {
 							myConnections.masterSimDrainNet.finalNetId = GetEquivalentNet(myConnections.originalDrainId);
 							myConnections.simSourceVoltage = SimVoltage(myConnections.masterSimSourceNet.finalNetId);
 							myConnections.simDrainVoltage = SimVoltage(myConnections.masterSimDrainNet.finalNetId);
-							myConnections.simSourcePower_p = netVoltagePtr_v[myConnections.masterSimSourceNet.finalNetId];
-							myConnections.simDrainPower_p = netVoltagePtr_v[myConnections.masterSimDrainNet.finalNetId];
+							myConnections.simSourcePower_p = netVoltagePtr_v[myConnections.masterSimSourceNet.finalNetId].full;
+							myConnections.simDrainPower_p = netVoltagePtr_v[myConnections.masterSimDrainNet.finalNetId].full;
 							myConnections.deviceId = myDeviceId;
 							myConnections.device_p = myDevice_p;
 							if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, LEAK) < cvcParameters.cvcCircuitErrorLimit ) {
@@ -314,7 +316,7 @@ void CCvcDb::SetEquivalentNets() {
 	// following iterator must be int! netId_t results in infinite loop
 	for (int net_it = equivalentNet_v.size() - 1; net_it >= 0; net_it--) {
 		equivalentNet_v[net_it] = GetEquivalentNet(net_it);
-		if ( netVoltagePtr_v[net_it] && netId_t(net_it) != netVoltagePtr_v[net_it]->netId ) netVoltagePtr_v[net_it] = NULL;
+		if ( netVoltagePtr_v[net_it].full && netId_t(net_it) != netVoltagePtr_v[net_it].full->netId ) netVoltagePtr_v[net_it].full = NULL;
 	}
 	myEquivalentNetMap.clear();
 	isFixedEquivalentNet = true;
@@ -639,7 +641,7 @@ void CCvcDb::ShortNonConductingResistor(deviceId_t theDeviceId, netId_t theFirst
 	MergeConnectionLists(theFirstNet, theSecondNet, theDeviceId);
 	assert(connectionCount_v[theFirstNet].SourceDrainCount() == 0);
 	// propagate
-	if ( connectionCount_v[theSecondNet].SourceDrainCount() == 1 && netVoltagePtr_v[theSecondNet] == NULL ) {
+	if ( connectionCount_v[theSecondNet].SourceDrainCount() == 1 && netVoltagePtr_v[theSecondNet].full == NULL ) {
 		deviceId_t myConnectedDeviceId = FindUniqueSourceDrainConnectedDevice(theSecondNet);
 		if ( myConnectedDeviceId != UNKNOWN_DEVICE ) {
 			if ( sourceNet_v[myConnectedDeviceId] == theSecondNet ) {
@@ -659,11 +661,11 @@ void CCvcDb::ShortNonConductingResistors() {
 		if ( deviceType_v[device_it] == RESISTOR && ! deviceStatus_v[device_it][SIM_INACTIVE] ) {
 			if ( sourceNet_v[device_it] >= topCircuit_p->portCount  // don't consider input nets
 					&& connectionCount_v[sourceNet_v[device_it]].SourceDrainCount() == 1  // only one leak path
-					&& netVoltagePtr_v[sourceNet_v[device_it]] == NULL ) {  // not defined
+					&& netVoltagePtr_v[sourceNet_v[device_it]].full == NULL ) {  // not defined
 				ShortNonConductingResistor(device_it, sourceNet_v[device_it], drainNet_v[device_it], SOURCE_TO_MASTER_DRAIN);
 			} else if ( drainNet_v[device_it] >= topCircuit_p->portCount  // don't consider ports
 					&& connectionCount_v[drainNet_v[device_it]].SourceDrainCount() == 1  // only one leak path
-					&& netVoltagePtr_v[drainNet_v[device_it]] == NULL ) {  // not defined
+					&& netVoltagePtr_v[drainNet_v[device_it]].full == NULL ) {  // not defined
 				ShortNonConductingResistor(device_it, drainNet_v[device_it], sourceNet_v[device_it], DRAIN_TO_MASTER_SOURCE);
 			} else {
 				continue;
@@ -903,7 +905,7 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal, instanceId_t theParent)
 
 returnCode_t CCvcDb::SetModePower() {
 	bool myPowerError = false;
-	ResetPointerVector<CPowerPtrVector>(netVoltagePtr_v, netCount);
+	netVoltagePtr_v.ResetPowerPointerVector(netCount);
 	ResetVector<CStatusVector>(netStatus_v, netCount, 0);
 	CPowerPtrList::iterator power_ppit = cvcParameters.cvcPowerPtrList.begin();
 	// Normal power definitions
@@ -912,68 +914,69 @@ returnCode_t CCvcDb::SetModePower() {
 		set<netId_t> * myNetIdList = FindNetIds(string(myPower_p->powerSignal())); // expands buses and hierarchy
 		for (auto netId_pit = myNetIdList->begin(); netId_pit != myNetIdList->end(); netId_pit++) {
 			string myExpandedNetName = NetName(*netId_pit);
- 			if (netVoltagePtr_v[*netId_pit] && myPower_p->definition != netVoltagePtr_v[*netId_pit]->definition ) {
+			CPower * myOtherPower_p = netVoltagePtr_v[*netId_pit].full;
+ 			if (myOtherPower_p && myPower_p->definition != myOtherPower_p->definition ) {
  				bool myPowerConflict = false;
  				if ( myPower_p->expectedMin() != "" ) {
- 					if ( netVoltagePtr_v[*netId_pit]->expectedMin() == "" ) {
+ 					if ( myOtherPower_p->expectedMin() == "" ) {
  						logFile << "INFO: Override expectedMin for " << NetName(*netId_pit) << " from ";
  						logFile << myPower_p->powerSignal() << " " << myPower_p->definition << endl;
- 						netVoltagePtr_v[*netId_pit]->expectedMin() = myPower_p->expectedMin();
- 					} else if ( netVoltagePtr_v[*netId_pit]->expectedMin() != myPower_p->expectedMin() ) {
+ 						myOtherPower_p->expectedMin() = myPower_p->expectedMin();
+ 					} else if ( myOtherPower_p->expectedMin() != myPower_p->expectedMin() ) {
  						myPowerConflict = true;
  					}
  				}
  				if ( myPower_p->expectedSim() != "" ) {
- 					if ( netVoltagePtr_v[*netId_pit]->expectedSim() == "" ) {
+ 					if ( myOtherPower_p->expectedSim() == "" ) {
  						logFile << "INFO: Override expectedSim for " << NetName(*netId_pit) << " from ";
  						logFile << myPower_p->powerSignal() << " " << myPower_p->definition << endl;
- 						netVoltagePtr_v[*netId_pit]->expectedSim() = myPower_p->expectedSim();
- 					} else if ( netVoltagePtr_v[*netId_pit]->expectedSim() != myPower_p->expectedSim() ) {
+ 						myOtherPower_p->expectedSim() = myPower_p->expectedSim();
+ 					} else if ( myOtherPower_p->expectedSim() != myPower_p->expectedSim() ) {
  						myPowerConflict = true;
  					}
  				}
  				if ( myPower_p->expectedMax() != "" ) {
- 					if ( netVoltagePtr_v[*netId_pit]->expectedMax() == "" ) {
+ 					if ( myOtherPower_p->expectedMax() == "" ) {
  						logFile << "INFO: Override expectedMax for " << NetName(*netId_pit) << " from ";
  						logFile << myPower_p->powerSignal() << " " << myPower_p->definition << endl;
- 						netVoltagePtr_v[*netId_pit]->expectedMax() = myPower_p->expectedMax();
- 					} else if ( netVoltagePtr_v[*netId_pit]->expectedMax() != myPower_p->expectedMax() ) {
+ 						myOtherPower_p->expectedMax() = myPower_p->expectedMax();
+ 					} else if ( myOtherPower_p->expectedMax() != myPower_p->expectedMax() ) {
  						myPowerConflict = true;
  					}
  				}
  				if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) {
- 					if ( netVoltagePtr_v[*netId_pit]->minVoltage == UNKNOWN_VOLTAGE ) {
+ 					if ( myOtherPower_p->minVoltage == UNKNOWN_VOLTAGE ) {
  						logFile << "INFO: Override minVoltage for " << NetName(*netId_pit) << " from ";
  						logFile << myPower_p->powerSignal() << " " << myPower_p->definition << endl;
- 						netVoltagePtr_v[*netId_pit]->minVoltage = myPower_p->minVoltage;
- 					} else if ( netVoltagePtr_v[*netId_pit]->minVoltage != myPower_p->minVoltage ) {
+ 						myOtherPower_p->minVoltage = myPower_p->minVoltage;
+ 					} else if ( myOtherPower_p->minVoltage != myPower_p->minVoltage ) {
  						myPowerConflict = true;
  					}
  				}
  				if ( myPower_p->simVoltage != UNKNOWN_VOLTAGE ) {
- 					if ( netVoltagePtr_v[*netId_pit]->simVoltage == UNKNOWN_VOLTAGE ) {
+ 					if ( myOtherPower_p->simVoltage == UNKNOWN_VOLTAGE ) {
  						logFile << "INFO: Override simVoltage for " << NetName(*netId_pit) << " from ";
  						logFile << myPower_p->powerSignal() << " " << myPower_p->definition << endl;
- 						netVoltagePtr_v[*netId_pit]->simVoltage = myPower_p->simVoltage;
- 					} else if ( netVoltagePtr_v[*netId_pit]->simVoltage != myPower_p->simVoltage ) {
+ 						myOtherPower_p->simVoltage = myPower_p->simVoltage;
+ 					} else if ( myOtherPower_p->simVoltage != myPower_p->simVoltage ) {
  						myPowerConflict = true;
  					}
  				}
  				if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) {
- 					if ( netVoltagePtr_v[*netId_pit]->maxVoltage == UNKNOWN_VOLTAGE ) {
+ 					if ( myOtherPower_p->maxVoltage == UNKNOWN_VOLTAGE ) {
  						logFile << "INFO: Override maxVoltage for " << NetName(*netId_pit) << " from ";
  						logFile << myPower_p->powerSignal() << " " << myPower_p->definition << endl;
- 						netVoltagePtr_v[*netId_pit]->maxVoltage = myPower_p->maxVoltage;
- 					} else if ( netVoltagePtr_v[*netId_pit]->maxVoltage != myPower_p->maxVoltage ) {
+ 						myOtherPower_p->maxVoltage = myPower_p->maxVoltage;
+ 					} else if ( myOtherPower_p->maxVoltage != myPower_p->maxVoltage ) {
  						myPowerConflict = true;
  					}
  				}
- 				if ( myPower_p->type != netVoltagePtr_v[*netId_pit]->type || myPower_p->family() != netVoltagePtr_v[*netId_pit]->family() ) {  // can't override power types or families
+ 				if ( myPower_p->type != myOtherPower_p->type || myPower_p->family() != myOtherPower_p->family() ) {  // can't override power types or families
  					myPowerConflict = true;
  				}
  				if ( myPowerConflict ) {
  					reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"";
- 					reportFile << netVoltagePtr_v[*netId_pit]->powerSignal() << "(" << netVoltagePtr_v[*netId_pit]->definition;
+ 					reportFile << myOtherPower_p->powerSignal() << "(" << myOtherPower_p->definition;
  					reportFile << ")\" != \"" << myPower_p->powerSignal() << "(" << myPower_p->definition << ")\"" << endl;
  					myPowerError = true;
  				}
@@ -985,8 +988,8 @@ returnCode_t CCvcDb::SetModePower() {
 			} else {  // add net number to existing power definitions
 				myPower_p->netId = *netId_pit;
 			}
-			if ( ! netVoltagePtr_v[*netId_pit] ) {
-				netVoltagePtr_v[*netId_pit] = myPower_p;
+			if ( ! myOtherPower_p ) {
+				netVoltagePtr_v[*netId_pit].full = myPower_p;
 			}
 			if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) netStatus_v[*netId_pit][MIN_POWER] = true;
 			if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) netStatus_v[*netId_pit][MAX_POWER] = true;
@@ -1043,9 +1046,10 @@ returnCode_t CCvcDb::SetInstancePower() {
 					} else {  // add net number to existing power definitions
 						myPower_p->netId = myNetId;
 					}
+					CPower * myOtherPower_p = netVoltagePtr_v[myNetId].full;
 					if ( myPower_p->type[POWER_BIT] && isalpha(myOriginalPower[0]) ) {
-						if ( netVoltagePtr_v[myNetId] && netVoltagePtr_v[myNetId]->type[POWER_BIT] ) {  // regular power definitions become macros
-							myLocalMacroPtrMap[myOriginalPower] = netVoltagePtr_v[myNetId];
+						if ( myOtherPower_p && myOtherPower_p->type[POWER_BIT] ) {  // regular power definitions become macros
+							myLocalMacroPtrMap[myOriginalPower] = myOtherPower_p;
 							logFile << "  " << myOriginalPower << " = " << NetName(myNetId) << endl;
 						} else {  // top instance power nets must be already defined
 							reportFile << "ERROR: Instance power signal " << myPower_p->powerSignal() << " not defined in parent " << NetName(myNetId) << endl;
@@ -1065,14 +1069,14 @@ returnCode_t CCvcDb::SetInstancePower() {
 							cvcParameters.cvcExpectedLevelPtrList.push_back(myPower_p);
 						}
 					} else {
-						if ( netVoltagePtr_v[myNetId] ) {
-							if ( netVoltagePtr_v[myNetId]->definition != myPower_p->definition ) {
-								reportFile << "Warning: Duplicate power definition " << NetName(myNetId) << "(" << netVoltagePtr_v[myNetId]->definition << ")";
+						if ( myOtherPower_p ) {
+							if ( myOtherPower_p->definition != myPower_p->definition ) {
+								reportFile << "Warning: Duplicate power definition " << NetName(myNetId) << "(" << myOtherPower_p->definition << ")";
 								reportFile << " and " << myPower_p->powerSignal() << "(" << myPower_p->definition << ") of " << HierarchyName(*instanceId_pit) << " ignored" << endl;
 							}
 						} else {
 							cvcParameters.cvcPowerPtrList.push_back(myPower_p);
-							netVoltagePtr_v[myNetId] = myPower_p;
+							netVoltagePtr_v[myNetId].full = myPower_p;
 						}
 					}
 				}
@@ -1104,16 +1108,17 @@ returnCode_t CCvcDb::SetExpectedPower() {
 		}
 		for (auto netId_pit = myNetIdList->begin(); netId_pit != myNetIdList->end(); netId_pit++) {
 			string myExpandedNetName = NetName(*netId_pit);
-			if (netVoltagePtr_v[*netId_pit] && myPower_p->definition != netVoltagePtr_v[*netId_pit]->definition ) {
-				voltage_t mySimVoltage = netVoltagePtr_v[*netId_pit]->simVoltage;
+			CPower * myOtherPower_p = netVoltagePtr_v[*netId_pit].full;
+			if (myOtherPower_p && myPower_p->definition != myOtherPower_p->definition ) {
+				voltage_t mySimVoltage = myOtherPower_p->simVoltage;
 				if ( myPower_p->expectedSim() == ""
 						|| ( IsValidVoltage_(myPower_p->expectedSim()) && mySimVoltage == String_to_Voltage(myPower_p->expectedSim()) ) ) {
 					reportFile << "Warning: ignoring power check for " << NetName(*netId_pit) << ": \"";
 					reportFile << myPower_p->powerSignal() << "(" << myPower_p->definition << ")\" already set as ";
-					reportFile << netVoltagePtr_v[*netId_pit]->powerSignal() << "(" << netVoltagePtr_v[*netId_pit]->definition << ")\"" << endl;
+					reportFile << myOtherPower_p->powerSignal() << "(" << myOtherPower_p->definition << ")\"" << endl;
 				} else {
 					reportFile << "ERROR: Duplicate power definition " << NetName(*netId_pit) << ": \"";
-					reportFile << netVoltagePtr_v[*netId_pit]->powerSignal() << "(" << netVoltagePtr_v[*netId_pit]->definition;
+					reportFile << myOtherPower_p->powerSignal() << "(" << myOtherPower_p->definition;
 					reportFile << ")\" != \"" << myPower_p->powerSignal() << "(" << myPower_p->definition << ")\"" << endl;
 					myPowerError = true;
 					continue;
@@ -1199,19 +1204,20 @@ void CCvcDb::SetSCRCPower() {
 			myAttemptCount += SetSCRCGatePower(net_it, firstDrain_v, nextDrain_v, sourceNet_v, mySCRCSignalCount, mySCRCIgnoreCount, false);
 			myAttemptCount += SetSCRCGatePower(net_it, firstSource_v, nextSource_v, drainNet_v, mySCRCSignalCount, mySCRCIgnoreCount, false);
 			if ( myAttemptCount == 0 ) {  // Could not set any gate nets, so set net directly
-				voltage_t myExpectedVoltage = IsSCRCPower(netVoltagePtr_v[minNet_v[net_it].finalNetId]) ?
-						netVoltagePtr_v[maxNet_v[net_it].finalNetId]->maxVoltage : netVoltagePtr_v[minNet_v[net_it].finalNetId]->minVoltage;
-				if ( netVoltagePtr_v[net_it] ) {
-					if ( netVoltagePtr_v[net_it]->simVoltage != myExpectedVoltage ) {
+				CPower * myFinalMinPower_p = netVoltagePtr_v[minNet_v[net_it].finalNetId].full;
+				CPower * myFinalMaxPower_p = netVoltagePtr_v[maxNet_v[net_it].finalNetId].full;
+				voltage_t myExpectedVoltage = IsSCRCPower(myFinalMinPower_p) ? myFinalMaxPower_p->maxVoltage : myFinalMinPower_p->minVoltage;
+				if ( netVoltagePtr_v[net_it].full ) {
+					if ( netVoltagePtr_v[net_it].full->simVoltage != myExpectedVoltage ) {
 						reportFile << "Warning: " << NetName(net_it) << ": voltage already set expected " << myExpectedVoltage;
-						reportFile << " found " << netVoltagePtr_v[net_it]->simVoltage << endl;
+						reportFile << " found " << netVoltagePtr_v[net_it].full->simVoltage << endl;
 						mySCRCIgnoreCount++;
 					}
 				} else {
 					debugFile << "Forcing net " << NetName(net_it) << " to " << PrintVoltage(myExpectedVoltage) << endl;
-					netVoltagePtr_v[net_it] = new CPower(net_it, myExpectedVoltage, true);
-					netVoltagePtr_v[net_it]->extraData->powerSignal = CPower::powerDefinitionText.SetTextAddress(SCRC_FORCED_TEXT);
-					cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it]);
+					netVoltagePtr_v[net_it].full = new CPower(net_it, myExpectedVoltage, true);
+					netVoltagePtr_v[net_it].full->extraData->powerSignal = CPower::powerDefinitionText.SetTextAddress(SCRC_FORCED_TEXT);
+					cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it].full);
 					mySCRCSignalCount++;
 				}
 			}
@@ -1222,11 +1228,11 @@ void CCvcDb::SetSCRCPower() {
 
 size_t CCvcDb::SetSCRCGatePower(netId_t theNetId, CDeviceIdVector & theFirstSource_v, CDeviceIdVector & theNextSource_v, CNetIdVector & theDrain_v,
 		size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount, bool theNoCheckFlag) {
-	CPower * mySourcePower_p = netVoltagePtr_v[theNetId];
+	CPower * mySourcePower_p = netVoltagePtr_v[theNetId].full;
 	size_t myAttemptCount = 0;
 	for ( auto device_it = theFirstSource_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theNextSource_v[device_it] ) {
 		if ( ! IsMos_(deviceType_v[device_it]) ) continue;  // Only process mosfets.
-		CPower * myDrainPower_p = netVoltagePtr_v[theDrain_v[device_it]];
+		CPower * myDrainPower_p = netVoltagePtr_v[theDrain_v[device_it]].full;
 		if ( ! myDrainPower_p ) continue;  // ignore non-power nets
 		if ( theNoCheckFlag && mySourcePower_p->IsRelatedPower(myDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, false) ) continue;  // ignore relatives
 		if ( myDrainPower_p->type[POWER_BIT] && (theNoCheckFlag || IsSCRCPower(myDrainPower_p)) ) {  // Mosfet bridges power nets.
@@ -1239,21 +1245,21 @@ size_t CCvcDb::SetSCRCGatePower(netId_t theNetId, CDeviceIdVector & theFirstSour
 
 void CCvcDb::SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool theExpectedHighInput, size_t & theSCRCSignalCount, size_t & theSCRCIgnoreCount) {
 	netId_t myParentNet = gateNet_v[theDeviceId];
-	while ( inverterNet_v[myParentNet] != UNKNOWN_NET && ! (netVoltagePtr_v[myParentNet] && netVoltagePtr_v[myParentNet]->simVoltage != UNKNOWN_VOLTAGE) ) {
+	while ( inverterNet_v[myParentNet] != UNKNOWN_NET && ! (netVoltagePtr_v[myParentNet].full && netVoltagePtr_v[myParentNet].full->simVoltage != UNKNOWN_VOLTAGE) ) {
 		myParentNet = inverterNet_v[myParentNet];
 		theExpectedHighInput = ! theExpectedHighInput;
 	}
-	CPower * myHighPower_p = netVoltagePtr_v[maxNet_v[myParentNet].finalNetId];
-	CPower * myLowPower_p = netVoltagePtr_v[minNet_v[myParentNet].finalNetId];
+	CPower * myHighPower_p = netVoltagePtr_v[maxNet_v[myParentNet].finalNetId].full;
+	CPower * myLowPower_p = netVoltagePtr_v[minNet_v[myParentNet].finalNetId].full;
 	CPower * myExpectedPower_p = theExpectedHighInput ? myHighPower_p : myLowPower_p;
 	voltage_t myExpectedVoltage = UNKNOWN_VOLTAGE;
 	if ( myExpectedPower_p ) {
 		myExpectedVoltage = theExpectedHighInput ? myExpectedPower_p->maxVoltage : myExpectedPower_p->minVoltage;
 	}
-	if ( netVoltagePtr_v[myParentNet] && netVoltagePtr_v[myParentNet]->simVoltage != UNKNOWN_VOLTAGE ) {
-		if ( myExpectedPower_p && myExpectedVoltage != netVoltagePtr_v[myParentNet]->simVoltage ) {
+	if ( netVoltagePtr_v[myParentNet].full && netVoltagePtr_v[myParentNet].full->simVoltage != UNKNOWN_VOLTAGE ) {
+		if ( myExpectedPower_p && myExpectedVoltage != netVoltagePtr_v[myParentNet].full->simVoltage ) {
 			reportFile << "Warning: " << NetName(theNetId) << ": voltage already set for " << NetName(myParentNet) << " expected " << (theExpectedHighInput ? "high" : "low");
-			reportFile << " found " << netVoltagePtr_v[myParentNet]->simVoltage << endl;
+			reportFile << " found " << netVoltagePtr_v[myParentNet].full->simVoltage << endl;
 		}
 		theSCRCIgnoreCount++;
 		return;  // return if voltage already set
@@ -1268,23 +1274,23 @@ void CCvcDb::SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool t
 			reportFile << "Warning: " << NetName(theNetId) << ": voltage not set for " << NetName(myParentNet) << " expected " << (theExpectedHighInput ? "high" : "low");
 			reportFile << " found " << (myExpectedVoltage == UNKNOWN_VOLTAGE ? "???" : "Hi-Z") << endl;
 			theSCRCIgnoreCount++;
-		} else if ( netVoltagePtr_v[myParentNet] == NULL ) {
+		} else if ( netVoltagePtr_v[myParentNet].full == NULL ) {
 			debugFile << "Setting net " << NetName(myParentNet) << " to " << PrintVoltage(myExpectedVoltage) << " for " << NetName(gateNet_v[theDeviceId]) << endl;
-			netVoltagePtr_v[myParentNet] = new CPower(myParentNet, myExpectedVoltage, true);
-			netVoltagePtr_v[myParentNet]->extraData->powerSignal = CPower::powerDefinitionText.SetTextAddress(SCRC_EXPECTED_TEXT);
-			cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[myParentNet]);
+			netVoltagePtr_v[myParentNet].full = new CPower(myParentNet, myExpectedVoltage, true);
+			netVoltagePtr_v[myParentNet].full->extraData->powerSignal = CPower::powerDefinitionText.SetTextAddress(SCRC_EXPECTED_TEXT);
+			cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[myParentNet].full);
 			theSCRCSignalCount++;
-		} else if ( netVoltagePtr_v[myParentNet]->simVoltage != myExpectedVoltage ) {
+		} else if ( netVoltagePtr_v[myParentNet].full->simVoltage != myExpectedVoltage ) {
 			reportFile << "ERROR: " << NetName(theNetId) << ": voltage not set for " << NetName(myParentNet) << " expected " << PrintVoltage(myExpectedVoltage);
-			reportFile << " found " << PrintVoltage(netVoltagePtr_v[myParentNet]->simVoltage) << endl;
+			reportFile << " found " << PrintVoltage(netVoltagePtr_v[myParentNet].full->simVoltage) << endl;
 			theSCRCIgnoreCount++;
 		}
 	}
 }
 
 bool CCvcDb::IsSCRCLogicNet(netId_t theNetId) {
-	CPower * myMinPower = netVoltagePtr_v[minNet_v[theNetId].finalNetId];
-	CPower * myMaxPower = netVoltagePtr_v[maxNet_v[theNetId].finalNetId];
+	CPower * myMinPower = netVoltagePtr_v[minNet_v[theNetId].finalNetId].full;
+	CPower * myMaxPower = netVoltagePtr_v[maxNet_v[theNetId].finalNetId].full;
 	if ( ! myMinPower || ! myMaxPower ) return false;
 	if ( myMinPower->type[HIZ_BIT] == myMaxPower->type[HIZ_BIT] ) return false;
 	if ( myMinPower->type[MIN_CALCULATED_BIT] || myMaxPower->type[MAX_CALCULATED_BIT] ) return false;
@@ -1316,7 +1322,7 @@ bool CCvcDb::SetLatchPower(int thePassCount, vector<bool> & theIgnoreNet_v, CNet
 		}
 		if ( theIgnoreNet_v[net_it]
 				|| simNet_v[net_it].finalNetId != net_it  // already assigned
-				|| ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE ) ) {  // already defined
+				|| ( netVoltagePtr_v[net_it].full && netVoltagePtr_v[net_it].full->simVoltage != UNKNOWN_VOLTAGE ) ) {  // already defined
 			theIgnoreNet_v[net_it] = true;
 			continue;
 		}
@@ -1324,13 +1330,13 @@ bool CCvcDb::SetLatchPower(int thePassCount, vector<bool> & theIgnoreNet_v, CNet
 		int myPmosCount = 0;
 		netId_t myMinNet = minNet_v[net_it].finalNetId;
 		voltage_t myMinVoltage = UNKNOWN_VOLTAGE;
-		if ( myMinNet != UNKNOWN_NET && netVoltagePtr_v[myMinNet] && netVoltagePtr_v[myMinNet]->type[POWER_BIT] ) {
-			myMinVoltage = netVoltagePtr_v[myMinNet]->minVoltage;
+		if ( myMinNet != UNKNOWN_NET && netVoltagePtr_v[myMinNet].full && netVoltagePtr_v[myMinNet].full->type[POWER_BIT] ) {
+			myMinVoltage = netVoltagePtr_v[myMinNet].full->minVoltage;
 		}
 		netId_t myMaxNet = maxNet_v[net_it].finalNetId;
 		voltage_t myMaxVoltage = UNKNOWN_VOLTAGE;
-		if ( myMaxNet != UNKNOWN_NET && netVoltagePtr_v[myMaxNet] && netVoltagePtr_v[myMaxNet]->type[POWER_BIT] ) {
-			myMaxVoltage = netVoltagePtr_v[myMaxNet]->maxVoltage;
+		if ( myMaxNet != UNKNOWN_NET && netVoltagePtr_v[myMaxNet].full && netVoltagePtr_v[myMaxNet].full->type[POWER_BIT] ) {
+			myMaxVoltage = netVoltagePtr_v[myMaxNet].full->maxVoltage;
 		}
 		if ( myMinVoltage == UNKNOWN_VOLTAGE && myMaxVoltage == UNKNOWN_VOLTAGE ) continue;  // skip unknown min/max output
 		if ( myMinVoltage == UNKNOWN_VOLTAGE ) myMinVoltage = myMaxVoltage;
@@ -1349,29 +1355,33 @@ bool CCvcDb::SetLatchPower(int thePassCount, vector<bool> & theIgnoreNet_v, CNet
 		text_t myPmosPowerAlias;
 		deviceId_t mySampleNmos = UNKNOWN_DEVICE;
 		for ( int mos_it = 0; mos_it < myNmosCount-1; mos_it++ ) {
-			if ( ! netVoltagePtr_v[myNmosData_v[mos_it].source] || netVoltagePtr_v[myNmosData_v[mos_it].source]->simVoltage == UNKNOWN_VOLTAGE ) continue;  // skip non power
-			voltage_t myVoltage = netVoltagePtr_v[myNmosData_v[mos_it].source]->simVoltage;
+			CPower * myNmosSourcePower_p = netVoltagePtr_v[myNmosData_v[mos_it].source].full;
+			if ( ! myNmosSourcePower_p || myNmosSourcePower_p->simVoltage == UNKNOWN_VOLTAGE ) continue;  // skip non power
+			voltage_t myVoltage = myNmosSourcePower_p->simVoltage;
 			for ( int nextMos_it = mos_it+1; nextMos_it < myNmosCount; nextMos_it++ ) {
-				if ( ! netVoltagePtr_v[myNmosData_v[nextMos_it].source] || netVoltagePtr_v[myNmosData_v[nextMos_it].source]->simVoltage == UNKNOWN_VOLTAGE ) continue;  // skip non power
-				voltage_t myNextVoltage = netVoltagePtr_v[myNmosData_v[nextMos_it].source]->simVoltage;
+				CPower * myNextNmosSourcePower_p = netVoltagePtr_v[myNmosData_v[nextMos_it].source].full;
+				if ( ! myNextNmosSourcePower_p || myNextNmosSourcePower_p->simVoltage == UNKNOWN_VOLTAGE ) continue;  // skip non power
+				voltage_t myNextVoltage = myNextNmosSourcePower_p->simVoltage;
 				if ( myVoltage == myNextVoltage && IsOppositeLogic(myNmosData_v[mos_it].gate, myNmosData_v[nextMos_it].gate) ) {  // same source, opposite gate
 					myNmosVoltage = myVoltage;
 					myNmosPowerName = NetName(myNmosData_v[mos_it].source);
-					myNmosPowerAlias = netVoltagePtr_v[myNmosData_v[mos_it].source]->powerAlias();
+					myNmosPowerAlias = myNmosSourcePower_p->powerAlias();
 					mySampleNmos = myNmosData_v[mos_it].id;
 				}
 			}
 		}
 		for ( int mos_it = 0; mos_it < myPmosCount-1; mos_it++ ) {
-			if ( ! netVoltagePtr_v[myPmosData_v[mos_it].source] || netVoltagePtr_v[myPmosData_v[mos_it].source]->simVoltage == UNKNOWN_VOLTAGE ) continue;  // skip non power
-			voltage_t myVoltage = netVoltagePtr_v[myPmosData_v[mos_it].source]->simVoltage;
+			CPower * myPmosSourcePower_p = netVoltagePtr_v[myPmosData_v[mos_it].source].full;
+			if ( ! myPmosSourcePower_p || myPmosSourcePower_p->simVoltage == UNKNOWN_VOLTAGE ) continue;  // skip non power
+			voltage_t myVoltage = myPmosSourcePower_p->simVoltage;
 			for ( int nextMos_it = mos_it+1; nextMos_it < myPmosCount; nextMos_it++ ) {
-				if ( ! netVoltagePtr_v[myPmosData_v[nextMos_it].source] || netVoltagePtr_v[myPmosData_v[nextMos_it].source]->simVoltage == UNKNOWN_VOLTAGE ) continue;  // skip non power
-				voltage_t myNextVoltage = netVoltagePtr_v[myPmosData_v[nextMos_it].source]->simVoltage;
+				CPower * myNextPmosSourcePower_p = netVoltagePtr_v[myPmosData_v[nextMos_it].source].full;
+				if ( ! myNextPmosSourcePower_p || myNextPmosSourcePower_p->simVoltage == UNKNOWN_VOLTAGE ) continue;  // skip non power
+				voltage_t myNextVoltage = myNextPmosSourcePower_p->simVoltage;
 				if ( myVoltage == myNextVoltage && IsOppositeLogic(myPmosData_v[mos_it].gate, myPmosData_v[nextMos_it].gate) ) {  // same source, opposite gate
 					myPmosVoltage = myVoltage;
 					myPmosPowerName = NetName(myPmosData_v[mos_it].source);
-					myPmosPowerAlias = netVoltagePtr_v[myPmosData_v[mos_it].source]->powerAlias();
+					myPmosPowerAlias = myPmosSourcePower_p->powerAlias();
 				}
 			}
 		}
@@ -1385,28 +1395,29 @@ bool CCvcDb::SetLatchPower(int thePassCount, vector<bool> & theIgnoreNet_v, CNet
 			}
 			continue;  // don't propagate non-matching power
 		}
+		CPower * myPower_p = netVoltagePtr_v[net_it].full;
 		if ( myNmosVoltage != UNKNOWN_VOLTAGE ) {
-			if ( netVoltagePtr_v[net_it] ) {  // just add sim voltage
-				assert(netVoltagePtr_v[net_it]->simVoltage == UNKNOWN_VOLTAGE);
-				netVoltagePtr_v[net_it]->simVoltage = myNmosVoltage;
+			if ( myPower_p ) {  // just add sim voltage
+				assert(myPower_p->simVoltage == UNKNOWN_VOLTAGE);
+				myPower_p->simVoltage = myNmosVoltage;
 			} else {
-				netVoltagePtr_v[net_it] = new CPower(net_it, myNmosVoltage, true);
-				netVoltagePtr_v[net_it]->extraData->powerSignal = myNmosPowerAlias;
-				netVoltagePtr_v[net_it]->extraData->powerAlias = myNmosPowerAlias;
-				cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it]);
+				netVoltagePtr_v[net_it].full = new CPower(net_it, myNmosVoltage, true);
+				netVoltagePtr_v[net_it].full->extraData->powerSignal = myNmosPowerAlias;
+				netVoltagePtr_v[net_it].full->extraData->powerAlias = myNmosPowerAlias;
+				cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it].full);
 			}
 			myLatchCount++;
 			debugFile << "Added latch for " << NetName(net_it) << endl;
 			theNewNetSet.insert(net_it);
 		} else if ( myPmosVoltage != UNKNOWN_VOLTAGE ) {
-			if ( netVoltagePtr_v[net_it] ) {
-				assert(netVoltagePtr_v[net_it]->simVoltage == UNKNOWN_VOLTAGE);
-				netVoltagePtr_v[net_it]->simVoltage = myPmosVoltage;
+			if ( myPower_p ) {
+				assert(myPower_p->simVoltage == UNKNOWN_VOLTAGE);
+				myPower_p->simVoltage = myPmosVoltage;
 			} else {
-				netVoltagePtr_v[net_it] = new CPower(net_it, myPmosVoltage, true);
-				netVoltagePtr_v[net_it]->extraData->powerSignal = myPmosPowerAlias;
-				netVoltagePtr_v[net_it]->extraData->powerAlias = myPmosPowerAlias;
-				cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it]);
+				netVoltagePtr_v[net_it].full = new CPower(net_it, myPmosVoltage, true);
+				netVoltagePtr_v[net_it].full->extraData->powerSignal = myPmosPowerAlias;
+				netVoltagePtr_v[net_it].full->extraData->powerAlias = myPmosPowerAlias;
+				cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[net_it].full);
 			}
 			myLatchCount++;
 			debugFile << "Added latch for " << NetName(net_it) << endl;
@@ -1421,12 +1432,13 @@ void CCvcDb::FindLatchDevices(netId_t theNetId, mosData_t theNmosData_v[], mosDa
 	voltage_t theMinVoltage, voltage_t theMaxVoltage,
 	CDeviceIdVector & theFirstDrain_v, CDeviceIdVector & theNextDrain_v, CNetIdVector & theSourceNet_v) {
 	for ( deviceId_t device_it = theFirstDrain_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theNextDrain_v[device_it] ) {
-		if ( theSourceNet_v[device_it] == gateNet_v[device_it] && netVoltagePtr_v[theSourceNet_v[device_it]] ) continue; // skip ESD mos
+		if ( theSourceNet_v[device_it] == gateNet_v[device_it] && netVoltagePtr_v[theSourceNet_v[device_it]].full ) continue; // skip ESD mos
 		netId_t mySource = simNet_v[theSourceNet_v[device_it]].finalNetId;
 		netId_t myGate = simNet_v[gateNet_v[device_it]].finalNetId;
 		voltage_t myGateVoltage = UNKNOWN_VOLTAGE;
-		if ( netVoltagePtr_v[myGate] && ! netVoltagePtr_v[myGate]->type[SIM_CALCULATED_BIT] ) {
-			myGateVoltage = netVoltagePtr_v[myGate]->simVoltage;
+		CPower * myGatePower_p = netVoltagePtr_v[myGate].full;
+		if ( myGatePower_p && ! myGatePower_p->type[SIM_CALCULATED_BIT] ) {
+			myGateVoltage = myGatePower_p->simVoltage;
 		}
 		if ( IsNmos_(deviceType_v[device_it]) ) {
 			if ( myGateVoltage == UNKNOWN_VOLTAGE ) {
@@ -1499,7 +1511,7 @@ void CCvcDb::PrintNetSuggestions() {
 	}
 	reportFile << "CVC SETUP: bulk > SD" << endl << endl;
 	for( netId_t net_it = 0; net_it < netCount; net_it++ ) {
-		if ( netVoltagePtr_v[net_it] ) continue;
+		if ( netVoltagePtr_v[net_it].full ) continue;
 		if ( myBulkCount.count(net_it)
 				&& ( myBulkCount[net_it].first > connectionCount_v[net_it].SourceDrainCount()
 						|| ( net_it < topCircuit_p->portCount  // for top ports, also flag bulk = source counts
@@ -1526,7 +1538,7 @@ void CCvcDb::PrintNetSuggestions() {
 	reportFile << endl;
 	reportFile << "CVC SETUP: input ports" << endl << endl;
 	for( netId_t net_it = 0; net_it < topCircuit_p->portCount; net_it++ ) {
-		if ( netVoltagePtr_v[net_it] ) continue;
+		if ( netVoltagePtr_v[net_it].full ) continue;
 		if ( net_it != GetEquivalentNet(net_it) ) continue;  // skip shorted nets
 		unordered_set<netId_t> myCheckedNets;
 		unordered_set<netId_t> myUncheckedNets;
@@ -1547,7 +1559,7 @@ void CCvcDb::PrintNetSuggestions() {
 			for ( deviceId_t device_it = firstSource_v[myCheckNet]; device_it != UNKNOWN_DEVICE && myIsPossibleInput; device_it = nextSource_v[device_it] ) {
 				netId_t mySearchNet = drainNet_v[device_it];
 				if ( ( IsMos_(deviceType_v[device_it]) && mySearchNet != gateNet_v[device_it] )
-						|| ( ! IsMos_(device_it) && netVoltagePtr_v[mySearchNet] ) ) {
+						|| ( ! IsMos_(device_it) && netVoltagePtr_v[mySearchNet].full ) ) {
 					myIsPossibleInput = false;
 				} else if ( ! IsMos_(deviceType_v[device_it]) ) {
 					if ( myCheckedNets.count(mySearchNet) == 0 && myUncheckedNets.count(mySearchNet) == 0 ) {
@@ -1562,7 +1574,7 @@ void CCvcDb::PrintNetSuggestions() {
 			for ( deviceId_t device_it = firstDrain_v[myCheckNet]; device_it != UNKNOWN_DEVICE && myIsPossibleInput; device_it = nextDrain_v[device_it] ) {
 				netId_t mySearchNet = sourceNet_v[device_it];
 				if ( ( IsMos_(deviceType_v[device_it]) && mySearchNet != gateNet_v[device_it] )
-						|| ( ! IsMos_(device_it) && netVoltagePtr_v[mySearchNet] ) ) {
+						|| ( ! IsMos_(device_it) && netVoltagePtr_v[mySearchNet].full ) ) {
 					myIsPossibleInput = false;
 				} else if ( ! IsMos_(deviceType_v[device_it]) ) {
 					if ( myCheckedNets.count(mySearchNet) == 0 && myUncheckedNets.count(mySearchNet) == 0 ) {
@@ -1632,10 +1644,10 @@ void CCvcDb::LoadCellChecksums() {
 		try {
 			CCircuit * theMaster_p = cvcCircuitList.FindCircuit(myCellName);
 			theMaster_p->checksum = myInput.substr(0, myCellNameStart);
-			debugFile << "INFO: checksum for " << myCellName << " is " << theMaster_p->checksum << endl;
+			if (gDebug_cvc) debugFile << "INFO: checksum for " << myCellName << " is " << theMaster_p->checksum << endl;
 		}
 		catch (...) {
-			logFile << "Warning: Could not find checksum cell " << myCellName << " in netlist" << endl;
+			if (gDebug_cvc) logFile << "Warning: Could not find checksum cell " << myCellName << " in netlist" << endl;
 		}
 	}
 	for ( auto circuit_ppit = cvcCircuitList.begin(); circuit_ppit != cvcCircuitList.end(); circuit_ppit++ ) {

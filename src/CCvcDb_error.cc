@@ -558,9 +558,9 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 				if ( myConnections.CheckTerminalMaxVoltages(DRAIN) ) {
 					if ( myConnections.minGateVoltage >= max(myConnections.maxSourceVoltage, myConnections.maxDrainVoltage) - cvcParameters.cvcGateErrorThreshold ) continue;
 					if ( myConnections.sourceId == myConnections.drainId ) {  // capacitor check
-						if ( IsPower_(netVoltagePtr_v[myConnections.gateId]) && IsPower_(netVoltagePtr_v[myConnections.drainId]) ) continue;  // ignore direct power capacitors
-						if ( ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId])
-								|| ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]) ) continue;  // ignore capacitors connected to non-input/power nets
+						if ( IsPower_(netVoltagePtr_v[myConnections.gateId].full) && IsPower_(netVoltagePtr_v[myConnections.drainId].full) ) continue;  // ignore direct power capacitors
+						if ( ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId].full)
+								|| ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId].full) ) continue;  // ignore capacitors connected to non-input/power nets
 					}
 				} else {
 					if ( myConnections.minGateVoltage >= myConnections.maxSourceVoltage - cvcParameters.cvcGateErrorThreshold ) continue;
@@ -631,9 +631,9 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 				if ( myConnections.CheckTerminalMinVoltages(DRAIN) ) {
 					if ( myConnections.maxGateVoltage <= min(myConnections.minSourceVoltage, myConnections.minDrainVoltage) + cvcParameters.cvcGateErrorThreshold ) continue;
 					if ( myConnections.sourceId == myConnections.drainId ) {  // capacitor check
-						if ( IsPower_(netVoltagePtr_v[myConnections.gateId]) && IsPower_(netVoltagePtr_v[myConnections.drainId]) ) continue;  // ignore direct power capacitors
-						if ( ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId])
-								|| ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId]) ) continue;  // ignore capacitors connected to non-input/power nets
+						if ( IsPower_(netVoltagePtr_v[myConnections.gateId].full) && IsPower_(netVoltagePtr_v[myConnections.drainId].full) ) continue;  // ignore direct power capacitors
+						if ( ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinSourceNet.finalNetId].full)
+								|| ! IsInputOrPower_(netVoltagePtr_v[myConnections.masterMinGateNet.finalNetId].full) ) continue;  // ignore capacitors connected to non-input/power nets
 					}
 				} else {
 					if ( myConnections.maxGateVoltage <= myConnections.minSourceVoltage + cvcParameters.cvcGateErrorThreshold ) continue;
@@ -1213,7 +1213,7 @@ void CCvcDb::FindFloatingInputErrors() {
 	for (netId_t net_it = 0; net_it < netCount; net_it++) {  // second pass to catch floating nets caused by floating nets
 		if ( connectionCount_v[net_it].gateCount > 0 ) { // skips subordinate nets. only equivalent master nets have counts
 			if ( firstGate_v[net_it] == UNKNOWN_DEVICE ) continue;
-			if ( SimVoltage(net_it) != UNKNOWN_VOLTAGE || (netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->type[INPUT_BIT]) ) continue;
+			if ( SimVoltage(net_it) != UNKNOWN_VOLTAGE || (netVoltagePtr_v[net_it].full && netVoltagePtr_v[net_it].full->type[INPUT_BIT]) ) continue;
 			if ( HasActiveConnections(net_it) ) continue;
 			MapDeviceNets(firstGate_v[net_it], myConnections);
 			if ( IsFloatingGate(myConnections) ) continue;  // Already processed previously
@@ -1256,34 +1256,34 @@ void CCvcDb::CheckExpectedValues() {
 			myMaxNet(maxNet_v, myNetId);
 			myMaxNetId = myMaxNet.finalNetId;
 			if ( (*power_ppit)->expectedSim() == "open" ) {
-				if ( ( mySimNetId == UNKNOWN_NET || ! netVoltagePtr_v[mySimNetId] || netVoltagePtr_v[mySimNetId]->simVoltage == UNKNOWN_VOLTAGE ) &&
-						( myMinNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMinNetId] || netVoltagePtr_v[myMinNetId]->minVoltage == UNKNOWN_VOLTAGE || netVoltagePtr_v[myMinNetId]->type[HIZ_BIT] ||
-							myMaxNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMaxNetId] || netVoltagePtr_v[myMaxNetId]->maxVoltage == UNKNOWN_VOLTAGE || netVoltagePtr_v[myMaxNetId]->type[HIZ_BIT]) ) { // open match
+				if ( ( mySimNetId == UNKNOWN_NET || ! netVoltagePtr_v[mySimNetId].full || netVoltagePtr_v[mySimNetId].full->simVoltage == UNKNOWN_VOLTAGE ) &&
+						( myMinNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMinNetId].full || netVoltagePtr_v[myMinNetId].full->minVoltage == UNKNOWN_VOLTAGE || netVoltagePtr_v[myMinNetId].full->type[HIZ_BIT] ||
+							myMaxNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMaxNetId].full || netVoltagePtr_v[myMaxNetId].full->maxVoltage == UNKNOWN_VOLTAGE || netVoltagePtr_v[myMaxNetId].full->type[HIZ_BIT]) ) { // open match
 					myExpectedValueFound = true;
 				}
-			} else if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId] && netVoltagePtr_v[mySimNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
+			} else if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId].full && netVoltagePtr_v[mySimNetId].full->simVoltage != UNKNOWN_VOLTAGE ) {
 				if ( IsValidVoltage_((*power_ppit)->expectedSim())
-						&& abs(String_to_Voltage((*power_ppit)->expectedSim()) - netVoltagePtr_v[mySimNetId]->simVoltage) <= cvcParameters.cvcExpectedErrorThreshold ) { // voltage match
+						&& abs(String_to_Voltage((*power_ppit)->expectedSim()) - netVoltagePtr_v[mySimNetId].full->simVoltage) <= cvcParameters.cvcExpectedErrorThreshold ) { // voltage match
 					myExpectedValueFound = true;
 				} else if ( (*power_ppit)->expectedSim() == NetName(mySimNetId) ) { // name match
 					myExpectedValueFound = true;
-				} else if ( (*power_ppit)->expectedSim() == string(netVoltagePtr_v[mySimNetId]->powerAlias()) ) { // alias match
+				} else if ( (*power_ppit)->expectedSim() == string(netVoltagePtr_v[mySimNetId].full->powerAlias()) ) { // alias match
 					myExpectedValueFound = true;
 				}
 			}
 			if ( ! myExpectedValueFound ) {
 				errorCount[EXPECTED_VOLTAGE]++;
 				errorFile << "Expected " << NetName(myNetId) << " = " << (*power_ppit)->expectedSim() << " but found ";
-				if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId] && netVoltagePtr_v[mySimNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
-					errorFile << NetName(mySimNetId) << "@" << PrintVoltage(netVoltagePtr_v[mySimNetId]->simVoltage) << endl;
+				if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId].full && netVoltagePtr_v[mySimNetId].full->simVoltage != UNKNOWN_VOLTAGE ) {
+					errorFile << NetName(mySimNetId) << "@" << PrintVoltage(netVoltagePtr_v[mySimNetId].full->simVoltage) << endl;
 				} else if ( (*power_ppit)->expectedSim() == "open" ) {
 					bool myPrintedReason = false;
-					if ( myMinNetId != UNKNOWN_NET && netVoltagePtr_v[myMinNetId] && netVoltagePtr_v[myMinNetId]->minVoltage != UNKNOWN_VOLTAGE ) {
-						errorFile << "(min)" << NetName(myMinNetId) << "@" << PrintVoltage(netVoltagePtr_v[myMinNetId]->minVoltage) << " ";
+					if ( myMinNetId != UNKNOWN_NET && netVoltagePtr_v[myMinNetId].full && netVoltagePtr_v[myMinNetId].full->minVoltage != UNKNOWN_VOLTAGE ) {
+						errorFile << "(min)" << NetName(myMinNetId) << "@" << PrintVoltage(netVoltagePtr_v[myMinNetId].full->minVoltage) << " ";
 						myPrintedReason = true;
 					}
-					if ( myMaxNetId != UNKNOWN_NET && netVoltagePtr_v[myMaxNetId] && netVoltagePtr_v[myMaxNetId]->maxVoltage != UNKNOWN_VOLTAGE ) {
-						errorFile << "(max)" << NetName(myMaxNetId) << "@" << PrintVoltage(netVoltagePtr_v[myMaxNetId]->maxVoltage);
+					if ( myMaxNetId != UNKNOWN_NET && netVoltagePtr_v[myMaxNetId].full && netVoltagePtr_v[myMaxNetId].full->maxVoltage != UNKNOWN_VOLTAGE ) {
+						errorFile << "(max)" << NetName(myMaxNetId) << "@" << PrintVoltage(netVoltagePtr_v[myMaxNetId].full->maxVoltage);
 						myPrintedReason = true;
 					}
 					if ( myPrintedReason ) {
@@ -1302,23 +1302,23 @@ void CCvcDb::CheckExpectedValues() {
 			myExpectedValueFound = false;
 			if ( (*power_ppit)->expectedMin() == "open" ) {
 				// simVoltage in the following condition is correct. open voltages can have min/max voltages.
-				if ( myMinNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMinNetId] || netVoltagePtr_v[myMinNetId]->simVoltage == UNKNOWN_VOLTAGE ) { // open match
+				if ( myMinNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMinNetId].full || netVoltagePtr_v[myMinNetId].full->simVoltage == UNKNOWN_VOLTAGE ) { // open match
 					myExpectedValueFound = true;
 				}
-			} else if ( myMinNetId != UNKNOWN_NET && netVoltagePtr_v[myMinNetId] ) {
-				if ( String_to_Voltage((*power_ppit)->expectedMin()) <= netVoltagePtr_v[myMinNetId]->minVoltage ) { // voltage match (anything higher than expected is ok)
+			} else if ( myMinNetId != UNKNOWN_NET && netVoltagePtr_v[myMinNetId].full ) {
+				if ( String_to_Voltage((*power_ppit)->expectedMin()) <= netVoltagePtr_v[myMinNetId].full->minVoltage ) { // voltage match (anything higher than expected is ok)
 					myExpectedValueFound = true;
 				} else if ( (*power_ppit)->expectedMin() == NetName(myMinNetId) ) { // name match
 					myExpectedValueFound = true;
-				} else if ( (*power_ppit)->expectedMin() == string(netVoltagePtr_v[myMinNetId]->powerAlias()) ) { // alias match
+				} else if ( (*power_ppit)->expectedMin() == string(netVoltagePtr_v[myMinNetId].full->powerAlias()) ) { // alias match
 					myExpectedValueFound = true;
 				}
 			}
 			if ( ! myExpectedValueFound ) {
 				errorCount[EXPECTED_VOLTAGE]++;
 				errorFile << "Expected minimum " << NetName(myNetId) << " = " << (*power_ppit)->expectedMin() << " but found ";
-				if ( myMinNetId != UNKNOWN_NET && netVoltagePtr_v[myMinNetId] && netVoltagePtr_v[myMinNetId]->minVoltage != UNKNOWN_VOLTAGE ) {
-					errorFile << NetName(myMinNetId) << "@" << PrintVoltage(netVoltagePtr_v[myMinNetId]->minVoltage) << endl;
+				if ( myMinNetId != UNKNOWN_NET && netVoltagePtr_v[myMinNetId].full && netVoltagePtr_v[myMinNetId].full->minVoltage != UNKNOWN_VOLTAGE ) {
+					errorFile << NetName(myMinNetId) << "@" << PrintVoltage(netVoltagePtr_v[myMinNetId].full->minVoltage) << endl;
 				} else {
 					errorFile << "unknown" << endl;
 				}
@@ -1330,23 +1330,23 @@ void CCvcDb::CheckExpectedValues() {
 			myExpectedValueFound = false;
 			if ( (*power_ppit)->expectedMax() == "open" ) {
 				// simVoltage in the following condition is correct. open voltages can have min/max voltages.
-				if ( myMaxNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMaxNetId] || netVoltagePtr_v[myMaxNetId]->simVoltage == UNKNOWN_VOLTAGE ) { // open match
+				if ( myMaxNetId == UNKNOWN_NET || ! netVoltagePtr_v[myMaxNetId].full || netVoltagePtr_v[myMaxNetId].full->simVoltage == UNKNOWN_VOLTAGE ) { // open match
 					myExpectedValueFound = true;
 				}
-			} else if ( myMaxNetId != UNKNOWN_NET && netVoltagePtr_v[myMaxNetId] ) {
-				if ( String_to_Voltage((*power_ppit)->expectedMax()) >= netVoltagePtr_v[myMaxNetId]->maxVoltage ) { // voltage match (anything lower than expected is ok)
+			} else if ( myMaxNetId != UNKNOWN_NET && netVoltagePtr_v[myMaxNetId].full ) {
+				if ( String_to_Voltage((*power_ppit)->expectedMax()) >= netVoltagePtr_v[myMaxNetId].full->maxVoltage ) { // voltage match (anything lower than expected is ok)
 					myExpectedValueFound = true;
 				} else if ( (*power_ppit)->expectedMax() == NetName(myMaxNetId) ) { // name match
 					myExpectedValueFound = true;
-				} else if ( (*power_ppit)->expectedMax() == string(netVoltagePtr_v[myMaxNetId]->powerAlias()) ) { // alias match
+				} else if ( (*power_ppit)->expectedMax() == string(netVoltagePtr_v[myMaxNetId].full->powerAlias()) ) { // alias match
 					myExpectedValueFound = true;
 				}
 			}
 			if ( ! myExpectedValueFound ) {
 				errorCount[EXPECTED_VOLTAGE]++;
 				errorFile << "Expected maximum " << NetName(myNetId) << " = " << (*power_ppit)->expectedMax() << " but found ";
-				if ( myMaxNetId != UNKNOWN_NET && netVoltagePtr_v[myMaxNetId] && netVoltagePtr_v[myMaxNetId]->maxVoltage != UNKNOWN_VOLTAGE ) {
-					errorFile << NetName(myMaxNetId) << "@" << PrintVoltage(netVoltagePtr_v[myMaxNetId]->maxVoltage) << endl;
+				if ( myMaxNetId != UNKNOWN_NET && netVoltagePtr_v[myMaxNetId].full && netVoltagePtr_v[myMaxNetId].full->maxVoltage != UNKNOWN_VOLTAGE ) {
+					errorFile << NetName(myMaxNetId) << "@" << PrintVoltage(netVoltagePtr_v[myMaxNetId].full->maxVoltage) << endl;
 				} else {
 					errorFile << "unknown" << endl;
 				}

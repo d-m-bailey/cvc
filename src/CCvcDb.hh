@@ -485,7 +485,7 @@ void CCvcDb::PrintVirtualNet(TVirtualNetVector& theVirtualNet_v, netId_t theNetI
 		theOutputFile << "->" << NetName(theVirtualNet_v[myNetId].nextNetId) << " r=" << theVirtualNet_v[myNetId].resistance << endl;
 		myNetId = theVirtualNet_v[myNetId].nextNetId;
 	}
-	if ( netVoltagePtr_v[myNetId] ) netVoltagePtr_v[myNetId]->Print(theOutputFile);
+	if ( netVoltagePtr_v[myNetId].full ) netVoltagePtr_v[myNetId].full->Print(theOutputFile);
 	theOutputFile << endl;
 }
 
@@ -504,9 +504,9 @@ void CCvcDb::PrintAllVirtualNets(TVirtualNetVector& theMinNet_v, CVirtualNetVect
 		}
 */
 		if ( net_it == myFinalNet ) {
-			if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->minVoltage != UNKNOWN_VOLTAGE ) {
-				cout << netVoltagePtr_v[net_it]->minVoltage;
-				if ( theUseLeak && MinLeakVoltage(net_it) != netVoltagePtr_v[net_it]->minVoltage ) {
+			if ( netVoltagePtr_v[net_it].full && netVoltagePtr_v[net_it].full->minVoltage != UNKNOWN_VOLTAGE ) {
+				cout << netVoltagePtr_v[net_it].full->minVoltage;
+				if ( theUseLeak && MinLeakVoltage(net_it) != netVoltagePtr_v[net_it].full->minVoltage ) {
 					cout << "(" << MinLeakVoltage(net_it) << ")";
 				}
 			} else {
@@ -531,8 +531,8 @@ void CCvcDb::PrintAllVirtualNets(TVirtualNetVector& theMinNet_v, CVirtualNetVect
 		}
 */
 		if ( net_it == myFinalNet ) {
-			if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE ) {
-				cout << netVoltagePtr_v[net_it]->simVoltage;
+			if ( netVoltagePtr_v[net_it].full && netVoltagePtr_v[net_it].full->simVoltage != UNKNOWN_VOLTAGE ) {
+				cout << netVoltagePtr_v[net_it].full->simVoltage;
 			} else {
 				cout << "??";
 			}
@@ -549,9 +549,9 @@ void CCvcDb::PrintAllVirtualNets(TVirtualNetVector& theMinNet_v, CVirtualNetVect
 		}
 */
 		if ( net_it == myFinalNet ) {
-			if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->maxVoltage != UNKNOWN_VOLTAGE ) {
-				cout << netVoltagePtr_v[net_it]->maxVoltage;
-				if ( theUseLeak && MaxLeakVoltage(net_it) != netVoltagePtr_v[net_it]->maxVoltage ) {
+			if ( netVoltagePtr_v[net_it].full && netVoltagePtr_v[net_it].full->maxVoltage != UNKNOWN_VOLTAGE ) {
+				cout << netVoltagePtr_v[net_it].full->maxVoltage;
+				if ( theUseLeak && MaxLeakVoltage(net_it) != netVoltagePtr_v[net_it].full->maxVoltage ) {
 					cout << "(" << MaxLeakVoltage(net_it) << ")";
 				}
 			} else {

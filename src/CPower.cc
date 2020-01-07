@@ -372,7 +372,7 @@ CPower * CPower::GetBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetV
 		while ( myNetId != theNet_v[myNetId].nextNetId ) {
 			myNetId = theNet_v[myNetId].nextNetId;
 		}
-		myPower_p = theNetVoltagePtr_v[myNetId];
+		myPower_p = theNetVoltagePtr_v[myNetId].full;
 	}
 	return(myPower_p);
 }
@@ -666,20 +666,20 @@ string CPower::StandardDefinition() {
 
 voltage_t CPowerPtrVector::MaxVoltage(netId_t theNetId) {
 	if ( theNetId == UNKNOWN_NET ) return UNKNOWN_VOLTAGE;
-	if ( (*this)[theNetId] == NULL ) return UNKNOWN_VOLTAGE;
-	return (*this)[theNetId]->maxVoltage;
+	if ( (*this)[theNetId].full == NULL ) return UNKNOWN_VOLTAGE;
+	return (*this)[theNetId].full->maxVoltage;
 }
 
 voltage_t CPowerPtrVector::MinVoltage(netId_t theNetId) {
 	if ( theNetId == UNKNOWN_NET ) return UNKNOWN_VOLTAGE;
-	if ( (*this)[theNetId] == NULL ) return UNKNOWN_VOLTAGE;
-	return (*this)[theNetId]->minVoltage;
+	if ( (*this)[theNetId].full == NULL ) return UNKNOWN_VOLTAGE;
+	return (*this)[theNetId].full->minVoltage;
 }
 
 voltage_t CPowerPtrVector::SimVoltage(netId_t theNetId) {
 	if ( theNetId == UNKNOWN_NET ) return UNKNOWN_VOLTAGE;
-	if ( (*this)[theNetId] == NULL ) return UNKNOWN_VOLTAGE;
-	return (*this)[theNetId]->simVoltage;
+	if ( (*this)[theNetId].full == NULL ) return UNKNOWN_VOLTAGE;
+	return (*this)[theNetId].full->simVoltage;
 }
 
 void CPowerPtrList::Clear() {
@@ -695,11 +695,11 @@ void CPowerPtrList::Clear(CPowerPtrVector & theLeakVoltage_v, CPowerPtrVector & 
 	while ( ! empty() ) {
 		netId_t myNetId = front()->netId;
 		if ( myNetId != UNKNOWN_NET && theNetCount > 0 ) {
-			if ( theLeakVoltage_v.size() > myNetId && theLeakVoltage_v[myNetId] && theLeakVoltage_v[myNetId] == front() ) {
-				theLeakVoltage_v[myNetId] = NULL;
+			if ( theLeakVoltage_v.size() > myNetId && theLeakVoltage_v[myNetId].full && theLeakVoltage_v[myNetId].full == front() ) {
+				theLeakVoltage_v[myNetId].full = NULL;
 			}
-			if ( theNetVoltage_v.size() > myNetId && theNetVoltage_v[myNetId] && theNetVoltage_v[myNetId] == front() ) {
-				theNetVoltage_v[myNetId] = NULL;
+			if ( theNetVoltage_v.size() > myNetId && theNetVoltage_v[myNetId].full && theNetVoltage_v[myNetId].full == front() ) {
+				theNetVoltage_v[myNetId].full = NULL;
 			}
 		}
 		delete front();
@@ -860,12 +860,21 @@ CPower * CPowerPtrList::FindCalculatedPower(CEventQueue& theEventQueue, CPower *
 }
 */
 
+void CPowerPtrVector::ResetPowerPointerVector(size_t theSize) {
+	this->clear();
+	this->reserve(theSize);
+	this->resize(theSize);
+	for ( size_t index_it = 0; index_it < theSize; index_it++ ) {
+		(*this)[index_it].full = NULL;
+	}
+}
+
 void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theShortVoltage, netId_t theNetId, netId_t theDefaultNetId, CCvcDb * theCvcDb_p, string theCalculation) {
-	if ( (*this)[theNetId] == NULL ) {
-		(*this)[theNetId] = new CPower(theNetId);
+	if ( (*this)[theNetId].full == NULL ) {
+		(*this)[theNetId].full = new CPower(theNetId);
 //		(*this)[theNetId]->type[CALCULATED_BIT] = true;
 	}
-	CPower * myPower_p = (*this)[theNetId];
+	CPower * myPower_p = (*this)[theNetId].full;
 //	voltage_t myMinVoltage = UNKNOWN_VOLTAGE, mySimVoltage = UNKNOWN_VOLTAGE, myMaxVoltage = UNKNOWN_VOLTAGE;
 //	netId_t myDefaultMinNet = UNKNOWN_NET, myDefaultSimNet = UNKNOWN_NET, myDefaultMaxNet = UNKNOWN_NET;
 //	CStatus myStatus = 0, myActiveStatus = 0;
@@ -883,17 +892,18 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 		myStatus[CALCULATED_BIT] = true;
 	}
 */
-	if ( (*this)[theDefaultNetId] ) {
-		if ( (*this)[theDefaultNetId]->type[HIZ_BIT] ) {
+	CPower * myDefaultPower_p = (*this)[theDefaultNetId].full;
+	if ( myDefaultPower_p ) {
+		if ( myDefaultPower_p->type[HIZ_BIT] ) {
 			myPower_p->type[HIZ_BIT] = true;
 		}
-		if ( (*this)[theDefaultNetId]->extraData ) {
+		if ( myDefaultPower_p->extraData ) {
 			if ( ! myPower_p->extraData ) myPower_p->extraData = new CExtraPowerData;
-			myPower_p->extraData->family = (*this)[theDefaultNetId]->family();
-			myPower_p->extraData->implicitFamily = (*this)[theDefaultNetId]->implicitFamily();
-			myPower_p->extraData->relativeSet = (*this)[theDefaultNetId]->extraData->relativeSet;
+			myPower_p->extraData->family = myDefaultPower_p->family();
+			myPower_p->extraData->implicitFamily = myDefaultPower_p->implicitFamily();
+			myPower_p->extraData->relativeSet = myDefaultPower_p->extraData->relativeSet;
 		}
-		myPower_p->relativeFriendly = (*this)[theDefaultNetId]->relativeFriendly;
+		myPower_p->relativeFriendly = myDefaultPower_p->relativeFriendly;
 //		myPower_p->defaultMinNet = theDefaultNetId;
 //		myPower_p->type[MIN_CALCULATED_BIT] = true;
 //		myPower_p->defaultMaxNet = theDefaultNetId;
@@ -910,10 +920,10 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 		myPower_p->defaultMinNet = theDefaultNetId;
 		myPower_p->type[MIN_CALCULATED_BIT] = true;
 		myPower_p->active[MIN_ACTIVE] = true;
-		if ( (*this)[theDefaultNetId] && (*this)[theDefaultNetId]->minVoltage != UNKNOWN_VOLTAGE ) {
-			if ( theShortVoltage < (*this)[theDefaultNetId]->minVoltage ) {
+		if ( myDefaultPower_p && myDefaultPower_p->minVoltage != UNKNOWN_VOLTAGE ) {
+			if ( theShortVoltage < myDefaultPower_p->minVoltage ) {
 				myPower_p->minCalculationType = DOWN_CALCULATION;
-			} else if ( theShortVoltage > (*this)[theDefaultNetId]->minVoltage ) {
+			} else if ( theShortVoltage > myDefaultPower_p->minVoltage ) {
 				myPower_p->minCalculationType = UP_CALCULATION;
 			}
 		}
@@ -934,10 +944,10 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 		myPower_p->defaultMaxNet = theDefaultNetId;
 		myPower_p->type[MAX_CALCULATED_BIT] = true;
 		myPower_p->active[MAX_ACTIVE] = true;
-		if ( (*this)[theDefaultNetId] && (*this)[theDefaultNetId]->maxVoltage != UNKNOWN_VOLTAGE ) {
-			if ( theShortVoltage < (*this)[theDefaultNetId]->maxVoltage ) {
+		if ( myDefaultPower_p && myDefaultPower_p->maxVoltage != UNKNOWN_VOLTAGE ) {
+			if ( theShortVoltage < myDefaultPower_p->maxVoltage ) {
 				myPower_p->maxCalculationType = DOWN_CALCULATION;
-			} else if ( theShortVoltage > (*this)[theDefaultNetId]->maxVoltage ) {
+			} else if ( theShortVoltage > myDefaultPower_p->maxVoltage ) {
 				myPower_p->maxCalculationType = UP_CALCULATION;
 			}
 		}
@@ -971,10 +981,10 @@ void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theSh
 				myPower_p->extraData->powerAlias = myDefaultPower_p->powerAlias();
 			}
 		}
-		if ( (*this)[theDefaultNetId] && (*this)[theDefaultNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
-			if ( theShortVoltage < (*this)[theDefaultNetId]->simVoltage ) {
+		if ( myDefaultPower_p && myDefaultPower_p->simVoltage != UNKNOWN_VOLTAGE ) {
+			if ( theShortVoltage < myDefaultPower_p->simVoltage ) {
 				myPower_p->simCalculationType = DOWN_CALCULATION;
-			} else if ( theShortVoltage > (*this)[theDefaultNetId]->simVoltage ) {
+			} else if ( theShortVoltage > myDefaultPower_p->simVoltage ) {
 				myPower_p->simCalculationType = UP_CALCULATION;
 			}
 		}

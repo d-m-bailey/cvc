@@ -253,16 +253,16 @@ string CCvcDb::ShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag) {
 		myShortString += " shorted to " + NetName(short_v[theNetId].first, thePrintSubcircuitNameFlag) + short_v[theNetId].second;
 	}
 */
-	if ( netVoltagePtr_v[theNetId] ) {
+	if ( netVoltagePtr_v[theNetId].full ) {
 //		myShortString = netVoltagePtr_v[myNetId]->PowerDefinition();
-		string myStandardDefinition = netVoltagePtr_v[theNetId]->StandardDefinition();
-		if ( IsCalculatedVoltage_(netVoltagePtr_v[theNetId]) ) {
+		string myStandardDefinition = netVoltagePtr_v[theNetId].full->StandardDefinition();
+		if ( IsCalculatedVoltage_(netVoltagePtr_v[theNetId].full) ) {
 			myShortString += " calculated as";
 		} else {
 			myShortString += " defined as ";
 		}
-		if ( string(netVoltagePtr_v[theNetId]->definition) != myStandardDefinition ) {
-			myShortString = myShortString + netVoltagePtr_v[theNetId]->definition + " => ";
+		if ( string(netVoltagePtr_v[theNetId].full->definition) != myStandardDefinition ) {
+			myShortString = myShortString + netVoltagePtr_v[theNetId].full->definition + " => ";
 		}
 		myShortString += myStandardDefinition;
 	}
@@ -276,16 +276,17 @@ string CCvcDb::LeakShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag
 		myShortString += " shorted to " + NetName(short_v[theNetId].first, thePrintSubcircuitNameFlag) + short_v[theNetId].second;
 	}
 */
-	if ( leakVoltagePtr_v[theNetId] ) {
+	CPower * myLeakPower_p = leakVoltagePtr_v[theNetId].full;
+	if ( myLeakPower_p ) {
 //	myShortString = netVoltagePtr_v[myNetId]->PowerDefinition();
-		string myStandardDefinition = leakVoltagePtr_v[theNetId]->StandardDefinition();
-		if ( IsCalculatedVoltage_(leakVoltagePtr_v[theNetId]) ) {
+		string myStandardDefinition = myLeakPower_p->StandardDefinition();
+		if ( IsCalculatedVoltage_(myLeakPower_p) ) {
 				myShortString += " calculated as";
 		} else {
 				myShortString += " defined as ";
 		}
-		if ( string(leakVoltagePtr_v[theNetId]->definition) != myStandardDefinition ) {
-				myShortString = myShortString + leakVoltagePtr_v[theNetId]->definition + " => ";
+		if ( string(myLeakPower_p->definition) != myStandardDefinition ) {
+				myShortString = myShortString + myLeakPower_p->definition + " => ";
 		}
 		myShortString += myStandardDefinition;
 	}
@@ -987,19 +988,21 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 							reportFile << " bulk " << CountBulkConnections(myEquivalentNetId) << endl;
 						}
 						string mySimpleName = NetName(myEquivalentNetId, PRINT_CIRCUIT_OFF);
-						if ( leakVoltageSet && leakVoltagePtr_v[myEquivalentNetId] && leakVoltagePtr_v[myEquivalentNetId] != netVoltagePtr_v[myEquivalentNetId] ) {
-							reportFile << " leak definition " << leakVoltagePtr_v[myEquivalentNetId]->powerSignal()
+						CPower * myLeakPower_p = leakVoltagePtr_v[myEquivalentNetId].full;
+						CPower * myPower_p = netVoltagePtr_v[myEquivalentNetId].full;
+						if ( leakVoltageSet && myLeakPower_p && myLeakPower_p != myPower_p ) {
+							reportFile << " leak definition " << myLeakPower_p->powerSignal()
 									<< LeakShortString(myEquivalentNetId, myPrintSubcircuitNameFlag) << endl;
-							reportFile << "  default min " << NetName(leakVoltagePtr_v[myEquivalentNetId]->defaultMinNet) << endl;
-							reportFile << "  default sim " << NetName(leakVoltagePtr_v[myEquivalentNetId]->defaultSimNet) << endl;
-							reportFile << "  default max " << NetName(leakVoltagePtr_v[myEquivalentNetId]->defaultMaxNet) << endl;
+							reportFile << "  default min " << NetName(myLeakPower_p->defaultMinNet) << endl;
+							reportFile << "  default sim " << NetName(myLeakPower_p->defaultSimNet) << endl;
+							reportFile << "  default max " << NetName(myLeakPower_p->defaultMaxNet) << endl;
 						}
-						if ( powerFileStatus == OK && netVoltagePtr_v[myEquivalentNetId] ) {
-							if ( netVoltagePtr_v[myEquivalentNetId]->powerSignal() != mySimpleName ) {
-								reportFile << " base definition " << netVoltagePtr_v[myEquivalentNetId]->powerSignal() << endl;
-								reportFile << "  default min " << NetName(netVoltagePtr_v[myEquivalentNetId]->defaultMinNet) << endl;
-								reportFile << "  default sim " << NetName(netVoltagePtr_v[myEquivalentNetId]->defaultSimNet) << endl;
-								reportFile << "  default max " << NetName(netVoltagePtr_v[myEquivalentNetId]->defaultMaxNet) << endl;
+						if ( powerFileStatus == OK && netVoltagePtr_v[myEquivalentNetId].full ) {
+							if ( myPower_p->powerSignal() != mySimpleName ) {
+								reportFile << " base definition " << myPower_p->powerSignal() << endl;
+								reportFile << "  default min " << NetName(myPower_p->defaultMinNet) << endl;
+								reportFile << "  default sim " << NetName(myPower_p->defaultSimNet) << endl;
+								reportFile << "  default max " << NetName(myPower_p->defaultMaxNet) << endl;
 							}
 							reportFile << ShortString(myEquivalentNetId, myPrintSubcircuitNameFlag) << endl;
 						}
@@ -1110,7 +1113,7 @@ void CCvcDb::DumpAnalogNets(string theFileName, bool thePrintCircuitFlag) {
 	size_t myNetCount = 0;
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 		if ( net_it != GetEquivalentNet(net_it) ) continue;  // skip shorted nets
-		if ( netVoltagePtr_v[net_it] && netVoltagePtr_v[net_it]->type[POWER_BIT] ) continue;  // skip power
+		if ( netVoltagePtr_v[net_it].full && netVoltagePtr_v[net_it].full->type[POWER_BIT] ) continue;  // skip power
 /*
 		bool myIsAnalog = false;
 		deviceId_t device_it = firstSource_v[net_it];
@@ -1165,8 +1168,8 @@ void CCvcDb::DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag
 	size_t myNetCount = 0;
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 		if ( net_it != GetEquivalentNet(net_it) ) continue;  // skip shorted nets
-		if ( netVoltagePtr_v[net_it]
-			&& ( netVoltagePtr_v[net_it]->simVoltage != UNKNOWN_VOLTAGE || netVoltagePtr_v[net_it]->type[POWER_BIT] ) ) continue;  // skip defined sim voltages and power
+		CPower * myPower_p = netVoltagePtr_v[net_it].full;
+		if ( myPower_p && ( myPower_p->simVoltage != UNKNOWN_VOLTAGE || myPower_p->type[POWER_BIT] ) ) continue;  // skip defined sim voltages and power
 		myIsLogicalNet_v[net_it] = ! IsAnalogNet(net_it);
 	}
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
@@ -1322,7 +1325,7 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 	}
 	for ( netId_t net_it = 0; net_it < myInstance_p->master_p->portCount; net_it++ ) {
 		netId_t myGlobalNetId = GetEquivalentNet(myInstance_p->localToGlobalNetId_v[net_it]);
-		CPower * myPower_p = netVoltagePtr_v[myGlobalNetId];
+		CPower * myPower_p = netVoltagePtr_v[myGlobalNetId].full;
 		if ( myPower_p && ! IsEmpty(myPower_p->powerSignal()) ) {
 			string myDefinition = string(myPower_p->definition).substr(0, string(myPower_p->definition).find(" calculation=>"));
 			myPowerFile << mySignals_v[net_it] << myDefinition << endl;
@@ -1342,31 +1345,32 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 			if ( theCurrentStage == STAGE_COMPLETE ) {
 				myMinNetId = minNet_v[myGlobalNetId].backupNetId;
 				if ( myMinNetId != UNKNOWN_NET ) {
-					myMinPower_p = leakVoltagePtr_v[myMinNetId];
+					myMinPower_p = leakVoltagePtr_v[myMinNetId].full;
 				}
 				myMaxNetId = maxNet_v[myGlobalNetId].backupNetId;
 				if ( myMaxNetId != UNKNOWN_NET ) {
-					myMaxPower_p = leakVoltagePtr_v[myMaxNetId];
+					myMaxPower_p = leakVoltagePtr_v[myMaxNetId].full;
 				}
 			} else {
 				myMinNetId = minNet_v[myGlobalNetId].finalNetId;
 				if ( myMinNetId != UNKNOWN_NET ) {
-					myMinPower_p = netVoltagePtr_v[myMinNetId];
+					myMinPower_p = netVoltagePtr_v[myMinNetId].full;
 				}
 				myMaxNetId = maxNet_v[myGlobalNetId].finalNetId;
 				if ( myMaxNetId != UNKNOWN_NET ) {
-					myMaxPower_p = netVoltagePtr_v[myMaxNetId];
+					myMaxPower_p = netVoltagePtr_v[myMaxNetId].full;
 				}
 			}
 			netId_t mySimNetId = simNet_v[myGlobalNetId].finalNetId;
 			if ( myMinPower_p && myMinPower_p->minVoltage != UNKNOWN_VOLTAGE ) {
 				myPowerFile << " min@" << PrintParameter(myMinPower_p->minVoltage, VOLTAGE_SCALE);
 			}
-			if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId] ) {
-				if ( netVoltagePtr_v[mySimNetId]->simVoltage != UNKNOWN_VOLTAGE ) {
-					myPowerFile << " sim@" << PrintParameter(netVoltagePtr_v[mySimNetId]->simVoltage, VOLTAGE_SCALE);
+			if ( mySimNetId != UNKNOWN_NET && netVoltagePtr_v[mySimNetId].full ) {
+				CPower * mySimPower_p = netVoltagePtr_v[mySimNetId].full;
+				if ( mySimPower_p->simVoltage != UNKNOWN_VOLTAGE ) {
+					myPowerFile << " sim@" << PrintParameter(mySimPower_p->simVoltage, VOLTAGE_SCALE);
 				}
-				if ( netVoltagePtr_v[mySimNetId]->type[HIZ_BIT] ) {
+				if ( mySimPower_p->type[HIZ_BIT] ) {
 					myPowerFile << " open";
 				}
 			}
@@ -1380,11 +1384,12 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 	unordered_set<text_t> myInternalDefinitions;  // only print internal definitions once
 	netId_t myFirstNetId = myInstance_p->firstNetId;
 	for ( netId_t net_it = myFirstNetId; net_it < netCount && IsSubcircuitOf(netParent_v[net_it], theInstanceId); net_it++ ) {
-		if ( netVoltagePtr_v[net_it] ) {
-			text_t mySignal = netVoltagePtr_v[net_it]->powerSignal();
-			if ( ! IsEmpty(mySignal) && mySignal != myResistorText && netVoltagePtr_v[net_it]->simCalculationType != ESTIMATED_CALCULATION
+		CPower * myPower_p = netVoltagePtr_v[net_it].full;
+		if ( myPower_p ) {
+			text_t mySignal = myPower_p->powerSignal();
+			if ( ! IsEmpty(mySignal) && mySignal != myResistorText && myPower_p->simCalculationType != ESTIMATED_CALCULATION
 					&& myInternalDefinitions.count(mySignal) == 0 ) {  // do not print resistor calculations, latch/scrc estimates, or duplicates
-				myPowerFile << mySignal << " " << netVoltagePtr_v[net_it]->definition << endl;
+				myPowerFile << mySignal << " " << myPower_p->definition << endl;
 				myInternalDefinitions.insert(mySignal);
 			}
 		}
