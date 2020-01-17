@@ -1,7 +1,7 @@
 /*
  * CCvcDb.cc
  *
- * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -1781,11 +1781,11 @@ void CCvcDb::PropagateMinMaxVoltages(CEventQueue& theEventQueue) {
 			if ( deviceType_v[myDeviceId] == RESISTOR && myOriginalEventKey == myEventKey ) {
 				// resistors propagating unchanged voltages
 				CDeviceCount myDeviceCount(myDrainId, this);
-				if ( theEventQueue.queueType == MIN_QUEUE && myDeviceCount.resistorCount == 1 && myDeviceCount.pmosCount == 0 ) {
+				if ( theEventQueue.queueType == MIN_QUEUE && myDeviceCount.resistorCount == 1 && myDeviceCount.activePmosCount == 0 ) {
 					// one resistor connected to no pmos
 					ShortNets(minEventQueue, myDeviceId, myConnections, myDirection, myEventKey, "power through resistor");
 					EnqueueAttachedDevices(minEventQueue, myDrainId, myEventKey);
-				} else if (theEventQueue.queueType == MAX_QUEUE && myDeviceCount.resistorCount == 1 && myDeviceCount.nmosCount == 0 ) {
+				} else if (theEventQueue.queueType == MAX_QUEUE && myDeviceCount.resistorCount == 1 && myDeviceCount.activeNmosCount == 0 ) {
 					// one resistor connected to no nmos
 					ShortNets(maxEventQueue, myDeviceId, myConnections, myDirection, myEventKey, "power through resistor");
 					EnqueueAttachedDevices(maxEventQueue, myDrainId, myEventKey);

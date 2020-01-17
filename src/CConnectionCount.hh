@@ -1,7 +1,7 @@
 /*
  * CConnectionCount.hh
  *
- * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -49,6 +49,8 @@ public:
 	deviceId_t resistorCount = 0;
 	deviceId_t nmosCount = 0;
 	deviceId_t pmosCount = 0;
+	deviceId_t activeNmosCount = 0;
+	deviceId_t activePmosCount = 0;
 	deviceId_t nmosGateCount = 0;
 	deviceId_t pmosGateCount = 0;
 //	deviceId_t nmosBulkCount = 0;

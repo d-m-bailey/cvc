@@ -1,7 +1,7 @@
 /*
  * CVirtualNet.cc
  *
- * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -56,7 +56,7 @@ void CVirtualNet::operator= (CVirtualNet& theEqualNet) {
 	finalNetId = theEqualNet.finalNetId;
 	finalResistance = theEqualNet.finalResistance;
 	backupNetId = theEqualNet.backupNetId;
-	backupResistance = theEqualNet.backupResistance;
+//	backupResistance = theEqualNet.backupResistance;
 //	lastUpdate = theEqualNet.lastUpdate;
 }
 
@@ -295,7 +295,7 @@ void CVirtualNetVector::DebugVirtualNet(netId_t theNetId, string theTitle, ostre
 
 void CVirtualNetVector::BackupVirtualNets() {
 	for ( auto net_pit = begin(); net_pit != end(); net_pit++ ) {
-		net_pit->backupNetId = net_pit->finalNetId;
-		net_pit->backupResistance = net_pit->finalResistance;
+		net_pit->backupNetId = net_pit->nextNetId;
+//		net_pit->backupResistance = net_pit->resistance;
 	}
 }

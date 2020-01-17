@@ -1,7 +1,7 @@
 /*
  * CVirtualNet.hh
  *
- * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -74,7 +74,7 @@ public:
 	netId_t	finalNetId = UNKNOWN_NET;
 	resistance_t finalResistance = 0;
 	netId_t	backupNetId = UNKNOWN_NET;
-	resistance_t backupResistance = 0;
+//	resistance_t backupResistance = 0;
 //	eventKey_t lastUpdate = 0;
 
 	void operator= (CVirtualNet& theEqualNet);

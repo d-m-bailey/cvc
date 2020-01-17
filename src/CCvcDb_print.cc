@@ -1,7 +1,7 @@
 /*
  * CCvcDb_print.cc
  *
- * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -1534,7 +1534,8 @@ void CCvcDb::PrintBackupNet(CVirtualNetVector& theVirtualNet_v, netId_t theNetId
 	netId_t myNetId = GetEquivalentNet(theNetId);
 	if ( myNetId != theNetId ) cout << "=>" << NetName(myNetId) << endl;
 	while ( myNetId != theVirtualNet_v[myNetId].backupNetId ) {
-		theOutputFile << "->" << NetName(theVirtualNet_v[myNetId].backupNetId) << " r=" << theVirtualNet_v[myNetId].backupResistance << endl;
+//		theOutputFile << "->" << NetName(theVirtualNet_v[myNetId].backupNetId) << " r=" << theVirtualNet_v[myNetId].backupResistance << endl;
+		theOutputFile << "->" << NetName(theVirtualNet_v[myNetId].backupNetId) << endl;
 		myNetId = theVirtualNet_v[myNetId].backupNetId;
 	}
 	if ( leakVoltagePtr_v[myNetId].full ) leakVoltagePtr_v[myNetId].full->Print(theOutputFile);

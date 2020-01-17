@@ -1,7 +1,7 @@
 /*
  * CCvcDb-utility.cc
  *
- * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -124,6 +124,9 @@ voltage_t CCvcDb::MinLeakVoltage(netId_t theNetId) {
 //		CVirtualNet myVirtualNet(minLeakNet_v, theNetId);
 		assert(theNetId == GetEquivalentNet(theNetId));
 		if ( myNetId != UNKNOWN_NET ) {
+			while ( myNetId != minNet_v[myNetId].backupNetId ) {
+				myNetId = minNet_v[myNetId].backupNetId;
+			}
 			if ( leakVoltagePtr_v[myNetId].full ) {
 				return leakVoltagePtr_v[myNetId].full->minVoltage;
 			}
@@ -321,6 +324,9 @@ voltage_t CCvcDb::MaxLeakVoltage(netId_t theNetId) {
 		netId_t myNetId = maxNet_v[theNetId].backupNetId;
 //		CVirtualNet myVirtualNet(maxLeakNet_v, theNetId);
 		if ( myNetId != UNKNOWN_NET ) {
+			while ( myNetId != maxNet_v[myNetId].backupNetId ) {
+				myNetId = maxNet_v[myNetId].backupNetId;
+			}
 			if ( leakVoltagePtr_v[myNetId].full ) {
 				return leakVoltagePtr_v[myNetId].full->maxVoltage;
 			}

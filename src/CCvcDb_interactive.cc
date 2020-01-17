@@ -1,7 +1,7 @@
 /*
  * CCvcDb_interactive.cc
  *
- * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -1184,7 +1184,7 @@ void CCvcDb::DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag
 //		cout << "inverter - clear" << endl;
 		CDeviceCount myDeviceCount(net_it, this);
 //		cout << "pmos " << myDeviceCount.pmosCount << ": nmos " << myDeviceCount.nmosCount << endl;
-		if ( myDeviceCount.pmosCount == 0 || myDeviceCount.nmosCount == 0 ) continue;  // skip non logic output
+		if ( myDeviceCount.activePmosCount == 0 || myDeviceCount.activeNmosCount == 0 ) continue;  // skip non logic output
 		myMinNet(minNet_v, net_it);
 		myMaxNet(maxNet_v, net_it);
 		if ( myMinNet.finalNetId == UNKNOWN_NET
@@ -1333,7 +1333,7 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 			CDeviceCount myDeviceCounts(myGlobalNetId, this, theInstanceId);
 //			myDeviceCounts.Print(this);
 			string mySuffix = "";
-			if ( myDeviceCounts.nmosCount + myDeviceCounts.pmosCount + myDeviceCounts.resistorCount == 0 ) {
+			if ( myDeviceCounts.activeNmosCount + myDeviceCounts.activePmosCount + myDeviceCounts.resistorCount == 0 ) {
 				mySuffix = " input";
 			} else {  // print ports that are not input for reference
 				myPowerFile << "#";
@@ -1345,10 +1345,16 @@ void CCvcDb::PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerF
 			if ( theCurrentStage == STAGE_COMPLETE ) {
 				myMinNetId = minNet_v[myGlobalNetId].backupNetId;
 				if ( myMinNetId != UNKNOWN_NET ) {
+					while ( myMinNetId != minNet_v[myMinNetId].backupNetId ) {
+						myMinNetId = minNet_v[myMinNetId].backupNetId;
+					}
 					myMinPower_p = leakVoltagePtr_v[myMinNetId].full;
 				}
 				myMaxNetId = maxNet_v[myGlobalNetId].backupNetId;
 				if ( myMaxNetId != UNKNOWN_NET ) {
+					while ( myMaxNetId != maxNet_v[myMaxNetId].backupNetId ) {
+						myMaxNetId = maxNet_v[myMaxNetId].backupNetId;
+					}
 					myMaxPower_p = leakVoltagePtr_v[myMaxNetId].full;
 				}
 			} else {
