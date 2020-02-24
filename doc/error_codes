@@ -1,5 +1,6 @@
 AC: Analog circuit. Leak when operational. No leak when disabled. Max/min voltages may not be calculated correctly.
 AD: Forward biased analog diode
+AI: Analog Input to logic gate
 AL: Analog leak. Always has leak current. Check
 AO: Alway off
 AV: Analog Vth leak
