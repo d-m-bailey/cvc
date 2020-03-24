@@ -867,6 +867,9 @@ void CPowerPtrVector::ResetPowerPointerVector(size_t theSize) {
 	for ( size_t index_it = 0; index_it < theSize; index_it++ ) {
 		(*this)[index_it].full = NULL;
 	}
+	this->powerPtrType_v.clear();
+	this->powerPtrType_v.reserve(theSize);
+	this->powerPtrType_v.resize(theSize, UNKNOWN_POWER_PTR);
 }
 
 void CPowerPtrVector::CalculatePower(CEventQueue& theEventQueue, voltage_t theShortVoltage, netId_t theNetId, netId_t theDefaultNetId, CCvcDb * theCvcDb_p, string theCalculation) {

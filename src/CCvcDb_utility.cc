@@ -1359,31 +1359,36 @@ void CCvcDb::Cleanup() {
 	if ( logFile.is_open() ) logFile.close();
 	if ( errorFile.is_open() ) errorFile.close();
 	if ( debugFile.is_open() ) debugFile.close();
-	cvcParameters.cvcPowerPtrList.Clear(leakVoltagePtr_v, netVoltagePtr_v, netCount);  // defined power deleted here
-	int myDeleteCount = 0;
-	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
-		CPower * myLeakPower_p = leakVoltagePtr_v[net_it].full;
-		CPower * myPower_p = netVoltagePtr_v[net_it].full;
-		if ( leakVoltagePtr_v.size() > net_it && myLeakPower_p && myPower_p != myLeakPower_p ) {  // unique leak power deleted here
-			if ( myLeakPower_p->extraData ) {
-				if ( gDebug_cvc ) cout << "DEBUG: extra data at net " << net_it << endl;
+	try {
+		cvcParameters.cvcPowerPtrList.Clear(leakVoltagePtr_v, netVoltagePtr_v, netCount);  // defined power deleted here
+		int myDeleteCount = 0;
+		for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+			CPower * myLeakPower_p = leakVoltagePtr_v[net_it].full;
+			CPower * myPower_p = netVoltagePtr_v[net_it].full;
+			if ( leakVoltagePtr_v.size() > net_it && myLeakPower_p && myPower_p != myLeakPower_p ) {  // unique leak power deleted here
+				if ( myLeakPower_p->extraData ) {
+					if ( gDebug_cvc ) cout << "DEBUG: extra data at net " << net_it << endl;
+				}
+				delete myLeakPower_p;
+				myDeleteCount++;
 			}
-			delete myLeakPower_p;
-			myDeleteCount++;
-		}
-		if ( netVoltagePtr_v.size() > net_it && myPower_p ) {  // calculated power deleted here
-			if ( myPower_p->extraData ) {
-				if ( gDebug_cvc ) cout << "DEBUG: extra data at net " << net_it << endl;
+			if ( netVoltagePtr_v.size() > net_it && myPower_p ) {  // calculated power deleted here
+				if ( myPower_p->extraData ) {
+					if ( gDebug_cvc ) cout << "DEBUG: extra data at net " << net_it << endl;
+				}
+				delete myPower_p;
+				myDeleteCount++;
 			}
-			delete myPower_p;
-			myDeleteCount++;
 		}
+		if ( gDebug_cvc ) cout << "DEBUG: Deleted " << myDeleteCount << " power objects" << endl;
+		cvcParameters.cvcExpectedLevelPtrList.Clear();
+		cvcParameters.cvcPowerMacroPtrMap.Clear();
+		CPower::powerDefinitionText.Clear();
+		cvcParameters.cvcModelListMap.Clear();
 	}
-	if ( gDebug_cvc ) cout << "DEBUG: Deleted " << myDeleteCount << " power objects" << endl;
-	cvcParameters.cvcExpectedLevelPtrList.Clear();
-	cvcParameters.cvcPowerMacroPtrMap.Clear();
-	CPower::powerDefinitionText.Clear();
-	cvcParameters.cvcModelListMap.Clear();
+	catch (...) {  // ignore errors freeing malloc memory
+		cout << "INFO: problem with memory cleanup" << endl;
+	}
 }
 
 deviceId_t CCvcDb::CountBulkConnections(netId_t theNetId) {

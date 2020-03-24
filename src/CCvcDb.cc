@@ -362,11 +362,6 @@ void CCvcDb::AlreadyShorted(CEventQueue& theEventQueue, deviceId_t theDeviceId, 
 }
 
 bool CCvcDb::VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId, CConnection& theConnections) {
-/*
-	if ( theQueueType == MAX_QUEUE ) {
-		myTestSource
-	}
-*/
 	// first MIN/MAX pass propagate to unknown open nets. SIM and second MIN/MAX cause error.
 	if ( ! leakVoltageSet && ( theConnections.sourceVoltage == UNKNOWN_VOLTAGE || theConnections.drainVoltage == UNKNOWN_VOLTAGE ) ) return false;
 	if ( theConnections.IsUnknownSourceVoltage() || theConnections.IsUnknownDrainVoltage() ) return false;
@@ -781,8 +776,15 @@ string CCvcDb::AdjustMaxNmosKey(CConnection& theConnections, voltage_t theSimGat
 //		if (theMinDrain == UNKNOWN_VOLTAGE ) {
 		if ( connectionCount_v[theConnections.gateId].SourceDrainCount() == 0 ) {
 			if (theWarningFlag && ! (IsOneConnectionNet(theConnections.sourceId) || IsOneConnectionNet(theConnections.drainId)) ) {
-				reportFile << "WARNING: unknown max gate at net->device: " << NetName(theConnections.gateId) << " -> " <<
-						HierarchyName(deviceParent_v[theConnections.deviceId], PRINT_CIRCUIT_ON) << "/" << theConnections.device_p->name << endl;
+				CInstance * myInstance_p = instancePtr_v[deviceParent_v[theConnections.deviceId]];
+				string myUnknownKey = string(myInstance_p->master_p->name) + "/" + string(myInstance_p->master_p->devicePtr_v[theConnections.deviceId - myInstance_p->firstDeviceId]->name);
+				if ( unknownGateSet.count(myUnknownKey) == 0 ) {
+					reportFile << "WARNING: unknown max gate at net->device: " << NetName(theConnections.gateId) << " -> " <<
+							HierarchyName(deviceParent_v[theConnections.deviceId], PRINT_CIRCUIT_ON) << "/" << theConnections.device_p->name << endl;
+					unknownGateSet.insert(myUnknownKey);
+				}
+//				reportFile << "WARNING: unknown max gate at net->device: " << NetName(theConnections.gateId) << " -> " <<
+//						HierarchyName(deviceParent_v[theConnections.deviceId], PRINT_CIRCUIT_ON) << "/" << theConnections.device_p->name << endl;
 			}
 			if ( theConnections.device_p->model_p->Vth > 0 ) {
 				myAdjustment = " NMOS Vth drop " + PrintParameter(theEventKey, VOLTAGE_SCALE) + "-" + PrintParameter(theConnections.device_p->model_p->Vth, VOLTAGE_SCALE);
@@ -842,8 +844,15 @@ string CCvcDb::AdjustMinPmosKey(CConnection& theConnections, voltage_t theSimGat
 //			theEventKey = max(theEventKey, theEventKey - theConnections.device_p->model_p->Vth);
 		if ( connectionCount_v[theConnections.gateId].SourceDrainCount() == 0 ) {
 			if (theWarningFlag && ! (IsOneConnectionNet(theConnections.sourceId) || IsOneConnectionNet(theConnections.drainId)) ) {
-				reportFile << "WARNING: unknown min gate at net->device: " << NetName(theConnections.gateId) << " -> " <<
-						HierarchyName(deviceParent_v[theConnections.deviceId], PRINT_CIRCUIT_ON) << "/" << theConnections.device_p->name << endl;
+				CInstance * myInstance_p = instancePtr_v[deviceParent_v[theConnections.deviceId]];
+				string myUnknownKey = string(myInstance_p->master_p->name) + "/" + string(myInstance_p->master_p->devicePtr_v[theConnections.deviceId - myInstance_p->firstDeviceId]->name);
+				if ( unknownGateSet.count(myUnknownKey) == 0 ) {
+					reportFile << "WARNING: unknown min gate at net->device: " << NetName(theConnections.gateId) << " -> " <<
+							HierarchyName(deviceParent_v[theConnections.deviceId], PRINT_CIRCUIT_ON) << "/" << theConnections.device_p->name << endl;
+					unknownGateSet.insert(myUnknownKey);
+				}
+//				reportFile << "WARNING: unknown min gate at net->device: " << NetName(theConnections.gateId) << " -> " <<
+//						HierarchyName(deviceParent_v[theConnections.deviceId], PRINT_CIRCUIT_ON) << "/" << theConnections.device_p->name << endl;
 			}
 			if ( theConnections.device_p->model_p->Vth < 0 ) {
 				myAdjustment = " PMOS Vth drop " + PrintParameter(theEventKey, VOLTAGE_SCALE) + "+" + PrintParameter(-theConnections.device_p->model_p->Vth, VOLTAGE_SCALE);
@@ -2402,6 +2411,7 @@ void CCvcDb::SetInitialMinMaxPower() {
 	isFixedMinNet = isFixedMaxNet = false;
 	minConnectionDependencyMap.clear();
 	maxConnectionDependencyMap.clear();
+	unknownGateSet.clear();
 	ResetMinMaxActiveStatus();
 	SetTrivialMinMaxPower();
 //	for (CPowerPtrList::iterator power_ppit = cvcParameters.cvcPowerPtrList.begin(); power_ppit != cvcParameters.cvcPowerPtrList.end(); power_ppit++) {

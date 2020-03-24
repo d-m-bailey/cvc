@@ -146,6 +146,7 @@ public:
 	CEventQueue simEventQueue;
 
 	unordered_set<deviceId_t> mosDiodeSet;
+	unordered_set<string> unknownGateSet;
 
 //	vector<voltage_t>	voltage;
 
@@ -234,6 +235,7 @@ public:
 		voltage_t theMinVoltage, voltage_t theMaxVoltage,
 		CDeviceIdVector & theFirstDrain_v, CDeviceIdVector & theNextDrain_v, CNetIdVector & theSourceNet_v);
 	bool IsOppositeLogic(netId_t theFirstNet, netId_t theSecondNet);
+	void PrintInputNetsWithMinMaxSuggestions(netId_t theNetId);
 	void PrintNetSuggestions();
 	returnCode_t	LoadCellErrorLimits();
 	void LoadCellChecksums();

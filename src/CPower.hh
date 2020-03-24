@@ -246,7 +246,7 @@ union PowerPtr_t {
 
 class CPowerPtrVector : public vector<PowerPtr_t> {
 public:
-	vector<powerPtrType_t> powerType;
+	vector<powerPtrType_t> powerPtrType_v;
 	
 	voltage_t MaxVoltage(netId_t theNetId);
 	voltage_t MinVoltage(netId_t theNetId);

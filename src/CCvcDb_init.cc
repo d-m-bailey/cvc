@@ -852,7 +852,7 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal, instanceId_t theParent)
 			regex mySearchPattern(myFuzzyFilter);
 			netId_t myNetId;
 			bool myExactMatch = true;
-			bool myFuzzySearch = (myFuzzyFilter.find_first_of("^$.*+?()[]{}|\\") < myFuzzyFilter.npos);
+//			bool myFuzzySearch = (myFuzzyFilter.find_first_of("^$.*+?()[]{}|\\") < myFuzzyFilter.npos);
 			text_t mySignalText;
 			try {
 				mySignalText = cvcCircuitList.cdlText.GetTextAddress(myNetName);
@@ -866,16 +866,16 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal, instanceId_t theParent)
 					continue;
 				}
 				CTextNetIdMap * mySignalIdMap_p = &(instancePtr_v[*instanceId_pit]->master_p->localSignalIdMap);
-				for ( auto signalIdPair_pit = mySignalIdMap_p->begin(); signalIdPair_pit != mySignalIdMap_p->end(); signalIdPair_pit++ ) {
-					if ( myExactMatch ) { // exact match
-						if ( signalIdPair_pit->first == mySignalText ) {
-							myNetId = instancePtr_v[*instanceId_pit]->localToGlobalNetId_v[signalIdPair_pit->second];
-							if ( myCheckTopPort && *instanceId_pit == 0 && myNetId >= topCircuit_p->portCount ) continue; // top signals that are not ports posing as ports
-							if ( ! myCheckTopPort && *instanceId_pit == 0 && myNetId < topCircuit_p->portCount ) continue; // top signals that should be ports
-							myNetIdSet_p->insert(myNetId);
-							myFoundNetMatch = true;
-						}
-					} else if ( myFuzzySearch ) {
+				if ( myExactMatch ) { // exact match
+					if ( mySignalIdMap_p->count(mySignalText) > 0 ) {
+						myNetId = instancePtr_v[*instanceId_pit]->localToGlobalNetId_v[mySignalIdMap_p->at(mySignalText)];
+						if ( myCheckTopPort && *instanceId_pit == 0 && myNetId >= topCircuit_p->portCount ) continue; // top signals that are not ports posing as ports
+						if ( ! myCheckTopPort && *instanceId_pit == 0 && myNetId < topCircuit_p->portCount ) continue; // top signals that should be ports
+						myNetIdSet_p->insert(myNetId);
+						myFoundNetMatch = true;
+					}
+				} else {
+					for ( auto signalIdPair_pit = mySignalIdMap_p->begin(); signalIdPair_pit != mySignalIdMap_p->end(); signalIdPair_pit++ ) {
 						if ( regex_match(signalIdPair_pit->first, mySearchPattern) ) {
 							myNetId = instancePtr_v[*instanceId_pit]->localToGlobalNetId_v[signalIdPair_pit->second];
 							if ( myCheckTopPort && *instanceId_pit == 0 && myNetId >= topCircuit_p->portCount ) continue; // top signals that are not ports posing as ports
@@ -990,6 +990,7 @@ returnCode_t CCvcDb::SetModePower() {
 			}
 			if ( ! myOtherPower_p ) {
 				netVoltagePtr_v[*netId_pit].full = myPower_p;
+				netVoltagePtr_v.powerPtrType_v[*netId_pit] = FULL_POWER_PTR;
 			}
 			if ( myPower_p->minVoltage != UNKNOWN_VOLTAGE ) netStatus_v[*netId_pit][MIN_POWER] = true;
 			if ( myPower_p->maxVoltage != UNKNOWN_VOLTAGE ) netStatus_v[*netId_pit][MAX_POWER] = true;
@@ -1489,6 +1490,31 @@ bool CCvcDb::IsOppositeLogic(netId_t theFirstNet, netId_t theSecondNet) {
 	return (inverterNet_v[theFirstNet] == theSecondNet || theFirstNet == inverterNet_v[theSecondNet]);
 }
 
+void CCvcDb::PrintInputNetsWithMinMaxSuggestions(netId_t theNetId) {
+	bool mySearchingFlag = true;
+	CPower * myLowPower_p = NULL;
+	CPower * myHighPower_p = NULL;
+	for ( deviceId_t device_it = firstGate_v[theNetId]; device_it != UNKNOWN_DEVICE && mySearchingFlag; device_it = nextGate_v[device_it] ) {
+		if ( IsNmos_(deviceType_v[device_it]) && ! myLowPower_p && sourceNet_v[device_it] != UNKNOWN_NET ) {
+			netId_t mySourceId = minNet_v[GetEquivalentNet(sourceNet_v[device_it])].finalNetId;
+			if ( netVoltagePtr_v.powerPtrType_v[mySourceId] == FULL_POWER_PTR ) {
+				myLowPower_p = netVoltagePtr_v[mySourceId].full;
+			}
+		} else if ( IsPmos_(deviceType_v[device_it]) && ! myHighPower_p && drainNet_v[device_it] != UNKNOWN_NET ) {
+			netId_t mySourceId = maxNet_v[GetEquivalentNet(sourceNet_v[device_it])].finalNetId;
+			if ( netVoltagePtr_v.powerPtrType_v[mySourceId] == FULL_POWER_PTR ) {
+			myHighPower_p = netVoltagePtr_v[mySourceId].full;
+			}
+		}
+		mySearchingFlag = ( myLowPower_p == NULL || myHighPower_p == NULL );
+	}
+	if ( mySearchingFlag ) {   // could not find power
+		reportFile << NetName(theNetId, PRINT_CIRCUIT_ON) << endl;
+	} else {  // found power
+		reportFile << NetName(theNetId, PRINT_CIRCUIT_ON) << " " << myLowPower_p->powerSignal() << " " << myHighPower_p->powerSignal() << endl;
+	}
+}
+
 void CCvcDb::PrintNetSuggestions() {
 	reportFile << "CVC: Possible power definitions" << endl;
 	unordered_map<netId_t, pair<deviceId_t, deviceId_t>> myBulkCount;
@@ -1588,7 +1614,7 @@ void CCvcDb::PrintNetSuggestions() {
 			}
 		}
 		if ( myIsPossibleInput && myHasGateConnection ) {
-			reportFile << NetName(net_it, PRINT_CIRCUIT_ON) << endl;
+			PrintInputNetsWithMinMaxSuggestions(net_it);
 		}
 	}
 	reportFile << endl;
