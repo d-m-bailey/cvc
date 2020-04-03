@@ -1359,6 +1359,7 @@ void CCvcDb::Cleanup() {
 	if ( logFile.is_open() ) logFile.close();
 	if ( errorFile.is_open() ) errorFile.close();
 	if ( debugFile.is_open() ) debugFile.close();
+	RemoveLock();
 	try {
 		cvcParameters.cvcPowerPtrList.Clear(leakVoltagePtr_v, netVoltagePtr_v, netCount);  // defined power deleted here
 		int myDeleteCount = 0;

@@ -300,7 +300,6 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		logFile.close();
 	}
 	Cleanup();
-	RemoveLock();
 }
 
 

@@ -1027,7 +1027,8 @@ returnCode_t CCvcDb::SetInstancePower() {
 					myLocalMacroPtrMap[powerMap_pit->first] = new CPower(powerMap_pit->second);
 				}
 			}
-			logFile << " Setting power for instance " << HierarchyName(*instanceId_pit) << endl;
+			logFile << " Setting power for instance " << HierarchyName(*instanceId_pit) << " of " << instancePtr_v[*instanceId_pit]->master_p->name;
+			logFile << " from " << (*instance_ppit)->powerFile << endl;
 			for ( auto power_pit = (*instance_ppit)->powerList.begin(); power_pit != (*instance_ppit)->powerList.end(); power_pit++ ) {
 				CPower * myPower_p = new CPower(*power_pit, myLocalMacroPtrMap, cvcParameters.cvcModelListMap);
 				string myOriginalPower = myPower_p->powerSignal();
