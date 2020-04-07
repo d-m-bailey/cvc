@@ -4,16 +4,17 @@ CVC: Circuit Validity Checker. Voltage aware ERC checker for CDL netlists.
 
 Features
 --------
-- All rules are automated. No need to write rule files.
+- Input netlist format is Calibre LVS CDL (Mentor, a Siemens business)
 - Checks netlists with up to 4B devices (2^32).
-- GUI to record error analyses results
-- Seimens Mentor Calibre LVS CDL input
-- Ability to set device over-voltage limits by device parameter
 - Power and device parameters from Microsoft Excel
+- Hierarchical power files possible
+- Ability to differentiate models by parameters
+- Setup option to list models and power nets
+- All rules are automated. No need to write rule files.
 - Interactive netlist analyzer
 - Script execution available
-- Hierarchical power files possible
 - Automatic subcircuit debug environment creation
+- GUI to record error analyses results
 
 Includes:  
 src: Source code for CVC  
@@ -33,12 +34,6 @@ Look how easy it is to use:
     # Get your stuff done
     project.do_stuff()
 
-Features
---------
-
-- Be awesome
-- Make things faster
-
 Installation
 ------------
 
@@ -56,9 +51,9 @@ Support
 -------
 
 If you are having issues, please let us know.
-We have a mailing list located at: project@google-groups.com
+We have a mailing list located at: cvc@shuharisystem.com
 
 License
 -------
 
-The project is licensed under the BSD license.
+The project is licensed under the GPLv3 license.
