@@ -686,6 +686,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				cout << "listnet|listdevice|listinstance<ln|ld|li> filter: list net|device|instances in current subcircuit filtered by filter" << endl;
 				cout << "getnet|getdevice|getinstance<gn|gd|gi> name: get net|device|instance number for name" << endl;
 				cout << "expandnet|expanddevice|expandinstance<en|ed|ei> name: expand net|device|instance to top level" << endl;
+				cout << "getsim name: expand nets and print sim value" << endl;
 				cout << "dumpfuse<df> filename: dump fuse to filename" << endl;
 				cout << "dumpanalognets<dan> filename: dump analog nets to filename" << endl;
 				cout << "dumpunknownlogicalnets<duln> filename: dump unknown logical nets to filename" << endl;
@@ -848,6 +849,24 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 					}
 				} else {
 					myCommandMode = "en";
+				}
+			} else if ( myCommand == "getsim" ) {
+				if ( myInputStream >> myName ) {
+					set<netId_t> * myNetIdList = FindNetIds(myName); // expands buses and hierarchy
+					for (auto netId_pit = myNetIdList->begin(); netId_pit != myNetIdList->end(); netId_pit++) {
+						netId_t myEquivalentNetId = (isFixedEquivalentNet) ? GetEquivalentNet(*netId_pit) : *netId_pit;
+						string myTopNet = NetName(myEquivalentNetId, myPrintSubcircuitNameFlag);
+						netId_t myFinalNet = simNet_v[myEquivalentNetId].finalNetId;
+						reportFile << myTopNet << " ";
+						if ( netVoltagePtr_v[myFinalNet].full ) {
+							netVoltagePtr_v[myFinalNet].full->Print(reportFile);
+						} else {
+							reportFile << endl;
+						}
+					}
+					if ( myNetIdList->empty() ) {
+						reportFile << "* Could not expand net " << myName << endl;
+					}
 				}
 			} else if ( myCommand == "expanddevice" || myCommand == "ed" ) {
 				if ( myInputStream >> myName ) {

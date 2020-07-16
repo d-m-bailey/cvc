@@ -1270,6 +1270,9 @@ void CCvcDb::CheckExpectedValues() {
 				} else if ( (*power_ppit)->expectedSim() == string(netVoltagePtr_v[mySimNetId].full->powerAlias()) ) { // alias match
 					myExpectedValueFound = true;
 				}
+				if ( ! myExpectedValueFound ) {
+					debugFile << "EXPECT: " << NetName(myNetId) << " " << NetName(mySimNetId) << "@" << netVoltagePtr_v[mySimNetId].full->simVoltage << "~>" << netVoltagePtr_v[mySimNetId].full->powerAlias() << " = " << (*power_ppit)->expectedSim() << endl;
+				}
 			}
 			if ( ! myExpectedValueFound ) {
 				errorCount[EXPECTED_VOLTAGE]++;

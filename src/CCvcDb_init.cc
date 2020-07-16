@@ -1069,6 +1069,7 @@ returnCode_t CCvcDb::SetInstancePower() {
 							myPower_p->type[INPUT_BIT] = false;
 							myPower_p->definition = CPower::powerDefinitionText.SetTextAddress((text_t)myPower_p->StandardDefinition().c_str());
 							cvcParameters.cvcExpectedLevelPtrList.push_back(myPower_p);
+							logFile << "  " << myOriginalPower << " = " << NetName(myNetId) << endl;
 						}
 					} else {
 						if ( myOtherPower_p ) {
@@ -1277,7 +1278,8 @@ void CCvcDb::SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool t
 			reportFile << " found " << (myExpectedVoltage == UNKNOWN_VOLTAGE ? "???" : "Hi-Z") << endl;
 			theSCRCIgnoreCount++;
 		} else if ( netVoltagePtr_v[myParentNet].full == NULL ) {
-			debugFile << "Setting net " << NetName(myParentNet) << " to " << PrintVoltage(myExpectedVoltage) << " for " << NetName(gateNet_v[theDeviceId]) << endl;
+			debugFile << "Setting net " << NetName(myParentNet) << " to " << PrintVoltage(myExpectedVoltage) << " for " << NetName(gateNet_v[theDeviceId]);
+			debugFile << " at device " << DeviceName(theDeviceId) << endl;
 			netVoltagePtr_v[myParentNet].full = new CPower(myParentNet, myExpectedVoltage, true);
 			netVoltagePtr_v[myParentNet].full->extraData->powerSignal = CPower::powerDefinitionText.SetTextAddress(SCRC_EXPECTED_TEXT);
 			cvcParameters.cvcPowerPtrList.push_back(netVoltagePtr_v[myParentNet].full);

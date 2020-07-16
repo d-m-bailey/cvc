@@ -1362,18 +1362,23 @@ void CCvcDb::Cleanup() {
 	RemoveLock();
 	try {
 		cvcParameters.cvcPowerPtrList.Clear(leakVoltagePtr_v, netVoltagePtr_v, netCount);  // defined power deleted here
+		cout << "Cleared power pointer list" << endl;
 		int myDeleteCount = 0;
 		for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
-			CPower * myLeakPower_p = leakVoltagePtr_v[net_it].full;
 			CPower * myPower_p = netVoltagePtr_v[net_it].full;
-			if ( leakVoltagePtr_v.size() > net_it && myLeakPower_p && myPower_p != myLeakPower_p ) {  // unique leak power deleted here
-				if ( myLeakPower_p->extraData ) {
-					if ( gDebug_cvc ) cout << "DEBUG: extra data at net " << net_it << endl;
+			if ( leakVoltageSet ) {
+				CPower * myLeakPower_p = leakVoltagePtr_v[net_it].full;
+				if ( leakVoltagePtr_v.size() > net_it && myLeakPower_p && myPower_p != myLeakPower_p ) {  // unique leak power deleted here
+					//cout << "leak pointer at " << net_it << endl;
+					if ( myLeakPower_p->extraData ) {
+						if ( gDebug_cvc ) cout << "DEBUG: extra data at net " << net_it << endl;
+					}
+					delete myLeakPower_p;
+					myDeleteCount++;
 				}
-				delete myLeakPower_p;
-				myDeleteCount++;
 			}
 			if ( netVoltagePtr_v.size() > net_it && myPower_p ) {  // calculated power deleted here
+				//cout << "net pointer at " << net_it << endl;
 				if ( myPower_p->extraData ) {
 					if ( gDebug_cvc ) cout << "DEBUG: extra data at net " << net_it << endl;
 				}
