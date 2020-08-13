@@ -55,6 +55,7 @@ public:
 	const string defaultCellErrorLimitFile = "";
 	const string defaultCellChecksumFile = "";
 	const size_t defaultLargeCircuitSize = 10e6;
+	const string defaultNetCheckFile = "";
 
 	string	cvcReportTitle;
 
@@ -103,6 +104,7 @@ public:
 	string	cvcCellErrorLimitFile = defaultCellErrorLimitFile;
 	string	cvcCellChecksumFile = defaultCellChecksumFile;
 	size_t	cvcLargeCircuitSize = defaultLargeCircuitSize;
+	string  cvcNetCheckFile = defaultNetCheckFile;
 
 	string	cvcLastTopBlock;
 	string	cvcLastNetlistFilename;

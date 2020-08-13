@@ -100,6 +100,10 @@ void CCvcParameters::ResetEnvironment() {
 	//! Name of file containing list of cells with error limits
 	cvcCellChecksumFile = defaultCellChecksumFile;
 	//! Name of file containing list of checksums for each circuit
+	cvcLargeCircuitSize = defaultLargeCircuitSize;
+	//! Minimum device count to display large circuits
+	cvcNetCheckFile = defaultNetCheckFile;
+	//! Name of file containing list of net checks
 }
 
 void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
@@ -137,6 +141,7 @@ void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
 	theOutputFile << "CVC_CELL_ERROR_LIMIT_FILE = '" << cvcCellErrorLimitFile << "'" << endl;
 	theOutputFile << "CVC_CELL_CHECKSUM_FILE = '" << cvcCellChecksumFile << "'" << endl;
 	theOutputFile << "CVC_LARGE_CIRCUIT_SIZE = '" << cvcLargeCircuitSize << "'" << endl;
+	theOutputFile << "CVC_NET_CHECK_FILE = '" << cvcNetCheckFile << "'" << endl;
 	theOutputFile << "End of parameters" << endl << endl;
 }
 
@@ -181,6 +186,7 @@ void CCvcParameters::PrintDefaultEnvironment() {
 	myDefaultCvcrc << "CVC_CELL_ERROR_LIMIT_FILE = '" << cvcCellErrorLimitFile << "'" << endl;
 	myDefaultCvcrc << "CVC_CELL_CHECKSUM_FILE = '" << cvcCellChecksumFile << "'" << endl;
 	myDefaultCvcrc << "CVC_LARGE_CIRCUIT_SIZE = '" << cvcLargeCircuitSize << "'" << endl;
+	myDefaultCvcrc << "CVC_NET_CHECK_FILE = '" << cvcNetCheckFile << "'" << endl;
 	myDefaultCvcrc.close();
 }
 
@@ -293,7 +299,9 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 		} else if ( myVariable == "CVC_CELL_CHECKSUM_FILE" ) {
 			cvcCellChecksumFile = myBuffer;
 		} else if ( myVariable == "CVC_LARGE_CIRCUIT_SIZE" ) {
-			cvcLargeCircuitSize = from_string<size_t>(myBuffer);;
+			cvcLargeCircuitSize = from_string<size_t>(myBuffer);
+		} else if ( myVariable == "CVC_NET_CHECK_FILE" ) {
+			cvcNetCheckFile = myBuffer;
 		}
 	}
 	if ( ! IsEmpty(theReportPrefix) ) {

@@ -690,6 +690,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				cout << "dumpfuse<df> filename: dump fuse to filename" << endl;
 				cout << "dumpanalognets<dan> filename: dump analog nets to filename" << endl;
 				cout << "dumpunknownlogicalnets<duln> filename: dump unknown logical nets to filename" << endl;
+				cout << "dumplevelshifter<dls> filename: dump level shifters to filename" << endl;
 				cout << "traceinverter<ti> name: trace signal as inverter output for name" << endl;
 				cout << "findsubcircuit<fs> subcircuit: list all instances of subcircuit or if regex, subcircuits that match" << endl;
 				cout << "findnet<fn> net: list all nets that match in lower subcircuits." << endl;
@@ -910,6 +911,16 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 					}
 				} else {
 					reportFile << "ERROR: no unknown logical net file name" << endl;
+				}
+			} else if ( myCommand == "dumplevelshifters" || myCommand == "dls" ) {
+				if ( myInputStream >> myFileName ) {
+					if ( theCurrentStage >= STAGE_FIRST_MINMAX ) {
+						DumpLevelShifters(myFileName, myPrintSubcircuitNameFlag);
+					} else {
+						reportFile << "ERROR: Can only dump level shifters after first min/max stage" << endl;
+					}
+				} else {
+					reportFile << "ERROR: no level shifter file name" << endl;
 				}
 			} else if ( myCommand == "togglename" || myCommand == "n" ) {
 				myPrintSubcircuitNameFlag = ! myPrintSubcircuitNameFlag;
@@ -1194,12 +1205,15 @@ void CCvcDb::DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 //		cout << "DEBUG: net " << net_it << endl;
 		if ( ! myIsLogicalNet_v[net_it] ) continue;  // skip shorted, defined, and analog nets
+
 //		cout << "logic - clear" << endl;
 		if ( simNet_v[net_it].finalNetId != net_it ) continue;  // skip known values
+
 //		cout << "unknown - clear" << endl;
 		if ( inverterNet_v[net_it] != UNKNOWN_NET
-			&& inverterNet_v[net_it] >= topCircuit_p->portCount
-			&& ! netStatus_v[inverterNet_v[net_it]][ANALOG] ) continue;  // skip inverter output unless inverter input is chip input or analog signal
+				&& inverterNet_v[net_it] >= topCircuit_p->portCount
+				&& ! netStatus_v[inverterNet_v[net_it]][ANALOG] ) continue;  // skip inverter output unless inverter input is chip input or analog signal
+
 //		cout << "inverter - clear" << endl;
 		CDeviceCount myDeviceCount(net_it, this);
 //		cout << "pmos " << myDeviceCount.pmosCount << ": nmos " << myDeviceCount.nmosCount << endl;
@@ -1218,6 +1232,145 @@ void CCvcDb::DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag
 		myNetCount++;
 	}
 	reportFile << "total nets written: " << myNetCount << endl;
+	myDumpFile.close();
+}
+
+void CCvcDb::DumpLevelShifters(string theFileName, bool thePrintCircuitFlag) {
+	/// Write a sampling (one per cell/power pair) of possible level shifters to theFileName
+	ofstream myDumpFile(theFileName);
+	CVirtualNet myMinNmosInputNet;
+	CVirtualNet myMinPmosInputNet;
+	CVirtualNet myMinOutputNet;
+	CVirtualNet myMaxNmosInputNet;
+	CVirtualNet myMaxPmosInputNet;
+	CVirtualNet myMaxOutputNet;
+	if ( myDumpFile.fail() ) {
+		reportFile << "ERROR: Could not open " << theFileName << endl;
+		return;
+	}
+	reportFile << "Dumping level shifters to " << theFileName << " ... "; cout.flush();
+	vector<bool> myIsLogicalNet_v;
+	myIsLogicalNet_v.resize(netCount, false);
+	size_t myLevelShifterCount = 0;
+	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+		if ( net_it != GetEquivalentNet(net_it) ) continue;  // skip shorted nets
+		CPower * myPower_p = netVoltagePtr_v[net_it].full;
+		if ( myPower_p && ( myPower_p->simVoltage != UNKNOWN_VOLTAGE || myPower_p->type[POWER_BIT] ) ) continue;  // skip defined sim voltages and power
+		myIsLogicalNet_v[net_it] = ! IsAnalogNet(net_it);
+	}
+	set<string> myLevelShifters;
+	debugFile << "DEBUG level shifters" << endl;
+	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+		if ( ! myIsLogicalNet_v[net_it] ) continue;  // skip shorted, defined, and analog nets
+
+		CDeviceCount myDeviceCount(net_it, this);
+		if ( myDeviceCount.activePmosCount == 0 || myDeviceCount.activeNmosCount == 0 ) continue;  // skip non logic output
+
+		myMinOutputNet(minNet_v, net_it);
+		myMaxOutputNet(maxNet_v, net_it);
+		if ( myMinOutputNet.finalNetId == UNKNOWN_NET
+			|| myMaxOutputNet.finalNetId == UNKNOWN_NET
+			|| myMinOutputNet.finalNetId == net_it
+			|| myMaxOutputNet.finalNetId == net_it
+			|| myMinOutputNet.finalNetId == myMaxOutputNet.finalNetId ) continue;  // invalid min/max
+
+		deviceId_t myNmos = GetAttachedDevice(net_it, NMOS, SD);
+		deviceId_t myPmos = GetAttachedDevice(net_it, PMOS, SD);
+		if ( myNmos == UNKNOWN_DEVICE || myPmos == UNKNOWN_DEVICE ) continue;  // skip if missing NMOS or PMOS
+
+		if ( deviceParent_v[myNmos] != deviceParent_v[myPmos] ) continue;  // skip if in different subcircuits
+
+		CInstance * myInstance_p = instancePtr_v[deviceParent_v[myNmos]];
+		CCircuit * myMaster_p = myInstance_p->master_p;
+		netId_t myNmosGate = GetEquivalentNet(gateNet_v[myNmos]);
+		netId_t myPmosGate = GetEquivalentNet(gateNet_v[myPmos]);
+		myMinNmosInputNet(minNet_v, myNmosGate);
+		myMinPmosInputNet(minNet_v, myPmosGate);
+		myMaxNmosInputNet(maxNet_v, myNmosGate);
+		myMaxPmosInputNet(maxNet_v, myPmosGate);
+		CPower * myNmosPower_p = netVoltagePtr_v[myNmosGate].full;
+		CPower * myPmosPower_p = netVoltagePtr_v[myPmosGate].full;
+		if ( ( myMinNmosInputNet.finalNetId == myMaxNmosInputNet.finalNetId  // power
+					|| ( myMinNmosInputNet.finalNetId == myMinOutputNet.finalNetId
+						&& myMaxNmosInputNet.finalNetId == myMaxOutputNet.finalNetId ) )
+				&& ( myMinPmosInputNet.finalNetId == myMaxPmosInputNet.finalNetId  // power
+					|| ( myMinPmosInputNet.finalNetId == myMinOutputNet.finalNetId
+						&& myMaxPmosInputNet.finalNetId == myMaxOutputNet.finalNetId )) ) continue;  // input = output
+
+		if ( myMinNmosInputNet.finalNetId != myMinOutputNet.finalNetId
+				&& myMaxNmosInputNet.finalNetId != myMaxOutputNet.finalNetId
+				&& myMinPmosInputNet.finalNetId != myMinOutputNet.finalNetId
+				&& myMaxPmosInputNet.finalNetId != myMaxOutputNet.finalNetId ) continue;  // one power must be equal
+
+		if ( inverterNet_v[myNmosGate] == UNKNOWN_NET && inverterNet_v[myPmosGate] == UNKNOWN_NET ) continue;  // ignore signals not from inverters
+
+		netId_t myCheckNet;
+		deviceId_t myCheckDevice;
+		string myInputPower;
+		string myOutputPower = NetName(myMinOutputNet.finalNetId, thePrintCircuitFlag) + "/" + NetName(myMaxOutputNet.finalNetId, thePrintCircuitFlag);
+		if ( myMinNmosInputNet.finalNetId != myMaxNmosInputNet.finalNetId  // ignore direct connections to power
+				&& ( myMinNmosInputNet.finalNetId != myMinOutputNet.finalNetId
+					|| myMaxNmosInputNet.finalNetId != myMaxOutputNet.finalNetId ) ) {
+			myCheckDevice = myNmos;
+			myCheckNet = myNmosGate;
+			myInputPower = NetName(myMinNmosInputNet.finalNetId, thePrintCircuitFlag) + "/" + NetName(myMaxNmosInputNet.finalNetId, thePrintCircuitFlag);
+		} else if ( myMinPmosInputNet.finalNetId != myMaxPmosInputNet.finalNetId  // ignore direct connections to power
+				&& ( myMinPmosInputNet.finalNetId != myMinOutputNet.finalNetId
+					|| myMaxPmosInputNet.finalNetId != myMaxOutputNet.finalNetId ) ) {
+			myCheckDevice = myPmos;
+			myCheckNet = myPmosGate;
+			myInputPower = NetName(myMinPmosInputNet.finalNetId, thePrintCircuitFlag) + "/" + NetName(myMaxPmosInputNet.finalNetId, thePrintCircuitFlag);
+		} else if ( myMinNmosInputNet.finalNetId != myMaxNmosInputNet.finalNetId
+				|| myMinNmosInputNet.finalNetId != myMaxNmosInputNet.finalNetId ) {  // tied to power
+			continue;
+
+		} else {
+			myDumpFile << "UNEXPECTED connection at " << DeviceName(myNmos, true);
+			myDumpFile << " N " << myNmosGate << " " <<myMinNmosInputNet.finalNetId << "/" << myMaxNmosInputNet.finalNetId;
+			myDumpFile << " P " << myPmosGate << " " <<myMinPmosInputNet.finalNetId << "/" << myMaxPmosInputNet.finalNetId;
+			myDumpFile << " out " << myMinOutputNet.finalNetId << "/" << myMaxOutputNet.finalNetId << endl;
+			continue;
+
+		}
+		if (inverterNet_v[myCheckNet] == UNKNOWN_NET) {
+			myDumpFile << "UNEXPECTED non-inverter at " << DeviceName(myCheckDevice, true) << endl;
+			continue;
+
+		}
+		deviceId_t myDeviceOffset = myCheckDevice - myInstance_p->firstDeviceId;
+		string myCircuitName = myMaster_p->name;
+		netId_t myNetOffset = myMaster_p->devicePtr_v[myDeviceOffset]->signalId_v[1];
+		debugFile << "DEBUG " << myCircuitName << " " << myDeviceOffset << " " << myNetOffset;
+		debugFile << " " << myInputPower << "->" << myOutputPower << endl;
+		string myKeyString = myCircuitName + to_string(myNetOffset) + myInputPower + myOutputPower;
+		if ( myLevelShifters.count(myKeyString) == 0 ) {
+			bool myIsInternal = false;
+			if ( deviceParent_v[myCheckDevice] == netParent_v[myCheckNet]
+					&& netParent_v[myCheckNet] == netParent_v[inverterNet_v[myCheckNet]] ) {  // same subcircuit
+				CVirtualNet myMinInverterInput;
+				CVirtualNet myMaxInverterInput;
+				myMinInverterInput(minNet_v, inverterNet_v[myCheckNet]);
+				myMaxInverterInput(maxNet_v, inverterNet_v[myCheckNet]);
+				string myInverterPower = NetName(myMinInverterInput.finalNetId, thePrintCircuitFlag) + "/" + NetName(myMaxInverterInput.finalNetId, thePrintCircuitFlag);
+				myIsInternal = myInputPower == myInverterPower;  // level shifter contained in subcircuit with same power
+			}
+			vector<text_t> mySignals_v;
+			mySignals_v.reserve(myMaster_p->localSignalIdMap.size());
+			for (auto signal_net_pair_pit = myMaster_p->localSignalIdMap.begin(); signal_net_pair_pit != myMaster_p->localSignalIdMap.end(); signal_net_pair_pit++) {
+				mySignals_v[signal_net_pair_pit->second] = signal_net_pair_pit->first;
+			}
+			string myLocalNetName = "*(" + myCircuitName + ")/" + string(mySignals_v[myNetOffset]);
+			myDumpFile << ( myIsInternal ? "#" : "" );  // level shifters that are internal to subcircuits do not need to be checked
+			myDumpFile << HierarchyName(deviceParent_v[myNmos], true) << "/" << string(mySignals_v[myNetOffset]);
+			myDumpFile << " " << (myCheckDevice == myNmos ? "N" : "P");
+			myDumpFile << " " << myInputPower << "->" << myOutputPower << endl;
+			myLevelShifters.insert(myKeyString);
+			if ( ! myIsInternal ) {
+				myLevelShifterCount++;
+			}
+		}
+	}
+	reportFile << "total level shifters written: " << myLevelShifterCount << endl;
 	myDumpFile.close();
 }
 

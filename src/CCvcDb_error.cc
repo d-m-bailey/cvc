@@ -1,7 +1,7 @@
 /*
  * CCvcDb_error.cc
  *
- * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -591,6 +591,7 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 			errorFile << endl;
 		}
 	}
+	CheckNets(NMOS);
 	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking nmos gate vs source errors: ");
 }
 
@@ -664,6 +665,7 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 			errorFile << endl;
 		}
 	}
+	CheckNets(PMOS);
 	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking pmos gate vs source errors: ");
 }
 
@@ -1446,4 +1448,49 @@ void CCvcDb::FindLDDErrors() {
 	}
 */
 
+void CCvcDb::CheckNets(modelType_t theType) {
+	// Checks nets loaded from cvcNetCheckFile
+	for ( auto check_pit = inverterInputOutputCheckList.begin(); check_pit != inverterInputOutputCheckList.end(); check_pit++ ) {
+		debugFile << "DEBUG: inverter input output check " << *check_pit << endl;
+		set<netId_t> * myNetIdList = FindNetIds(*check_pit);
+		CVirtualNet myMinInput;
+		CVirtualNet myMaxInput;
+		CVirtualNet myMinOutput;
+		CVirtualNet myMaxOutput;
+		for ( auto net_pit = myNetIdList->begin(); net_pit != myNetIdList->end(); net_pit++ ) {
+			netId_t myInverterInput = FindInverterInput(*net_pit);
+			if ( myInverterInput == UNKNOWN_NET ) {
+				myInverterInput = inverterNet_v[*net_pit];
+				reportFile << "INFO: Couldn't calculate inverter input for " << NetName(myInverterInput, true) << endl;
+			}
+			if (myInverterInput == UNKNOWN_NET) {
+				reportFile << "Warning: expected inverter input at " << NetName(myInverterInput, true) << endl;
+				continue;
+			}
+			myMinInput(minNet_v, myInverterInput);
+			myMaxInput(maxNet_v, myInverterInput);
+			myMinOutput(minNet_v, *net_pit);
+			myMaxOutput(maxNet_v, *net_pit);
+			if ( myMinInput.finalNetId == myMaxInput.finalNetId
+					&& ( myMinInput.finalNetId == myMinOutput.finalNetId
+						|| myMaxInput.finalNetId == myMaxOutput.finalNetId ) ) continue;  // input is tied to matching power.
 
+			if ( ( myMinInput.finalNetId != myMinOutput.finalNetId && theType == NMOS )
+					|| ( myMaxInput.finalNetId != myMaxOutput.finalNetId && theType == PMOS ) ) {
+				deviceId_t myDevice = FindInverterDevice(myInverterInput, *net_pit, theType);
+				if ( myDevice == UNKNOWN_DEVICE ) {
+					reportFile << "Warning: could not find inverter device for " << NetName(*net_pit, true) << endl;
+					continue;
+
+				}
+				if ( IncrementDeviceError(myDevice, (theType == NMOS ? NMOS_GATE_SOURCE : PMOS_GATE_SOURCE)) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
+					CFullConnection myFullConnections;
+					MapDeviceNets(myDevice, myFullConnections);
+					errorFile << "* inverter input/output mismatch" << endl;
+					PrintDeviceWithAllConnections(deviceParent_v[myDevice], myFullConnections, errorFile);
+					errorFile << endl;
+				}
+			}
+		}
+	}
+}

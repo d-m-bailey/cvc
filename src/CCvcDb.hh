@@ -1,7 +1,7 @@
 /*
  * CCvcDb.hh
  *
- * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -66,7 +66,7 @@ public:
 
 	CInstancePtrVector instancePtr_v;
 
-	// parent instance.	 offset from first in instance to find name, etc.
+	// parent instance.	 Use offset from first in instance to find name, etc.
 	// [*] = instance
 	CInstanceIdVector	netParent_v;
 //	CInstanceIdVector	subcircuitParent;
@@ -171,9 +171,11 @@ public:
 
 	unordered_map<string, deviceId_t> cellErrorCountMap;
 
+	forward_list<string> inverterInputOutputCheckList;  // list of nets to check for matched input/output
+
 	ogzstream errorFile;
 	ofstream logFile;
-	teestream reportFile;
+	teestream reportFile;  // simultaneous output to stdout and logFile
 	ogzstream debugFile;
 
 	string lockFile;
@@ -239,6 +241,7 @@ public:
 	void PrintNetSuggestions();
 	returnCode_t	LoadCellErrorLimits();
 	void LoadCellChecksums();
+	void LoadNetChecks();
 
 	// error
 	void PrintFuseError(netId_t theTargetNetId, CConnection & theConnections);
@@ -266,6 +269,7 @@ public:
 	void FindFloatingInputErrors();
 	void CheckExpectedValues();
 	void FindLDDErrors();
+	void CheckNets(modelType_t theType);
 
 	//
 //	void ReportBadLddConnection(CEventQueue & theEventQueue, deviceId_t theDeviceId);
@@ -392,6 +396,10 @@ public:
 	bool IsOneConnectionNet(netId_t theNetId);
 	void SetDiodeConnections(pair<int, int> diode_pit, CFullConnection & myConnections, CFullConnection & myDiodeConnections);
 	int CalculateMFactor(instanceId_t theInstanceId);
+	deviceId_t GetAttachedDevice(netId_t theNetId, modelType_t theType, terminal_t theTerminal);
+	deviceId_t FindInverterDevice(netId_t theInputNet, netId_t theOutputNet, modelType_t theType);
+	deviceId_t FindInverterInput(netId_t theOutputNet);
+
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);
@@ -471,6 +479,7 @@ public:
 	void DumpFuses(string theFileName);
 	void DumpAnalogNets(string theFileName, bool thePrintCircuitFlag);
 	void DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag);
+	void DumpLevelShifters(string theFileName, bool thePrintCircuitFlag);
 	returnCode_t CheckFuses();
 	void CreateDebugCvcrcFile(ofstream & theOutputFile, instanceId_t theInstanceId, string theMode, int theCurrentStage);
 	void PrintInstancePowerFile(instanceId_t theInstanceId, string thePowerFileName, int theCurrentStage);

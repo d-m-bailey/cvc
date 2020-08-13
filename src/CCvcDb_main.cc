@@ -106,6 +106,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 			LoadCellChecksums();
 			CountObjectsAndLinkSubcircuits();
 			AssignGlobalIDs();
+			LoadNetChecks();
 			PrintLargeCircuits();
 			reportFile << PrintProgress(&lastSnapshot, "DB ") << endl;
 		}

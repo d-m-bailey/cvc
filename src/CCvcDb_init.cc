@@ -1,7 +1,7 @@
 /*
  * CCvcDb_init.cc
  *
- * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -1685,5 +1685,44 @@ void CCvcDb::LoadCellChecksums() {
 		}
 	}
 	myCellChecksumFile.close();
+}
+
+void CCvcDb::LoadNetChecks() {
+	/// Load net checks from file.
+	///
+	/// Currently supports "inverter_input=output": check to verify inverter output ground/power is same as input ground/power
+	/// Future support for "opposite_logic": verify that 2 nets are logically opposite
+	if ( IsEmpty(cvcParameters.cvcNetCheckFile) ) return;
+	igzstream myNetCheckFile;
+	myNetCheckFile.open(cvcParameters.cvcNetCheckFile);
+	if ( myNetCheckFile.fail() ) {
+		throw EFatalError("Could not open level shifter file: '" + cvcParameters.cvcNetCheckFile + "'");
+		exit(1);
+
+	}
+	string myInput;
+	reportFile << "CVC: Reading net checks..." << endl;
+	while ( getline(myNetCheckFile, myInput) ) {
+		if ( myInput.substr(0, 1) == "#" ) continue;  // ignore comments
+
+		size_t myStringBegin = myInput.find_first_not_of(" \t");
+		size_t myStringEnd = myInput.find_first_of(" \t", myStringBegin);
+		string myNetName = myInput.substr(myStringBegin, myStringEnd);
+		set<netId_t> * myNetIdList = FindNetIds(myNetName); // expands buses and hierarchy
+		if ( myNetIdList->empty() ) {
+			reportFile << "ERROR: Could not expand net " << myNetName << endl;
+		}
+		myStringBegin = myInput.find_first_not_of(" \t", myStringEnd);
+		myStringEnd = myInput.find_first_of(" \t", myStringBegin);
+		string myOperation = myInput.substr(myStringBegin, myStringEnd);
+		if ( myOperation == "inverter_input=output" ) {
+			inverterInputOutputCheckList.push_front(myNetName);
+		} else if ( myOperation == "opposite_logic" ) {
+			;  // not yet supported
+		} else {
+			reportFile << "ERROR: unknown check " << myInput << endl;
+		}
+	}
+	myNetCheckFile.close();
 }
 

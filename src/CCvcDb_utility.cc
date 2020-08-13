@@ -435,6 +435,7 @@ void CCvcDb::SetDeviceNets(deviceId_t theDeviceId, CDevice * theDevice_p, netId_
 }
 
 void CCvcDb::MapDeviceNets(deviceId_t theDeviceId, CEventQueue& theEventQueue, CConnection& theConnections) {
+	/// Get connections for device at one sample point (min/sim/max)
 	CDevice * myDevice_p;
 	CInstance * myInstance_p = instancePtr_v[deviceParent_v[theDeviceId]];
 	myDevice_p = myInstance_p->master_p->devicePtr_v[theDeviceId - myInstance_p->firstDeviceId];
@@ -483,9 +484,13 @@ void CCvcDb::MapDeviceNets(deviceId_t theDeviceId, CEventQueue& theEventQueue, C
 }
 
 void CCvcDb::MapDeviceNets(deviceId_t theDeviceId, CFullConnection& theConnections) {
-	CDevice * myDevice_p;
+	/// Get connections for device at all sample points (min/sim/max) from deviceId
 	CInstance * myInstance_p = instancePtr_v[deviceParent_v[theDeviceId]];
-	myDevice_p = myInstance_p->master_p->devicePtr_v[theDeviceId - myInstance_p->firstDeviceId];
+	CDevice * myDevice_p = myInstance_p->master_p->devicePtr_v[theDeviceId - myInstance_p->firstDeviceId];
+	MapDeviceNets(myInstance_p, myDevice_p, theConnections);
+}
+/*
+{
 	SetConnections_(theConnections, theDeviceId);
 	switch (myDevice_p->model_p->type) {
 		case NMOS: case PMOS: case LDDN: case LDDP: {
@@ -604,6 +609,7 @@ void CCvcDb::MapDeviceNets(deviceId_t theDeviceId, CFullConnection& theConnectio
 	theConnections.deviceId = theDeviceId;
 	theConnections.resistance = parameterResistanceMap[theConnections.device_p->parameters];
 }
+*/
 
 void CCvcDb::MapDeviceSourceDrainNets(deviceId_t theDeviceId, CFullConnection& theConnections) {
 	CDevice * myDevice_p;
@@ -1788,4 +1794,112 @@ int CCvcDb::CalculateMFactor(instanceId_t theInstanceId) {
 	return myMFactor;
 }
 
+
+deviceId_t CCvcDb::GetAttachedDevice(netId_t theNetId, modelType_t theType, terminal_t theTerminal) {
+	/// Return the first non-shorted device of type theType with terminal theTerminal connected to theNetId
+	assert(GetEquivalentNet(theNetId) == theNetId);
+
+	deviceId_t device_it;
+	if ( theTerminal & GATE ) {
+		device_it = firstGate_v[theNetId];
+		while ( device_it != UNKNOWN_DEVICE ) {
+			if ( sourceNet_v[device_it] != drainNet_v[device_it] ) {
+				if ( theType == NMOS && IsNmos_(deviceType_v[device_it]) ) return device_it;
+
+				if ( theType == PMOS && IsPmos_(deviceType_v[device_it]) ) return device_it;
+
+				if ( theType == deviceType_v[device_it] ) return device_it;
+
+			}
+			device_it = nextGate_v[device_it];
+		}
+	}
+	if ( theTerminal & SOURCE ) {
+		device_it = firstSource_v[theNetId];
+		while ( device_it != UNKNOWN_DEVICE ) {
+			if ( sourceNet_v[device_it] != drainNet_v[device_it] ) {
+				if ( theType == NMOS && IsNmos_(deviceType_v[device_it]) ) return device_it;
+
+				if ( theType == PMOS && IsPmos_(deviceType_v[device_it]) ) return device_it;
+
+				if ( theType == deviceType_v[device_it] ) return device_it;
+
+			}
+			device_it = nextSource_v[device_it];
+		}
+	}
+	if ( theTerminal & DRAIN ) {
+		device_it = firstDrain_v[theNetId];
+		while ( device_it != UNKNOWN_DEVICE ) {
+			if ( sourceNet_v[device_it] != drainNet_v[device_it] ) {
+				if ( theType == NMOS && IsNmos_(deviceType_v[device_it]) ) return device_it;
+
+				if ( theType == PMOS && IsPmos_(deviceType_v[device_it]) ) return device_it;
+
+				if ( theType == deviceType_v[device_it] ) return device_it;
+
+			}
+			device_it = nextDrain_v[device_it];
+		}
+	}
+	return (UNKNOWN_DEVICE);
+}
+
+deviceId_t CCvcDb::FindInverterDevice(netId_t theInputNet, netId_t theOutputNet, modelType_t theType) {
+	/// Return the first device of theType with input theInputNet and output theOutputNet
+	unordered_set<deviceId_t> myDeviceList;
+	deviceId_t device_it = firstSource_v[theOutputNet];
+	while ( device_it != UNKNOWN_DEVICE ) {
+		if ( sourceNet_v[device_it] != drainNet_v[device_it] ) {
+			if ( theType == NMOS && IsNmos_(deviceType_v[device_it] ) ) {
+				myDeviceList.insert(device_it);
+			} if ( theType == PMOS && IsPmos_(deviceType_v[device_it] ) ) {
+				myDeviceList.insert(device_it);
+			}
+		}
+		device_it = nextSource_v[device_it];
+	}
+	device_it = firstDrain_v[theOutputNet];
+	while ( device_it != UNKNOWN_DEVICE ) {
+		if ( sourceNet_v[device_it] != drainNet_v[device_it] ) {
+			if ( theType == NMOS && IsNmos_(deviceType_v[device_it] ) ) {
+				myDeviceList.insert(device_it);
+			} if ( theType == PMOS && IsPmos_(deviceType_v[device_it] ) ) {
+				myDeviceList.insert(device_it);
+			}
+		}
+		device_it = nextDrain_v[device_it];
+	}
+	device_it = firstGate_v[theInputNet];
+	while ( device_it != UNKNOWN_DEVICE ) {
+		if ( myDeviceList.count(device_it) > 0 ) return device_it;
+
+		device_it = nextGate_v[device_it];
+	}
+	return(UNKNOWN_DEVICE);
+}
+
+netId_t CCvcDb::FindInverterInput(netId_t theOutputNet) {
+	/// Find the input of inverter with output theOutputNet
+	unordered_set<netId_t> myInputList;
+	deviceId_t device_it = firstSource_v[theOutputNet];
+	while ( device_it != UNKNOWN_DEVICE ) {
+		if ( sourceNet_v[device_it] != drainNet_v[device_it] ) {
+			myInputList.insert(gateNet_v[device_it]);
+		}
+		device_it = nextSource_v[device_it];
+	}
+	device_it = firstDrain_v[theOutputNet];
+	while ( device_it != UNKNOWN_DEVICE ) {
+		if ( sourceNet_v[device_it] != drainNet_v[device_it] ) {
+			myInputList.insert(gateNet_v[device_it]);
+		}
+		device_it = nextDrain_v[device_it];
+	}
+	if ( myInputList.size() == 1 ) {
+		return(*(myInputList.begin()));
+	} else {
+		return(UNKNOWN_NET);
+	}
+}
 
