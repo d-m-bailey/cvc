@@ -839,7 +839,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 	//			myInputStream >> myOption, myFilter;
 			} else if ( myCommand == "expandnet" || myCommand == "en" ) {
 				if ( myInputStream >> myName ) {
-					set<netId_t> * myNetIdList = FindNetIds(myName); // expands buses and hierarchy
+					set<netId_t> * myNetIdList = FindUniqueNetIds(myName); // expands buses and hierarchy
 					for (auto netId_pit = myNetIdList->begin(); netId_pit != myNetIdList->end(); netId_pit++) {
 						  netId_t myEquivalentNetId = (isFixedEquivalentNet) ? GetEquivalentNet(*netId_pit) : *netId_pit;
 						  string myTopNet = NetName(myEquivalentNetId, myPrintSubcircuitNameFlag);
@@ -853,7 +853,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				}
 			} else if ( myCommand == "getsim" ) {
 				if ( myInputStream >> myName ) {
-					set<netId_t> * myNetIdList = FindNetIds(myName); // expands buses and hierarchy
+					set<netId_t> * myNetIdList = FindUniqueNetIds(myName); // expands buses and hierarchy
 					for (auto netId_pit = myNetIdList->begin(); netId_pit != myNetIdList->end(); netId_pit++) {
 						netId_t myEquivalentNetId = (isFixedEquivalentNet) ? GetEquivalentNet(*netId_pit) : *netId_pit;
 						string myTopNet = NetName(myEquivalentNetId, myPrintSubcircuitNameFlag);
@@ -1268,11 +1268,15 @@ void CCvcDb::DumpLevelShifters(string theFileName, bool thePrintCircuitFlag) {
 
 		myMinOutputNet(minNet_v, net_it);
 		myMaxOutputNet(maxNet_v, net_it);
+		CPower * myOutputGround_p = netVoltagePtr_v[myMinOutputNet.finalNetId].full;
+		CPower * myOutputPower_p = netVoltagePtr_v[myMaxOutputNet.finalNetId].full;
 		if ( myMinOutputNet.finalNetId == UNKNOWN_NET
 			|| myMaxOutputNet.finalNetId == UNKNOWN_NET
 			|| myMinOutputNet.finalNetId == net_it
 			|| myMaxOutputNet.finalNetId == net_it
-			|| myMinOutputNet.finalNetId == myMaxOutputNet.finalNetId ) continue;  // invalid min/max
+			|| myMinOutputNet.finalNetId == myMaxOutputNet.finalNetId
+			|| ! myOutputGround_p || ! IsPower_(myOutputGround_p)
+			|| ! myOutputPower_p || ! IsPower_(myOutputPower_p) ) continue;  // invalid min/max
 
 		deviceId_t myNmos = GetAttachedDevice(net_it, NMOS, SD);
 		deviceId_t myPmos = GetAttachedDevice(net_it, PMOS, SD);
@@ -1288,14 +1292,21 @@ void CCvcDb::DumpLevelShifters(string theFileName, bool thePrintCircuitFlag) {
 		myMinPmosInputNet(minNet_v, myPmosGate);
 		myMaxNmosInputNet(maxNet_v, myNmosGate);
 		myMaxPmosInputNet(maxNet_v, myPmosGate);
-		CPower * myNmosPower_p = netVoltagePtr_v[myNmosGate].full;
-		CPower * myPmosPower_p = netVoltagePtr_v[myPmosGate].full;
+//		CPower * myNmosPower_p = netVoltagePtr_v[myNmosGate].full;
+//		CPower * myPmosPower_p = netVoltagePtr_v[myPmosGate].full;
+		CPower * myNmosGround_p = netVoltagePtr_v[myMinNmosInputNet.finalNetId].full;
+		CPower * myNmosPower_p = netVoltagePtr_v[myMaxNmosInputNet.finalNetId].full;
+		CPower * myPmosGround_p = netVoltagePtr_v[myMinPmosInputNet.finalNetId].full;
+		CPower * myPmosPower_p = netVoltagePtr_v[myMaxPmosInputNet.finalNetId].full;
+		if ( ! myNmosGround_p || ! IsPower_(myNmosGround_p) || ! myNmosPower_p || ! IsPower_(myNmosPower_p)
+				|| ! myPmosGround_p || ! IsPower_(myPmosGround_p) || ! myPmosPower_p || ! IsPower_(myPmosPower_p) ) continue;  // ignore inputs with non-power min/max
+
 		if ( ( myMinNmosInputNet.finalNetId == myMaxNmosInputNet.finalNetId  // power
-					|| ( myMinNmosInputNet.finalNetId == myMinOutputNet.finalNetId
-						&& myMaxNmosInputNet.finalNetId == myMaxOutputNet.finalNetId ) )
+					|| ( myNmosGround_p->powerAlias() == myOutputGround_p->powerAlias()
+						&& myNmosPower_p->powerAlias() == myOutputPower_p->powerAlias() ) )
 				&& ( myMinPmosInputNet.finalNetId == myMaxPmosInputNet.finalNetId  // power
-					|| ( myMinPmosInputNet.finalNetId == myMinOutputNet.finalNetId
-						&& myMaxPmosInputNet.finalNetId == myMaxOutputNet.finalNetId )) ) continue;  // input = output
+					|| ( myPmosGround_p->powerAlias() == myOutputGround_p->powerAlias()
+							&& myPmosPower_p->powerAlias() == myOutputPower_p->powerAlias() )) ) continue;  // input = output
 
 		if ( myMinNmosInputNet.finalNetId != myMinOutputNet.finalNetId
 				&& myMaxNmosInputNet.finalNetId != myMaxOutputNet.finalNetId

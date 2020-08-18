@@ -816,7 +816,8 @@ forward_list<instanceId_t> CCvcDb::FindInstanceIds(string theHierarchy, instance
 	return mySearchInstanceIdList;
 }
 
-set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal, instanceId_t theParent) {
+set<netId_t> * CCvcDb::FindUniqueNetIds(string thePowerSignal, instanceId_t theParent) {
+	/// Returns a list of unique net ids for expanded signals. cells, instances and signals may include wildcards.
 	list<string> * myHierarchyList_p = SplitHierarchy(thePowerSignal);
 	set<netId_t> * myNetIdSet_p = new set<netId_t>;
 	forward_list<instanceId_t> mySearchInstanceIdList;
@@ -903,6 +904,80 @@ set<netId_t> * CCvcDb::FindNetIds(string thePowerSignal, instanceId_t theParent)
 	return myNetIdSet_p;
 }
 
+forward_list<netId_t> * CCvcDb::FindNetIds(string thePowerSignal, instanceId_t theParent) {
+	/// Returns a list of non-unique net ids for expanded signals. cells and instances may include wildcards.
+	list<string> * myHierarchyList_p = SplitHierarchy(thePowerSignal);
+	forward_list<netId_t> * myNetIdList_p = new forward_list<netId_t>;
+	forward_list<instanceId_t> mySearchInstanceIdList;
+	string	myInstanceName = "";
+	string	mySignalName = "";
+	string	myUnmatchedInstance = "";
+	size_t mySearchEnd = thePowerSignal.length();
+	do {
+		mySearchEnd = thePowerSignal.find_last_of(cvcParameters.cvcHierarchyDelimiters, mySearchEnd-1);
+		if (mySearchEnd > thePowerSignal.length()) {
+			mySearchEnd = 0;
+			myInstanceName = "";
+			mySignalName = thePowerSignal;
+		} else {
+			myInstanceName = thePowerSignal.substr(0, mySearchEnd);
+			mySignalName = thePowerSignal.substr(mySearchEnd+1);
+		}
+		mySearchInstanceIdList = FindInstanceIds(myInstanceName, theParent);
+	} while( mySearchInstanceIdList.empty() && myInstanceName != "" );
+	try {
+//		list<string> * myNetNameList_p = ExpandBusNet(mySignalName);
+		bool myCheckTopPort = false;
+		if ( mySignalName == thePowerSignal ) { // top port
+			myCheckTopPort = true;
+		}
+//		bool myFoundNetMatch = false;
+//		for ( auto myNetName_pit = myNetNameList_p->begin(); myNetName_pit != myNetNameList_p->end(); myNetName_pit++ ) {
+		string myNetName = mySignalName;
+		if ( ! myUnmatchedInstance.empty() ) {
+			myNetName = myUnmatchedInstance + HIERARCHY_DELIMITER + myNetName;
+		}
+//			string myFuzzyFilter = FuzzyFilter(myNetName);
+//			regex mySearchPattern(myFuzzyFilter);
+		netId_t myNetId;
+//		bool myExactMatch = true;
+//			bool myFuzzySearch = (myFuzzyFilter.find_first_of("^$.*+?()[]{}|\\") < myFuzzyFilter.npos);
+		text_t mySignalText;
+		try {
+			mySignalText = cvcCircuitList.cdlText.GetTextAddress(myNetName);
+			for (auto instanceId_pit = mySearchInstanceIdList.begin(); instanceId_pit != mySearchInstanceIdList.end(); instanceId_pit++) {
+				if ( instancePtr_v[*instanceId_pit]->IsParallelInstance() ) {
+					cout << "Warning: can not define nets in parallel instances " << thePowerSignal << endl;
+					continue;
+
+				}
+				CTextNetIdMap * mySignalIdMap_p = &(instancePtr_v[*instanceId_pit]->master_p->localSignalIdMap);
+//				if ( myExactMatch ) { // exact match
+				if ( mySignalIdMap_p->count(mySignalText) > 0 ) {
+					myNetId = instancePtr_v[*instanceId_pit]->localToGlobalNetId_v[mySignalIdMap_p->at(mySignalText)];
+					if ( myCheckTopPort && *instanceId_pit == 0 && myNetId >= topCircuit_p->portCount ) continue; // top signals that are not ports posing as ports
+					if ( ! myCheckTopPort && *instanceId_pit == 0 && myNetId < topCircuit_p->portCount ) continue; // top signals that should be ports
+					myNetIdList_p->push_front(myNetId);
+//					myFoundNetMatch = true;
+				}
+			}
+		}
+		catch (const out_of_range& oor_exception) {
+			throw out_of_range("signal " + myNetName + " not found");
+		}
+	}
+	catch (const out_of_range& oor_exception) {
+		reportFile << "ERROR: could not expand signal " << thePowerSignal << " " << oor_exception.what() << endl;
+		myNetIdList_p->clear();
+	}
+	catch (const regex_error& myError) {
+		reportFile << "regex_error: " << RegexErrorString(myError.code()) << endl;
+		myNetIdList_p->clear();
+	}
+	delete myHierarchyList_p;
+	return myNetIdList_p;
+}
+
 returnCode_t CCvcDb::SetModePower() {
 	bool myPowerError = false;
 	netVoltagePtr_v.ResetPowerPointerVector(netCount);
@@ -911,7 +986,7 @@ returnCode_t CCvcDb::SetModePower() {
 	// Normal power definitions
 	while( power_ppit != cvcParameters.cvcPowerPtrList.end() ) {
 		CPower * myPower_p = *power_ppit;
-		set<netId_t> * myNetIdList = FindNetIds(string(myPower_p->powerSignal())); // expands buses and hierarchy
+		set<netId_t> * myNetIdList = FindUniqueNetIds(string(myPower_p->powerSignal())); // expands buses and hierarchy
 		for (auto netId_pit = myNetIdList->begin(); netId_pit != myNetIdList->end(); netId_pit++) {
 			string myExpandedNetName = NetName(*netId_pit);
 			CPower * myOtherPower_p = netVoltagePtr_v[*netId_pit].full;
@@ -1040,7 +1115,7 @@ returnCode_t CCvcDb::SetInstancePower() {
 					myNewPower = HierarchyName(*instanceId_pit) + HIERARCHY_DELIMITER + myPower_p->powerSignal();
 					myPower_p->extraData->powerSignal = CPower::powerDefinitionText.SetTextAddress((text_t)myNewPower.c_str());
 				}
-				set<netId_t> * myNetIdList_p = FindNetIds(string(myPower_p->powerSignal()), *instanceId_pit);
+				set<netId_t> * myNetIdList_p = FindUniqueNetIds(string(myPower_p->powerSignal()), *instanceId_pit);
 				for ( auto net_pit = myNetIdList_p->begin(); net_pit != myNetIdList_p->end(); net_pit++ ) {
 					netId_t myNetId = GetEquivalentNet(*net_pit);
 					if ( net_pit != myNetIdList_p->begin() ) {
@@ -1104,7 +1179,7 @@ returnCode_t CCvcDb::SetExpectedPower() {
 		CPower * myPower_p = *power_ppit;
 		set<netId_t> * myNetIdList;
 		if ( myPower_p->netId == UNKNOWN_NET ) {
-			myNetIdList = FindNetIds(string(myPower_p->powerSignal())); // expands buses and hierarchy
+			myNetIdList = FindUniqueNetIds(string(myPower_p->powerSignal())); // expands buses and hierarchy
 		} else {
 			myNetIdList = new set<netId_t>;
 			myNetIdList->insert(myPower_p->netId);
@@ -1708,7 +1783,7 @@ void CCvcDb::LoadNetChecks() {
 		size_t myStringBegin = myInput.find_first_not_of(" \t");
 		size_t myStringEnd = myInput.find_first_of(" \t", myStringBegin);
 		string myNetName = myInput.substr(myStringBegin, myStringEnd);
-		set<netId_t> * myNetIdList = FindNetIds(myNetName); // expands buses and hierarchy
+		set<netId_t> * myNetIdList = FindUniqueNetIds(myNetName); // expands buses and hierarchy
 		if ( myNetIdList->empty() ) {
 			reportFile << "ERROR: Could not expand net " << myNetName << endl;
 		}
@@ -1718,7 +1793,14 @@ void CCvcDb::LoadNetChecks() {
 		if ( myOperation == "inverter_input=output" ) {
 			inverterInputOutputCheckList.push_front(myNetName);
 		} else if ( myOperation == "opposite_logic" ) {
-			;  // not yet supported
+			myStringBegin = myInput.find_first_not_of(" \t", myStringEnd);
+			myStringEnd = myInput.find_first_of(" \t", myStringBegin);
+			string myOpposite = myInput.substr(myStringBegin, myStringEnd);
+			size_t myDelimiter = myNetName.find_last_of(HIERARCHY_DELIMITER);
+			if ( myDelimiter < myNetName.npos ) {
+				myOpposite = myNetName.substr(0, myDelimiter) + HIERARCHY_DELIMITER + myOpposite;
+ 			}
+			oppositeLogicList.push_front(make_pair(myNetName, myOpposite));
 		} else {
 			reportFile << "ERROR: unknown check " << myInput << endl;
 		}

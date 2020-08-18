@@ -172,6 +172,7 @@ public:
 	unordered_map<string, deviceId_t> cellErrorCountMap;
 
 	forward_list<string> inverterInputOutputCheckList;  // list of nets to check for matched input/output
+	forward_list<pair<string, string>> oppositeLogicList;  // list of nets to check for opposite logic
 
 	ogzstream errorFile;
 	ofstream logFile;
@@ -220,7 +221,8 @@ public:
 	void ShortNonConductingResistors();
 	void SetResistorVoltagesForMosSwitches();
 	forward_list<instanceId_t> FindInstanceIds(string theHierarchy, instanceId_t theParent = 0);
-	set<netId_t> * FindNetIds(string thePowerSignal, instanceId_t theParent = 0);
+	set<netId_t> * FindUniqueNetIds(string thePowerSignal, instanceId_t theParent = 0);
+	forward_list<netId_t> * FindNetIds(string thePowerSignal, instanceId_t theParent = 0);
 	returnCode_t SetModePower();
 	returnCode_t SetInstancePower();
 	returnCode_t SetExpectedPower();
@@ -269,7 +271,8 @@ public:
 	void FindFloatingInputErrors();
 	void CheckExpectedValues();
 	void FindLDDErrors();
-	void CheckNets(modelType_t theType);
+	void CheckInverterIO(modelType_t theType);
+	void CheckOppositeLogic();
 
 	//
 //	void ReportBadLddConnection(CEventQueue & theEventQueue, deviceId_t theDeviceId);
