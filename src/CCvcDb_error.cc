@@ -592,6 +592,7 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 		}
 	}
 	CheckInverterIO(NMOS);
+	CheckOppositeLogic(NMOS);
 	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking nmos gate vs source errors: ");
 }
 
@@ -666,6 +667,7 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 		}
 	}
 	CheckInverterIO(PMOS);
+	CheckOppositeLogic(PMOS);
 	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking pmos gate vs source errors: ");
 }
 
@@ -1233,7 +1235,6 @@ void CCvcDb::FindFloatingInputErrors() {
 			}
 		}
 	}
-	CheckOppositeLogic();
 	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking mos floating input errors:");
 //	errorFile << "! Finished" << endl << endl;
 }
@@ -1462,11 +1463,12 @@ void CCvcDb::CheckInverterIO(modelType_t theType) {
 			netId_t myInverterInput = FindInverterInput(*net_pit);
 			if ( myInverterInput == UNKNOWN_NET ) {
 				myInverterInput = inverterNet_v[*net_pit];
-				reportFile << "INFO: Couldn't calculate inverter input for " << NetName(myInverterInput, true) << endl;
+				reportFile << "INFO: Couldn't calculate inverter input for " << NetName(*net_pit, true) << endl;
 			}
 			if (myInverterInput == UNKNOWN_NET) {
-				reportFile << "Warning: expected inverter input at " << NetName(myInverterInput, true) << endl;
+				reportFile << "Warning: expected inverter input at " << NetName(*net_pit, true) << endl;
 				continue;
+
 			}
 			myMinInput(minNet_v, myInverterInput);
 			myMaxInput(maxNet_v, myInverterInput);
@@ -1496,50 +1498,55 @@ void CCvcDb::CheckInverterIO(modelType_t theType) {
 	}
 }
 
-void CCvcDb::CheckOppositeLogic() {
+void CCvcDb::CheckOppositeLogic(modelType_t theType) {
 	for ( auto check_pit = oppositeLogicList.begin(); check_pit != oppositeLogicList.end(); check_pit++ ) {
 		debugFile << "DEBUG: opposite logic check " << get<0>(*check_pit) << " & " << get<1>(*check_pit) << endl;
 		forward_list<netId_t> * myNetIdList = FindNetIds(get<0>(*check_pit));
 		forward_list<netId_t> * myOppositeNetIdList = FindNetIds(get<1>(*check_pit));
 		for ( auto net_pit = myNetIdList->begin(), opposite_pit = myOppositeNetIdList->begin(); net_pit != myNetIdList->end(); net_pit++, opposite_pit++ ) {
-			CPower * myFirstPower_p = netVoltagePtr_v[*net_pit].full;
-			CPower * mySecondPower_p = netVoltagePtr_v[*opposite_pit].full;
+			CPower * myFirstPower_p = netVoltagePtr_v[GetEquivalentNet(*net_pit)].full;
+			CPower * mySecondPower_p = netVoltagePtr_v[GetEquivalentNet(*opposite_pit)].full;
 			if ( myFirstPower_p && mySecondPower_p && IsPower_(myFirstPower_p) && IsPower_(mySecondPower_p)
-					&& myFirstPower_p->simVoltage != mySecondPower_p->simVoltage ) continue;  // ignore direct connections to different power
+				&& myFirstPower_p->simVoltage != mySecondPower_p->simVoltage ) continue;  // ignore direct connections to different power
 
 			unordered_set<netId_t> myInvertedNets;
 			unordered_set<netId_t> mySameLogicNets;
-			netId_t inverter_it = *net_pit;
+			netId_t net_it = GetEquivalentNet(*net_pit);
 			// make sets of same logic nets and opposite logic nets for first nets
-			mySameLogicNets.insert(inverter_it);
-			while ( inverterNet_v[inverter_it] != UNKNOWN_NET && myInvertedNets.count(inverterNet_v[inverter_it]) == 0 ) {
-				assert(mySameLogicNets.count(inverterNet_v[inverter_it]) == 0);  // oscillators
+			bool myInverted = false;
+			logFile << "Checking " << NetName(net_it, true) << endl;
+			while ( net_it != UNKNOWN_NET && mySameLogicNets.count(net_it) == 0 ) {
+				if ( myInverted ) {
+					myInvertedNets.insert(net_it);
+					assert(myInvertedNets.count(inverterNet_v[net_it]) == 0);  // oscillators
 
-				myInvertedNets.insert(inverterNet_v[inverter_it]);
-				inverter_it = inverterNet_v[inverter_it];
-				if ( inverterNet_v[inverter_it] != UNKNOWN_NET ) {
-					mySameLogicNets.insert(inverter_it);
-					inverter_it = inverterNet_v[inverter_it];
+				} else {
+					mySameLogicNets.insert(net_it);
+					assert(mySameLogicNets.count(inverterNet_v[net_it]) == 0);  // oscillators
+
 				}
+				myInverted = ! myInverted;
+				net_it = inverterNet_v[net_it];
 			}
 			// check second net against first net to find opposite logic
-			inverter_it = *opposite_pit;
-			while ( inverterNet_v[inverter_it] != UNKNOWN_NET && myInvertedNets.count(inverter_it) == 0 ) {
-				if ( mySameLogicNets.count(inverterNet_v[inverter_it]) > 0 ) {  // second net is later in inverter chain
-					myInvertedNets.insert(inverter_it);
-				} else {
-					inverter_it = inverterNet_v[inverter_it];
-					if ( inverterNet_v[inverter_it] != UNKNOWN_NET ) {
-						inverter_it = inverterNet_v[inverter_it];
-					}
-				}
+			myInverted = true;
+			net_it = GetEquivalentNet(*opposite_pit);
+			while ( net_it != UNKNOWN_NET
+					&& ( (myInverted && myInvertedNets.count(net_it) == 0)
+						|| (! myInverted && mySameLogicNets.count(net_it) == 0) ) ) {
+				net_it = inverterNet_v[net_it];
+				myInverted = ! myInverted;
 			}
-			if ( myInvertedNets.count(inverter_it) > 0 ) continue;  // nets are opposite
+			if ( net_it != UNKNOWN_NET ) continue;  // nets are opposite
 
-			netId_t myErrorNet = (myFirstPower_p && IsPower_(myFirstPower_p)) ? *opposite_pit : *net_pit;
+			netId_t myErrorNet = (myFirstPower_p && IsPower_(myFirstPower_p)) ? GetEquivalentNet(*opposite_pit) : GetEquivalentNet(*net_pit);
 			int myErrorCount = 0;
 			for ( auto device_it = firstGate_v[myErrorNet]; device_it != UNKNOWN_DEVICE; device_it = nextGate_v[device_it]) {
 				if ( sourceNet_v[device_it] == drainNet_v[device_it] ) continue;  // ignore inactive devices
+
+				if ( theType == PMOS && ! IsPmos_(deviceType_v[device_it]) ) continue;  // ignore wrong types
+
+				if ( theType == NMOS && ! IsNmos_(deviceType_v[device_it]) ) continue;  // ignore wrong types
 
 				myErrorCount++;
 				if ( IncrementDeviceError(device_it, HIZ_INPUT) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
@@ -1551,7 +1558,8 @@ void CCvcDb::CheckOppositeLogic() {
 				}
 			}
 			if ( myErrorCount == 0 ) {
-				reportFile << "Warning: No errors printed for opposite logic check at " << get<0>(*check_pit) << " & " << get<1>(*check_pit) << endl;
+				reportFile << "Warning: No errors printed for opposite logic check at " << get<0>(*check_pit) << " & " << get<1>(*check_pit);
+				reportFile << " for net " << NetName(*net_pit, true) << endl;
 			}
 		}
 	}

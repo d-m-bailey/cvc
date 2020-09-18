@@ -2158,14 +2158,34 @@ void CCvcDb::SetTrivialMinMaxPower() {
 				myNmos = UNKNOWN_DEVICE;
 				myPmos = UNKNOWN_DEVICE;
 				for ( deviceId_t device_it = firstDrain_v[net_it]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
-					if ( sourceNet_v[device_it] == gateNet_v[device_it] ) continue; // skip mos diodes
-					if ( IsNmos_(deviceType_v[device_it]) ) myNmos = device_it;
-					if ( IsPmos_(deviceType_v[device_it]) ) myPmos = device_it;
+					//if ( sourceNet_v[device_it] == gateNet_v[device_it] ) continue; // skip mos diodes  (need this for tied inverters)
+					if ( sourceNet_v[device_it] == drainNet_v[device_it] ) continue; // skip mos capacitors
+
+					if ( IsNmos_(deviceType_v[device_it]) ) {
+						if ( myNmos == UNKNOWN_DEVICE || sourceNet_v[device_it] != gateNet_v[device_it] ) {  // only use tied input if nothing else is available
+							myNmos = device_it;
+						}
+					}
+					if ( IsPmos_(deviceType_v[device_it]) ) {
+						if ( myPmos == UNKNOWN_DEVICE || sourceNet_v[device_it] != gateNet_v[device_it] ) {  // only use tied input if nothing else is available
+							myPmos = device_it;
+						}
+					}
 				}
 				for ( deviceId_t device_it = firstSource_v[net_it]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {
-					if ( drainNet_v[device_it] == gateNet_v[device_it] ) continue; // skip mos diodes
-					if ( IsNmos_(deviceType_v[device_it]) ) myNmos = device_it;
-					if ( IsPmos_(deviceType_v[device_it]) ) myPmos = device_it;
+					//if ( drainNet_v[device_it] == gateNet_v[device_it] ) continue; // skip mos diodes  (need this for tied inverters)
+					if ( sourceNet_v[device_it] == drainNet_v[device_it] ) continue; // skip mos capacitors
+
+					if ( IsNmos_(deviceType_v[device_it]) ) {
+						if ( myNmos == UNKNOWN_DEVICE || drainNet_v[device_it] != gateNet_v[device_it] ) {  // only use tied input if nothing else is available
+							myNmos = device_it;
+						}
+					}
+					if ( IsPmos_(deviceType_v[device_it]) ) {
+						if ( myPmos == UNKNOWN_DEVICE || drainNet_v[device_it] != gateNet_v[device_it] ) {  // only use tied input if nothing else is available
+							myPmos = device_it;
+						}
+					}
 				}
 				if ( myNmos == UNKNOWN_DEVICE ) continue;
 				if ( myPmos == UNKNOWN_DEVICE ) continue;

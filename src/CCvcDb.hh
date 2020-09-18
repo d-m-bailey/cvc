@@ -272,7 +272,7 @@ public:
 	void CheckExpectedValues();
 	void FindLDDErrors();
 	void CheckInverterIO(modelType_t theType);
-	void CheckOppositeLogic();
+	void CheckOppositeLogic(modelType_t theType);
 
 	//
 //	void ReportBadLddConnection(CEventQueue & theEventQueue, deviceId_t theDeviceId);
@@ -401,8 +401,13 @@ public:
 	int CalculateMFactor(instanceId_t theInstanceId);
 	deviceId_t GetAttachedDevice(netId_t theNetId, modelType_t theType, terminal_t theTerminal);
 	deviceId_t FindInverterDevice(netId_t theInputNet, netId_t theOutputNet, modelType_t theType);
+	returnCode_t FindUniqueMosInputs(netId_t theOutputNet, netId_t theGroundNet, netId_t thePowerNet,
+		CDeviceIdVector &theFirst_v, CDeviceIdVector &theNext_v, CNetIdVector &theSourceNet_v, CNetIdVector &theDrainNet_v,
+		netId_t &theNmosInput, netId_t &thePmosInput);
 	deviceId_t FindInverterInput(netId_t theOutputNet);
-
+	bool IsOnGate(deviceId_t theDevice, CPower * thePower_p);
+	netId_t OppositeNet(deviceId_t theDevice, netId_t theNet);
+	deviceId_t GetNextInSeries(deviceId_t theDevice, netId_t theNet);
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);

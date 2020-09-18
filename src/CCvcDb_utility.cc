@@ -1847,6 +1847,8 @@ deviceId_t CCvcDb::GetAttachedDevice(netId_t theNetId, modelType_t theType, term
 
 deviceId_t CCvcDb::FindInverterDevice(netId_t theInputNet, netId_t theOutputNet, modelType_t theType) {
 	/// Return the first device of theType with input theInputNet and output theOutputNet
+	///
+	/// Note: Will not find any device if inverter contains both nmos/pmos clamps
 	unordered_set<deviceId_t> myDeviceList;
 	deviceId_t device_it = firstSource_v[theOutputNet];
 	while ( device_it != UNKNOWN_DEVICE ) {
@@ -1879,27 +1881,135 @@ deviceId_t CCvcDb::FindInverterDevice(netId_t theInputNet, netId_t theOutputNet,
 	return(UNKNOWN_DEVICE);
 }
 
-netId_t CCvcDb::FindInverterInput(netId_t theOutputNet) {
-	/// Find the input of inverter with output theOutputNet
-	unordered_set<netId_t> myInputList;
-	deviceId_t device_it = firstSource_v[theOutputNet];
-	while ( device_it != UNKNOWN_DEVICE ) {
-		if ( sourceNet_v[device_it] != drainNet_v[device_it] ) {
-			myInputList.insert(gateNet_v[device_it]);
+returnCode_t CCvcDb::FindUniqueMosInputs(netId_t theOutputNet, netId_t theGroundNet, netId_t thePowerNet,
+		CDeviceIdVector &theFirst_v, CDeviceIdVector &theNext_v, CNetIdVector &theSourceNet_v, CNetIdVector &theDrainNet_v,
+		netId_t &theNmosInput, netId_t &thePmosInput) {
+	/// Return the mos gates for devices with source connected to theOutputNet
+	///
+	/// Modifies theNmosInput, thePmosInput
+	CPower * myGround_p = netVoltagePtr_v[theGroundNet].full;
+	CPower * myPower_p = netVoltagePtr_v[thePowerNet].full;
+	for ( deviceId_t device_it = theFirst_v[theOutputNet]; device_it != UNKNOWN_DEVICE; device_it = theNext_v[device_it] ) {
+		if ( theSourceNet_v[device_it] == theDrainNet_v[device_it] ) continue;  // ignore inactive devices
+
+		if ( IsNmos_(deviceType_v[device_it]) ) {
+			if ( theDrainNet_v[device_it] == theGroundNet ) {  // expected ground
+				if ( theNmosInput == UNKNOWN_NET ) {
+					theNmosInput = gateNet_v[device_it];
+				} else if ( theNmosInput != gateNet_v[device_it] ) return(FAIL);  // multiple NMOS inputs yield unknown result
+
+			} else if ( IsOnGate(device_it, myGround_p) ) {  // series gate on
+				deviceId_t myNextNmos = GetNextInSeries(device_it, theDrainNet_v[device_it]);
+				if ( myNextNmos == UNKNOWN_DEVICE ) return(FAIL);  // not series
+
+				if ( OppositeNet(myNextNmos, theDrainNet_v[device_it]) == theGroundNet ) {
+					if ( theNmosInput == UNKNOWN_NET ) {
+						theNmosInput = gateNet_v[myNextNmos];
+					} else if ( theNmosInput != gateNet_v[myNextNmos] ) return(FAIL);  // multiple NMOS inputs yield unknown result
+
+				} else return(FAIL);  // more than 2 in series
+
+			} else return(FAIL);  // no connection to ground detected
+
 		}
-		device_it = nextSource_v[device_it];
-	}
-	device_it = firstDrain_v[theOutputNet];
-	while ( device_it != UNKNOWN_DEVICE ) {
-		if ( sourceNet_v[device_it] != drainNet_v[device_it] ) {
-			myInputList.insert(gateNet_v[device_it]);
+		if ( IsPmos_(deviceType_v[device_it]) ) {
+			if ( theDrainNet_v[device_it] == thePowerNet ) {  // expected power
+				if ( thePmosInput == UNKNOWN_NET ) {
+					thePmosInput = gateNet_v[device_it];
+				} else if ( thePmosInput != gateNet_v[device_it] ) return(FAIL);  // multiple PMOS inputs yield unknown result
+
+			} else if ( IsOnGate(device_it, myPower_p) ) {  // series gate on
+				deviceId_t myNextPmos = GetNextInSeries(device_it, theDrainNet_v[device_it]);
+				if ( myNextPmos == UNKNOWN_DEVICE ) return(FAIL);  // not series
+
+				if ( OppositeNet(myNextPmos, theDrainNet_v[device_it]) == thePowerNet ) {
+					if ( thePmosInput == UNKNOWN_NET ) {
+						thePmosInput = gateNet_v[myNextPmos];
+					} else if ( thePmosInput != gateNet_v[myNextPmos] ) return(FAIL);  // multiple PMOS inputs yield unknown result
+
+				} else return(FAIL);  // more than 2 in series
+
+			} else return(FAIL);  // no connection to power detected
+
 		}
-		device_it = nextDrain_v[device_it];
 	}
-	if ( myInputList.size() == 1 ) {
-		return(*(myInputList.begin()));
-	} else {
-		return(UNKNOWN_NET);
-	}
+	return(OK);
 }
 
+netId_t CCvcDb::FindInverterInput(netId_t theOutputNet) {
+	/// Find the input of inverter with output theOutputNet
+	CVirtualNet myMinOutput;
+	CVirtualNet myMaxOutput;
+	myMinOutput(minNet_v, theOutputNet);
+	myMaxOutput(maxNet_v, theOutputNet);
+	netId_t myGroundNet = myMinOutput.finalNetId;
+	netId_t myPowerNet = myMaxOutput.finalNetId;
+	CPower * myGround_p = netVoltagePtr_v[myGroundNet].full;
+	CPower * myPower_p = netVoltagePtr_v[myPowerNet].full;
+	netId_t myNmosInput = UNKNOWN_NET;
+	netId_t myPmosInput = UNKNOWN_NET;
+	if ( ! IsPower_(myGround_p) || ! IsPower_(myPower_p) ) {
+		logFile << "DEBUG: missing power for inverter at " << NetName(theOutputNet, true) << endl;
+		return(UNKNOWN_NET);
+
+	}
+	returnCode_t mySourceCheck = FindUniqueMosInputs(theOutputNet, myGroundNet, myPowerNet, firstSource_v, nextSource_v, sourceNet_v, drainNet_v,
+			myNmosInput, myPmosInput);
+	returnCode_t myDrainCheck = FindUniqueMosInputs(theOutputNet, myGroundNet, myPowerNet, firstDrain_v, nextDrain_v, drainNet_v, sourceNet_v,
+			myNmosInput, myPmosInput);
+	return( ( mySourceCheck == OK && myDrainCheck == OK
+			&& myNmosInput != UNKNOWN_NET && myNmosInput == myPmosInput ) ? myNmosInput : UNKNOWN_NET);
+}
+
+bool CCvcDb::IsOnGate(deviceId_t theDevice, CPower * thePower_p) {
+	// Return true if gate is always on
+	CPower * myGatePower_p = netVoltagePtr_v[gateNet_v[theDevice]].full;
+	if ( ! IsPower_(myGatePower_p) ) return false;  // gate is not power
+
+	if ( IsNmos_(deviceType_v[theDevice]) ) return( myGatePower_p->minVoltage > thePower_p->minVoltage );
+
+	if ( IsPmos_(deviceType_v[theDevice]) ) return( myGatePower_p->maxVoltage < thePower_p->maxVoltage );
+
+	assert(false);  // error if called with device that is not NMOS or PMOS
+}
+
+netId_t CCvcDb::OppositeNet(deviceId_t theDevice, netId_t theNet) {
+	// return the opposite net of a device
+	assert((sourceNet_v[theDevice] == theNet) || (drainNet_v[theDevice] == theNet));
+
+	return((sourceNet_v[theDevice] == theNet) ? drainNet_v[theDevice] : sourceNet_v[theDevice]);
+}
+
+deviceId_t CCvcDb::GetNextInSeries(deviceId_t theDevice, netId_t theNet) {
+	// Return the next device in series
+	deviceId_t myNextDevice = UNKNOWN_DEVICE;
+	for ( deviceId_t device_it = firstSource_v[theNet]; device_it != UNKNOWN_DEVICE; device_it = nextSource_v[device_it] ) {
+		if ( sourceNet_v[device_it] != drainNet_v[device_it] ) continue;  // ignore inactive devices
+
+		if ( device_it == theDevice ) continue;  // looking for device connected to this one
+
+		if ( myNextDevice != UNKNOWN_DEVICE ) return(UNKNOWN_DEVICE);  // not in series, return error
+
+		myNextDevice = device_it;
+	}
+	for ( deviceId_t device_it = firstDrain_v[theNet]; device_it != UNKNOWN_DEVICE; device_it = nextDrain_v[device_it] ) {
+		if ( sourceNet_v[device_it] != drainNet_v[device_it] ) continue;  // ignore inactive devices
+
+		if ( device_it == theDevice ) continue;  // looking for device connected to this one
+
+		if ( myNextDevice != UNKNOWN_DEVICE ) return(UNKNOWN_DEVICE);  // not in series, return error
+
+		myNextDevice = device_it;
+	}
+	if ( myNextDevice != UNKNOWN_DEVICE ) {
+		if ( deviceType_v[theDevice] != deviceType_v[myNextDevice] ) {  // should be the same type
+			if ( IsNmos_(deviceType_v[theDevice]) && IsNmos_(deviceType_v[myNextDevice]) ) {  // type mismatch ok if both nmos
+				;
+			} else if ( IsPmos_(deviceType_v[theDevice]) && IsPmos_(deviceType_v[myNextDevice]) ) {  // type mismatch ok if both pmos
+				;
+			} else return(UNKNOWN_DEVICE);
+
+		}
+	}
+	return(myNextDevice);
+}

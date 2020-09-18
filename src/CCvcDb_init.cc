@@ -1765,8 +1765,9 @@ void CCvcDb::LoadCellChecksums() {
 void CCvcDb::LoadNetChecks() {
 	/// Load net checks from file.
 	///
-	/// Currently supports "inverter_input=output": check to verify inverter output ground/power is same as input ground/power
-	/// Future support for "opposite_logic": verify that 2 nets are logically opposite
+	/// Currently supports:
+	/// "inverter_input=output": check to verify inverter output ground/power are the same as input ground/power
+	/// "opposite_logic": verify that 2 nets are logically opposite
 	if ( IsEmpty(cvcParameters.cvcNetCheckFile) ) return;
 	igzstream myNetCheckFile;
 	myNetCheckFile.open(cvcParameters.cvcNetCheckFile);
@@ -1782,20 +1783,20 @@ void CCvcDb::LoadNetChecks() {
 
 		size_t myStringBegin = myInput.find_first_not_of(" \t");
 		size_t myStringEnd = myInput.find_first_of(" \t", myStringBegin);
-		string myNetName = myInput.substr(myStringBegin, myStringEnd);
+		string myNetName = myInput.substr(myStringBegin, myStringEnd - myStringBegin);
 		set<netId_t> * myNetIdList = FindUniqueNetIds(myNetName); // expands buses and hierarchy
 		if ( myNetIdList->empty() ) {
 			reportFile << "ERROR: Could not expand net " << myNetName << endl;
 		}
 		myStringBegin = myInput.find_first_not_of(" \t", myStringEnd);
 		myStringEnd = myInput.find_first_of(" \t", myStringBegin);
-		string myOperation = myInput.substr(myStringBegin, myStringEnd);
+		string myOperation = myInput.substr(myStringBegin, myStringEnd - myStringBegin);
 		if ( myOperation == "inverter_input=output" ) {
 			inverterInputOutputCheckList.push_front(myNetName);
 		} else if ( myOperation == "opposite_logic" ) {
 			myStringBegin = myInput.find_first_not_of(" \t", myStringEnd);
 			myStringEnd = myInput.find_first_of(" \t", myStringBegin);
-			string myOpposite = myInput.substr(myStringBegin, myStringEnd);
+			string myOpposite = myInput.substr(myStringBegin, myStringEnd - myStringBegin);
 			size_t myDelimiter = myNetName.find_last_of(HIERARCHY_DELIMITER);
 			if ( myDelimiter < myNetName.npos ) {
 				myOpposite = myNetName.substr(0, myDelimiter) + HIERARCHY_DELIMITER + myOpposite;
