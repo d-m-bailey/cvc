@@ -690,6 +690,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				cout << "dumpfuse<df> filename: dump fuse to filename" << endl;
 				cout << "dumpanalognets<dan> filename: dump analog nets to filename" << endl;
 				cout << "dumpunknownlogicalnets<duln> filename: dump unknown logical nets to filename" << endl;
+				cout << "dumpunknownlogicalports<dulp> filter filename: dump unknown logical ports matching filter in current hierarchy to filename" << endl;
 				cout << "dumplevelshifter<dls> filename: dump level shifters to filename" << endl;
 				cout << "traceinverter<ti> name: trace signal as inverter output for name" << endl;
 				cout << "findsubcircuit<fs> subcircuit: list all instances of subcircuit or if regex, subcircuits that match" << endl;
@@ -911,6 +912,17 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 					}
 				} else {
 					reportFile << "ERROR: no unknown logical net file name" << endl;
+				}
+			} else if ( myCommand == "dumpunknownlogicalports" || myCommand == "dulp" ) {
+				string myFilter;
+				if ( myInputStream >> myFilter && myInputStream >> myFileName ) {
+					if ( theCurrentStage >= STAGE_FIRST_SIM ) {
+						DumpUnknownLogicalPorts(myCurrentInstanceId, myFilter, myFileName, myPrintSubcircuitNameFlag);
+					} else {
+						reportFile << "ERROR: Can only dump unknown logical ports after first sim stage" << endl;
+					}
+				} else {
+					reportFile << "ERROR: no unknown logical port file name" << endl;
 				}
 			} else if ( myCommand == "dumplevelshifters" || myCommand == "dls" ) {
 				if ( myInputStream >> myFileName ) {
@@ -1184,6 +1196,139 @@ void CCvcDb::DumpAnalogNets(string theFileName, bool thePrintCircuitFlag) {
 	myDumpFile.close();
 }
 
+void CCvcDb::DumpUnknownLogicalPorts(instanceId_t theCurrentInstanceId, string theFilter, string theFileName, bool thePrintCircuitFlag) {
+	// for each port matching theFilter in every instance at or below theCurrentInstanceId,
+	// output the highest inverter input at the lowest level that matched the filter
+	ofstream myDumpFile(theFileName);
+	regex mySearchPattern(FuzzyFilter(theFilter));
+	unordered_set<netId_t> myPrintedNets;
+	CVirtualNet myMinNet;
+	CVirtualNet myMaxNet;
+	if ( myDumpFile.fail() ) {
+		reportFile << "ERROR: Could not open " << theFileName << endl;
+		return;
+	}
+	reportFile << "Dumping unknown logical ports filtered by " <<  theFilter << " to " << theFileName << " ... " << endl;
+	vector<bool> myIsLogicalNet_v;
+	myIsLogicalNet_v.resize(netCount, false);
+	size_t myNetCount = 0;
+	cout << "DEBUG: setting net types ..." << endl;
+	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
+		if ( net_it != GetEquivalentNet(net_it) ) continue;  // skip shorted nets
+		CPower * myPower_p = netVoltagePtr_v[net_it].full;
+		if ( myPower_p && ( myPower_p->simVoltage != UNKNOWN_VOLTAGE || myPower_p->type[POWER_BIT] ) ) continue;  // skip defined sim voltages and power
+		myIsLogicalNet_v[net_it] = ! IsAnalogNet(net_it);
+	}
+	cout << "DEBUG: searching instances..." << endl;
+	for ( instanceId_t instance_it = 0; instance_it < instancePtr_v.size(); instance_it++ ) {
+		if ( ! IsSubcircuitOf(instance_it, theCurrentInstanceId) ) continue;  // only process subcircuits
+		CInstance * myInstance_p = instancePtr_v[instance_it];
+		if ( ! myInstance_p || ! myInstance_p->master_p ) {
+			//cout << "DEBUG: no instance or master at " << instance_it << endl;
+			continue;
+		}
+		CCircuit * myCircuit_p = myInstance_p->master_p;
+		//cout << "DEBUG: instance " << HierarchyName(instance_it, thePrintCircuitFlag) << " port count " << myCircuit_p->portCount << endl;
+		for( auto signalMap_pit = myCircuit_p->localSignalIdMap.begin(); signalMap_pit != myCircuit_p->localSignalIdMap.end(); signalMap_pit++ ) {
+		//for ( netId_t net_it = 0; net_it < myCircuit_p->portCount; net_it++ ) {}
+			netId_t net_it = signalMap_pit->second;
+			if ( net_it >= myCircuit_p->portCount && instance_it != theCurrentInstanceId ) continue;  // skip internal signals in subcircuits
+			list<tuple<instanceId_t, netId_t, netId_t>> myNetStack;
+			netId_t myTopNetId = GetEquivalentNet(myInstance_p->localToGlobalNetId_v[net_it]);
+			if ( myPrintedNets.count(myTopNetId) > 0 ) continue;  // ignore already printed
+			if ( ! myIsLogicalNet_v[myTopNetId] ) continue;  // ignore analog nets and known logic
+			if ( ! regex_match(signalMap_pit->first, mySearchPattern) ) continue;  // ignore non-match
+			if ( firstGate_v[myTopNetId] == UNKNOWN_NET ) continue;  // ignore floating outputs (also ignores transfer gate connections)
+			//cout << "DEBUG: local net " << net_it << " global net " << myInstance_p->localToGlobalNetId_v[net_it] << " equivalent " << myTopNetId << endl;
+			//cout << "DEBUG: net " << net_it << " " << signalMap_pit->first << " " << NetName(myTopNetId, thePrintCircuitFlag) << endl;
+			netId_t mySourceNet = myTopNetId;
+			myNetStack.push_front(tuple<instanceId_t, netId_t, netId_t>(instance_it, net_it, mySourceNet));
+			// must be done after second sim so power & override nets are propagated
+			while ( inverterNet_v[mySourceNet] != UNKNOWN_NET ) {
+				mySourceNet = inverterNet_v[mySourceNet];
+				myNetStack.push_front(tuple<instanceId_t, netId_t, netId_t>(UNKNOWN_INSTANCE, UNKNOWN_NET, mySourceNet));
+			}
+			bool myNetFound = false;
+			//cout << "DEBUG: inverter stack size " << myNetStack.size() << endl;
+			while ( myNetStack.size() > 0 && ! myNetFound ) {
+				tuple<instanceId_t, netId_t, netId_t> mySearchTuple = myNetStack.front();
+				myNetStack.pop_front();
+				//cout << "DEBUG: inverter stack size " << myNetStack.size() << endl;
+				netId_t myNet = get<2>(mySearchTuple);
+				if ( ! IsInstanceNet(myNet, theCurrentInstanceId) ) continue;  // ignore nets not in current instance
+				instanceId_t mySearchInstance = get<0>(mySearchTuple);
+				deviceId_t mySourceDevice = ( firstSource_v[myNet] == UNKNOWN_DEVICE ) ? firstDrain_v[myNet] : firstSource_v[myNet];
+				if ( mySourceDevice != UNKNOWN_DEVICE ) {  // use device instance as search
+					mySearchInstance = deviceParent_v[mySourceDevice];
+				}
+				if ( ! IsSubcircuitOf(mySearchInstance, theCurrentInstanceId) ) {  // outside hierarchy
+					mySearchInstance = UNKNOWN_INSTANCE;
+				}
+				if ( mySearchInstance == UNKNOWN_INSTANCE ) {  // source outside hierarchy or input (no source)
+					mySearchInstance == FindNetInstance(myNet, theCurrentInstanceId);
+				}
+				if ( IsInternalNet(myNet, mySearchInstance) ) continue;  // ignore non ports
+				netId_t port_it;
+				CInstance * mySearchInstance_p;
+				CCircuit * mySearchCircuit_p;
+				text_t myLocalNetName = NULL;
+				while ( mySearchInstance != theCurrentInstanceId && IsSubcircuitOf(mySearchInstance, theCurrentInstanceId) && ! myNetFound ) {
+					// unfortunately requires 2 reverse searches. port given global net, and name given port
+					mySearchInstance_p = instancePtr_v[mySearchInstance];
+					//cout << "DEBUG: searching " << mySearchInstance << " of " << theCurrentInstanceId << " for " << myNet << "<" << mySearchInstance_p->firstNetId << endl;
+					if ( myNet < mySearchInstance_p->firstNetId ) {  // only process ports
+						myLocalNetName = GetLocalNetName(mySearchInstance, myNet);
+/*
+						mySearchCircuit_p = mySearchInstance_p->master_p;
+						port_it = 0;
+						while ( port_it < mySearchCircuit_p->portCount && myNet != mySearchInstance_p->localToGlobalNetId_v[port_it] ) {
+							port_it++;
+						}
+						if ( port_it < mySearchCircuit_p->portCount ) {
+							myNetFound = regex_match(mySearchCircuit_p->internalSignal_v[port_it], mySearchPattern);
+						}
+*/
+						if ( myLocalNetName != NULL ) {
+							//cout << "DEBUG: checking " << myLocalNetName << endl;
+							myNetFound = regex_match(myLocalNetName, mySearchPattern);
+						}
+					}
+					if ( ! myNetFound ) {
+						mySearchInstance = instancePtr_v[mySearchInstance]->parentId;
+					}
+				}
+				//cout << "DEBUG: finished searching " << myNetFound << endl;
+				if ( ! myNetFound && mySearchInstance == theCurrentInstanceId ) {  // include internal nets of top level
+					//cout << "DEBUG: searching internals " << endl;
+					mySearchInstance_p = instancePtr_v[theCurrentInstanceId];
+					mySearchCircuit_p = mySearchInstance_p->master_p;
+					netId_t mySearchLimit = mySearchInstance_p->localToGlobalNetId_v.size();
+					myLocalNetName = GetLocalNetName(theCurrentInstanceId, myNet);
+					if ( myLocalNetName != NULL ) {
+						//cout << "DEBUG: checking " << myLocalNetName << endl;
+						myNetFound = regex_match(myLocalNetName, mySearchPattern);
+					}
+				}
+				if ( ! myNetFound ) continue;  // couldn't find net
+				if ( myPrintedNets.count(myNet) > 0 ) continue;  // already printed
+				myMinNet(minNet_v, myNet);
+				myMaxNet(maxNet_v, myNet);
+				if ( myMinNet.finalNetId == UNKNOWN_NET
+					|| myMaxNet.finalNetId == UNKNOWN_NET
+					|| myMinNet.finalNetId == myNet
+					|| myMaxNet.finalNetId == myNet
+					|| myMinNet.finalNetId == myMaxNet.finalNetId ) continue;  // invalid min/max
+				myDumpFile << HierarchyName(mySearchInstance, thePrintCircuitFlag) << "/" << myLocalNetName;
+				myDumpFile << " min " << NetName(myMinNet.finalNetId, thePrintCircuitFlag);
+				myDumpFile << " max " << NetName(myMaxNet.finalNetId, thePrintCircuitFlag) << endl;
+				myPrintedNets.insert(myNet);
+			}
+		}
+	}
+	reportFile << "total nets written: " << myPrintedNets.size() << endl;
+	myDumpFile.close();
+}
+
 void CCvcDb::DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag) {
 	ofstream myDumpFile(theFileName);
 	CVirtualNet myMinNet;
@@ -1192,7 +1337,7 @@ void CCvcDb::DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag
 		reportFile << "ERROR: Could not open " << theFileName << endl;
 		return;
 	}
-	reportFile << "Dumping unknown logical nets to " << theFileName << " ... "; cout.flush();
+	reportFile << "Dumping unknown logical nets to " << theFileName << " ... " << endl;
 	vector<bool> myIsLogicalNet_v;
 	myIsLogicalNet_v.resize(netCount, false);
 	size_t myNetCount = 0;

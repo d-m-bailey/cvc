@@ -33,6 +33,7 @@ string CCvcParameters::CvcFileName() {
 bool CCvcParameters::IsSameDatabase() {
 	return(cvcLastTopBlock == cvcTopBlock && cvcLastNetlistFilename == cvcNetlistFilename && cvcLastSOI == cvcSOI);
 }
+
 void CCvcParameters::SaveDatabaseParameters() {
 		cvcLastTopBlock = cvcTopBlock;
 		cvcLastNetlistFilename = cvcNetlistFilename;

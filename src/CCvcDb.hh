@@ -408,6 +408,10 @@ public:
 	bool IsOnGate(deviceId_t theDevice, CPower * thePower_p);
 	netId_t OppositeNet(deviceId_t theDevice, netId_t theNet);
 	deviceId_t GetNextInSeries(deviceId_t theDevice, netId_t theNet);
+	bool IsInstanceNet(netId_t theNetId, instanceId_t theInstance);
+	instanceId_t FindNetInstance(netId_t theNetId, instanceId_t theInstance);
+	bool IsInternalNet(netId_t theNetId, instanceId_t theInstance);
+	text_t GetLocalNetName(instanceId_t theInstance, netId_t theNet);
 
 	// CCvcDb-print
 	void SetOutputFiles(string theReportFile);
@@ -486,6 +490,7 @@ public:
 	returnCode_t InteractiveCvc(int theCurrentStage);
 	void DumpFuses(string theFileName);
 	void DumpAnalogNets(string theFileName, bool thePrintCircuitFlag);
+	void DumpUnknownLogicalPorts(instanceId_t theCurrentInstanceId, string theFilter, string theFileName, bool thePrintCircuitFlag);
 	void DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag);
 	void DumpLevelShifters(string theFileName, bool thePrintCircuitFlag);
 	returnCode_t CheckFuses();

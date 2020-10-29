@@ -2013,3 +2013,53 @@ deviceId_t CCvcDb::GetNextInSeries(deviceId_t theDevice, netId_t theNet) {
 	}
 	return(myNextDevice);
 }
+
+bool CCvcDb::IsInstanceNet(netId_t theNetId, instanceId_t theInstance) {
+	// return true if theNet is used in theInstance
+	if ( theInstance == UNKNOWN_INSTANCE || theNetId == UNKNOWN_NET ) return false;  // bad instance or net
+	instanceId_t myParent = netParent_v[theNetId];
+	if ( IsSubcircuitOf(myParent, theInstance) ) return true;
+	CInstance * myInstance_p = instancePtr_v[theInstance];
+	CCircuit * myCircuit_p = myInstance_p->master_p;
+	for ( netId_t port_it = 0; port_it < myCircuit_p->portCount; port_it++ ) {
+		if ( theNetId == GetEquivalentNet(myInstance_p->localToGlobalNetId_v[port_it]) ) return true;
+	}
+	return false;
+}
+
+instanceId_t CCvcDb::FindNetInstance(netId_t theNetId, instanceId_t theInstance) {
+	// return highest instance using net in theInstance
+	if ( theInstance == UNKNOWN_INSTANCE || theNetId == UNKNOWN_NET ) return UNKNOWN_INSTANCE;  // bad instance or net
+	instanceId_t myParent = netParent_v[theNetId];
+	if ( IsSubcircuitOf(myParent, theInstance) ) return myParent;
+	CInstance * myInstance_p = instancePtr_v[theInstance];
+	CCircuit * myCircuit_p = myInstance_p->master_p;
+	for ( netId_t port_it = 0; port_it < myCircuit_p->portCount; port_it++ ) {
+		if ( theNetId == GetEquivalentNet(myInstance_p->localToGlobalNetId_v[port_it]) ) return theInstance;
+	}
+	return UNKNOWN_INSTANCE;
+}
+
+bool CCvcDb::IsInternalNet(netId_t theNetId, instanceId_t theInstance) {
+	// true if net is internal to instance
+	if ( theInstance == UNKNOWN_INSTANCE || theNetId == UNKNOWN_NET ) return false;  // bad instance or net
+	CInstance * myInstance_p = instancePtr_v[theInstance];
+	instanceId_t myParent = netParent_v[theNetId];
+	if ( myParent == 0 && theInstance == 0 ) return false;  // top level nets are not internal
+	return( IsSubcircuitOf(myParent, theInstance) );
+}
+
+text_t CCvcDb::GetLocalNetName(instanceId_t theInstance, netId_t theNet) {
+	// requires 2 reverse searches
+	CInstance * myInstance_p = instancePtr_v[theInstance];
+	CCircuit * myMaster_p = myInstance_p->master_p;
+	netId_t net_it = 0;
+	while ( net_it < myInstance_p->localToGlobalNetId_v.size() && myInstance_p->localToGlobalNetId_v[net_it] != theNet ) {
+		net_it++;
+	}
+	if ( net_it >= myInstance_p->localToGlobalNetId_v.size() ) return(NULL);
+	for( auto signalMap_pit = myMaster_p->localSignalIdMap.begin(); signalMap_pit != myMaster_p->localSignalIdMap.end(); signalMap_pit++ ) {
+		if ( signalMap_pit->second == net_it ) return signalMap_pit->first;
+	}
+	return(NULL);
+}

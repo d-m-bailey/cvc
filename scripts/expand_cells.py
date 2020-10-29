@@ -56,13 +56,14 @@ def ReadCellOverrides(theOverrideCellFileName):
             myOverride = myMatch.group(1)
             myCell = myMatch.group(2)
             if myCell in myCellOverrides and myCellOverrides[myCell] != myOverride:
-                print("ERROR: conflicting override " + myLine 
-                      + " != " + myCellOverrides[myCell] + " " + myCell)
+#               print("ERROR: conflicting override " + myLine
+#                     + " != " + myCellOverrides[myCell] + " " + myCell)
+                print >> sys.stderr, "ERROR: conflicting override " + myLine + " != " + myCellOverrides[myCell] + " " + myCell
                 myOverrideError = True
             else:
                 myCellOverrides[myCell] = myOverride
         elif not myCommentRE.search(myLine):
-            print("ERROR: invalid format " + myLine)
+            print >> sys.stderr, "ERROR: invalid format " + myLine
             myOverrideError = True
     if myOverrideError: raise
     return myCellOverrides
@@ -75,7 +76,7 @@ def OpenFile(theFileName):
         else:
             myFile = open(theFileName)
     except IOError as myErrorDetail:
-        print("ERROR: Could not open " + theFileName + " " + str(myErrorDetail.args))
+        print >> sys.stderr, "ERROR: Could not open " + theFileName + " " + str(myErrorDetail.args)
         raise IOError
     return myFile
 
@@ -92,7 +93,12 @@ def ReadNetlist(theCDLFileName, theCellOverrideList):
     for line_it in myCDLFile:
         if line_it.startswith("*"): continue  #ignore comments
         if not line_it.strip(): continue  #ignore blank lines
-        if line_it.startswith("+"):
+        if line_it.startswith(".INCLUDE"):
+            myWordList = line_it.split()
+            myIncludeFile = myWordList[1]
+            print >> sys.stderr, "Reading from " + myIncludeFile
+            myLongLines += ReadNetlist(myIncludeFile, theCellOverrideList)
+        elif line_it.startswith("+"):
             myLine += " " + line_it[1:]
         else:
             if myLine:
@@ -107,10 +113,10 @@ def ReadNetlist(theCDLFileName, theCellOverrideList):
                         if (myName in theCellOverrideList
                                 and theCellOverrideList[myName] == 'IGNORE'):
                             gNetlist[myName]['small'] = True
-                myLongLines.append(myLine)
+                myLongLines.append(myLine.replace(" /", " "))
             myLine = line_it
     if myLine != myLongLines[-1]:
-        myLongLines.append(myLine)
+        myLongLines.append(myLine.replace(" /", " "))
     return myLongLines
 
 def CountResistor(theCircuit, theLine, theRE):
@@ -135,8 +141,8 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
     mySubcktStartRE = re.compile("^\.[sS][uU][bB][cC][kK][tT]\s+(\S+)")
     mySubcktEndRE = re.compile("^\.[eE][nN][dD][sS]")
     myPinRE = re.compile("\$PINS")
-    myMosRE = re.compile("^[mMxX]\S*\s+(\S+)\s+\S+\s+(\S+)\s+\S+\s+(\S+)")
-    myResistorRE = re.compile("^[rRxX]\S*\s+(\S+)\s+(\S+)")
+    myMosRE = re.compile("^[mMxX]\S*\s+(\S+)\s+\S+\s+(\S+)\s+\S+\s+(?:/\s+){,1}(\S+)")
+    myResistorRE = re.compile("^[rRxX]\S*\s+(\S+)\s+(?:/\s+){,1}(\S+)")
     myParameterRE = re.compile("([^=\s]+=[^=\s]+)|(\$\S+)")
     myCircuit = None
     for line_it in theSubcircuits:
@@ -148,8 +154,11 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
     #                myWord = word_it.strip()
                     if myParameterRE.match(word_it):
                         if not myPinRE.match(word_it):
-                            myInstance = myInstance.replace("/", "")
-                            gNetlist[myInstance]['small'] = True  # Expand parameterized instances.
+                            #myInstance = myInstance.replace("/", "")
+                            try:
+                                gNetlist[myInstance]['small'] = True  # Expand parameterized instances.
+                            except KeyError:
+                                print >> sys.stderr, "Missing subcircuit definition for " + myInstance
                             if not myInstance in gParameterList:
                                 gParameterList[myInstance] = 0
                             gParameterList[myInstance] += 1
@@ -158,7 +167,7 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
                         myInstance = word_it  # Last word before first parameter
             else:
                 myInstance = myWordList[-1]
-            myInstance = myInstance.replace("/", "")
+            #myInstance = myInstance.replace("/", "")
             if myInstance in theCellOverrideList and theCellOverrideList[myInstance] == 'RESISTOR':
                 CountResistor(myCircuit, line_it, myResistorRE)
             elif myInstance in theCellOverrideList and theCellOverrideList[myInstance] == 'MOSFET':
@@ -199,6 +208,9 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     myCircuit = gNetlist[theTopCell]
     myCircuit['checked'] = True
     for instance_it in myCircuit['instances'].keys():
+        if instance_it not in gNetlist:
+            print >> sys.stderr, "missing subcircuit definition for " + instance_it
+            continue
         if not gNetlist[instance_it]['checked']:
             PrintSmallCells(theCellOverrideList, instance_it)  # Recursive call
         if ('small' in gNetlist[instance_it]
@@ -225,6 +237,9 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     mySmashFlag = True
     myInstanceCount = 0
     for instance_it in myCircuit['instances']:
+        if instance_it not in gNetlist:
+            print >> sys.stderr, "missing subcircuit definition for " + instance_it
+            continue
         if not 'small' in gNetlist[instance_it]:  # Don't count small instances
             myInstanceCount += myCircuit['instances'][instance_it]
     if myInstanceCount > 1:
@@ -275,7 +290,7 @@ def main(argv):
     """
     options, arguments = getopt.getopt(argv, "?")
     if len(argv) != 3:
-        print("usage: expand_cells.py overrideCellFile topCell cdlFile[.gz]")
+        print >> sys.stderr, "usage: expand_cells.py overrideCellFile topCell cdlFile[.gz]"
         return
     myCellOverrideList = ReadCellOverrides(argv[0])
     mySubcircuits = ReadNetlist(argv[2], myCellOverrideList)
