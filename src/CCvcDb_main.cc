@@ -270,10 +270,6 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 				FindForwardBiasDiodes();
 			}
 			FindAllOverVoltageErrors();
-			//FindOverVoltageErrors("Vbg", OVERVOLTAGE_VBG);
-			//FindOverVoltageErrors("Vbs", OVERVOLTAGE_VBS);
-			//FindOverVoltageErrors("Vds", OVERVOLTAGE_VDS);
-			//FindOverVoltageErrors("Vgs", OVERVOLTAGE_VGS);
 			FindNmosPossibleLeakErrors();
 			FindPmosPossibleLeakErrors();
 			FindFloatingInputErrors();

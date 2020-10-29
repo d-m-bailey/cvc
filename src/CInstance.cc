@@ -36,7 +36,6 @@ void CInstance::AssignTopGlobalIDs(CCvcDb * theCvcDb_p, CCircuit * theMaster_p) 
 
 	theMaster_p->instanceId_v.push_back(0);
 	theCvcDb_p->subcircuitCount = 1;
-//	theCvcDb_p->subcircuitParent.push_back(0);
 	firstSubcircuitId = 1;
 	parentId = 0;
 	master_p = theMaster_p;
@@ -56,7 +55,6 @@ void CInstance::AssignTopGlobalIDs(CCvcDb * theCvcDb_p, CCircuit * theMaster_p) 
 	theCvcDb_p->subcircuitCount += theMaster_p->subcircuitPtr_v.size();
 	theCvcDb_p->deviceCount = theMaster_p->devicePtr_v.size();
 	theCvcDb_p->netParent_v.resize(theCvcDb_p->netCount, 0);
-//	theCvcDb_p->subcircuitParent.resize(theCvcDb_p->subcircuitCount, 0);
 	theCvcDb_p->deviceParent_v.resize(theCvcDb_p->deviceCount, 0);
 
 	instanceId_t myLastSubcircuitId = theMaster_p->subcircuitPtr_v.size();
@@ -113,7 +111,6 @@ void CInstance::AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInsta
 	if ( ! isParallel ) {  // don't expand devices/nets for parallel instances
 		firstNetId = theCvcDb_p->netCount;
 		firstDeviceId = theCvcDb_p->deviceCount;
-		//master_p = myMaster_p;
 
 		netId_t myLastNet = master_p->localSignalIdMap.size();
 		localToGlobalNetId_v.reserve(myLastNet);

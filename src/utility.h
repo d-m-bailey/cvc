@@ -43,7 +43,6 @@ std::string int_to_hex( T i )
 }
 
 #define trim_(string) (string.substr(0, string.find_last_not_of(" \t\n") + 1).substr(string.find_first_not_of(" \t\n")))
-//#define IsValidVoltage_(string) (regex_search(string, regex("^[-+]?[0-9]+\\.?[0-9]*$", regex_constants::awk)))
 #define IsValidVoltage_(string) (\
 		sscanf((string).c_str(), "%[-+]%d.%d%1s", &vv_sign, &vv_integer, &vv_fraction, vv_trailer) == 3 \
 		|| sscanf((string).c_str(), "%[-+]%d%1s", &vv_sign, &vv_integer, vv_trailer) == 2 \

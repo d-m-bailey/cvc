@@ -143,7 +143,6 @@ void CCvcDb::ShowNets(size_t & theNetCount, regex & theSearchPattern, instanceId
 	if ( instancePtr_v[theInstanceId]->IsParallelInstance() ) return;
 	CInstance * myInstance_p = instancePtr_v[theInstanceId];
 	if ( myInstance_p->master_p->subcircuitPtr_v.size() == 0 && myInstance_p->master_p->devicePtr_v.size() == 0 ) return;
-	// cout << myInstance_p->master_p->name << " count " << myInstance_p->master_p->localSignalIdMap.size() << endl; cout.flush();
 	for( auto signalMap_pit = myInstance_p->master_p->localSignalIdMap.begin(); signalMap_pit != myInstance_p->master_p->localSignalIdMap.end(); signalMap_pit++ ) {
 		if ( gInterrupted ) return;
 		if ( regex_match(signalMap_pit->first, theSearchPattern) ) {
@@ -216,12 +215,6 @@ instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string the
 			if ( ! IsEmpty(myUnmatchedHierarchy) ) {
 				myInstanceName = myUnmatchedHierarchy + HIERARCHY_DELIMITER + myInstanceName;
 			}
-//			cerr << "searching for " << myInstanceName << endl;
-//			cerr << instancePtr_v[theCurrentInstanceId]->master_p->localDeviceIdMap.size() << " " << cvcCircuitList.cdlText.GetTextAddress(myInstanceName) << endl;
-//			for ( auto pair_pit = instancePtr_v[theCurrentInstanceId]->master_p->localDeviceIdMap.begin();
-//					pair_pit != instancePtr_v[theCurrentInstanceId]->master_p->localDeviceIdMap.end(); pair_pit++ ) {
-//				cerr << pair_pit->first << " " << pair_pit->second << endl;
-//			}
 			if ( myInstanceName == ".." ) {
 				theCurrentInstanceId = instancePtr_v[theCurrentInstanceId]->parentId;
 			} else {
@@ -248,13 +241,7 @@ instanceId_t CCvcDb::FindHierarchy(instanceId_t theCurrentInstanceId, string the
 
 string CCvcDb::ShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag) {
 	string myShortString = "";
-/*
-	if ( isValidShortData && short_v[theNetId].first != UNKNOWN_NET && short_v[theNetId].first != theNetId ) {
-		myShortString += " shorted to " + NetName(short_v[theNetId].first, thePrintSubcircuitNameFlag) + short_v[theNetId].second;
-	}
-*/
 	if ( netVoltagePtr_v[theNetId].full ) {
-//		myShortString = netVoltagePtr_v[myNetId]->PowerDefinition();
 		string myStandardDefinition = netVoltagePtr_v[theNetId].full->StandardDefinition();
 		if ( IsCalculatedVoltage_(netVoltagePtr_v[theNetId].full) ) {
 			myShortString += " calculated as";
@@ -271,14 +258,8 @@ string CCvcDb::ShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag) {
 
 string CCvcDb::LeakShortString(netId_t theNetId, bool thePrintSubcircuitNameFlag) {
 	string myShortString = "";
-/*
-	if ( isValidShortData && short_v[theNetId].first != UNKNOWN_NET && short_v[theNetId].first != theNetId ) {
-		myShortString += " shorted to " + NetName(short_v[theNetId].first, thePrintSubcircuitNameFlag) + short_v[theNetId].second;
-	}
-*/
 	CPower * myLeakPower_p = leakVoltagePtr_v[theNetId].full;
 	if ( myLeakPower_p ) {
-//	myShortString = netVoltagePtr_v[myNetId]->PowerDefinition();
 		string myStandardDefinition = myLeakPower_p->StandardDefinition();
 		if ( IsCalculatedVoltage_(myLeakPower_p) ) {
 				myShortString += " calculated as";
@@ -572,7 +553,6 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 	stringstream	myPrompt;
 
 	while ( myReturnCode == UNKNOWN_RETURN_CODE ) {
-//		cout << "** Stage " << theCurrentStage << "/" << STAGE_COMPLETE << ": Enter command ?> ";
 		reportFile.flush();
 		myPrompt.clear();
 		myPrompt.str("");
@@ -605,7 +585,6 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 		} else {
 			myPrompt << "** Stage " << theCurrentStage << "/" << STAGE_COMPLETE << ": Enter command ?> ";
 		}
-//		cin >> myCommand;
 		if ( myIsBatchInput ) {
 			cin.getline(myInputBuffer, 1024);
 			if ( cin.eof() ) {
@@ -616,9 +595,7 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 		} else {
 			myInput = rl_gets(myPrompt.str());
 		}
-//		cout << myInput << endl;
 		if ( myInput == NULL ) { // eof
-//				myCurrentInstanceId = 0; // reset saved hierarchy
 			if ( myIsBatchInput ) {
 				reportFile << "finished source. Depth " << mySavedBufferStack.size() << endl;
 				cin.rdbuf(mySavedBufferStack.front());
@@ -639,17 +616,14 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 		}
 		reportFile << endl << "> " << myInput << endl;
 		try {
-//			if ( cin.eof() ) {
 			myInputLine = myInput;
 			myInputStream.str(myInputLine);
 			myInputStream.clear();
-//			cout << "stream = " << myInputStream.str() << endl;
 			if ( IsEmpty(myCommandMode) ) {
 				if ( ! (myInputStream >> myCommand) ) continue;
 			} else {
 				myCommand = myCommandMode;
 			}
-//			cout << "command = " << myCommand << endl;
 			if ( myCommand == "findsubcircuit" || myCommand == "fs" ) {
 				if ( myInputStream >> mySubcircuit ) {
 					FindInstances(mySubcircuit, myPrintSubcircuitNameFlag);
@@ -671,8 +645,6 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				} else {
 					myCurrentInstanceId = myNewInstanceId;
 				}
-//				myCommand = "pwd"; // after goto, print hierarchy
-//				continue;
 			} else if ( myCommand == "help" || myCommand == "h" ) {
 				cout << "Available commands are:" << endl;
 				cout << "<ctrl-d> switch to automatic (i.e. end interactive)" << endl;
@@ -837,7 +809,6 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				} else {
 					PrintInstances(myCurrentInstanceId, "", myPrintSubcircuitNameFlag);
 				}
-	//			myInputStream >> myOption, myFilter;
 			} else if ( myCommand == "expandnet" || myCommand == "en" ) {
 				if ( myInputStream >> myName ) {
 					set<netId_t> * myNetIdList = FindUniqueNetIds(myName); // expands buses and hierarchy
@@ -882,7 +853,6 @@ returnCode_t CCvcDb::InteractiveCvc(int theCurrentStage) {
 				} else {
 					myCommandMode = "ei";
 				}
-	//			myInputStream >> myOption, myFilter;
 			} else if ( myCommand == "dumpfuse" || myCommand == "df" ) {
 				if ( myInputStream >> myFileName ) {
 					if ( modelFileStatus == OK ) {
@@ -1156,37 +1126,6 @@ void CCvcDb::DumpAnalogNets(string theFileName, bool thePrintCircuitFlag) {
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 		if ( net_it != GetEquivalentNet(net_it) ) continue;  // skip shorted nets
 		if ( netVoltagePtr_v[net_it].full && netVoltagePtr_v[net_it].full->type[POWER_BIT] ) continue;  // skip power
-/*
-		bool myIsAnalog = false;
-		deviceId_t device_it = firstSource_v[net_it];
-		while ( ! myIsAnalog && device_it != UNKNOWN_DEVICE ) {
-			if ( GetEquivalentNet(drainNet_v[device_it]) != net_it ) {
-				switch( deviceType_v[device_it] ) {
-				case NMOS: case LDDN: case PMOS: case LDDP: {
-					if ( GetEquivalentNet(gateNet_v[device_it]) == net_it) myIsAnalog = true;
-					break;
-				}
-				case RESISTOR: { myIsAnalog = true; break; }
-				default: break;
-				}
-			}
-			device_it = nextSource_v[device_it];
-		}
-		device_it = firstDrain_v[net_it];
-		while ( ! myIsAnalog && device_it != UNKNOWN_DEVICE ) {
-			if ( GetEquivalentNet(sourceNet_v[device_it]) != net_it ) {
-				switch( deviceType_v[device_it] ) {
-				case NMOS: case LDDN: case PMOS: case LDDP: {
-					if ( GetEquivalentNet(gateNet_v[device_it]) == net_it) myIsAnalog = true;
-					break;
-				}
-				case RESISTOR: { myIsAnalog = true; break; }
-				default: break;
-				}
-			}
-			device_it = nextDrain_v[device_it];
-		}
-*/
 		if ( IsAnalogNet(net_it) ) {
 			myDumpFile << NetName(net_it, thePrintCircuitFlag) << endl;
 			myNetCount++;
@@ -1224,13 +1163,10 @@ void CCvcDb::DumpUnknownLogicalPorts(instanceId_t theCurrentInstanceId, string t
 		if ( ! IsSubcircuitOf(instance_it, theCurrentInstanceId) ) continue;  // only process subcircuits
 		CInstance * myInstance_p = instancePtr_v[instance_it];
 		if ( ! myInstance_p || ! myInstance_p->master_p ) {
-			//cout << "DEBUG: no instance or master at " << instance_it << endl;
 			continue;
 		}
 		CCircuit * myCircuit_p = myInstance_p->master_p;
-		//cout << "DEBUG: instance " << HierarchyName(instance_it, thePrintCircuitFlag) << " port count " << myCircuit_p->portCount << endl;
 		for( auto signalMap_pit = myCircuit_p->localSignalIdMap.begin(); signalMap_pit != myCircuit_p->localSignalIdMap.end(); signalMap_pit++ ) {
-		//for ( netId_t net_it = 0; net_it < myCircuit_p->portCount; net_it++ ) {}
 			netId_t net_it = signalMap_pit->second;
 			if ( net_it >= myCircuit_p->portCount && instance_it != theCurrentInstanceId ) continue;  // skip internal signals in subcircuits
 			list<tuple<instanceId_t, netId_t, netId_t>> myNetStack;
@@ -1239,8 +1175,6 @@ void CCvcDb::DumpUnknownLogicalPorts(instanceId_t theCurrentInstanceId, string t
 			if ( ! myIsLogicalNet_v[myTopNetId] ) continue;  // ignore analog nets and known logic
 			if ( ! regex_match(signalMap_pit->first, mySearchPattern) ) continue;  // ignore non-match
 			if ( firstGate_v[myTopNetId] == UNKNOWN_NET ) continue;  // ignore floating outputs (also ignores transfer gate connections)
-			//cout << "DEBUG: local net " << net_it << " global net " << myInstance_p->localToGlobalNetId_v[net_it] << " equivalent " << myTopNetId << endl;
-			//cout << "DEBUG: net " << net_it << " " << signalMap_pit->first << " " << NetName(myTopNetId, thePrintCircuitFlag) << endl;
 			netId_t mySourceNet = myTopNetId;
 			myNetStack.push_front(tuple<instanceId_t, netId_t, netId_t>(instance_it, net_it, mySourceNet));
 			// must be done after second sim so power & override nets are propagated
@@ -1249,11 +1183,9 @@ void CCvcDb::DumpUnknownLogicalPorts(instanceId_t theCurrentInstanceId, string t
 				myNetStack.push_front(tuple<instanceId_t, netId_t, netId_t>(UNKNOWN_INSTANCE, UNKNOWN_NET, mySourceNet));
 			}
 			bool myNetFound = false;
-			//cout << "DEBUG: inverter stack size " << myNetStack.size() << endl;
 			while ( myNetStack.size() > 0 && ! myNetFound ) {
 				tuple<instanceId_t, netId_t, netId_t> mySearchTuple = myNetStack.front();
 				myNetStack.pop_front();
-				//cout << "DEBUG: inverter stack size " << myNetStack.size() << endl;
 				netId_t myNet = get<2>(mySearchTuple);
 				if ( ! IsInstanceNet(myNet, theCurrentInstanceId) ) continue;  // ignore nets not in current instance
 				instanceId_t mySearchInstance = get<0>(mySearchTuple);
@@ -1275,19 +1207,8 @@ void CCvcDb::DumpUnknownLogicalPorts(instanceId_t theCurrentInstanceId, string t
 				while ( mySearchInstance != theCurrentInstanceId && IsSubcircuitOf(mySearchInstance, theCurrentInstanceId) && ! myNetFound ) {
 					// unfortunately requires 2 reverse searches. port given global net, and name given port
 					mySearchInstance_p = instancePtr_v[mySearchInstance];
-					//cout << "DEBUG: searching " << mySearchInstance << " of " << theCurrentInstanceId << " for " << myNet << "<" << mySearchInstance_p->firstNetId << endl;
 					if ( myNet < mySearchInstance_p->firstNetId ) {  // only process ports
 						myLocalNetName = GetLocalNetName(mySearchInstance, myNet);
-/*
-						mySearchCircuit_p = mySearchInstance_p->master_p;
-						port_it = 0;
-						while ( port_it < mySearchCircuit_p->portCount && myNet != mySearchInstance_p->localToGlobalNetId_v[port_it] ) {
-							port_it++;
-						}
-						if ( port_it < mySearchCircuit_p->portCount ) {
-							myNetFound = regex_match(mySearchCircuit_p->internalSignal_v[port_it], mySearchPattern);
-						}
-*/
 						if ( myLocalNetName != NULL ) {
 							//cout << "DEBUG: checking " << myLocalNetName << endl;
 							myNetFound = regex_match(myLocalNetName, mySearchPattern);
@@ -1297,15 +1218,12 @@ void CCvcDb::DumpUnknownLogicalPorts(instanceId_t theCurrentInstanceId, string t
 						mySearchInstance = instancePtr_v[mySearchInstance]->parentId;
 					}
 				}
-				//cout << "DEBUG: finished searching " << myNetFound << endl;
 				if ( ! myNetFound && mySearchInstance == theCurrentInstanceId ) {  // include internal nets of top level
-					//cout << "DEBUG: searching internals " << endl;
 					mySearchInstance_p = instancePtr_v[theCurrentInstanceId];
 					mySearchCircuit_p = mySearchInstance_p->master_p;
 					netId_t mySearchLimit = mySearchInstance_p->localToGlobalNetId_v.size();
 					myLocalNetName = GetLocalNetName(theCurrentInstanceId, myNet);
 					if ( myLocalNetName != NULL ) {
-						//cout << "DEBUG: checking " << myLocalNetName << endl;
 						myNetFound = regex_match(myLocalNetName, mySearchPattern);
 					}
 				}
@@ -1348,20 +1266,15 @@ void CCvcDb::DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag
 		myIsLogicalNet_v[net_it] = ! IsAnalogNet(net_it);
 	}
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
-//		cout << "DEBUG: net " << net_it << endl;
 		if ( ! myIsLogicalNet_v[net_it] ) continue;  // skip shorted, defined, and analog nets
 
-//		cout << "logic - clear" << endl;
 		if ( simNet_v[net_it].finalNetId != net_it ) continue;  // skip known values
 
-//		cout << "unknown - clear" << endl;
 		if ( inverterNet_v[net_it] != UNKNOWN_NET
 				&& inverterNet_v[net_it] >= topCircuit_p->portCount
 				&& ! netStatus_v[inverterNet_v[net_it]][ANALOG] ) continue;  // skip inverter output unless inverter input is chip input or analog signal
 
-//		cout << "inverter - clear" << endl;
 		CDeviceCount myDeviceCount(net_it, this);
-//		cout << "pmos " << myDeviceCount.pmosCount << ": nmos " << myDeviceCount.nmosCount << endl;
 		if ( myDeviceCount.activePmosCount == 0 || myDeviceCount.activeNmosCount == 0 ) continue;  // skip non logic output
 		myMinNet(minNet_v, net_it);
 		myMaxNet(maxNet_v, net_it);
@@ -1370,7 +1283,6 @@ void CCvcDb::DumpUnknownLogicalNets(string theFileName, bool thePrintCircuitFlag
 			|| myMinNet.finalNetId == net_it
 			|| myMaxNet.finalNetId == net_it
 			|| myMinNet.finalNetId == myMaxNet.finalNetId ) continue;  // invalid min/max
-//		cout << "cmos - clear" << endl;
 		myDumpFile << NetName(net_it, thePrintCircuitFlag);
 		myDumpFile << " min " << NetName(myMinNet.finalNetId, thePrintCircuitFlag);
 		myDumpFile << " max " << NetName(myMaxNet.finalNetId, thePrintCircuitFlag) << endl;

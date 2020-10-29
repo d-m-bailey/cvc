@@ -526,26 +526,9 @@ void CCvcDb::OverrideFuses() {
 	if ( myFuseError ) {
 		logFile << "ABORT: unexpected fuse error" << endl;
 		throw EFatalError("unexpected fuse error");
-//		exit(1);
 	}
 	return;
 }
-
-/*
-void CCvcDb::ShortNonconductingResistor(netId_t theNetId) {
-	deviceId_t myDeviceId = UNKNOWN_DEVICE;
-	if ( firstSource_v[net_it] != UNKNOWN_DEVICE ) {
-		myDeviceId = firstSource_v[net_it];
-		if ( firstDrain_v[net_it] != UNKNOWN_DEVICE ) {
-			throw EDatabaseError();
-		}
-	} else if ( firstDrain_v[net_it] != UNKNOWN_DEVICE ) {
-		myDeviceId = firstDrain_v[net_it];
-	} else {
-		throw EDatabaseError();
-	}
-}
-*/
 
 deviceId_t CCvcDb::FindUniqueSourceDrainConnectedDevice(netId_t theNetId) {
 	deviceId_t myResultDeviceId = UNKNOWN_DEVICE;
@@ -926,22 +909,15 @@ forward_list<netId_t> * CCvcDb::FindNetIds(string thePowerSignal, instanceId_t t
 		mySearchInstanceIdList = FindInstanceIds(myInstanceName, theParent);
 	} while( mySearchInstanceIdList.empty() && myInstanceName != "" );
 	try {
-//		list<string> * myNetNameList_p = ExpandBusNet(mySignalName);
 		bool myCheckTopPort = false;
 		if ( mySignalName == thePowerSignal ) { // top port
 			myCheckTopPort = true;
 		}
-//		bool myFoundNetMatch = false;
-//		for ( auto myNetName_pit = myNetNameList_p->begin(); myNetName_pit != myNetNameList_p->end(); myNetName_pit++ ) {
 		string myNetName = mySignalName;
 		if ( ! myUnmatchedInstance.empty() ) {
 			myNetName = myUnmatchedInstance + HIERARCHY_DELIMITER + myNetName;
 		}
-//			string myFuzzyFilter = FuzzyFilter(myNetName);
-//			regex mySearchPattern(myFuzzyFilter);
 		netId_t myNetId;
-//		bool myExactMatch = true;
-//			bool myFuzzySearch = (myFuzzyFilter.find_first_of("^$.*+?()[]{}|\\") < myFuzzyFilter.npos);
 		text_t mySignalText;
 		try {
 			mySignalText = cvcCircuitList.cdlText.GetTextAddress(myNetName);
@@ -952,13 +928,11 @@ forward_list<netId_t> * CCvcDb::FindNetIds(string thePowerSignal, instanceId_t t
 
 				}
 				CTextNetIdMap * mySignalIdMap_p = &(instancePtr_v[*instanceId_pit]->master_p->localSignalIdMap);
-//				if ( myExactMatch ) { // exact match
 				if ( mySignalIdMap_p->count(mySignalText) > 0 ) {
 					myNetId = instancePtr_v[*instanceId_pit]->localToGlobalNetId_v[mySignalIdMap_p->at(mySignalText)];
 					if ( myCheckTopPort && *instanceId_pit == 0 && myNetId >= topCircuit_p->portCount ) continue; // top signals that are not ports posing as ports
 					if ( ! myCheckTopPort && *instanceId_pit == 0 && myNetId < topCircuit_p->portCount ) continue; // top signals that should be ports
 					myNetIdList_p->push_front(myNetId);
-//					myFoundNetMatch = true;
 				}
 			}
 		}
@@ -1659,7 +1633,6 @@ void CCvcDb::PrintNetSuggestions() {
 			if ( firstGate_v[myCheckNet] != UNKNOWN_DEVICE ) {
 				myHasGateConnection = true;
 			}
-			//cout << "checked " << myCheckedNets.size() << " unchecked " << myUncheckedNets.size() << endl;
 			for ( deviceId_t device_it = firstSource_v[myCheckNet]; device_it != UNKNOWN_DEVICE && myIsPossibleInput; device_it = nextSource_v[device_it] ) {
 				netId_t mySearchNet = drainNet_v[device_it];
 				if ( ( IsMos_(deviceType_v[device_it]) && mySearchNet != gateNet_v[device_it] )

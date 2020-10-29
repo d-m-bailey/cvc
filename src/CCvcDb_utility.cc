@@ -52,16 +52,6 @@ voltage_t CCvcDb::MinVoltage(netId_t theNetId, bool theSkipHiZFlag) {
 		static CVirtualNet myVirtualNet;
 		assert(theNetId == GetEquivalentNet(theNetId));
 		myVirtualNet(minNet_v, theNetId);
-//		CheckResistorOverflow_(minNet_v[theNetId].finalResistance, theNetId, logFile);
-/*
-		if ( isFixedMinNet ) {
-			myVirtualNet = fixedMinNet_v[theNetId];
-		} else {
-			myVirtualNet(minNet_v, theNetId);
-//			myVirtualNet.GetMasterNet(minNet_v, theNetId);
-		}
-*/
-//		if ( isFixedMinNet && ! ( myVirtualNet == fixedMinNet_v[theNetId]) ) throw EDatabaseError("Fixed min net mismatch");
 		if ( myVirtualNet.finalNetId != UNKNOWN_NET ) {
 			CPower * myFinalPower_p = netVoltagePtr_v[myVirtualNet.finalNetId].full;
 			if ( myFinalPower_p ) {
@@ -79,16 +69,6 @@ voltage_t CCvcDb::MinSimVoltage(netId_t theNetId) {
 		static CVirtualNet myVirtualNet;
 		assert(theNetId == GetEquivalentNet(theNetId));
 		myVirtualNet(minNet_v, theNetId);
-//		CheckResistorOverflow_(minNet_v[theNetId].finalResistance, theNetId, logFile);
-/*
-		if ( isFixedMinNet ) {
-			myVirtualNet = fixedMinNet_v[theNetId];
-		} else {
-			myVirtualNet(minNet_v, theNetId);
-//			myVirtualNet.GetMasterNet(minNet_v, theNetId);
-		}
-*/
-//		if ( isFixedMinNet && ! ( myVirtualNet == fixedMinNet_v[theNetId]) ) throw EDatabaseError("Fixed min net mismatch");
 		if ( myVirtualNet.finalNetId != UNKNOWN_NET ) {
 			voltage_t myMinVoltage = ( netVoltagePtr_v[myVirtualNet.finalNetId].full ) ? netVoltagePtr_v[myVirtualNet.finalNetId].full->minVoltage : UNKNOWN_VOLTAGE;
 			netId_t myNetId = theNetId;
@@ -140,17 +120,6 @@ voltage_t CCvcDb::SimVoltage(netId_t theNetId) {
 		static CVirtualNet myVirtualNet;
 		assert(theNetId == GetEquivalentNet(theNetId));
 		myVirtualNet(simNet_v, theNetId);
-//		CheckResistorOverflow_(simNet_v[theNetId].finalResistance, theNetId, logFile);
-/*
-		if ( isFixedSimNet ) {
-			myVirtualNet = fixedSimNet_v[theNetId];
-		} else {
-			myVirtualNet(simNet_v, theNetId);
-//			myVirtualNet.GetMasterNet(simNet_v, theNetId);
-		}
-*/
-//		if ( isFixedSimNet && ! ( myVirtualNet == fixedSimNet_v[theNetId]) ) throw EDatabaseError("Fixed sim net mismatch");
-//		CVirtualNet myVirtualNet(simNet_v, theNetId);
 		if ( myVirtualNet.finalNetId != UNKNOWN_NET ) {
 			CPower * myFinalPower_p = netVoltagePtr_v[myVirtualNet.finalNetId].full;
 			if ( myFinalPower_p ) {
@@ -229,17 +198,6 @@ resistance_t CCvcDb::SimResistance(netId_t theNetId) {
 		static CVirtualNet myVirtualNet;
 		assert(theNetId == GetEquivalentNet(theNetId));
 		myVirtualNet(simNet_v, theNetId);
-//		CheckResistorOverflow_(simNet_v[theNetId].finalResistance, theNetId, logFile);
-/*
-		if ( isFixedSimNet ) {
-			myVirtualNet = fixedSimNet_v[theNetId];
-		} else {
-			myVirtualNet(simNet_v, theNetId);
-//			myVirtualNet.GetMasterNet(simNet_v, theNetId);
-		}
-*/
-//		if ( isFixedSimNet && ! ( myVirtualNet == fixedSimNet_v[theNetId]) ) throw EDatabaseError("Fixed sim net mismatch");
-//		CVirtualNet myVirtualNet(simNet_v, theNetId);
 		return myVirtualNet.finalResistance;
 	}
 	return MAX_RESISTANCE;
@@ -250,18 +208,6 @@ voltage_t CCvcDb::MaxVoltage(netId_t theNetId, bool theSkipHiZFlag) {
 		static CVirtualNet myVirtualNet;
 		assert(theNetId == GetEquivalentNet(theNetId));
 		myVirtualNet(maxNet_v, theNetId);
-//		CheckResistorOverflow_(maxNet_v[theNetId].finalResistance, theNetId, logFile);
-
-/*
-		if ( isFixedMaxNet ) {
-			myVirtualNet = fixedMaxNet_v[theNetId];
-		} else {
-			myVirtualNet(maxNet_v, theNetId);
-//			myVirtualNet.GetMasterNet(maxNet_v, theNetId);
-		}
-*/
-//		if ( isFixedMaxNet && ! ( myVirtualNet == fixedMaxNet_v[theNetId]) ) throw EDatabaseError("Fixed max net mismatch");
-//		CVirtualNet myVirtualNet(maxNet_v, theNetId);
 		if ( myVirtualNet.finalNetId != UNKNOWN_NET ) {
 			CPower * myFinalPower_p = netVoltagePtr_v[myVirtualNet.finalNetId].full;
 			if ( myFinalPower_p ) {
@@ -279,16 +225,6 @@ voltage_t CCvcDb::MaxSimVoltage(netId_t theNetId) {
 		static CVirtualNet myVirtualNet;
 		assert(theNetId == GetEquivalentNet(theNetId));
 		myVirtualNet(maxNet_v, theNetId);
-//		CheckResistorOverflow_(minNet_v[theNetId].finalResistance, theNetId, logFile);
-/*
-		if ( isFixedMinNet ) {
-			myVirtualNet = fixedMinNet_v[theNetId];
-		} else {
-			myVirtualNet(minNet_v, theNetId);
-//			myVirtualNet.GetMasterNet(minNet_v, theNetId);
-		}
-*/
-//		if ( isFixedMinNet && ! ( myVirtualNet == fixedMinNet_v[theNetId]) ) throw EDatabaseError("Fixed min net mismatch");
 		if ( myVirtualNet.finalNetId != UNKNOWN_NET ) {
 			voltage_t myMaxVoltage = ( netVoltagePtr_v[myVirtualNet.finalNetId].full ) ? netVoltagePtr_v[myVirtualNet.finalNetId].full->maxVoltage : UNKNOWN_VOLTAGE;
 			netId_t myNetId = theNetId;
@@ -322,7 +258,6 @@ voltage_t CCvcDb::MaxLeakVoltage(netId_t theNetId) {
 	if ( theNetId != UNKNOWN_NET && leakVoltageSet ) {
 		assert(theNetId == GetEquivalentNet(theNetId));
 		netId_t myNetId = maxNet_v[theNetId].backupNetId;
-//		CVirtualNet myVirtualNet(maxLeakNet_v, theNetId);
 		if ( myNetId != UNKNOWN_NET ) {
 			while ( myNetId != maxNet_v[myNetId].backupNetId ) {
 				myNetId = maxNet_v[myNetId].backupNetId;
@@ -331,14 +266,6 @@ voltage_t CCvcDb::MaxLeakVoltage(netId_t theNetId) {
 				return leakVoltagePtr_v[myNetId].full->maxVoltage;
 			}
 		}
-/*
-		CVirtualNet myVirtualNet(maxLeakNet_v, theNetId);
-		if ( myVirtualNet.finalNetId != UNKNOWN_NET ) {
-			if ( leakVoltagePtr_v[myVirtualNet.finalNetId] ) {
-				return leakVoltagePtr_v[myVirtualNet.finalNetId]->maxVoltage;
-			}
-		}
-*/
 	}
 	return UNKNOWN_VOLTAGE;
 }
@@ -439,16 +366,11 @@ void CCvcDb::MapDeviceNets(deviceId_t theDeviceId, CEventQueue& theEventQueue, C
 	CDevice * myDevice_p;
 	CInstance * myInstance_p = instancePtr_v[deviceParent_v[theDeviceId]];
 	myDevice_p = myInstance_p->master_p->devicePtr_v[theDeviceId - myInstance_p->firstDeviceId];
-//	SetDeviceNets(myInstance_p, myDevice_p, theConnections.sourceId, theConnections.gateId, theConnections.drainId, theConnections.bulkId);
 	SetConnections_(theConnections, theDeviceId);
 	theConnections.masterSourceNet(theEventQueue.virtualNet_v, theConnections.sourceId);
 	theConnections.masterGateNet(theEventQueue.virtualNet_v, theConnections.gateId);
 	theConnections.masterDrainNet(theEventQueue.virtualNet_v, theConnections.drainId);
 	theConnections.masterBulkNet(theEventQueue.virtualNet_v, theConnections.bulkId);
-//	theConnections.masterSourceNet = CVirtualNet(theEventQueue.virtualNet_v, theConnections.sourceId);
-//	theConnections.masterGateNet = CVirtualNet(theEventQueue.virtualNet_v, theConnections.gateId);
-//	theConnections.masterDrainNet = CVirtualNet(theEventQueue.virtualNet_v, theConnections.drainId);
-//	theConnections.masterBulkNet = CVirtualNet(theEventQueue.virtualNet_v, theConnections.bulkId);
 	if ( theEventQueue.queueType == MAX_QUEUE ) {
 		theConnections.sourceVoltage = netVoltagePtr_v.MaxVoltage(theConnections.masterSourceNet.finalNetId);
 		theConnections.gateVoltage = netVoltagePtr_v.MaxVoltage(theConnections.masterGateNet.finalNetId);
@@ -489,127 +411,6 @@ void CCvcDb::MapDeviceNets(deviceId_t theDeviceId, CFullConnection& theConnectio
 	CDevice * myDevice_p = myInstance_p->master_p->devicePtr_v[theDeviceId - myInstance_p->firstDeviceId];
 	MapDeviceNets(myInstance_p, myDevice_p, theConnections);
 }
-/*
-{
-	SetConnections_(theConnections, theDeviceId);
-	switch (myDevice_p->model_p->type) {
-		case NMOS: case PMOS: case LDDN: case LDDP: {
-			theConnections.originalDrainId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[0]];
-			theConnections.originalGateId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[1]];
-			theConnections.originalSourceId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[2]];
-//			theConnections.sourceId = GetEquivalentNet(theConnections.originalSourceId);
-//			theConnections.gateId = GetEquivalentNet(theConnections.originalGateId);
-//			theConnections.drainId = GetEquivalentNet(theConnections.originalDrainId);
-			if ( cvcParameters.cvcSOI ) {
-				theConnections.originalBulkId = UNKNOWN_NET;
-//				theConnections.bulkId = UNKNOWN_NET;
-			} else {
-				theConnections.originalBulkId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[3]];
-//				theConnections.bulkId = GetEquivalentNet(theConnections.originalBulkId);
-			}
-			break; }
-		case DIODE: case SWITCH_OFF: case FUSE_OFF: case CAPACITOR:	case SWITCH_ON:	case FUSE_ON: case RESISTOR: {
-			theConnections.originalSourceId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[0]];
-			theConnections.originalGateId = UNKNOWN_NET;
-			theConnections.originalDrainId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[1]];
-//			theConnections.sourceId = GetEquivalentNet(theConnections.originalSourceId);
-//			theConnections.gateId = UNKNOWN_NET;
-//			theConnections.drainId = GetEquivalentNet(theConnections.originalDrainId);
-			if ( myDevice_p->signalId_v.size() == 3 ) {
-				theConnections.originalBulkId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[2]];
-//				theConnections.bulkId = GetEquivalentNet(theConnections.originalBulkId);
-			} else {
-				theConnections.originalBulkId = UNKNOWN_NET;
-//				theConnections.bulkId = UNKNOWN_NET;
-			}
-			break; }
-		case BIPOLAR: {
-			theConnections.originalSourceId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[0]];
-			theConnections.originalGateId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[1]];
-			theConnections.originalDrainId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[2]];
-			theConnections.originalBulkId = UNKNOWN_NET;
-//			theConnections.sourceId = GetEquivalentNet(theConnections.originalSourceId);
-//			theConnections.gateId = GetEquivalentNet(theConnections.originalGateId);
-//			theConnections.drainId = GetEquivalentNet(theConnections.originalDrainId);
-//			theConnections.bulkId = UNKNOWN_NET;
-		break; }
-		default: {
-//			cout << "ERROR: Unknown model type in LinkDevices" << endl;
-			myDevice_p->model_p->Print();
-			throw EUnknownModel();
-		}
-	}
-	theConnections.masterMaxSourceNet(maxNet_v, theConnections.sourceId);
-	theConnections.masterMaxGateNet(maxNet_v, theConnections.gateId);
-	theConnections.masterMaxDrainNet(maxNet_v, theConnections.drainId);
-	theConnections.masterMaxBulkNet(maxNet_v, theConnections.bulkId);
-//	theConnections.masterMaxSourceNet = CVirtualNet(maxNet_v, theConnections.sourceId);
-//	theConnections.masterMaxGateNet = CVirtualNet(maxNet_v, theConnections.gateId);
-//	theConnections.masterMaxDrainNet = CVirtualNet(maxNet_v, theConnections.drainId);
-//	theConnections.masterMaxBulkNet = CVirtualNet(maxNet_v, theConnections.bulkId);
-	theConnections.maxSourceVoltage = netVoltagePtr_v.MaxVoltage(theConnections.masterMaxSourceNet.finalNetId);
-	theConnections.maxGateVoltage = netVoltagePtr_v.MaxVoltage(theConnections.masterMaxGateNet.finalNetId);
-	theConnections.maxDrainVoltage = netVoltagePtr_v.MaxVoltage(theConnections.masterMaxDrainNet.finalNetId);
-	theConnections.maxBulkVoltage = netVoltagePtr_v.MaxVoltage(theConnections.masterMaxBulkNet.finalNetId);
-	theConnections.maxSourcePower_p = netVoltagePtr_v[theConnections.masterMaxSourceNet.finalNetId].full;
-	theConnections.maxDrainPower_p = netVoltagePtr_v[theConnections.masterMaxDrainNet.finalNetId].full;
-	if ( theConnections.masterMaxGateNet.finalNetId == UNKNOWN_NET ) {
-		theConnections.maxGatePower_p = NULL;
-	} else {
-		theConnections.maxGatePower_p = netVoltagePtr_v[theConnections.masterMaxGateNet.finalNetId].full;
-	}
-	if ( theConnections.masterMaxBulkNet.finalNetId == UNKNOWN_NET ) {
-		theConnections.maxBulkPower_p = NULL;
-	} else {
-		theConnections.maxBulkPower_p = netVoltagePtr_v[theConnections.masterMaxBulkNet.finalNetId].full;
-	}
-
-	theConnections.masterMinSourceNet(minNet_v, theConnections.sourceId);
-	theConnections.masterMinGateNet(minNet_v, theConnections.gateId);
-	theConnections.masterMinDrainNet(minNet_v, theConnections.drainId);
-	theConnections.masterMinBulkNet(minNet_v, theConnections.bulkId);
-	theConnections.minSourceVoltage = netVoltagePtr_v.MinVoltage(theConnections.masterMinSourceNet.finalNetId);
-	theConnections.minGateVoltage = netVoltagePtr_v.MinVoltage(theConnections.masterMinGateNet.finalNetId);
-	theConnections.minDrainVoltage = netVoltagePtr_v.MinVoltage(theConnections.masterMinDrainNet.finalNetId);
-	theConnections.minBulkVoltage = netVoltagePtr_v.MinVoltage(theConnections.masterMinBulkNet.finalNetId);
-	theConnections.minSourcePower_p = netVoltagePtr_v[theConnections.masterMinSourceNet.finalNetId].full;
-	theConnections.minDrainPower_p = netVoltagePtr_v[theConnections.masterMinDrainNet.finalNetId].full;
-	if ( theConnections.masterMinGateNet.finalNetId == UNKNOWN_NET ) {
-		theConnections.minGatePower_p = NULL;
-	} else {
-		theConnections.minGatePower_p = netVoltagePtr_v[theConnections.masterMinGateNet.finalNetId].full;
-	}
-	if ( theConnections.masterMinBulkNet.finalNetId == UNKNOWN_NET ) {
-		theConnections.minBulkPower_p = NULL;
-	} else {
-		theConnections.minBulkPower_p = netVoltagePtr_v[theConnections.masterMinBulkNet.finalNetId].full;
-	}
-
-	theConnections.masterSimSourceNet(simNet_v, theConnections.sourceId);
-	theConnections.masterSimGateNet(simNet_v, theConnections.gateId);
-	theConnections.masterSimDrainNet(simNet_v, theConnections.drainId);
-	theConnections.masterSimBulkNet(simNet_v, theConnections.bulkId);
-	theConnections.simSourceVoltage = netVoltagePtr_v.SimVoltage(theConnections.masterSimSourceNet.finalNetId);
-	theConnections.simGateVoltage = netVoltagePtr_v.SimVoltage(theConnections.masterSimGateNet.finalNetId);
-	theConnections.simDrainVoltage = netVoltagePtr_v.SimVoltage(theConnections.masterSimDrainNet.finalNetId);
-	theConnections.simBulkVoltage = netVoltagePtr_v.SimVoltage(theConnections.masterSimBulkNet.finalNetId);
-	theConnections.simSourcePower_p = netVoltagePtr_v[theConnections.masterSimSourceNet.finalNetId].full;
-	theConnections.simDrainPower_p = netVoltagePtr_v[theConnections.masterSimDrainNet.finalNetId].full;
-	if ( theConnections.masterSimGateNet.finalNetId == UNKNOWN_NET ) {
-		theConnections.simGatePower_p = NULL;
-	} else {
-		theConnections.simGatePower_p = netVoltagePtr_v[theConnections.masterSimGateNet.finalNetId].full;
-	}
-	if ( theConnections.masterSimBulkNet.finalNetId == UNKNOWN_NET ) {
-		theConnections.simBulkPower_p = NULL;
-	} else {
-		theConnections.simBulkPower_p = netVoltagePtr_v[theConnections.masterSimBulkNet.finalNetId].full;
-	}
-	theConnections.device_p = myDevice_p;
-	theConnections.deviceId = theDeviceId;
-	theConnections.resistance = parameterResistanceMap[theConnections.device_p->parameters];
-}
-*/
 
 void CCvcDb::MapDeviceSourceDrainNets(deviceId_t theDeviceId, CFullConnection& theConnections) {
 	CDevice * myDevice_p;
@@ -619,98 +420,38 @@ void CCvcDb::MapDeviceSourceDrainNets(deviceId_t theDeviceId, CFullConnection& t
 	switch (myDevice_p->model_p->type) {
 		case NMOS: case PMOS: case LDDN: case LDDP: {
 			theConnections.originalDrainId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[0]];
-//			theConnections.originalGateId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[1]];
 			theConnections.originalSourceId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[2]];
-//			theConnections.originalBulkId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[3]];
-//			theConnections.sourceId = GetEquivalentNet(theConnections.originalSourceId);
-//			theConnections.gateId = GetEquivalentNet(theConnections.originalGateId);
-//			theConnections.drainId = GetEquivalentNet(theConnections.originalDrainId);
-//			theConnections.bulkId = GetEquivalentNet(theConnections.originalBulkId);
 			break; }
 		case BIPOLAR: case DIODE: case SWITCH_OFF: case FUSE_OFF: case CAPACITOR:	case SWITCH_ON:	case FUSE_ON: case RESISTOR: {
 			theConnections.originalSourceId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[0]];
-//			theConnections.originalGateId = UNKNOWN_NET;
 			theConnections.originalDrainId = myInstance_p->localToGlobalNetId_v[myDevice_p->signalId_v[1]];
-//			theConnections.originalBulkId = UNKNOWN_NET;
-//			theConnections.sourceId = GetEquivalentNet(theConnections.originalSourceId);
-//			theConnections.gateId = UNKNOWN_NET;
-//			theConnections.drainId = GetEquivalentNet(theConnections.originalDrainId);
-//			theConnections.bulkId = UNKNOWN_NET;
 			break; }
 		default: {
-//			cout << "ERROR: Unknown model type in LinkDevices" << endl;
 			myDevice_p->model_p->Print();
 			throw EUnknownModel();
 		}
 	}
 	theConnections.masterMaxSourceNet(maxNet_v, theConnections.sourceId);
-//	theConnections.masterMaxGateNet = CVirtualNet(maxNet_v, theConnections.gateId);
 	theConnections.masterMaxDrainNet(maxNet_v, theConnections.drainId);
-//	theConnections.masterMaxBulkNet = CVirtualNet(maxNet_v, theConnections.bulkId);
 	theConnections.maxSourceVoltage = netVoltagePtr_v.MaxVoltage(theConnections.masterMaxSourceNet.finalNetId);
-//	theConnections.maxGateVoltage = netVoltagePtr_v.MaxVoltage(theConnections.masterMaxGateNet.finalNetId);
 	theConnections.maxDrainVoltage = netVoltagePtr_v.MaxVoltage(theConnections.masterMaxDrainNet.finalNetId);
-//	theConnections.maxBulkVoltage = netVoltagePtr_v.MaxVoltage(theConnections.masterMaxBulkNet.finalNetId);
 	theConnections.maxSourcePower_p = netVoltagePtr_v[theConnections.masterMaxSourceNet.finalNetId].full;
 	theConnections.maxDrainPower_p = netVoltagePtr_v[theConnections.masterMaxDrainNet.finalNetId].full;
-/*
-	if ( theConnections.masterMaxGateNet.finalNetId == UNKNOWN_NET ) {
-		theConnections.maxGatePower_p = NULL;
-	} else {
-		theConnections.maxGatePower_p = netVoltagePtr_v[theConnections.masterMaxGateNet.finalNetId];
-	}
-	if ( theConnections.masterMaxBulkNet.finalNetId == UNKNOWN_NET ) {
-		theConnections.maxBulkPower_p = NULL;
-	} else {
-		theConnections.maxBulkPower_p = netVoltagePtr_v[theConnections.masterMaxBulkNet.finalNetId];
-	}
-*/
 
 	theConnections.masterMinSourceNet(minNet_v, theConnections.sourceId);
-//	theConnections.masterMinGateNet = CVirtualNet(minNet_v, theConnections.gateId);
 	theConnections.masterMinDrainNet(minNet_v, theConnections.drainId);
-//	theConnections.masterMinBulkNet = CVirtualNet(minNet_v, theConnections.bulkId);
 	theConnections.minSourceVoltage = netVoltagePtr_v.MinVoltage(theConnections.masterMinSourceNet.finalNetId);
-//	theConnections.minGateVoltage = netVoltagePtr_v.MinVoltage(theConnections.masterMinGateNet.finalNetId);
 	theConnections.minDrainVoltage = netVoltagePtr_v.MinVoltage(theConnections.masterMinDrainNet.finalNetId);
-//	theConnections.minBulkVoltage = netVoltagePtr_v.MinVoltage(theConnections.masterMinBulkNet.finalNetId);
 	theConnections.minSourcePower_p = netVoltagePtr_v[theConnections.masterMinSourceNet.finalNetId].full;
 	theConnections.minDrainPower_p = netVoltagePtr_v[theConnections.masterMinDrainNet.finalNetId].full;
-/*
-	if ( theConnections.masterMinGateNet.finalNetId == UNKNOWN_NET ) {
-		theConnections.minGatePower_p = NULL;
-	} else {
-		theConnections.minGatePower_p = netVoltagePtr_v[theConnections.masterMinGateNet.finalNetId];
-	}
-	if ( theConnections.masterMinBulkNet.finalNetId == UNKNOWN_NET ) {
-		theConnections.minBulkPower_p = NULL;
-	} else {
-		theConnections.minBulkPower_p = netVoltagePtr_v[theConnections.masterMinBulkNet.finalNetId];
-	}
-*/
 
 	theConnections.masterSimSourceNet(simNet_v, theConnections.sourceId);
-//	theConnections.masterSimGateNet = CVirtualNet(simNet_v, theConnections.gateId);
 	theConnections.masterSimDrainNet(simNet_v, theConnections.drainId);
-//	theConnections.masterSimBulkNet = CVirtualNet(simNet_v, theConnections.bulkId);
 	theConnections.simSourceVoltage = netVoltagePtr_v.SimVoltage(theConnections.masterSimSourceNet.finalNetId);
-//	theConnections.simGateVoltage = netVoltagePtr_v.SimVoltage(theConnections.masterSimGateNet.finalNetId);
 	theConnections.simDrainVoltage = netVoltagePtr_v.SimVoltage(theConnections.masterSimDrainNet.finalNetId);
-//	theConnections.simBulkVoltage = netVoltagePtr_v.SimVoltage(theConnections.masterSimBulkNet.finalNetId);
 	theConnections.simSourcePower_p = netVoltagePtr_v[theConnections.masterSimSourceNet.finalNetId].full;
 	theConnections.simDrainPower_p = netVoltagePtr_v[theConnections.masterSimDrainNet.finalNetId].full;
-/*
-	if ( theConnections.masterSimGateNet.finalNetId == UNKNOWN_NET ) {
-		theConnections.simGatePower_p = NULL;
-	} else {
-		theConnections.simGatePower_p = netVoltagePtr_v[theConnections.masterSimGateNet.finalNetId];
-	}
-	if ( theConnections.masterSimBulkNet.finalNetId == UNKNOWN_NET ) {
-		theConnections.simBulkPower_p = NULL;
-	} else {
-		theConnections.simBulkPower_p = netVoltagePtr_v[theConnections.masterSimBulkNet.finalNetId];
-	}
-*/
+
 	theConnections.device_p = myDevice_p;
 	theConnections.deviceId = theDeviceId;
 	theConnections.resistance = parameterResistanceMap[theConnections.device_p->parameters];
@@ -725,30 +466,20 @@ void CCvcDb::MapDeviceNets(CInstance * theInstance_p, CDevice * theDevice_p, CFu
 			theConnections.originalDrainId = theInstance_p->localToGlobalNetId_v[theDevice_p->signalId_v[0]];
 			theConnections.originalGateId = theInstance_p->localToGlobalNetId_v[theDevice_p->signalId_v[1]];
 			theConnections.originalSourceId = theInstance_p->localToGlobalNetId_v[theDevice_p->signalId_v[2]];
-//			theConnections.sourceId = GetEquivalentNet(theConnections.originalSourceId);
-//			theConnections.gateId = GetEquivalentNet(theConnections.originalGateId);
-//			theConnections.drainId = GetEquivalentNet(theConnections.originalDrainId);
 			if ( cvcParameters.cvcSOI ) {
 				theConnections.originalBulkId = UNKNOWN_NET;
-//				theConnections.bulkId = UNKNOWN_NET;
 			} else {
 				theConnections.originalBulkId = theInstance_p->localToGlobalNetId_v[theDevice_p->signalId_v[3]];
-//				theConnections.bulkId = GetEquivalentNet(theConnections.originalBulkId);
 			}
 			break; }
 		case DIODE: case SWITCH_OFF: case FUSE_OFF: case CAPACITOR:	case SWITCH_ON:	case FUSE_ON: case RESISTOR: {
 			theConnections.originalSourceId = theInstance_p->localToGlobalNetId_v[theDevice_p->signalId_v[0]];
 			theConnections.originalGateId = UNKNOWN_NET;
 			theConnections.originalDrainId = theInstance_p->localToGlobalNetId_v[theDevice_p->signalId_v[1]];
-//			theConnections.sourceId = GetEquivalentNet(theConnections.originalSourceId);
-//			theConnections.gateId = UNKNOWN_NET;
-//			theConnections.drainId = GetEquivalentNet(theConnections.originalDrainId);
 			if ( theDevice_p->signalId_v.size() == 3 ) {
 				theConnections.originalBulkId = theInstance_p->localToGlobalNetId_v[theDevice_p->signalId_v[2]];;
-//				theConnections.bulkId = GetEquivalentNet(theConnections.originalBulkId);
 			} else {
 				theConnections.originalBulkId = UNKNOWN_NET;
-//				theConnections.bulkId = UNKNOWN_NET;
 			}
 			break; }
 		case BIPOLAR: {
@@ -756,13 +487,8 @@ void CCvcDb::MapDeviceNets(CInstance * theInstance_p, CDevice * theDevice_p, CFu
 			theConnections.originalGateId = theInstance_p->localToGlobalNetId_v[theDevice_p->signalId_v[1]];
 			theConnections.originalDrainId = theInstance_p->localToGlobalNetId_v[theDevice_p->signalId_v[2]];
 			theConnections.originalBulkId = UNKNOWN_NET;
-//			theConnections.sourceId = GetEquivalentNet(theConnections.originalSourceId);
-//			theConnections.gateId = GetEquivalentNet(theConnections.originalGateId);;
-//			theConnections.drainId = GetEquivalentNet(theConnections.originalDrainId);
-//			theConnections.bulkId = UNKNOWN_NET;
 			break; }
 		default: {
-//			cout << "ERROR: Unknown model type in LinkDevices" << endl;
 			theDevice_p->model_p->Print();
 			throw EUnknownModel();
 		}
@@ -867,31 +593,6 @@ bool CCvcDb::GateEqualsDrain(CConnection& theConnections) {
 	throw EDatabaseError("GateEqualsDrain: " + NetName(theConnections.gateId));
 }
 
-/*
-void CCvcDb::RestoreQueue(CEventQueue& theBaseEventQueue, CEventQueue& theSavedEventQueue, deviceStatus_t theStatusBit) {
-	assert(theBaseEventQueue.QueueSize() == 0);
-
-	for (CEventSubQueue::iterator eventPair_pit = theSavedEventQueue.savedMainQueue.begin(); eventPair_pit != theSavedEventQueue.savedMainQueue.end(); eventPair_pit++ ) {
-		eventKey_t myEventKey = eventPair_pit->first;
-		for (CEventList::iterator device_pit = eventPair_pit->second.begin(); device_pit != eventPair_pit->second.end(); device_pit++ ) {
-			if ( deviceStatus_v[*device_pit][SIM_INACTIVE] ) continue;
-			theBaseEventQueue.mainQueue[myEventKey].push_back(*device_pit);
-			theBaseEventQueue.enqueueCount++;
-			deviceStatus_v[*device_pit][theStatusBit] = true;
-		}
-	}
-	for (CEventSubQueue::iterator eventPair_pit = theSavedEventQueue.savedDelayQueue.begin(); eventPair_pit != theSavedEventQueue.savedDelayQueue.end(); eventPair_pit++ ) {
-		eventKey_t myEventKey = eventPair_pit->first;
-		for (CEventList::iterator device_pit = eventPair_pit->second.begin(); device_pit != eventPair_pit->second.end(); device_pit++ ) {
-			if ( deviceStatus_v[*device_pit][SIM_INACTIVE] ) continue;
-			theBaseEventQueue.delayQueue[myEventKey].push_back(*device_pit);
-			theBaseEventQueue.enqueueCount++;
-			deviceStatus_v[*device_pit][theStatusBit] = true;
-		}
-	}
-}
-*/
-
 bool CCvcDb::PathContains(CVirtualNetVector& theSearchVector, netId_t theSearchNet, netId_t theTargetNet) {
 	netId_t myTargetNet = GetEquivalentNet(theTargetNet);
 	if (theSearchNet == myTargetNet) return true;
@@ -942,9 +643,6 @@ voltage_t CCvcDb::DefaultMinVoltage(CPower * thePower_p) {
 			reportFile << "DEBUG: Unexpected min voltage at net " << NetName(myMinNet) << endl;
 			return(UNKNOWN_VOLTAGE);
 		}
-		//assert(netVoltagePtr_v[myMinNet]);
-		//assert(netVoltagePtr_v[myMinNet]->minVoltage != UNKNOWN_VOLTAGE);
-		//return(netVoltagePtr_v[myMinNet]->minVoltage);
 	}
 }
 
@@ -960,9 +658,6 @@ voltage_t CCvcDb::DefaultMaxVoltage(CPower * thePower_p) {
 			reportFile << "DEBUG: Unexpected max voltage at net " << NetName(myMaxNet) << endl;
 			return(UNKNOWN_VOLTAGE);
 		}
-		//assert(netVoltagePtr_v[myMaxNet]);
-		//assert(netVoltagePtr_v[myMaxNet]->maxVoltage != UNKNOWN_VOLTAGE);
-		//return(netVoltagePtr_v[myMaxNet]->maxVoltage);
 	}
 }
 
@@ -1106,8 +801,6 @@ list<string> * CCvcDb::SplitHierarchy(string theFullPath) {
 void CCvcDb::SaveMinMaxLeakVoltages() {
 	leakVoltageSet = true;
 	cout << "Saving min/max voltages..." << endl;
-//	minLeakNet_v = minNet_v;
-//	maxLeakNet_v = maxNet_v;
 	minNet_v.BackupVirtualNets();
 	maxNet_v.BackupVirtualNets();
 	leakVoltagePtr_v = netVoltagePtr_v;
@@ -1115,7 +808,6 @@ void CCvcDb::SaveMinMaxLeakVoltages() {
 
 void CCvcDb::SaveInitialVoltages() {
 	cout << "Saving simulation voltages..." << endl;
-//	initialSimNet_v = simNet_v;
 	simNet_v.BackupVirtualNets();
 	initialVoltagePtr_v = netVoltagePtr_v;
 }
@@ -1206,7 +898,6 @@ size_t CCvcDb::InstanceDepth(instanceId_t theInstanceId) {
 }
 
 bool CCvcDb::IsSubcircuitOf(instanceId_t theInstanceId, instanceId_t theParentId) {
-//	cout << "Instance:parent " << theInstanceId << ":" << instancePtr_v[theInstanceId]->parentId << endl;
 	if ( theParentId == 0 ) return true;  // everything is subcircuit of root
 	if ( theInstanceId == theParentId ) return true;
 	if ( instancePtr_v[theInstanceId]->parentId == theParentId ) return true;
@@ -1227,7 +918,6 @@ void CCvcDb::RemoveInvalidPower(netId_t theNetId, size_t & theRemovedCount) {
 	if ( maxNet_v[theNetId].finalNetId > theNetId ) {
 		RemoveInvalidPower(maxNet_v[theNetId].finalNetId, theRemovedCount);
 	}
-	//cout << "DEBUG: checking valid net " << theNetId << endl;
 	voltage_t myMaxVoltage = MaxVoltage(theNetId, true);
 	voltage_t myMinVoltage = MinVoltage(theNetId, true);
 	if ( netStatus_v[theNetId][NEEDS_MIN_CHECK] && ! netStatus_v[theNetId][NEEDS_MAX_CHECK] && ! IsDerivedFromFloating(minNet_v, theNetId) ) {
@@ -1783,14 +1473,6 @@ int CCvcDb::CalculateMFactor(instanceId_t theInstanceId) {
 	if ( instancePtr_v[myInstanceId]->parallelInstanceCount > 1 ) {
 		myMFactor = instancePtr_v[myInstanceId]->parallelInstanceCount;
 	}
-/*
-	while ( myInstanceId > 0 ) {
-		if ( instancePtr_v[myInstanceId]->parallelInstanceCount > 1 ) {
-			myMFactor *= instancePtr_v[myInstanceId]->parallelInstanceCount;
-		}
-		myInstanceId = instancePtr_v[myInstanceId]->parentId;
-	}
-*/
 	return myMFactor;
 }
 

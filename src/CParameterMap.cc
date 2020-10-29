@@ -35,11 +35,6 @@ void CParameterMap::CreateParameterMap(string theParameterString) {
 			myEqualIndex = theParameterString.find("=", myStringBegin);
 			myParameterName = theParameterString.substr(myStringBegin, myEqualIndex - myStringBegin);
 			if ( myParameterName[0] == '$' ) myParameterName = myParameterName.substr(1);
-/*
-			for ( int myIndex = 0; myIndex < myParameterName.length(); myIndex++ ) {
-				myParameterName[myIndex] = toupper(myParameterName[myIndex]);
-			}
-*/
 			toupper_(myParameterName);
 			myParameterValue = theParameterString.substr(myEqualIndex + 1, myStringEnd - (myEqualIndex + 1));
 			(*this)[myParameterName] = myParameterValue;
@@ -61,7 +56,6 @@ void CParameterMap::Print(string theIndentation, string theHeading) {
 resistance_t CParameterMap::CalculateResistance(string theEquation) {
 	list<string> * myTokenList_p;
 	// exceptions cause memory leaks
-//	cout << "calculating " << theEquation << endl;
 	if ( IsValidVoltage_(theEquation) ) {
 		myTokenList_p = new(list<string>);
 		myTokenList_p->push_back(theEquation);
@@ -106,7 +100,6 @@ resistance_t CParameterMap::CalculateResistance(string theEquation) {
 	}
 	if ( myResistanceStack.size() != 1 ) EResistanceError("invalid equation: " + theEquation);
 	delete myTokenList_p;
-//	cout << "Final voltage " << myResistanceStack.front() << endl;
 	if ( myResistanceStack.front() >= MAX_RESISTANCE ) {
 		return ( MAX_RESISTANCE );
 	} else {

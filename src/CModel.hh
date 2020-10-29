@@ -53,7 +53,6 @@ public:
 	voltage_t	Vth = UNKNOWN_VOLTAGE;
 
 	string	resistanceDefinition;
-//	resistance_t	R = 1;
 
 	string	baseType = "";
 

@@ -69,7 +69,6 @@ public:
 	// parent instance.	 Use offset from first in instance to find name, etc.
 	// [*] = instance
 	CInstanceIdVector	netParent_v;
-//	CInstanceIdVector	subcircuitParent;
 	CInstanceIdVector	deviceParent_v;
 
 	// [device] = device
@@ -101,17 +100,6 @@ public:
 	CVirtualNetVector	minNet_v;
 	CVirtualNetVector	simNet_v;
 	CVirtualNetVector	maxNet_v;
-//	CVirtualNetVector	initialMaxNet_v;
-//	CVirtualNetVector	initialMinNet_v;
-//	CVirtualNetMappedVector	initialSimNet_v;
-//	CVirtualNetVector	logicMaxNet_v;
-//	CVirtualNetVector	logicMinNet_v;
-//	CVirtualNetVector	logicSimNet_v;
-//	CVirtualNetMappedVector	maxLeakNet_v;
-//	CVirtualNetMappedVector	minLeakNet_v;
-//	CVirtualNetVector	fixedMaxNet_v;
-//	CVirtualNetVector	fixedMinNet_v;
-//	CVirtualNetVector	fixedSimNet_v;
 
 	bool isDeviceModelSet = false;
 	bool isFixedMinNet, isFixedSimNet, isFixedMaxNet;
@@ -133,14 +121,6 @@ public:
 	CNetIdVector	inverterNet_v; // inverterNet_v[1] = 2 means 2 -|>o- 1
 	vector<bool>	highLow_v;
 
-	// [powerIndex] = CPower
-//	CPowerPtrVector powerPtr_v;
-
-	// [net] = resistance
-//	vector<resistance_t>	maximumNetResistance;
-//	vector<resistance_t>	minimumNetResistance;
-//	vector<resistance_t>	simulationNetResistance;
-
 	CEventQueue	maxEventQueue;
 	CEventQueue minEventQueue;
 	CEventQueue simEventQueue;
@@ -148,15 +128,12 @@ public:
 	unordered_set<deviceId_t> mosDiodeSet;
 	unordered_set<string> unknownGateSet;
 
-//	vector<voltage_t>	voltage;
-
 	uintmax_t	deviceCount;
 	uintmax_t	subcircuitCount;
 	uintmax_t	netCount;
 
 	unsigned int	lineLength = 0;
 
-//	CTextModelPtrMap parameterModelPtrMap;
 	CTextResistanceMap	parameterResistanceMap;
 
 	voltage_t	minPower = MAX_VOLTAGE;
@@ -249,17 +226,12 @@ public:
 	void PrintFuseError(netId_t theTargetNetId, CConnection & theConnections);
 	void PrintMinVoltageConflict(netId_t theTargetNetId, CConnection & theMinConnections, voltage_t theExpectedVoltage, float theLeakCurrent);
 	void PrintMaxVoltageConflict(netId_t theTargetNetId, CConnection & theMaxConnections, voltage_t theExpectedVoltage, float theLeakCurrent);
-	//string FindVbgError(voltage_t theParameter, CFullConnection & theConnections);
-	//string FindVbsError(voltage_t theParameter, CFullConnection & theConnections);
-	//string FindVdsError(voltage_t theParameter, CFullConnection & theConnections);
-	//string FindVgsError(voltage_t theParameter, CFullConnection & theConnections);
 	void FindVbgError(ogzstream & theErrorFile, voltage_t theParameter, CFullConnection & theConnections, instanceId_t theInstance_p, string theDisplayParameter);
 	void FindVbsError(ogzstream & theErrorFile, voltage_t theParameter, CFullConnection & theConnections, instanceId_t theInstance_p, string theDisplayParameter);
 	void FindVdsError(ogzstream & theErrorFile, voltage_t theParameter, CFullConnection & theConnections, instanceId_t theInstance_p, string theDisplayParameter);
 	void FindVgsError(ogzstream & theErrorFile, voltage_t theParameter, CFullConnection & theConnections, instanceId_t theInstance_p, string theDisplayParameter);
 	void PrintOverVoltageError(ogzstream & theErrorFile, CFullConnection & theConnections, cvcError_t theErrorIndex, string theExplanation, instanceId_t theInstance_p);
 	void FindAllOverVoltageErrors();
-	//void FindOverVoltageErrors(string theCheck, int theErrorIndex);
 	void AppendErrorFile(string theTempFileName, string theHeading, int theErrorSubIndex);
 	void FindNmosGateVsSourceErrors();
 	void FindPmosGateVsSourceErrors();
@@ -275,7 +247,6 @@ public:
 	void CheckOppositeLogic(modelType_t theType);
 
 	//
-//	void ReportBadLddConnection(CEventQueue & theEventQueue, deviceId_t theDeviceId);
 	void ReportSimShort(deviceId_t theDeviceId, voltage_t theMainVoltage, voltage_t theShortVoltage, string theCalculation);
 	void ReportShort(deviceId_t theDeviceId);
 	bool VoltageConflict(CEventQueue& theEventQueue, deviceId_t theDeviceId, CConnection& theConnections);
@@ -293,9 +264,6 @@ public:
 			shortDirection_t theDirection, bool theWarningFlag);
 	string AdjustSimVoltage(CEventQueue& theEventQueue, deviceId_t theDeviceId, CConnection& theConnections, voltage_t& theVoltage, shortDirection_t theDirection,
 			propagation_t thePropagationType);
-//	bool NeedsSwap(eventQueue_t theQueueType, modelType_t theModelType, shortDirection_t theDirection);
-//	void SwapSourceDrain(CDevice * theDevice_p);
-//	void CheckSourceDrain(eventQueue_t theQueueType, CConnection& theConnections, shortDirection_t theDirection);
 	bool TopologicallyOffMos(eventQueue_t theQueueType, modelType_t theModelType, CConnection& theConnections);
 
 	bool IsOffMos(eventQueue_t theQueueType, deviceId_t theDeviceId, CConnection& theConnections, voltage_t theVoltage);
@@ -356,7 +324,6 @@ public:
 	list<string> * SplitHierarchy(string theFullPath);
 	void SaveMinMaxLeakVoltages();
 	void SaveInitialVoltages();
-//	void SaveLogicVoltages();
 	list<string> * ExpandBusNet(string theBusName);
 
 	text_t DeviceParameters(const deviceId_t theDeviceId);
@@ -446,21 +413,9 @@ public:
 	string PrintVoltage(voltage_t theVoltage, CPower * thePower_p);
 
 	void PrintDeviceWithAllConnections(instanceId_t theInstanceId, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage = false);
-//	void PrintDeviceWithMinMaxConnections(instanceId_t theInstanceId, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage = false);
-//	void PrintDeviceWithMinSimConnections(instanceId_t theInstanceId, CFullConnection& theConnections, ogzstream& theErrorFile);
-//	void PrintDeviceWithSimMaxConnections(instanceId_t theInstanceId, CFullConnection& theConnections, ogzstream& theErrorFile);
-//	void PrintDeviceWithMinConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile);
-//	void PrintDeviceWithMaxConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile);
 	void PrintDeviceWithSimConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile);
-//	void PrintDeviceWithMinGateAndSimConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile);
-//	void PrintDeviceWithMaxGateAndSimConnections(instanceId_t theParentId, CFullConnection& theConnections, ogzstream& theErrorFile);
 
 	void PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage = false);
-	//void PrintMinMaxTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile, bool theIncludeLeakVoltage = false);
-	//void PrintMinSimTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile);
-	//void PrintSimMaxTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile);
-	//void PrintMinTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile);
-	//void PrintMaxTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile);
 	void PrintSimTerminalConnections(terminal_t theTerminal, CFullConnection& theConnections, ogzstream& theErrorFile);
 	void PrintErrorTotals();
 	//void PrintShortedNets(string theShortFileName);
@@ -519,14 +474,8 @@ void CCvcDb::PrintAllVirtualNets(TVirtualNetVector& theMinNet_v, CVirtualNetVect
 	netId_t myEquivalentNet, myFinalNet;
 	for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 		cout << net_it << ": ";
-//		myEquivalentNet = equivalentNet_v[theMinNet_v[net_it].nextNetId];
 		myEquivalentNet = GetEquivalentNet(net_it);
 		myFinalNet = theMinNet_v[myEquivalentNet].nextNetId;
-/*
-		if ( netVoltagePtr_v[myEquivalentNet] && netVoltagePtr_v[myEquivalentNet]->baseNetId != UNKNOWN_NET ) {
-			myEquivalentNet = netVoltagePtr_v[myEquivalentNet]->baseNetId;
-		}
-*/
 		if ( net_it == myFinalNet ) {
 			if ( netVoltagePtr_v[net_it].full && netVoltagePtr_v[net_it].full->minVoltage != UNKNOWN_VOLTAGE ) {
 				cout << netVoltagePtr_v[net_it].full->minVoltage;
@@ -546,14 +495,7 @@ void CCvcDb::PrintAllVirtualNets(TVirtualNetVector& theMinNet_v, CVirtualNetVect
 			}
 		}
 		cout << "/";
-//		myEquivalentNet = equivalentNet_v[theSimNet_v[net_it].nextNetId];
-//		myEquivalentNet = GetEquivalentNet(theSimNet_v[net_it].nextNetId);
 		myFinalNet = theSimNet_v[myEquivalentNet].nextNetId;
-/*
-		if ( netVoltagePtr_v[myEquivalentNet] && netVoltagePtr_v[myEquivalentNet]->baseNetId != UNKNOWN_NET ) {
-			myEquivalentNet = netVoltagePtr_v[myEquivalentNet]->baseNetId;
-		}
-*/
 		if ( net_it == myFinalNet ) {
 			if ( netVoltagePtr_v[net_it].full && netVoltagePtr_v[net_it].full->simVoltage != UNKNOWN_VOLTAGE ) {
 				cout << netVoltagePtr_v[net_it].full->simVoltage;
@@ -564,14 +506,7 @@ void CCvcDb::PrintAllVirtualNets(TVirtualNetVector& theMinNet_v, CVirtualNetVect
 			cout << myFinalNet << "@" << theSimNet_v[myEquivalentNet].resistance;
 		}
 		cout << "/";
-//		myEquivalentNet = equivalentNet_v[theMaxNet_v[net_it].nextNetId];
-//		myEquivalentNet = GetEquivalentNet(theMaxNet_v[net_it].nextNetId);
 		myFinalNet = theMaxNet_v[myEquivalentNet].nextNetId;
-/*
-		if ( netVoltagePtr_v[myEquivalentNet] && netVoltagePtr_v[myEquivalentNet]->baseNetId != UNKNOWN_NET ) {
-			myEquivalentNet = netVoltagePtr_v[myEquivalentNet]->baseNetId;
-		}
-*/
 		if ( net_it == myFinalNet ) {
 			if ( netVoltagePtr_v[net_it].full && netVoltagePtr_v[net_it].full->maxVoltage != UNKNOWN_VOLTAGE ) {
 				cout << netVoltagePtr_v[net_it].full->maxVoltage;

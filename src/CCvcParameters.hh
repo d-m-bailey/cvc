@@ -113,7 +113,6 @@ public:
 	teestream& reportFile;
 
 	CCvcParameters(teestream& theReportFile) : reportFile(theReportFile) {};
-//	CCvcParameters(int argc, const char * argv[]);
 
 	string CvcFileName();
 	bool	IsSameDatabase();

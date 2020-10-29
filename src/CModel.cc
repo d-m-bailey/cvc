@@ -73,8 +73,6 @@ CModel::CModel(string theParameterString) {
 			maxVbgDefinition = myParameterValue; // String_to_Voltage(myParameterValue);
 		} else if (myParameterName == "R") {
 			resistanceDefinition = myParameterValue;
-//			CNormalValue myResistance(myParameterValue);
-//			R = myResistance.RealValue() + 0.1;
 		} else if (myParameterName == "model") {
 			if ( baseType != "M" && baseType != "R" && baseType != "C" && baseType != "X" ) throw EModelError("basetype " + baseType + "cannot be overriden as " + myParameterValue);
 			if ( baseType == "M" && ( myParameterValue != "fuse_on" && myParameterValue != "fuse_off" ) ) throw EModelError("mosfet cannot be overriden as " + myParameterValue);
@@ -111,9 +109,7 @@ bool CModel::ParameterMatch(CParameterMap& theParameterMap, text_t theCellName) 
 			if ( ! (*condition_ppit)->CheckCondition(myCheckValue) ) return (false);
 		}
 		catch (const out_of_range& oor_exception) {
-	//		cout << "ERROR: missing parameter " << (*condition_ppit)->parameter << " in " << name << endl;
 			throw EFatalError("missing parameter " + (*condition_ppit)->parameter + " in " + name);
-	//		exit(1);
 		}
 	}
 	if ( cellFilterRegex_p ) {
@@ -139,10 +135,7 @@ void CModel::CreateConditions (string theConditionString) {
 		myConditionName = trim_(theConditionString.substr(myStringBegin, myRelationIndex - myStringBegin));
 		myConditionRelation = trim_(theConditionString.substr(myRelationIndex, myValueIndex - myRelationIndex));
 		myConditionValue = trim_(theConditionString.substr(myValueIndex, myStringEnd - myValueIndex));
-//		trim_(myConditionName);
 		toupper_(myConditionName);
-//		trim_(myConditionRelation);
-//		trim_(myConditionValue);
 		if ( myConditionName == "CELL" && myConditionRelation == "=" ) {
 			cellFilter = myConditionValue;
 			cellFilterRegex_p = new regex(FuzzyFilter(myConditionValue));
@@ -204,12 +197,10 @@ void CModel::Print(ostream & theLogFile, bool thePrintDeviceListFlag, string the
 			if ( ! IsEmpty(maxVgsDefinition) ) theLogFile << " Vgs=" << PrintToleranceParameter(maxVgsDefinition, maxVgs, VOLTAGE_SCALE);
 			if ( ! IsEmpty(maxVbgDefinition) ) theLogFile << " Vbg=" << PrintToleranceParameter(maxVbgDefinition, maxVbg, VOLTAGE_SCALE);
 			if ( ! IsEmpty(maxVbsDefinition) ) theLogFile << " Vbs=" << PrintToleranceParameter(maxVbsDefinition, maxVbs, VOLTAGE_SCALE);
-//			theLogFile << " R=" << PrintParameter(R, 1) << endl;
 			theLogFile << " R=" << resistanceDefinition;
 			break; }
 		case RESISTOR: {
 			if ( ! IsEmpty(maxVdsDefinition) ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
-//			theLogFile << " R=" << PrintParameter(R, 1) << endl;
 			if ( ! IsEmpty(resistanceDefinition) ) theLogFile << " R=" << resistanceDefinition;
 			break; }
 		case FUSE_ON:
@@ -217,12 +208,10 @@ void CModel::Print(ostream & theLogFile, bool thePrintDeviceListFlag, string the
 		case CAPACITOR:
 		case DIODE: {
 			if ( ! IsEmpty(maxVdsDefinition) ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
-//			theLogFile << endl;
 			break; }
 		case BIPOLAR:
 		case SWITCH_ON:
 		case SWITCH_OFF: {
-//			theLogFile << endl;
 			break; }
 		default: {
 			theLogFile << " Unknown type:";
@@ -233,7 +222,6 @@ void CModel::Print(ostream & theLogFile, bool thePrintDeviceListFlag, string the
 		for (CConditionPtrList::iterator condition_ppit = conditionPtrList.begin(); condition_ppit != conditionPtrList.end(); condition_ppit++) {
 			(*condition_ppit)->Print(theLogFile, "same-line");
 		}
-//		theLogFile << endl;
 	}
 	if ( cellFilter != "" ) {
 		theLogFile << " Cell filter>" << cellFilter;
@@ -252,7 +240,6 @@ void CModel::Print(ostream & theLogFile, bool thePrintDeviceListFlag, string the
 		}
 		theLogFile << myIndentation << "DeviceList> end" << endl;
 	}
-//	cout << theIndentation << "Model> end" << endl;
 }
 
 string CModel::ConditionString() {
@@ -292,7 +279,6 @@ void CModelListMap::AddModel(string theParameterString) {
 			}
 		}
 		catch (const out_of_range& oor_exception) {
-			//(*this)[myModelKey] = *(new CModelList);
 			(*this)[myModelKey].push_back(myNewModel);
 			(*this)[myModelKey].vthDefinition = myNewModel.vthDefinition;
 		}
@@ -310,11 +296,8 @@ void CModelListMap::AddModel(string theParameterString) {
 
 CModel * CModelListMap::FindModel(text_t theCellName, text_t theParameterText, CTextResistanceMap& theParameterResistanceMap, ostream& theLogFile) {
 	string	myParameterString = trim_(string(theParameterText));
-//	trim_(myParameterString);
 	string	myModelKey = myParameterString.substr(0, myParameterString.find(" ", 2));
 	try {
-//		CModelList * searchList_p = at(myModelKey);
-
 		CParameterMap myParameterMap;
 		if ( myParameterString.length() > myModelKey.length() ) {
 			// if there are parameters besides the model name
@@ -323,22 +306,15 @@ CModel * CModelListMap::FindModel(text_t theCellName, text_t theParameterText, C
 		CModelList::iterator myLastModel = this->at(myModelKey).end();
 		for (CModelList::iterator model_pit = this->at(myModelKey).begin(); model_pit != myLastModel; model_pit++) {
 			if ( model_pit->ParameterMatch(myParameterMap, theCellName) ) {
-//				myParameterMap.Print("");
 				switch (model_pit->type) {
 					case NMOS: case PMOS: case LDDN: case LDDP: {
 						theParameterResistanceMap[theParameterText] = myParameterMap.CalculateResistance(model_pit->resistanceDefinition);
-//						CNormalValue myLength(myParameterMap["L"]);
-//						CNormalValue myWidth(myParameterMap["W"]);
-//						theParameterResistanceMap[theParameterText] =
-//								min(max(1, int(myLength.RealValue() / myWidth.RealValue() * model_pit->R)), int(MAX_RESISTANCE));
 						if ( theParameterResistanceMap[theParameterText] == MAX_RESISTANCE ) {
 							theLogFile << "WARNING: resistance for " << theParameterText << " exceeds maximum" << endl;
 						}
 						break; }
 					case RESISTOR: {
 						theParameterResistanceMap[theParameterText] = myParameterMap.CalculateResistance(model_pit->resistanceDefinition);
-//						CNormalValue myResistance(myParameterMap["R"]);
-//						theParameterResistanceMap[theParameterText] = min(max(1, int(myResistance.RealValue())), int(MAX_RESISTANCE));
 						if ( theParameterResistanceMap[theParameterText] == MAX_RESISTANCE ) {
 							theLogFile << "WARNING: resistance for " << theParameterText << " exceeds maximum" << endl;
 						}

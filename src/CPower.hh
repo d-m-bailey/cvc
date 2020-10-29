@@ -87,8 +87,6 @@ public:
 	CMiniPower(CPower * thePower_p, netId_t theNetId);
 	CMiniPower(netId_t theNetId);
 	CMiniPower(netId_t theNetId, voltage_t theSimVoltage, bool theCreateExtraData = false);
-//	CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, netId_t theMinNet, netId_t theMaxNet, string theCalculation);
-//	CPower(voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage);
 	CMiniPower(netId_t theNetId, voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage, netId_t theDefaultMinNet, netId_t theDefaultSimNet, netId_t theDefaultMaxNet);
 	~CMiniPower();
 
@@ -97,27 +95,17 @@ public:
 	string expectedMax() { return (""); };
 	string family() { return (""); };
 	string implicitFamily() { return (""); };
-//	CSet	relativeSet() { return (( extraData ) ? extraData->relativeSet : ""); };
 	voltage_t pullDownVoltage() { return (UNKNOWN_VOLTAGE); };
 	voltage_t pullUpVoltage() { return (UNKNOWN_VOLTAGE); };
 	text_t powerSignal() { return (CMiniPower::powerDefinitionText.BlankTextAddress()); };
 	text_t powerAlias() { return (CMiniPower::powerDefinitionText.BlankTextAddress()); };
 	CPower * GetBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	CPower * GetMinBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	CPower * GetSimBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	CPower * GetMaxBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
 	void SetPowerAlias(string thePowerString, size_t theAliasStart);
 	bool IsSamePower(CPower * theMatchPower);
 	bool IsValidSubset(CPower * theMatchPower, voltage_t theThreshold);
 	bool IsRelative(CPower * theTestPower_p, bool theDefault, bool theIsHiZRelative = false);
 	bool IsRelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v, CVirtualNetVector & theTestNet_v,
 			bool theDefault, bool isHiZRelated = false);
-//	bool IsRelatedMinPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	bool IsRelatedSimPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	bool IsRelatedMaxPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	bool RelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theMinNet_v, CVirtualNetVector & theSimNet_v, CVirtualNetVector & theMaxNet_v);
-//
-//	bool RelatedPower(CPower * theTestPower_p);
 	inline bool IsInternalOverride() { return(true); };
 
 	void Print(ostream & theLogFile, string theIndentation = "", string theRealPowerName = "");
@@ -143,17 +131,6 @@ public:
 	netId_t	defaultMinNet = UNKNOWN_NET;
 	netId_t	defaultSimNet = UNKNOWN_NET;
 	netId_t	defaultMaxNet = UNKNOWN_NET;
-//	voltage_t pullDownVoltage = UNKNOWN_VOLTAGE;
-//	voltage_t pullUpVoltage = UNKNOWN_VOLTAGE;
-//	string	powerSignal; // power name from power file (possibly bus or cell level net)
-//	string	powerAlias; // name used to represent this power definition (/VSS -> VSS, /X1/VDDA -> VDDA)
-//	string	expectedSim = "";
-//	string	expectedMin = "";
-//	string	expectedMax = "";
-	// base of calculations for calculated nets
-//	netId_t	baseMinId = UNKNOWN_NET;
-//	netId_t	baseSimId = UNKNOWN_NET;
-//	netId_t	baseMaxId = UNKNOWN_NET;
 	text_t definition;  // must be initialized in constructor
 	CExtraPowerData * extraData = NULL;
 	CStatus	type;
@@ -170,8 +147,6 @@ public:
 	CPower(CPower * thePower_p, netId_t theNetId);
 	CPower(netId_t theNetId);
 	CPower(netId_t theNetId, voltage_t theSimVoltage, bool theCreateExtraData = false);
-//	CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, netId_t theMinNet, netId_t theMaxNet, string theCalculation);
-//	CPower(voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage);
 	CPower(netId_t theNetId, voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage, netId_t theDefaultMinNet, netId_t theDefaultSimNet, netId_t theDefaultMaxNet);
 	~CPower();
 
@@ -180,27 +155,17 @@ public:
 	string expectedMax() { return (( extraData ) ? extraData->expectedMax : ""); };
 	string family() { return (( extraData ) ? extraData->family : ""); };
 	string implicitFamily() { return (( extraData ) ? extraData->implicitFamily : ""); };
-//	CSet	relativeSet() { return (( extraData ) ? extraData->relativeSet : ""); };
 	voltage_t pullDownVoltage() { return (( extraData ) ? extraData->pullDownVoltage : UNKNOWN_VOLTAGE); };
 	voltage_t pullUpVoltage() { return (( extraData ) ? extraData->pullDownVoltage : UNKNOWN_VOLTAGE); };
 	text_t powerSignal() { return (( extraData ) ? extraData->powerSignal : CPower::powerDefinitionText.BlankTextAddress()); };
 	text_t powerAlias() { return (( extraData ) ? extraData->powerAlias : CPower::powerDefinitionText.BlankTextAddress()); };
 	CPower * GetBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	CPower * GetMinBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	CPower * GetSimBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	CPower * GetMaxBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
 	void SetPowerAlias(string thePowerString, size_t theAliasStart);
 	bool IsSamePower(CPower * theMatchPower);
 	bool IsValidSubset(CPower * theMatchPower, voltage_t theThreshold);
 	bool IsRelative(CPower * theTestPower_p, bool theDefault, bool theIsHiZRelative = false);
 	bool IsRelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v, CVirtualNetVector & theTestNet_v,
 			bool theDefault, bool isHiZRelated = false);
-//	bool IsRelatedMinPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	bool IsRelatedSimPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	bool IsRelatedMaxPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	bool RelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theMinNet_v, CVirtualNetVector & theSimNet_v, CVirtualNetVector & theMaxNet_v);
-//
-//	bool RelatedPower(CPower * theTestPower_p);
 	inline bool IsInternalOverride() {return( ! (type[INPUT_BIT] || type[POWER_BIT]) ); };
 
 	void Print(ostream & theLogFile, string theIndentation = "", string theRealPowerName = "");

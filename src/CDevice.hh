@@ -47,7 +47,6 @@ public:
 		CDevice * nextDevice_p;  // for devices, next device of the same model
 	};
 	text_t parameters;
-//	resistance_t	cvcResistance = INFINITE_RESISTANCE;
 	deviceId_t offset;  // offset in circuit (devices and subcircuit instances counted separately)
 	bool	sourceDrainSet = false;
 	bool	sourceDrainSwapOk = true;
@@ -76,8 +75,6 @@ public:
 
 class CDevicePtrList : public list<CDevice *> {
 public:
-//	CDeviceList();
-//	CDeviceList(int count, CDevice new_instance);
 	deviceId_t	subcircuitCount = 0;
 
 	inline deviceId_t	DeviceCount() { return (size() - subcircuitCount); }

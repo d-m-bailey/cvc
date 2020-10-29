@@ -213,67 +213,6 @@ void CCvcDb::FindVgsError(ogzstream & theErrorFile, voltage_t theParameter, CFul
 	}
 }
 
-/*
-void CCvcDb::FindOverVoltageErrors(string theCheck, int theErrorIndex) {
-	CFullConnection myConnections;
-	reportFile << "! Checking " << theCheck << " overvoltage errors" << endl << endl;
-	errorFile << "! Checking " << theCheck << " overvoltage errors" << endl << endl;
-	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
-		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
-			if ( theErrorIndex == OVERVOLTAGE_VBG && model_pit->maxVbg == UNKNOWN_VOLTAGE) continue;
-			if ( theErrorIndex == OVERVOLTAGE_VBS && model_pit->maxVbs == UNKNOWN_VOLTAGE) continue;
-			if ( theErrorIndex == OVERVOLTAGE_VDS && model_pit->maxVds == UNKNOWN_VOLTAGE) continue;
-			if ( theErrorIndex == OVERVOLTAGE_VGS && model_pit->maxVgs == UNKNOWN_VOLTAGE) continue;
-			CDevice * myDevice_p = model_pit->firstDevice_p;
-			string myDisplayParameter;
-			if ( theErrorIndex == OVERVOLTAGE_VBG ) {
-				myDisplayParameter = " Vbg=" + PrintToleranceParameter(model_pit->maxVbgDefinition, model_pit->maxVbg, VOLTAGE_SCALE);
-			} else if ( theErrorIndex == OVERVOLTAGE_VBS ) {
-				myDisplayParameter = " Vbs=" + PrintToleranceParameter(model_pit->maxVbsDefinition, model_pit->maxVbs, VOLTAGE_SCALE);
-			} else if ( theErrorIndex == OVERVOLTAGE_VDS ) {
-				myDisplayParameter = " Vds=" + PrintToleranceParameter(model_pit->maxVdsDefinition, model_pit->maxVds, VOLTAGE_SCALE);
-			} else if ( theErrorIndex == OVERVOLTAGE_VGS ) {
-				myDisplayParameter = " Vgs=" + PrintToleranceParameter(model_pit->maxVgsDefinition, model_pit->maxVgs, VOLTAGE_SCALE);
-			}
-			myDisplayParameter += " " + model_pit->ConditionString();
-			while (myDevice_p) {
-				CCircuit * myParent_p = myDevice_p->parent_p;
-				for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
-					if  ( instancePtr_v[myParent_p->instanceId_v[instance_it]]->IsParallelInstance() ) continue;  // parallel/empty instances
-					CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
-					MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-					myConnections.SetMinMaxLeakVoltagesAndFlags(this);
-					string myErrorExplanation = "";
-					if ( theErrorIndex == OVERVOLTAGE_VBG ) {
-						myErrorExplanation = FindVbgError(model_pit->maxVbg, myConnections);
-					} else if ( theErrorIndex == OVERVOLTAGE_VBS ) {
-						myErrorExplanation = FindVbsError(model_pit->maxVbs, myConnections);
-					} else if ( theErrorIndex == OVERVOLTAGE_VDS ) {
-						myErrorExplanation = FindVdsError(model_pit->maxVds, myConnections);
-					} else if ( theErrorIndex == OVERVOLTAGE_VGS ) {
-						myErrorExplanation = FindVgsError(model_pit->maxVgs, myConnections);
-					}
-					if ( model_pit->maxVbg != UNKNOWN_VOLTAGE ) {
-					}
-					if ( ! IsEmpty(myErrorExplanation) ) {
-//						errorCount[theErrorIndex]++;
-						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, theErrorIndex) < cvcParameters.cvcCircuitErrorLimit ) {
-							errorFile << myErrorExplanation + myDisplayParameter << endl;;
-							bool myLeakCheckFlag = ( myErrorExplanation.find("logic ok") < string::npos );
-							PrintDeviceWithAllConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile, myLeakCheckFlag);
-							errorFile << endl;
-						}
-					}
-				}
-				myDevice_p = myDevice_p->nextDevice_p;
-			}
-		}
-	}
-	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking " + theCheck + " overvoltage errors", theErrorIndex - OVERVOLTAGE_VBG);
-//	  errorFile << "! Finished" << endl << endl; << !
-}
-*/
- 
 void CCvcDb::PrintOverVoltageError(ogzstream & theErrorFile, CFullConnection & theConnections, cvcError_t theErrorIndex, string theExplanation, instanceId_t theInstanceId) {
 	if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theConnections.deviceId, theErrorIndex) < cvcParameters.cvcCircuitErrorLimit ) {
 		theErrorFile << theExplanation << endl;
@@ -330,17 +269,6 @@ void CCvcDb::FindAllOverVoltageErrors() {
 					if ( model_pit->maxVbs != UNKNOWN_VOLTAGE ) FindVbsError(myVbsErrorFile, model_pit->maxVbs, myConnections, myInstanceId, myVbsDisplayParameter);
 					if ( model_pit->maxVds != UNKNOWN_VOLTAGE ) FindVdsError(myVdsErrorFile, model_pit->maxVds, myConnections, myInstanceId, myVdsDisplayParameter);
 					if ( model_pit->maxVgs != UNKNOWN_VOLTAGE ) FindVgsError(myVgsErrorFile, model_pit->maxVgs, myConnections, myInstanceId, myVgsDisplayParameter);
-
-/*					if ( ! IsEmpty(myErrorExplanation) ) {
-//						  errorCount[theErrorIndex]++;
-						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId, theErrorIndex) < cvcParameters.cvcCircuitErrorLimit ) {
-							errorFile << myErrorExplanation + myDisplayParameter << endl;;
-							bool myLeakCheckFlag = ( myErrorExplanation.find("logic ok") < string::npos );
-							PrintDeviceWithAllConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile, myLeakCheckFlag);
-							errorFile << endl;
-						}
-					}
-*/
 				}
 				myDevice_p = myDevice_p->nextDevice_p;
 			}
@@ -354,8 +282,6 @@ void CCvcDb::FindAllOverVoltageErrors() {
 	AppendErrorFile(myVbsErrorFileName, "! Checking Vbs overvoltage errors", OVERVOLTAGE_VBS - OVERVOLTAGE_VBG);
 	AppendErrorFile(myVdsErrorFileName, "! Checking Vds overvoltage errors", OVERVOLTAGE_VDS - OVERVOLTAGE_VBG);
 	AppendErrorFile(myVgsErrorFileName, "! Checking Vgs overvoltage errors", OVERVOLTAGE_VGS - OVERVOLTAGE_VBG);
-//	  cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking " + theCheck + " overvoltage errors", theErrorIndex - OVERVOLTAGE_VBG);
-//	errorFile << "! Finished" << endl << endl;
 }
 
 void CCvcDb::AppendErrorFile(string theTempFileName, string theHeading, int theErrorSubIndex) {
@@ -366,161 +292,6 @@ void CCvcDb::AppendErrorFile(string theTempFileName, string theHeading, int theE
 	remove(theTempFileName.c_str());
 }
  
-//void CCvcDb::FindOverVoltageErrors() {
-//	CFullConnection myConnections;
-//	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
-//		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
-//			if ( model_pit->maxVbg == UNKNOWN_VOLTAGE && model_pit->maxVgs == UNKNOWN_VOLTAGE && model_pit->maxVbs == UNKNOWN_VOLTAGE && model_pit->maxVds == UNKNOWN_VOLTAGE ) {
-//				if ( model_pit->type != SWITCH_OFF && model_pit->type != SWITCH_ON && model_pit->firstDevice_p ) {
-//					reportFile << "WARNING: no overvoltage check for model: " << model_pit->definition << endl << endl;
-//				}
-//				continue;
-//			}
-//			reportFile << "! Checking overvoltage errors for model: " << model_pit->definition << endl << endl;
-//			errorFile << "! Checking overvoltage errors for model: " << model_pit->definition << endl << endl;
-//			CDevice * myDevice_p = model_pit->firstDevice_p;
-//			while (myDevice_p) {
-//				CCircuit * myParent_p = myDevice_p->parent_p;
-////				deviceId_t myLocalDeviceId = myParent_p->localDeviceIdMap[myDevice_p->name];
-//				for (instanceId_t instance_it = 0; instance_it < myParent_p->instanceId_v.size(); instance_it++) {
-//					CInstance * myInstance_p = instancePtr_v[myParent_p->instanceId_v[instance_it]];
-//					MapDeviceNets(myInstance_p, myDevice_p, myConnections);
-////					myConnections.SetUnknownVoltage();
-//					myConnections.SetMinMaxLeakVoltages(this);
-//					bool myErrorFlag = false;
-//					bool myLeakCheckFlag = false;
-//					string myErrorExplanation;
-//					if ( model_pit->maxVbg != UNKNOWN_VOLTAGE ) {
-//						if ( ( myConnections.CheckTerminalMinMaxVoltages(GATE | BULK, false) &&
-//									( abs(myConnections.maxGateVoltage - myConnections.minBulkVoltage) > model_pit->maxVbg ||
-//											abs(myConnections.minGateVoltage - myConnections.maxBulkVoltage) > model_pit->maxVbg ) ) ||
-//								( myConnections.CheckTerminalMinMaxVoltages(GATE, false) && ! myConnections.CheckTerminalMinMaxVoltages(BULK, false) &&
-//										max(abs(myConnections.minGateVoltage), abs(myConnections.maxGateVoltage)) > model_pit->maxVbg ) ||
-//								( ! myConnections.CheckTerminalMinMaxVoltages(GATE, false) && myConnections.CheckTerminalMinMaxVoltages(BULK, false) &&
-//										max(abs(myConnections.minBulkVoltage), abs(myConnections.maxBulkVoltage)) > model_pit->maxVbg ) ) {
-//							myErrorExplanation += "Overvoltage Error:Gate vs Bulk:\n";
-//							myErrorFlag = true;
-//						} else if ( ( myConnections.CheckTerminalMinMaxLeakVoltages(GATE | BULK) &&
-//									( abs(myConnections.maxGateLeakVoltage - myConnections.minBulkLeakVoltage) > model_pit->maxVbg ||
-//											abs(myConnections.minGateLeakVoltage - myConnections.maxBulkLeakVoltage) > model_pit->maxVbg ) ) ||
-//								( myConnections.CheckTerminalMinMaxLeakVoltages(GATE) && ! myConnections.CheckTerminalMinMaxLeakVoltages(BULK) &&
-//										max(abs(myConnections.minGateLeakVoltage), abs(myConnections.maxGateLeakVoltage)) > model_pit->maxVbg ) ||
-//								( ! myConnections.CheckTerminalMinMaxLeakVoltages(GATE) && myConnections.CheckTerminalMinMaxLeakVoltages(BULK) &&
-//										max(abs(myConnections.minBulkLeakVoltage), abs(myConnections.maxBulkLeakVoltage)) > model_pit->maxVbg ) ) {
-//							myErrorExplanation += "Overvoltage Error:Gate vs Bulk: (logic ok)\n";
-//							myErrorFlag = true;
-//							myLeakCheckFlag = true;
-//						}
-//					}
-//					if ( model_pit->maxVgs != UNKNOWN_VOLTAGE ) {
-//						if ( ( myConnections.CheckTerminalMinMaxVoltages(GATE | SOURCE, false) &&
-//									( abs(myConnections.maxGateVoltage - myConnections.minSourceVoltage) > model_pit->maxVgs ||
-//										abs(myConnections.minGateVoltage - myConnections.maxSourceVoltage) > model_pit->maxVgs ) ) ||
-//								( myConnections.CheckTerminalMinMaxVoltages(GATE | DRAIN, false) &&
-//									( abs(myConnections.maxGateVoltage - myConnections.minDrainVoltage) > model_pit->maxVgs ||
-//										abs(myConnections.minGateVoltage - myConnections.maxDrainVoltage) > model_pit->maxVgs ) ) ||
-//								( myConnections.CheckTerminalMinMaxVoltages(GATE, false) && ! myConnections.CheckTerminalMinMaxVoltages(SOURCE | DRAIN, false) &&
-//										max(abs(myConnections.minGateVoltage), abs(myConnections.maxGateVoltage)) > model_pit->maxVgs ) ||
-//								( ! myConnections.CheckTerminalMinMaxVoltages(GATE, false) && myConnections.CheckTerminalMinMaxVoltages(SOURCE, false) &&
-//										max(abs(myConnections.minSourceVoltage), abs(myConnections.maxSourceVoltage)) > model_pit->maxVgs ) ||
-//								( ! myConnections.CheckTerminalMinMaxVoltages(GATE, false) && myConnections.CheckTerminalMinMaxVoltages(DRAIN, false) &&
-//										max(abs(myConnections.minDrainVoltage), abs(myConnections.maxDrainVoltage)) > model_pit->maxVgs ) ) {
-//							myErrorExplanation += "Overvoltage Error:Gate vs Source/Drain:\n";
-//							myErrorFlag = true;
-//						} else if ( ( myConnections.CheckTerminalMinMaxLeakVoltages(GATE | SOURCE) &&
-//									( abs(myConnections.maxGateLeakVoltage - myConnections.minSourceLeakVoltage) > model_pit->maxVgs ||
-//										abs(myConnections.minGateLeakVoltage - myConnections.maxSourceLeakVoltage) > model_pit->maxVgs ) ) ||
-//								( myConnections.CheckTerminalMinMaxLeakVoltages(GATE | DRAIN) &&
-//									( abs(myConnections.maxGateLeakVoltage - myConnections.minDrainLeakVoltage) > model_pit->maxVgs ||
-//										abs(myConnections.minGateLeakVoltage - myConnections.maxDrainLeakVoltage) > model_pit->maxVgs ) ) ||
-//								( myConnections.CheckTerminalMinMaxLeakVoltages(GATE) && ! myConnections.CheckTerminalMinMaxLeakVoltages(SOURCE | DRAIN) &&
-//										max(abs(myConnections.minGateLeakVoltage), abs(myConnections.maxGateLeakVoltage)) > model_pit->maxVgs ) ||
-//								( ! myConnections.CheckTerminalMinMaxLeakVoltages(GATE) && myConnections.CheckTerminalMinMaxLeakVoltages(SOURCE) &&
-//										max(abs(myConnections.minSourceLeakVoltage), abs(myConnections.maxSourceLeakVoltage)) > model_pit->maxVgs ) ||
-//								( ! myConnections.CheckTerminalMinMaxLeakVoltages(GATE) && myConnections.CheckTerminalMinMaxLeakVoltages(DRAIN) &&
-//										max(abs(myConnections.minDrainLeakVoltage), abs(myConnections.maxDrainLeakVoltage)) > model_pit->maxVgs ) ) {
-//							myErrorExplanation += "Overvoltage Error:Gate vs Source/Drain: (logic ok)\n";
-//							myErrorFlag = true;
-//							myLeakCheckFlag = true;
-//						}
-//					}
-//					if ( model_pit->maxVbs != UNKNOWN_VOLTAGE ) {
-//						if ( ( myConnections.CheckTerminalMinMaxVoltages(SOURCE | BULK, false) &&
-//									(abs(myConnections.maxBulkVoltage - myConnections.minSourceVoltage) > model_pit->maxVbs ||
-//										abs(myConnections.minBulkVoltage - myConnections.maxSourceVoltage) > model_pit->maxVbs) ) ||
-//								( myConnections.CheckTerminalMinMaxVoltages(DRAIN | BULK, false) &&
-//									(abs(myConnections.maxBulkVoltage - myConnections.minDrainVoltage) > model_pit->maxVbs ||
-//										abs(myConnections.minBulkVoltage - myConnections.maxDrainVoltage) > model_pit->maxVbs ) ) ||
-//								( myConnections.CheckTerminalMinMaxVoltages(BULK, false) && ! myConnections.CheckTerminalMinMaxVoltages(SOURCE | DRAIN, false) &&
-//									max(abs(myConnections.minBulkVoltage), abs(myConnections.maxBulkVoltage)) > model_pit->maxVbs ) ||
-//								( ! myConnections.CheckTerminalMinMaxVoltages(BULK, false) && myConnections.CheckTerminalMinMaxVoltages(SOURCE, false) &&
-//									max(abs(myConnections.minSourceVoltage), abs(myConnections.maxSourceVoltage)) > model_pit->maxVbs ) ||
-//								( ! myConnections.CheckTerminalMinMaxVoltages(BULK, false) && myConnections.CheckTerminalMinMaxVoltages(DRAIN, false) &&
-//									max(abs(myConnections.minDrainVoltage), abs(myConnections.maxDrainVoltage)) > model_pit->maxVbs ) )	{
-//							myErrorExplanation += "Overvoltage Error:Source/Drain vs Bulk:\n";
-//							myErrorFlag = true;
-//						} else if ( ( myConnections.CheckTerminalMinMaxLeakVoltages(SOURCE | BULK) &&
-//									(abs(myConnections.maxBulkLeakVoltage - myConnections.minSourceLeakVoltage) > model_pit->maxVbs ||
-//										abs(myConnections.minBulkLeakVoltage - myConnections.maxSourceLeakVoltage) > model_pit->maxVbs) ) ||
-//								( myConnections.CheckTerminalMinMaxLeakVoltages(DRAIN | BULK) &&
-//									(abs(myConnections.maxBulkLeakVoltage - myConnections.minDrainLeakVoltage) > model_pit->maxVbs ||
-//										abs(myConnections.minBulkLeakVoltage - myConnections.maxDrainLeakVoltage) > model_pit->maxVbs ) ) ||
-//								( myConnections.CheckTerminalMinMaxLeakVoltages(BULK) && ! myConnections.CheckTerminalMinMaxLeakVoltages(SOURCE | DRAIN) &&
-//									max(abs(myConnections.minBulkLeakVoltage), abs(myConnections.maxBulkLeakVoltage)) > model_pit->maxVbs ) ||
-//								( ! myConnections.CheckTerminalMinMaxLeakVoltages(BULK) && myConnections.CheckTerminalMinMaxLeakVoltages(SOURCE) &&
-//									max(abs(myConnections.minSourceLeakVoltage), abs(myConnections.maxSourceLeakVoltage)) > model_pit->maxVbs ) ||
-//								( ! myConnections.CheckTerminalMinMaxLeakVoltages(BULK) && myConnections.CheckTerminalMinMaxLeakVoltages(DRAIN) &&
-//									max(abs(myConnections.minDrainLeakVoltage), abs(myConnections.maxDrainLeakVoltage)) > model_pit->maxVbs ) )	{
-//							myErrorExplanation += "Overvoltage Error:Source/Drain vs Bulk: (logic ok)\n";
-//							myErrorFlag = true;
-//							myLeakCheckFlag = true;
-//						}
-//					}
-//					if ( model_pit->maxVds != UNKNOWN_VOLTAGE ) {
-//						if ( ( myConnections.CheckTerminalMinMaxVoltages(SOURCE | DRAIN, false) &&
-//									(abs(myConnections.maxSourceVoltage - myConnections.minDrainVoltage) > model_pit->maxVds ||
-//										abs(myConnections.minSourceVoltage - myConnections.maxDrainVoltage) > model_pit->maxVds ) ) ||
-//								( myConnections.CheckTerminalMinMaxVoltages(SOURCE, false) && ! myConnections.CheckTerminalMinMaxVoltages(DRAIN, false) &&
-//									max(abs(myConnections.minSourceVoltage), abs(myConnections.maxSourceVoltage)) > model_pit->maxVds ) ||
-//								( ! myConnections.CheckTerminalMinMaxVoltages(SOURCE, false) && myConnections.CheckTerminalMinMaxVoltages(DRAIN, false) &&
-//									max(abs(myConnections.minDrainVoltage), abs(myConnections.maxDrainVoltage)) > model_pit->maxVds ) ) {
-//							if ( myConnections.IsPumpCapacitor() &&
-//									abs(myConnections.minSourceVoltage - myConnections.minDrainVoltage) <= model_pit->maxVds &&
-//									abs(myConnections.maxSourceVoltage - myConnections.maxDrainVoltage)	<= model_pit->maxVds ) {
-//								; // for pumping capacitors only check min-min/max-max differences
-//							} else {
-//								myErrorExplanation += "Overvoltage Error:Source vs Drain:\n";
-//								myErrorFlag = true;
-//							}
-//						} else if ( ( myConnections.CheckTerminalMinMaxLeakVoltages(SOURCE | DRAIN) &&
-//									(abs(myConnections.maxSourceLeakVoltage - myConnections.minDrainLeakVoltage) > model_pit->maxVds ||
-//										abs(myConnections.minSourceLeakVoltage - myConnections.maxDrainLeakVoltage) > model_pit->maxVds ) ) ||
-//								( myConnections.CheckTerminalMinMaxLeakVoltages(SOURCE) && ! myConnections.CheckTerminalMinMaxLeakVoltages(DRAIN) &&
-//									max(abs(myConnections.minSourceLeakVoltage), abs(myConnections.maxSourceLeakVoltage)) > model_pit->maxVds ) ||
-//								( ! myConnections.CheckTerminalMinMaxLeakVoltages(SOURCE) && myConnections.CheckTerminalMinMaxLeakVoltages(DRAIN) &&
-//									max(abs(myConnections.minDrainLeakVoltage), abs(myConnections.maxDrainLeakVoltage)) > model_pit->maxVds ) ) {
-//							myErrorExplanation += "Overvoltage Error:Source vs Drain: (logic ok)\n";
-//							myErrorFlag = true;
-//							myLeakCheckFlag = true;
-//						}
-//					}
-//					if ( myErrorFlag ) {
-//						errorCount[OVERVOLTAGE]++;
-//						if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(myConnections.deviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-//							errorFile << myErrorExplanation;
-//							PrintDeviceWithMinMaxConnections(myParent_p->instanceId_v[instance_it], myConnections, errorFile, myLeakCheckFlag);
-//							errorFile << endl;
-//						}
-//					}
-//				}
-//				myDevice_p = myDevice_p->nextDevice_p;
-//			}
-//		}
-//	}
-//	cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-//	errorFile << "! Finished" << endl << endl;
-//}
-
 void CCvcDb::FindNmosGateVsSourceErrors() {
 	CFullConnection myConnections;
 	reportFile << "! Checking nmos gate vs source errors: " << endl << endl;
@@ -1026,18 +797,10 @@ void CCvcDb::FindForwardBiasDiodes() {
 					}
 				}
 				if ( mySourceVoltage == UNKNOWN_VOLTAGE ) {
-//					if ( cvcParameters.cvcLogicDiodes && myDiodeConnections.simSourceVoltage != UNKNOWN_VOLTAGE ) {
-//						mySourceVoltage = myDiodeConnections.simSourceVoltage;
-//					} else {
-						mySourceVoltage = myDiodeConnections.maxSourceVoltage;
-//					}
+					mySourceVoltage = myDiodeConnections.maxSourceVoltage;
 				}
 				if ( myDrainVoltage == UNKNOWN_VOLTAGE ) {
-//					if ( cvcParameters.cvcLogicDiodes && myDiodeConnections.simDrainVoltage != UNKNOWN_VOLTAGE ) {
-//						myDrainVoltage = myDiodeConnections.simDrainVoltage;
-//					} else {
-						myDrainVoltage = myDiodeConnections.minDrainVoltage;
-//					}
+					myDrainVoltage = myDiodeConnections.minDrainVoltage;
 				}
 				if ( mySourceVoltage - myDrainVoltage > cvcParameters.cvcForwardErrorThreshold ) {
 					if ( myDiodeConnections.maxSourcePower_p->type[HIZ_BIT] || myDiodeConnections.minDrainPower_p->type[HIZ_BIT] ) {
@@ -1202,7 +965,6 @@ void CCvcDb::FindFloatingInputErrors() {
 					if ( ! myHasLeakPath && cvcParameters.cvcIgnoreNoLeakFloating
 							&& connectionCount_v[net_it].SourceDrainCount() == 0 ) continue;  // skip no leak floating
 					if ( myHasLeakPath || connectionCount_v[net_it].SourceDrainCount() == 0 ) {  // physically floating gates too
-//						CCircuit * myParent_p = instancePtr_v[deviceParent_v[device_it]]->master_p;
 						if ( IncrementDeviceError(myConnections.deviceId, HIZ_INPUT) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 							if ( ! myHasLeakPath ) errorFile << "* No leak path" << endl;
 							if ( ! myFloatingFlag ) errorFile << "* Tri-state input" << endl;
@@ -1225,7 +987,6 @@ void CCvcDb::FindFloatingInputErrors() {
 				MapDeviceNets(device_it, myConnections);
 				bool myHasLeakPath = HasLeakPath(myConnections);
 				if ( myHasLeakPath ) {
-	//						CCircuit * myParent_p = instancePtr_v[deviceParent_v[device_it]]->master_p;
 					if ( IncrementDeviceError(myConnections.deviceId, HIZ_INPUT) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 						errorFile << "* Secondary HI-Z error" << endl;
 						PrintDeviceWithAllConnections(deviceParent_v[device_it], myConnections, errorFile);
@@ -1236,7 +997,6 @@ void CCvcDb::FindFloatingInputErrors() {
 		}
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking mos floating input errors:");
-//	errorFile << "! Finished" << endl << endl;
 }
 
 void CCvcDb::CheckExpectedValues() {
@@ -1429,26 +1189,6 @@ void CCvcDb::FindLDDErrors() {
 	}
 	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking LDD errors for model: ");
 }
-
-/*
-	void CCvcDb::ReportBadLddConnection(CEventQueue & theEventQueue, deviceId_t theDeviceId) {
-		static CFullConnection myConnections;
-
-		MapDeviceNets(theDeviceId, myConnections);
-		errorCount[LDD_SOURCE]++;
-		if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theDeviceId) < cvcParameters.cvcCircuitErrorLimit ) {
-			errorFile << "! LDD MOS drain->source connection: ";
-			if ( theEventQueue.queueType == MIN_QUEUE ) {
-				errorFile << PrintVoltage(myConnections.minDrainVoltage) << "->" << PrintVoltage(myConnections.minSourceVoltage) << endl;
-				PrintDeviceWithMinConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
-			} else if ( theEventQueue.queueType == MAX_QUEUE ) {
-				errorFile << PrintVoltage(myConnections.maxDrainVoltage) << "->" << PrintVoltage(myConnections.maxSourceVoltage) << endl;
-				PrintDeviceWithMaxConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
-			}
-			errorFile << endl;
-		}
-	}
-*/
 
 void CCvcDb::CheckInverterIO(modelType_t theType) {
 	// Checks nets loaded from cvcNetCheckFile

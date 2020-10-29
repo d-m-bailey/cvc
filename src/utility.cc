@@ -98,7 +98,6 @@ std::string RemoveCellNames(std::string thePath) {
 		myCellNameStart = thePath.find_first_of("(", myCellNameEnd);
 		myReturnString += thePath.substr(myCellNameEnd + 1, myCellNameStart - myCellNameEnd - 1);
 	}
-//	cout << "DEBUG: input:" << thePath << " output:" << myReturnString << endl;
 	return(myReturnString);
 }
 
@@ -114,27 +113,16 @@ char * CurrentTime() {
 std::list<string> * ParseEquation(std::string theEquation, std::string theDelimiters) {
 	std::list<std::string> * myTokenList_p = new(std::list<std::string>);
 	size_t myTokenStart = 0, myTokenEnd;
-//	cout << "Parsing " << theEquation << " =";
 	while ( myTokenStart < theEquation.length() ) {
 		if ( theDelimiters.find_first_of(theEquation[myTokenStart]) < theDelimiters.length() ) {
 			myTokenList_p->push_back(theEquation.substr(myTokenStart, 1));
-//			cout << " operator " << myTokenList_p->back();
 			myTokenStart++;
 		} else {
 			myTokenEnd = theEquation.find_first_of(theDelimiters, myTokenStart);
 			myTokenList_p->push_back(theEquation.substr(myTokenStart, myTokenEnd - myTokenStart));
-//			cout << " operand " << myTokenList_p->back();
 			myTokenStart = myTokenEnd;
 		}
 	}
-	//	std::cout << endl << "Parsing result ";
-/*
-	std::cout << "Parsing result ";
-	for ( auto token_pit = myTokenList_p->begin(); token_pit != myTokenList_p->end(); token_pit++ ) {
-		std::cout << "'" << *token_pit << "' ";
-	}
-	std::cout << std::endl;
-*/
 	return(myTokenList_p);
 }
 
@@ -187,13 +175,6 @@ std::list<string> * postfix(std::string theEquation) {
 		myOperatorStack.pop_back();
 	}
 	delete myParseList_p;
-/*
-	std::cout << "Postfix result ";
-	for ( auto token_pit = myPostfixList_p->begin(); token_pit != myPostfixList_p->end(); token_pit++ ) {
-		std::cout << "'" << *token_pit << "' ";
-	}
-	std::cout << std::endl;
-*/
 	return (myPostfixList_p);
 }
 
@@ -242,7 +223,6 @@ std::string FuzzyFilter(std::string theFilter) {
 	catch (const std::regex_error& myError) { // if invalid, use only globbed filter
 		return(myGlobFilter);
 	}
-//	std::cout << myGlobFilter << endl;
 	if ( myUseGlob ) return(myGlobFilter);
 	return("(" + myGlobFilter + ")|(" + theFilter + ")");
 }

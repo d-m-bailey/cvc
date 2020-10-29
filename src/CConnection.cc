@@ -72,19 +72,6 @@ float CFullConnection::EstimatedMinimumCurrent() {
 }
 
 float CConnection::EstimatedMosDiodeCurrent(voltage_t theSourceVoltage, CConnection & theConnections) {
-/*	voltage_t mySourceVoltage, myDrainVoltage;
-//	float myCurrent;
-	mySourceVoltage = sourceVoltage;
-	myDrainVoltage = drainVoltage;
-
-	if ( IsNmos_(device_p->model_p->type) && gateVoltage != UNKNOWN_VOLTAGE ) {
-		mySourceVoltage = min(sourceVoltage, drainVoltage);
-		myDrainVoltage = min(gateVoltage, max(sourceVoltage, drainVoltage));
-	} else if ( IsPmos_(device_p->model_p->type) && simGateVoltage != UNKNOWN_VOLTAGE ) {
-		mySourceVoltage = max(simSourceVoltage, simDrainVoltage);
-		myDrainVoltage = max(simGateVoltage, min(simSourceVoltage, simDrainVoltage));
-	}
-*/
 	// mos diodes are inherently low current. multiply resistance by 100 to simulate.
 	if ( gateId == drainId ) {
 		if ( sourcePower_p && sourcePower_p->type[HIZ_BIT] ) return float(0);  // no error for hi-z power
@@ -364,27 +351,6 @@ void CFullConnection::SetMinMaxLeakVoltagesAndFlags(CCvcDb * theCvcDb) {
 //	if ( maxDrainVoltage == UNKNOWN_VOLTAGE || ( maxDrainLeakVoltage != UNKNOWN_VOLTAGE && maxDrainLeakVoltage < maxDrainVoltage ) ) maxDrainVoltage = maxDrainLeakVoltage;
 //	if ( maxBulkVoltage == UNKNOWN_VOLTAGE || ( maxBulkLeakVoltage != UNKNOWN_VOLTAGE && maxBulkLeakVoltage < maxBulkVoltage ) ) maxBulkVoltage = maxBulkLeakVoltage;
 }
-
-/*
-void AddTerminalConnections(deviceId_t theFirstDevice, list<deviceId_t>& myPmosToCheck,	list<deviceId_t>& myNmosToCheck,
-		list<deviceId_t>& myResistorToCheck, CNetIdVector& theFirstDevice_v, CNetIdVector& theNextDevice_v, vector<modelType_t>& theDeviceType_v) {
-	for ( deviceId_t device_it = theFirstDevice; device_it != UNKNOWN_DEVICE; device_it = theNextDevice_v[device_it] ) {
-//		if ( theCheckedDevices.count(device_it) == 0 ) {
-//				theCheckedDevices.insert(device_it);
-			switch (theDeviceType_v[device_it]) {
-				case NMOS:
-				case LDDN: { myNmosToCheck.push_back(device_it); break; }
-				case PMOS:
-				case LDDP: { myPmosToCheck.push_back(device_it); break; }
-				case RESISTOR:
-				case FUSE_ON:
-				case FUSE_OFF: { myResistorToCheck.push_back(device_it); break; }
-				default: { break; }
-			}
-//		}
-	}
-}
-*/
 
 void AddConnectedDevices(netId_t theNetId, list<deviceId_t>& myPmosToCheck,	list<deviceId_t>& myNmosToCheck,
 		list<deviceId_t>& myResistorToCheck, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, vector<modelType_t>& theDeviceType_v ) {

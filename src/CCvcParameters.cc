@@ -198,12 +198,10 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 	 */
 	ifstream myEnvironmentFile(theEnvironmentFilename);
 	if ( myEnvironmentFile.fail() ) {
-//		cout << "ERROR: Could not open " << theEnvironmentFilename << endl;
 		throw EFatalError("Could not open " + theEnvironmentFilename);
 	}
 	cvcParamterFilename = theEnvironmentFilename;
 	string myTuple, myVariable, myValue;
-//	wordexp_t myWordExpansion;
 	char myBuffer[1024];
 
 	while ( getline(myEnvironmentFile, myTuple) ) {
@@ -215,13 +213,11 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 		}
 		myVariable = trim_(myTuple.substr(0, myTuple.find("=")));
 		myValue = trim_(myTuple.substr(myTuple.find("=") + 1));
-//		if ( wordexp(myValue.c_str(), &myWordExpansion, WRDE_APPEND | WRDE_NOCMD | WRDE_SHOWERR | WRDE_UNDEF) ) throw EBadEnvironment();
 		string myEchoCommand = "echo " + myValue;
 		FILE * myEcho = popen(myEchoCommand.c_str(), "r");
 		fgets(myBuffer, 1024, myEcho);
 		myBuffer[strlen(myBuffer) - 1] = '\0';
 		setenv(myVariable.c_str(), myBuffer, 1);
-//		cout << myVariable << " = '" << myBuffer << "'" << endl;
 		pclose(myEcho);
 		if ( myVariable == "CVC_TOP" ) {
 			cvcTopBlock = myBuffer;
@@ -412,17 +408,6 @@ returnCode_t CCvcParameters::LoadPower() {
 					myMacroName = myMacroName.substr(1);
 				}
 				myMacroDefinition = myInput;
-/*
-				if ( myAutoMacroFlag ) {
-					myMacroName = string(myPowerPtr->powerSignal());
-					if ( myMacroName[0] == '/' ) { // macros for top level nets that are not ports
-						myMacroName = myMacroName.substr(1);
-					}
-					myMacroDefinition = myInput;
-				} else {
-					myMacroName = "?";
-				}
-*/
 				delete myPowerPtr;
 			}
 			if ( myMacroName.find_first_of("(<[}/*@+-") > myMacroName.length() && isalpha(myMacroName[0]) ) { // no special characters in macro names
@@ -455,8 +440,6 @@ returnCode_t CCvcParameters::LoadPower() {
 		}
 		myInstancePowerFile.close();
 	}
-//	cvcPowerPtrList.SetFamilies(cvcPowerFamilyMap);
-//	SetHiZPropagation();
 	myPowerFile.close();
 	if ( myPowerErrorFlag ) {
 		reportFile << "Invalid power file: " << cvcPowerFilename << endl;

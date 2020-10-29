@@ -69,10 +69,6 @@ int main(int argc, const char * argv[]) {
 	NMOS_PMOS[NMOS] = true;
 	NMOS_PMOS[PMOS] = true;
 	NO_TYPE = 0;
-//	MIN_CHECK_BITS[NEEDS_MIN_CHECK] = true;
-//	MIN_CHECK_BITS[NEEDS_MIN_CONNECTION] = true;
-//	MAX_CHECK_BITS[NEEDS_MAX_CHECK] = true;
-//	MAX_CHECK_BITS[NEEDS_MAX_CONNECTION] = true;
 	FUSE_MODELS.insert(FUSE_ON);
 	FUSE_MODELS.insert(FUSE_OFF);
 
