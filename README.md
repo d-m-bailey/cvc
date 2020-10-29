@@ -22,30 +22,36 @@ src_py: Source code for check_cvc, python/kivy program for checking results.
 scripts: Auxillary programs, scripts, and macros for CVC  
 doc: Doxygen settings, codes for errors  
 
-$project
-========
-
-$project will solve your problem of where to start with documentation,
-by providing a basic explanation of how to do it easily.
-
-Look how easy it is to use:
-
-    import project
-    # Get your stuff done
-    project.do_stuff()
-
 Installation
 ------------
 
-Install $project by running:
+Requirements:
+- gcc 4.9.3
+- python 2.7.10
+- bison 3.0.1 (only if making changes to parser or compiling from github)
+GUI requirements:
+- kivy 1.10.0
+- pyinstaller 3.1.1 (for standalone check_cvc)
 
-    install project
+Install CVC by:
+
+1. download tarball from release page https://github.com/d-m-bailey/cvc/releases.
+2. extract
+3. cd cvc-\<version>
+4. ./configure --disable-nls [--prefix=<install_directory>]
+5. make install
+
+There have been problems compiling check_cvc on some Linux platfroms.
+If GUI check_cvc does not compile, try
+export SDL_VIDEO_X11_VISUALID=
+
+If that still doesn't work, the check_cvc.py file in src_py can also be run via IDLE on PCs.
+Just transfer the \*.log and \*.error.gz files.
 
 Contribute
 ----------
 
-- Issue Tracker: github.com/$project/$project/issues
-- Source Code: github.com/$project/$project
+- Issue Tracker: https://github.com/d-m-bailey/cvc/issues
 
 Support
 -------
