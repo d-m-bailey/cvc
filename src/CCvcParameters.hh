@@ -50,6 +50,7 @@ public:
 	const bool defaultLeakOvervoltage = true;
 	const bool defaultLogicDiodes = false;
 	const bool defaultAnalogGates = true;
+	const bool defaultBackupResults = false;
 	const voltage_t defaultErrorThreshold = 0;
 	const size_t defaultParallelCircuitPortLimit = 0;
 	const string defaultCellErrorLimitFile = "";
@@ -91,6 +92,7 @@ public:
 	bool	cvcLeakOvervoltage = defaultLeakOvervoltage;
 	bool	cvcLogicDiodes = defaultLogicDiodes;
 	bool	cvcAnalogGates = defaultAnalogGates;
+	bool	cvcBackupResults = defaultBackupResults;
 	voltage_t	cvcMosDiodeErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcShortErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcBiasErrorThreshold = defaultErrorThreshold;

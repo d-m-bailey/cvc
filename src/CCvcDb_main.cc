@@ -102,13 +102,13 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 			}
 			cvcParameters.SaveDatabaseParameters();
 			reportFile << "Cdl fixed data size " << cvcCircuitList.cdlText.Size() << endl;
-			reportFile << PrintProgress(&lastSnapshot, "CDL ") << endl;
+			reportFile << PrintProgress(&lastSnapshot, "CDL") << endl;
 			LoadCellChecksums();
 			CountObjectsAndLinkSubcircuits();
 			AssignGlobalIDs();
 			LoadNetChecks();
 			PrintLargeCircuits();
-			reportFile << PrintProgress(&lastSnapshot, "DB ") << endl;
+			reportFile << PrintProgress(&lastSnapshot, "DB") << endl;
 		}
 		returnCode_t myCellErrorLimitStatus = LoadCellErrorLimits();
 		if ( myCellErrorLimitStatus != OK ) {
@@ -161,7 +161,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		if ( gSetup_cvc ) {
 			PrintNetSuggestions();
 		}
-		reportFile << PrintProgress(&lastSnapshot, "EQUIV ") << endl;
+		reportFile << PrintProgress(&lastSnapshot, "EQUIV") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 //		DumpStatistics(parameterModelPtrMap, "parameter->model map", logFile);
 		DumpStatistics(parameterResistanceMap, "parameter->resistance map", logFile);
@@ -176,7 +176,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		ShortNonConductingResistors();
 //		SetResistorVoltagesForMosSwitches();
 		SetResistorVoltagesByPower();
-		reportFile << PrintProgress(&lastSnapshot, "RES ") << endl;
+		reportFile << PrintProgress(&lastSnapshot, "RES") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_RESISTANCE) == SKIP ) continue;
@@ -190,7 +190,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// - PMOS gate-source errors\n
 		ResetMinMaxPower();
 		SetAnalogNets();
-		reportFile << PrintProgress(&lastSnapshot, "MIN/MAX1 ") << endl;
+		reportFile << PrintProgress(&lastSnapshot, "MIN/MAX1") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( detectErrorFlag ) {
 			if ( ! cvcParameters.cvcLogicDiodes ) {
@@ -208,7 +208,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 			if ( ! gSetup_cvc ) {
 				FindPmosGateVsSourceErrors();
 			}
-			reportFile << PrintProgress(&lastSnapshot, "ERROR ") << endl;
+			reportFile << PrintProgress(&lastSnapshot, "ERROR") << endl;
 		}
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_FIRST_MINMAX) == SKIP ) continue;
@@ -219,7 +219,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		SaveMinMaxLeakVoltages();
 		SetSimPower(POWER_NETS_ONLY);
 		cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Logic shorts 1");
-		reportFile << PrintProgress(&lastSnapshot, "SIM1 ") << endl;
+		reportFile << PrintProgress(&lastSnapshot, "SIM1") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( ! cvcParameters.cvcSOI ) {
 			CheckConnections();
@@ -238,7 +238,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 			SetSCRCPower();
 		}
 		SetSimPower(ALL_NETS_AND_FUSE);
-		reportFile << PrintProgress(&lastSnapshot, "SIM2 ") << endl;
+		reportFile << PrintProgress(&lastSnapshot, "SIM2") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 		CNetIdSet myNewNetSet;
 		vector<bool> myIgnoreNet_v(simNet_v.size(), false);
@@ -263,7 +263,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// - expected value errors
 		ResetMinMaxPower();
 		SetInverters();
-		reportFile << PrintProgress(&lastSnapshot, "MIN/MAX2 ") << endl;
+		reportFile << PrintProgress(&lastSnapshot, "MIN/MAX2") << endl;
 		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( detectErrorFlag ) {
 			if ( cvcParameters.cvcLogicDiodes ) {
@@ -277,7 +277,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		}
 		PrintErrorTotals();
 //		PrintShortedNets(cvcParameters.cvcReportBaseFilename + ".shorts.gz");
-		reportFile << PrintProgress(&lastSnapshot, "Total ") << endl;
+		reportFile << PrintProgress(&lastSnapshot, "Total") << endl;
 		if ( gDebug_cvc ) {
 			PrintAllVirtualNets<CVirtualNetVector>(minNet_v, simNet_v, maxNet_v, "(3)");
 			cvcCircuitList.Print("", "CVC Full Circuit List");

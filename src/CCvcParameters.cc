@@ -85,6 +85,8 @@ void CCvcParameters::ResetEnvironment() {
 	//! When true, uses logic values, if known, for diode checks. Default is to ignore logic values.
 	cvcAnalogGates = defaultAnalogGates;
 	//! When false, ignore errors from analog gates. Default is to use analog values.
+	cvcBackupResults = defaultBackupResults;
+	//! When true, backup log and error file. Default is to not create backups.
 	cvcMosDiodeErrorThreshold = defaultErrorThreshold;
 	cvcShortErrorThreshold = defaultErrorThreshold;
 	cvcBiasErrorThreshold = defaultErrorThreshold;
@@ -128,7 +130,8 @@ void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
 	theOutputFile << "CVC_IGNORE_NO_LEAK_FLOATING = '" << (( cvcIgnoreNoLeakFloating ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "CVC_LEAK_OVERVOLTAGE = '" << (( cvcLeakOvervoltage ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "CVC_LOGIC_DIODES = '" << (( cvcLogicDiodes ) ? "true" : "false") << "'" << endl;
-	theOutputFile << "CVC_ANALOG_GATES = '" << (( cvcLogicDiodes ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_ANALOG_GATES = '" << (( cvcAnalogGates ) ? "true" : "false") << "'" << endl;
+	theOutputFile << "CVC_BACKUP_RESULTS = '" << (( cvcBackupResults ) ? "true" : "false") << "'" << endl;
 	theOutputFile << "CVC_MOS_DIODE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcMosDiodeErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_SHORT_ERROR_THRESHOLD = '" << Voltage_to_float(cvcShortErrorThreshold) << "'" << endl;
 	theOutputFile << "CVC_BIAS_ERROR_THRESHOLD = '" << Voltage_to_float(cvcBiasErrorThreshold) << "'" << endl;
@@ -174,6 +177,7 @@ void CCvcParameters::PrintDefaultEnvironment() {
 	myDefaultCvcrc << "CVC_LEAK_OVERVOLTAGE = '" << (( cvcLeakOvervoltage ) ? "true" : "false") << "'" << endl;
 	myDefaultCvcrc << "CVC_LOGIC_DIODES = '" << (( cvcLogicDiodes ) ? "true" : "false") << "'" << endl;
 	myDefaultCvcrc << "CVC_ANALOG_GATES = '" << (( cvcAnalogGates ) ? "true" : "false") << "'" << endl;
+	myDefaultCvcrc << "CVC_BACKUP_RESULTS = '" << (( cvcBackupResults ) ? "true" : "false") << "'" << endl;
 	myDefaultCvcrc << "CVC_MOS_DIODE_ERROR_THRESHOLD = '" << Voltage_to_float(cvcMosDiodeErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_SHORT_ERROR_THRESHOLD = '" << Voltage_to_float(cvcShortErrorThreshold) << "'" << endl;
 	myDefaultCvcrc << "CVC_BIAS_ERROR_THRESHOLD = '" << Voltage_to_float(cvcBiasErrorThreshold) << "'" << endl;
@@ -266,6 +270,8 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 			cvcLogicDiodes = strcasecmp(myBuffer, "true") == 0;
 		} else if ( myVariable == "CVC_ANALOG_GATES" ) {
 			cvcAnalogGates = strcasecmp(myBuffer, "true") == 0;
+		} else if ( myVariable == "CVC_BACKUP_RESULTS" ) {
+			cvcBackupResults = strcasecmp(myBuffer, "true") == 0;
 		} else if ( myVariable == "CVC_MOS_DIODE_ERROR_THRESHOLD" ) {
 			cvcMosDiodeErrorThreshold = String_to_Voltage(string(myBuffer));
 		} else if ( myVariable == "CVC_SHORT_ERROR_THRESHOLD" ) {

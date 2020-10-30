@@ -34,7 +34,7 @@ char * PrintProgress(rusage * theLastSnapshot_p, string theHeading) {
 
 	TakeSnapshot(&currentSnapshot);
 
-	sprintf(myString, "%sUsage: Time: %ld  Memory: %ld  I/O: %ld  Swap: %ld", theHeading.c_str(), currentSnapshot.ru_utime.tv_sec,
+	sprintf(myString, "Usage %s: Time: %ld  Memory: %ld  I/O: %ld  Swap: %ld", theHeading.c_str(), currentSnapshot.ru_utime.tv_sec,
 			currentSnapshot.ru_maxrss, currentSnapshot.ru_inblock + currentSnapshot.ru_oublock,
 			currentSnapshot.ru_nswap);
 

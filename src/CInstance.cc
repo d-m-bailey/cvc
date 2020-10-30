@@ -70,8 +70,8 @@ void CInstance::AssignTopGlobalIDs(CCvcDb * theCvcDb_p, CCircuit * theMaster_p) 
 	}
 	theCvcDb_p->netParent_v.shrink_to_fit();
 	theCvcDb_p->deviceParent_v.shrink_to_fit();
-	cout << "DEBUG: netParent size " << theCvcDb_p->netParent_v.size() << "; deviceParent size " << theCvcDb_p->deviceParent_v.size() << endl;
-	cout << "DEBUG: parallel collisions " << gHashCollisionCount << " max length " << gMaxHashLength << endl;
+	theCvcDb_p->debugFile << "DEBUG: netParent size " << theCvcDb_p->netParent_v.size() << "; deviceParent size " << theCvcDb_p->deviceParent_v.size() << endl;
+	theCvcDb_p->debugFile << "DEBUG: parallel collisions " << gHashCollisionCount << " max length " << gMaxHashLength << endl;
 }
 
 void CInstance::AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInstanceId, CDevice * theSubcircuit_p, const instanceId_t theParentId,

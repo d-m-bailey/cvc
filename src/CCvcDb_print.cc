@@ -38,88 +38,89 @@ void CCvcDb::SetOutputFiles(string theReportFilename) {
 	string mySystemCommand;
 	myBaseFilename = theReportFilename.substr(0, theReportFilename.find(".log"));
 	cvcParameters.cvcReportBaseFilename = myBaseFilename;
-	int myFileSuffix = 0;
-	myBackupFilename = theReportFilename;
-	myCompressedFilename = myBackupFilename + ".gz";
-	while ( ( myTestFile.open(myBackupFilename), myTestFile.good() ) || ( myTestFile.open(myCompressedFilename), myTestFile.good() ) ) {
-		myTestFile.close();
-		myBackupFilename = theReportFilename + "." + to_string<int>(++myFileSuffix);
+	if ( cvcParameters.cvcBackupResults ) {
+		int myFileSuffix = 0;
+		myBackupFilename = theReportFilename;
 		myCompressedFilename = myBackupFilename + ".gz";
-	}
-	if ( myFileSuffix > 0 ) {
-		cout << "INFO: Moving " << theReportFilename << " to " << myCompressedFilename << endl;
-		assert(rename(theReportFilename.c_str(), myBackupFilename.c_str()) == 0);
-		mySystemCommand = "gzip -f " + myBackupFilename;
-		assert(system(mySystemCommand.c_str()) == 0);
-
-		myBaseFilename = cvcParameters.cvcReportBaseFilename + ".error";
-		myBaseCompressedFilename = myBaseFilename + ".gz";
-		myBackupFilename = myBaseFilename + "." + to_string<int>(myFileSuffix);
-		myCompressedFilename = myBackupFilename + ".gz";
-		if ( ( myTestFile.open(myBackupFilename), myTestFile.good() ) || ( myTestFile.open(myCompressedFilename), myTestFile.good() ) ) {
+		while ( ( myTestFile.open(myBackupFilename), myTestFile.good() ) || ( myTestFile.open(myCompressedFilename), myTestFile.good() ) ) {
 			myTestFile.close();
-			cout << "INFO: Removing " << myBackupFilename << endl;
-			assert((remove(myBackupFilename.c_str()) == 0) || (remove(myCompressedFilename.c_str()) == 0));
+			myBackupFilename = theReportFilename + "." + to_string<int>(++myFileSuffix);
+			myCompressedFilename = myBackupFilename + ".gz";
 		}
-		if ( myTestFile.open(myBaseFilename), myTestFile.good() ) {
-			myTestFile.close();
-			cout << "INFO: Moving " << myBaseFilename << " to " << myCompressedFilename << endl;
-			assert(rename(myBaseFilename.c_str(), myBackupFilename.c_str()) == 0);
+		if ( myFileSuffix > 0 ) {
+			cout << "INFO: Moving " << theReportFilename << " to " << myCompressedFilename << endl;
+			assert(rename(theReportFilename.c_str(), myBackupFilename.c_str()) == 0);
 			mySystemCommand = "gzip -f " + myBackupFilename;
 			assert(system(mySystemCommand.c_str()) == 0);
-		} else if ( myTestFile.open(myBaseCompressedFilename), myTestFile.good() ) {
-			myTestFile.close();
-			cout << "INFO: Moving " << myBaseCompressedFilename << " to " << myCompressedFilename << endl;
-			assert(rename(myBaseCompressedFilename.c_str(), myCompressedFilename.c_str()) == 0);
-		}
 
-		myBaseFilename = cvcParameters.cvcReportBaseFilename + ".shorts";
-		myBaseCompressedFilename = myBaseFilename + ".gz";
-		myBackupFilename = myBaseFilename + "." + to_string<int>(myFileSuffix);
-		myCompressedFilename = myBackupFilename + ".gz";
-		if ( ( myTestFile.open(myBackupFilename), myTestFile.good() ) || ( myTestFile.open(myCompressedFilename), myTestFile.good() ) ) {
-			myTestFile.close();
-			cout << "INFO: Removing " << myBackupFilename << endl;
-			assert((remove(myBackupFilename.c_str()) == 0) || (remove(myCompressedFilename.c_str()) == 0));
-		}
-		if ( myTestFile.open(myBaseFilename), myTestFile.good() ) {
-			myTestFile.close();
-			cout << "INFO: Moving " << myBaseFilename << " to " << myCompressedFilename << endl;
-			assert(rename(myBaseFilename.c_str(), myBackupFilename.c_str()) == 0);
-			mySystemCommand = "gzip -f " + myBackupFilename;
-			assert(system(mySystemCommand.c_str()) == 0);
-		} else if ( myTestFile.open(myBaseCompressedFilename), myTestFile.good() ) {
-			myTestFile.close();
-			cout << "INFO: Moving " << myBaseCompressedFilename << " to " << myCompressedFilename << endl;
-			assert(rename(myBaseCompressedFilename.c_str(), myCompressedFilename.c_str()) == 0);
-		}
-	} else {
-		myBaseFilename = cvcParameters.cvcReportBaseFilename + ".error";
-		myBaseCompressedFilename = myBaseFilename + ".gz";
-		if ( myTestFile.open(myBaseFilename), myTestFile.good() ) {
-			myTestFile.close();
-			cout << "INFO: Removing " << myBaseFilename << endl;
-			remove(myBaseFilename.c_str());
-		}
-		if ( myTestFile.open(myBaseCompressedFilename), myTestFile.good() ) {
-			myTestFile.close();
-			cout << "INFO: Removing " << myBaseCompressedFilename << endl;
-			remove(myBaseCompressedFilename.c_str());
-		}
-		myBaseFilename = cvcParameters.cvcReportBaseFilename + ".shorts";
-		myBaseCompressedFilename = myBaseFilename + ".gz";
-		if ( myTestFile.open(myBaseFilename), myTestFile.good() ) {
-			myTestFile.close();
-			cout << "INFO: Removing " << myBaseFilename << endl;
-			remove(myBaseFilename.c_str());
-		}
-		if ( myTestFile.open(myBaseCompressedFilename), myTestFile.good() ) {
-			myTestFile.close();
-			cout << "INFO: Removing " << myBaseCompressedFilename << endl;
-			remove(myBaseCompressedFilename.c_str());
+			myBaseFilename = cvcParameters.cvcReportBaseFilename + ".error";
+			myBaseCompressedFilename = myBaseFilename + ".gz";
+			myBackupFilename = myBaseFilename + "." + to_string<int>(myFileSuffix);
+			myCompressedFilename = myBackupFilename + ".gz";
+			if ( ( myTestFile.open(myBackupFilename), myTestFile.good() ) || ( myTestFile.open(myCompressedFilename), myTestFile.good() ) ) {
+				myTestFile.close();
+				cout << "INFO: Removing " << myBackupFilename << endl;
+				assert((remove(myBackupFilename.c_str()) == 0) || (remove(myCompressedFilename.c_str()) == 0));
+			}
+			if ( myTestFile.open(myBaseFilename), myTestFile.good() ) {
+				myTestFile.close();
+				cout << "INFO: Moving " << myBaseFilename << " to " << myCompressedFilename << endl;
+				assert(rename(myBaseFilename.c_str(), myBackupFilename.c_str()) == 0);
+				mySystemCommand = "gzip -f " + myBackupFilename;
+				assert(system(mySystemCommand.c_str()) == 0);
+			} else if ( myTestFile.open(myBaseCompressedFilename), myTestFile.good() ) {
+				myTestFile.close();
+				cout << "INFO: Moving " << myBaseCompressedFilename << " to " << myCompressedFilename << endl;
+				assert(rename(myBaseCompressedFilename.c_str(), myCompressedFilename.c_str()) == 0);
+			}
+
+			myBaseFilename = cvcParameters.cvcReportBaseFilename + ".shorts";
+			myBaseCompressedFilename = myBaseFilename + ".gz";
+			myBackupFilename = myBaseFilename + "." + to_string<int>(myFileSuffix);
+			myCompressedFilename = myBackupFilename + ".gz";
+			if ( ( myTestFile.open(myBackupFilename), myTestFile.good() ) || ( myTestFile.open(myCompressedFilename), myTestFile.good() ) ) {
+				myTestFile.close();
+				cout << "INFO: Removing " << myBackupFilename << endl;
+				assert((remove(myBackupFilename.c_str()) == 0) || (remove(myCompressedFilename.c_str()) == 0));
+			}
+			if ( myTestFile.open(myBaseFilename), myTestFile.good() ) {
+				myTestFile.close();
+				cout << "INFO: Moving " << myBaseFilename << " to " << myCompressedFilename << endl;
+				assert(rename(myBaseFilename.c_str(), myBackupFilename.c_str()) == 0);
+				mySystemCommand = "gzip -f " + myBackupFilename;
+				assert(system(mySystemCommand.c_str()) == 0);
+			} else if ( myTestFile.open(myBaseCompressedFilename), myTestFile.good() ) {
+				myTestFile.close();
+				cout << "INFO: Moving " << myBaseCompressedFilename << " to " << myCompressedFilename << endl;
+				assert(rename(myBaseCompressedFilename.c_str(), myCompressedFilename.c_str()) == 0);
+			}
+		} else {
+			myBaseFilename = cvcParameters.cvcReportBaseFilename + ".error";
+			myBaseCompressedFilename = myBaseFilename + ".gz";
+			if ( myTestFile.open(myBaseFilename), myTestFile.good() ) {
+				myTestFile.close();
+				cout << "INFO: Removing " << myBaseFilename << endl;
+				remove(myBaseFilename.c_str());
+			}
+			if ( myTestFile.open(myBaseCompressedFilename), myTestFile.good() ) {
+				myTestFile.close();
+				cout << "INFO: Removing " << myBaseCompressedFilename << endl;
+				remove(myBaseCompressedFilename.c_str());
+			}
+			myBaseFilename = cvcParameters.cvcReportBaseFilename + ".shorts";
+			myBaseCompressedFilename = myBaseFilename + ".gz";
+			if ( myTestFile.open(myBaseFilename), myTestFile.good() ) {
+				myTestFile.close();
+				cout << "INFO: Removing " << myBaseFilename << endl;
+				remove(myBaseFilename.c_str());
+			}
+			if ( myTestFile.open(myBaseCompressedFilename), myTestFile.good() ) {
+				myTestFile.close();
+				cout << "INFO: Removing " << myBaseCompressedFilename << endl;
+				remove(myBaseCompressedFilename.c_str());
+			}
 		}
 	}
-	cout << "DEBUG: report file '" << theReportFilename << "'" << endl;
 	logFile.open(theReportFilename);
 	if ( ! logFile.good() ) {
 		throw EFatalError("Could not open " + theReportFilename);
@@ -978,7 +979,7 @@ void CCvcDb::PrintLargeCircuits() {
 	for ( auto circuit_ppit = cvcCircuitList.begin(); circuit_ppit != cvcCircuitList.end(); circuit_ppit++ ) {
 		if ( (*circuit_ppit)->deviceCount > cvcParameters.cvcLargeCircuitSize ) {
 			for ( auto instance_pit = (*circuit_ppit)->instanceId_v.begin(); instance_pit != (*circuit_ppit)->instanceId_v.end(); instance_pit++ ) {
-				reportFile << "INFO: Large circuit " << HierarchyName(*instance_pit, true, true) << " device count " << (*circuit_ppit)->deviceCount << endl;
+				debugFile << "INFO: Large circuit " << HierarchyName(*instance_pit, true, true) << " device count " << (*circuit_ppit)->deviceCount << endl;
 			}
 		}
 	}
