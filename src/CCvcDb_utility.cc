@@ -1058,14 +1058,13 @@ void CCvcDb::Cleanup() {
 	RemoveLock();
 	try {
 		cvcParameters.cvcPowerPtrList.Clear(leakVoltagePtr_v, netVoltagePtr_v, netCount);  // defined power deleted here
-		cout << "Cleared power pointer list" << endl;
+		if ( gDebug_cvc ) cout << "Cleared power pointer list" << endl;
 		int myDeleteCount = 0;
 		for ( netId_t net_it = 0; net_it < netCount; net_it++ ) {
 			CPower * myPower_p = netVoltagePtr_v[net_it].full;
 			if ( leakVoltageSet ) {
 				CPower * myLeakPower_p = leakVoltagePtr_v[net_it].full;
 				if ( leakVoltagePtr_v.size() > net_it && myLeakPower_p && myPower_p != myLeakPower_p ) {  // unique leak power deleted here
-					//cout << "leak pointer at " << net_it << endl;
 					if ( myLeakPower_p->extraData ) {
 						if ( gDebug_cvc ) cout << "DEBUG: extra data at net " << net_it << endl;
 					}
@@ -1074,7 +1073,6 @@ void CCvcDb::Cleanup() {
 				}
 			}
 			if ( netVoltagePtr_v.size() > net_it && myPower_p ) {  // calculated power deleted here
-				//cout << "net pointer at " << net_it << endl;
 				if ( myPower_p->extraData ) {
 					if ( gDebug_cvc ) cout << "DEBUG: extra data at net " << net_it << endl;
 				}
@@ -1725,7 +1723,6 @@ instanceId_t CCvcDb::FindNetInstance(netId_t theNetId, instanceId_t theInstance)
 bool CCvcDb::IsInternalNet(netId_t theNetId, instanceId_t theInstance) {
 	// true if net is internal to instance
 	if ( theInstance == UNKNOWN_INSTANCE || theNetId == UNKNOWN_NET ) return false;  // bad instance or net
-	CInstance * myInstance_p = instancePtr_v[theInstance];
 	instanceId_t myParent = netParent_v[theNetId];
 	if ( myParent == 0 && theInstance == 0 ) return false;  // top level nets are not internal
 	return( IsSubcircuitOf(myParent, theInstance) );
