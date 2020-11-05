@@ -1,7 +1,7 @@
 /*
  * utility.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -98,43 +98,31 @@ std::string RemoveCellNames(std::string thePath) {
 		myCellNameStart = thePath.find_first_of("(", myCellNameEnd);
 		myReturnString += thePath.substr(myCellNameEnd + 1, myCellNameStart - myCellNameEnd - 1);
 	}
-//	cout << "DEBUG: input:" << thePath << " output:" << myReturnString << endl;
 	return(myReturnString);
 }
 
 char * CurrentTime() {
-	  time_t rawtime;
-	  struct tm * timeinfo;
+	time_t rawtime;
+	struct tm * timeinfo;
 
-	  time ( &rawtime );
-	  timeinfo = localtime ( &rawtime );
-	  return ( asctime (timeinfo) );
+	time ( &rawtime );
+	timeinfo = localtime ( &rawtime );
+	return ( asctime (timeinfo) );
 }
 
 std::list<string> * ParseEquation(std::string theEquation, std::string theDelimiters) {
 	std::list<std::string> * myTokenList_p = new(std::list<std::string>);
 	size_t myTokenStart = 0, myTokenEnd;
-//	cout << "Parsing " << theEquation << " =";
 	while ( myTokenStart < theEquation.length() ) {
 		if ( theDelimiters.find_first_of(theEquation[myTokenStart]) < theDelimiters.length() ) {
 			myTokenList_p->push_back(theEquation.substr(myTokenStart, 1));
-//			cout << " operator " << myTokenList_p->back();
 			myTokenStart++;
 		} else {
 			myTokenEnd = theEquation.find_first_of(theDelimiters, myTokenStart);
 			myTokenList_p->push_back(theEquation.substr(myTokenStart, myTokenEnd - myTokenStart));
-//			cout << " operand " << myTokenList_p->back();
 			myTokenStart = myTokenEnd;
 		}
 	}
-	//	std::cout << endl << "Parsing result ";
-/*
-	std::cout << "Parsing result ";
-	for ( auto token_pit = myTokenList_p->begin(); token_pit != myTokenList_p->end(); token_pit++ ) {
-		std::cout << "'" << *token_pit << "' ";
-	}
-	std::cout << std::endl;
-*/
 	return(myTokenList_p);
 }
 
@@ -153,7 +141,7 @@ std::list<string> * postfix(std::string theEquation) {
 		if ( myOperators.find(*string_pit) > myOperators.length() ) { // not an operator
 			myPostfixList_p->push_back(*string_pit);
 		} else if ( myOperatorStack.empty() || myOperatorStack.back() == "(" || *string_pit == "(" ) {
-			if ( *string_pit == "-" && ( myLastToken.empty() || myLastToken == "(" ) ) {
+			if ( *string_pit == "-" && ( IsEmpty(myLastToken) || myLastToken == "(" ) ) {
 				myPostfixList_p->push_back("0"); // for unary '-'
 			}
 			myOperatorStack.push_back(*string_pit);
@@ -187,13 +175,6 @@ std::list<string> * postfix(std::string theEquation) {
 		myOperatorStack.pop_back();
 	}
 	delete myParseList_p;
-/*
-	std::cout << "Postfix result ";
-	for ( auto token_pit = myPostfixList_p->begin(); token_pit != myPostfixList_p->end(); token_pit++ ) {
-		std::cout << "'" << *token_pit << "' ";
-	}
-	std::cout << std::endl;
-*/
 	return (myPostfixList_p);
 }
 
@@ -242,7 +223,6 @@ std::string FuzzyFilter(std::string theFilter) {
 	catch (const std::regex_error& myError) { // if invalid, use only globbed filter
 		return(myGlobFilter);
 	}
-//	std::cout << myGlobFilter << endl;
 	if ( myUseGlob ) return(myGlobFilter);
 	return("(" + myGlobFilter + ")|(" + theFilter + ")");
 }
@@ -256,6 +236,3 @@ bool IsAlphanumeric(std::string theString) {
 	}
 	return true;
 }
-
-
-

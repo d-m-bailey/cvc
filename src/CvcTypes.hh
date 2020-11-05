@@ -1,7 +1,7 @@
 /*
  * CvcTypes.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -40,7 +40,7 @@ typedef uint32_t netId_t;
 typedef uint32_t deviceId_t;
 typedef uint32_t instanceId_t;
 
-typedef int32_t	voltage_t;
+typedef int16_t	voltage_t;
 typedef uint32_t resistance_t;
 typedef int32_t eventKey_t;
 
@@ -49,8 +49,8 @@ typedef int32_t eventKey_t;
 #define MAX_RESISTANCE ((UINT32_MAX >> 2) - 1)
 
 #define VOLTAGE_SCALE 1000
-#define MAX_VOLTAGE (INT32_MAX - 1)
-#define MIN_VOLTAGE (INT32_MIN + 1)
+#define MAX_VOLTAGE (INT16_MAX - 1)
+#define MIN_VOLTAGE (INT16_MIN + 1)
 
 #define MIN_EVENT_TIME (INT32_MIN)
 #define MAX_EVENT_TIME (INT32_MAX)
@@ -64,12 +64,14 @@ typedef int32_t eventKey_t;
 #define UNKNOWN_DEVICE UINT32_MAX
 #define UNKNOWN_INSTANCE UINT32_MAX
 
-#define UNKNOWN_VOLTAGE (INT32_MAX)
+#define UNKNOWN_VOLTAGE (INT16_MAX)
 
 #define DEFAULT_MOS_RESISTANCE "L/W*7000"
 #define DEFAULT_RESISTANCE "R"
 #define DEFAULT_UNKNOWN_RESISTANCE 1100100
 
+#define MAX_PARALLEL_CIRCUIT_PORT_LIMIT 10
+ 
 #define HIERARCHY_DELIMITER	"/"
 #define ALIAS_DELIMITER "~>"
 
@@ -84,29 +86,29 @@ typedef int32_t eventKey_t;
 #define IsGreaterOrEqualVoltage_(theFirstVoltage, theSecondVoltage) (theFirstVoltage != UNKNOWN_VOLTAGE && theSecondVoltage != UNKNOWN_VOLTAGE && theFirstVoltage >= theSecondVoltage)
 
 template <typename T> T from_string(std::string const & s) {
-    std::stringstream ss(s);
-    T result;
-    static const std::unordered_map<std::string, float> SISuffix = {
-       {"a", 1e-18},
-       {"f", 1e-15},
-       {"p", 1e-12},
-       {"n", 1e-9},
-       {"u", 1e-6},
-       {"m", 1e-3},
-       {"K", 1e3},
-       {"M", 1e6},
-       {"G", 1e9},
-       {"T", 1e12},
-       {"P", 1e15},
-       {"E", 1e18}
-    };
-    std::string mySuffix = "";
-    ss >> result;    // TODO handle errors
-    ss >> mySuffix;
-    if ( mySuffix != "" ) {
-    	result = result * SISuffix.at(mySuffix);
-    }
-    return result;
+	std::stringstream ss(s);
+	T result;
+	static const std::unordered_map<std::string, float> SISuffix = {
+		{"a", 1e-18},
+		{"f", 1e-15},
+		{"p", 1e-12},
+		{"n", 1e-9},
+		{"u", 1e-6},
+		{"m", 1e-3},
+		{"K", 1e3},
+		{"M", 1e6},
+		{"G", 1e9},
+		{"T", 1e12},
+		{"P", 1e15},
+		{"E", 1e18}
+	};
+	std::string mySuffix = "";
+	ss >> result;	// TODO handle errors
+	ss >> mySuffix;
+	if ( mySuffix != "" ) {
+		result = result * SISuffix.at(mySuffix);
+	}
+	return result;
 }
 
 template <typename T> std::string to_string(T theValue) {
@@ -139,8 +141,7 @@ enum propagation_t { POWER_NETS_ONLY = 1, ALL_NETS_NO_FUSE, ALL_NETS_AND_FUSE };
 
 enum cvcError_t { LEAK = 0, HIZ_INPUT, FORWARD_DIODE, NMOS_SOURCE_BULK, NMOS_GATE_SOURCE, NMOS_POSSIBLE_LEAK,
 	PMOS_SOURCE_BULK, PMOS_GATE_SOURCE, PMOS_POSSIBLE_LEAK, OVERVOLTAGE_VBG, OVERVOLTAGE_VBS, OVERVOLTAGE_VDS,
-	OVERVOLTAGE_VGS, EXPECTED_VOLTAGE, LDD_SOURCE, MIN_VOLTAGE_CONFLICT, MAX_VOLTAGE_CONFLICT, ERROR_TYPE_COUNT };
-
+	OVERVOLTAGE_VGS, EXPECTED_VOLTAGE, LDD_SOURCE, MIN_VOLTAGE_CONFLICT, MAX_VOLTAGE_CONFLICT, FUSE_ERROR, ERROR_TYPE_COUNT };
 // Flag Constants
 
 #define PRINT_CIRCUIT_ON	true
@@ -162,50 +163,50 @@ enum cvcError_t { LEAK = 0, HIZ_INPUT, FORWARD_DIODE, NMOS_SOURCE_BULK, NMOS_GAT
 class teebuf: public std::streambuf
 {
 public:
-    // Construct a streambuf which tees output to both input
-    // streambufs.
-    teebuf(std::streambuf * sb1, std::streambuf * sb2)
-        : sb1(sb1)
-        , sb2(sb2)
-    {
-    }
+	// Construct a streambuf which tees output to both input
+	// streambufs.
+	teebuf(std::streambuf * sb1, std::streambuf * sb2)
+		: sb1(sb1)
+		, sb2(sb2)
+	{
+	}
 private:
-    // This tee buffer has no buffer. So every character "overflows"
-    // and can be put directly into the teed buffers.
-    virtual int overflow(int c)
-    {
-        if (c == traits_type::eof())
-        {
-            return !traits_type::eof();
-        }
-        else
-        {
-            int const r1 = sb1->sputc(c);
-            int const r2 = sb2->sputc(c);
-            return r1 == traits_type::eof() || r2 == traits_type::eof() ? traits_type::eof() : c;
-        }
-    }
+	// This tee buffer has no buffer. So every character "overflows"
+	// and can be put directly into the teed buffers.
+	virtual int overflow(int c)
+	{
+		if (c == traits_type::eof())
+		{
+			return !traits_type::eof();
+		}
+		else
+		{
+			int const r1 = sb1->sputc(c);
+			int const r2 = sb2->sputc(c);
+			return r1 == traits_type::eof() || r2 == traits_type::eof() ? traits_type::eof() : c;
+		}
+	}
 
-    // Sync both teed buffers.
-    virtual int sync()
-    {
-        int const r1 = sb1->pubsync();
-        int const r2 = sb2->pubsync();
-        return r1 == 0 && r2 == 0 ? 0 : -1;
-    }
+	// Sync both teed buffers.
+	virtual int sync()
+	{
+		int const r1 = sb1->pubsync();
+		int const r2 = sb2->pubsync();
+		return r1 == 0 && r2 == 0 ? 0 : -1;
+	}
 private:
-    std::streambuf * sb1;
-    std::streambuf * sb2;
+	std::streambuf * sb1;
+	std::streambuf * sb2;
 };
 
 class teestream : public std::ostream
 {
 public:
-    // Construct an ostream which tees output to the supplied
-    // ostreams.
-    teestream(std::ostream & o1, std::ostream & o2) : std::ostream(&tbuf), tbuf(o1.rdbuf(), o2.rdbuf()) {};
+	// Construct an ostream which tees output to the supplied
+	// ostreams.
+	teestream(std::ostream & o1, std::ostream & o2) : std::ostream(&tbuf), tbuf(o1.rdbuf(), o2.rdbuf()) {};
 private:
-    teebuf tbuf;
+	teebuf tbuf;
 };
 
 // end teebuf

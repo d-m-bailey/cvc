@@ -1,7 +1,7 @@
 /*
  * CNormalValue.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -25,12 +25,10 @@
 
 CNormalValue::CNormalValue(string theStringValue) {
 	string myStringValue = trim_(theStringValue);
-//	trim_(myStringValue);
 	size_t myUnitOffset = myStringValue.find_first_not_of("-+0123456789.eE");
 	if ( myUnitOffset > myStringValue.length() ) myUnitOffset = myStringValue.length();
 	double	myRealValue = from_string<double>(myStringValue.substr(0, myUnitOffset));
 
-//	cout << "DEBUG: CNormalValue " << myRealValue << " " << myStringValue[myUnitOffset] << endl;
 	switch ( myStringValue[myUnitOffset] ) {
 		case 'G': {	myRealValue *= pow(10, 9); break; }
 		case 'M': {	myRealValue *= pow(10, 6); break; }
@@ -42,9 +40,7 @@ CNormalValue::CNormalValue(string theStringValue) {
 		case 'f': {	myRealValue *= pow(10, -15); break; }
 		case '\0': break;
 		default: {
-//			cout << "ERROR: unknown suffix on parameter: " << myStringValue << endl;
 			throw EFatalError("unknown suffix on parameter: " + myStringValue);
-//			exit(1);
 		}
 	}
 	while ( abs(myRealValue * pow(10, - scale)) < 1e6 && scale > -21 ) {

@@ -1,7 +1,7 @@
 /*
  * CCvcParameters.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -28,6 +28,7 @@
 
 #include "CModel.hh"
 #include "CPower.hh"
+#include "CCircuit.hh"
 
 #include <cstring>
 
@@ -43,9 +44,19 @@ public:
 	const bool defaultSOI = false;
 	const bool defaultSCRC = false;
 	const bool defaultVthGates = false;
+	const bool defaultMinVthGates = false;
+	const bool defaultIgnoreVthFloating = false;
+	const bool defaultIgnoreNoLeakFloating = false;
 	const bool defaultLeakOvervoltage = true;
 	const bool defaultLogicDiodes = false;
+	const bool defaultAnalogGates = true;
+	const bool defaultBackupResults = false;
 	const voltage_t defaultErrorThreshold = 0;
+	const size_t defaultParallelCircuitPortLimit = 0;
+	const string defaultCellErrorLimitFile = "";
+	const string defaultCellChecksumFile = "";
+	const size_t defaultLargeCircuitSize = 10e6;
+	const string defaultNetCheckFile = "";
 
 	string	cvcReportTitle;
 
@@ -65,20 +76,37 @@ public:
 	CPowerPtrList	cvcPowerPtrList;
 	CPowerPtrList	cvcExpectedLevelPtrList;
 	CPowerPtrMap	cvcPowerMacroPtrMap;
+	CInstancePowerPtrList	cvcInstancePowerPtrList;
 	CPowerFamilyMap cvcPowerFamilyMap;
+	unordered_map<string, int> cvcCellErrorLimit;
 	deviceId_t	cvcCircuitErrorLimit = defaultErrorLimit;
 	float	cvcLeakLimit = defaultLeakLimit;
 	size_t		cvcSearchLimit = defaultSearchLimit;
+	string	cvcHierarchyDelimiters = HIERARCHY_DELIMITER;
 	bool	cvcSOI = defaultSOI;
 	bool	cvcSCRC = defaultSCRC;
 	bool	cvcVthGates = defaultVthGates;
+	bool	cvcMinVthGates = defaultMinVthGates;
+	bool	cvcIgnoreVthFloating = defaultIgnoreVthFloating;
+	bool	cvcIgnoreNoLeakFloating = defaultIgnoreNoLeakFloating;
 	bool	cvcLeakOvervoltage = defaultLeakOvervoltage;
-	bool    cvcLogicDiodes = defaultLogicDiodes;
+	bool	cvcLogicDiodes = defaultLogicDiodes;
+	bool	cvcAnalogGates = defaultAnalogGates;
+	bool	cvcBackupResults = defaultBackupResults;
+	voltage_t	cvcMosDiodeErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcShortErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcBiasErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcForwardErrorThreshold = defaultErrorThreshold;
+	voltage_t	cvcFloatingErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcGateErrorThreshold = defaultErrorThreshold;
 	voltage_t	cvcLeakErrorThreshold = defaultErrorThreshold;
+	voltage_t	cvcExpectedErrorThreshold = defaultErrorThreshold;
+	voltage_t	cvcOvervoltageErrorThreshold = defaultErrorThreshold;
+	size_t	cvcParallelCircuitPortLimit = defaultParallelCircuitPortLimit;
+	string	cvcCellErrorLimitFile = defaultCellErrorLimitFile;
+	string	cvcCellChecksumFile = defaultCellChecksumFile;
+	size_t	cvcLargeCircuitSize = defaultLargeCircuitSize;
+	string  cvcNetCheckFile = defaultNetCheckFile;
 
 	string	cvcLastTopBlock;
 	string	cvcLastNetlistFilename;
@@ -87,14 +115,13 @@ public:
 	teestream& reportFile;
 
 	CCvcParameters(teestream& theReportFile) : reportFile(theReportFile) {};
-//	CCvcParameters(int argc, const char * argv[]);
 
 	string CvcFileName();
 	bool	IsSameDatabase();
 	void	SaveDatabaseParameters();
 	void	ResetEnvironment();
 	void	PrintEnvironment(ostream & theOutputFile = cout);
-	void 	PrintDefaultEnvironment();
+	void	PrintDefaultEnvironment();
 	void	LoadEnvironment(const string theEnvironmentFilename, const string theReportPrefix);
 	returnCode_t	LoadModels();
 	returnCode_t	LoadPower();
@@ -102,6 +129,7 @@ public:
 	void	AddTestPower();
 	void	SetHiZPropagation();
 	void	PrintPowerList(ostream & theLogFile, string theIndentation = "");
+
 };
 
 #endif /* CCVCPARAMETERS_HH_ */

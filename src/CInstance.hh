@@ -1,7 +1,7 @@
 /*
  * CInstance.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -26,6 +26,7 @@
 
 #include "Cvc.hh"
 
+#include <unordered_map>
 #include "CCircuit.hh"
 
 class CCvcDb;
@@ -35,16 +36,34 @@ public:
 	deviceId_t	firstDeviceId = 0;
 	instanceId_t	firstSubcircuitId = 0;
 	netId_t		firstNetId = 0;
+	union {
+		instanceId_t  parallelInstanceCount = 0;  // parallel (maybe) instances kept
+		instanceId_t  parallelInstanceId;  // for parallel instances deleted
+	};
 
 	CNetIdVector	localToGlobalNetId_v;
 
+	/* The CInstance structure also doubles as a hash.
+	   Each master has a vector of instances.
+	*/
+	instanceId_t	nextHashedInstanceId = UNKNOWN_DEVICE;
+ 
 	instanceId_t	parentId = 0;
 	CCircuit * master_p = NULL;
+	bool	isMasked = false;
 
 	void AssignTopGlobalIDs(CCvcDb * theCvcDb_p, CCircuit * theMaster_p);
-	void AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInstanceId, const CDevice * theSubcircuit_p, const instanceId_t theParentId, const CInstance * theParent_p);
+	void AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInstanceId, CDevice * theSubcircuit_p, const instanceId_t theParentId,
+		CInstance * theParent_p, bool isParallel);
+	bool IsParallelInstance() { return (localToGlobalNetId_v.size() == 0); };
 
 	void Print(const instanceId_t theInstanceId, const string theIndentation = "");
+};
+
+class CInstancePtrVector : public vector<CInstance *> {
+public:
+	~CInstancePtrVector();
+	void Clear();
 };
 
 #endif /* CINSTANCE_HH_ */

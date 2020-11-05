@@ -1,7 +1,7 @@
 /*
  * CEventQueue.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -34,11 +34,6 @@ enum queuePosition_t {QUEUE_HIZ = -3, SKIP_QUEUE, MOS_DIODE, MAIN_BACK, DELAY_FR
 
 #define DefaultQueuePosition_(flag, queue) (((flag) || queue.queueType == SIM_QUEUE) ? MAIN_BACK : DELAY_FRONT)
 
-/*
-class CEventList : public deque<deviceId_t> {
-public:
-};
-*/
 class CEventList : public pair<deviceId_t, deviceId_t> {
 public:
 	vector<deviceId_t>& queueArray;
@@ -76,7 +71,7 @@ public:
 	vector<deviceId_t>& queueArray;
 
 	CEventSubQueue(vector<deviceId_t>& theQueueArray) : queueArray(theQueueArray) {}
-	CEventList& operator[] (eventKey_t theEventKey) { return ( ( *((this->insert(make_pair(theEventKey, CEventList(queueArray)))).first)).second ); }
+	CEventList& operator[] (eventKey_t theEventKey);
 	eventKey_t QueueTime(eventQueue_t theQueueType);
 };
 
@@ -93,15 +88,12 @@ public:
 
 	CEventSubQueue	mainQueue;
 	CEventSubQueue	delayQueue;
-//	CEventSubQueue	savedMainQueue;
-//	CEventSubQueue	savedDelayQueue;
 
 	bool	queueStart = false;
 
 	long	enqueueCount = 0;
 	long	dequeueCount = 0;
 	long	requeueCount = 0;
-//	long	alreadyProcessed = 0;
 	int		printCounter = 1000000;
 
 	CEventQueue(eventQueue_t theQueueType, deviceStatus_t theInactiveBit, deviceStatus_t thePendingBit, CVirtualNetVector& theVirtualNet_v, CPowerPtrVector& theNetVoltage_v) :
@@ -109,7 +101,6 @@ public:
 	void ResetQueue(deviceId_t theDeviceCount);
 	void AddEvent(eventKey_t theEventKey, deviceId_t theDeviceId, queuePosition_t theQueuePosition);
 	void BackupQueue();
-	// void RestoreQueue();
 	deviceId_t GetMainEvent();
 	deviceId_t GetDelayEvent();
 	bool IsNextMainQueue();

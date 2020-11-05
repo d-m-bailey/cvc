@@ -1,7 +1,7 @@
 /*
  * CCondition.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -33,13 +33,13 @@ public:
 	string parameter;
 	relation_t	relation;
 	string	stringValue;
-	CNormalValue 	numericValue;
+	CNormalValue	numericValue;
 
 	CCondition(string theParameter, string theRelation, string theValue);
 	bool	CheckCondition(CNormalValue & theCheckValue);
 	long int	ConvertValue(string theStringValue);
 
-	string 	PrintRelation();
+	string	PrintRelation();
 	string	PrintValue();
 	void	Print(ostream & theLogFile = cout, string theIndentation = "");
 };

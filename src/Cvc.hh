@@ -1,7 +1,7 @@
 /*
  * Cvc.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -24,9 +24,10 @@
 #ifndef CVC_H_
 #define CVC_H_
 
-#define CVC_VERSION "0.11.3"
+#define CVC_VERSION "0.17.35"
 
 extern bool gDebug_cvc;
+extern bool gSetup_cvc;
 extern bool gInterrupted;
 extern bool gInteractive_cvc;
 
@@ -62,7 +63,6 @@ extern char vv_suffix[], vv_trailer[];
 #include <iomanip>
 #include <set>
 #include <regex>
-#include "utility.h"
 
 #include "sys/resource.h"
 
@@ -70,6 +70,7 @@ using namespace std;
 
 typedef char * text_t;
 
+#include "utility.h"
 #include "CvcMaps.hh"
 #include "CCvcExceptions.hh"
 // #include "SFHash.hh"
@@ -143,25 +144,31 @@ public:
 	text_t BiasNet(CFixedText & theCdlText);
 };
 
+#define DEFAULT_LOAD_FACTOR	2.0
+
 class CTextResistanceMap : public unordered_map<text_t, resistance_t> {
 public:
+	CTextResistanceMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 class CTextNetIdMap : public unordered_map<text_t, netId_t> {
 public:
+	CTextNetIdMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 class CTextDeviceIdMap : public unordered_map<text_t, deviceId_t> {
 public:
-
+	CTextDeviceIdMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 class CTextInstanceIdMap : public unordered_map<text_t, instanceId_t> {
 public:
+	CTextInstanceIdMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 class CStringTextMap : public unordered_map<string, text_t> {
 public:
+	CStringTextMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 class CNetIdVector : public vector<netId_t> {
@@ -176,8 +183,12 @@ class CInstanceIdVector : public vector<instanceId_t> {
 public:
 };
 
+class CNetIdSet : public unordered_set<netId_t> {
+public:
+};
+
 typedef bitset<8> CStatus;
-extern CStatus PMOS_ONLY, NMOS_ONLY, NMOS_PMOS, NO_TYPE;
+extern CStatus PMOS_ONLY, NMOS_ONLY, NMOS_PMOS, NO_TYPE; //, MIN_CHECK_BITS, MAX_CHECK_BITS;
 
 class CStatusVector : public vector<CStatus> {
 public:
@@ -199,6 +210,11 @@ class CHierList {
 class CStringList {
 
 };
+
+template<typename T1, typename T2>
+T1 min(T1 a, T2 b) {return ((a < (T1)b) ? a : (T1) b);}
+template<typename T1, typename T2>
+T1 max(T1 a, T2 b) {return ((a > (T1)b) ? a : (T1) b);}
 
 enum returnCode_t {UNKNOWN_RETURN_CODE=0, OK, SKIP, FAIL};
 

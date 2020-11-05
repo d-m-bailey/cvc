@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 """ expand_cells.py: Create a list of cells to expand or ignore from CDL netlist for calibre SVS
 
-    Copyright 2106 D. Mitch Bailey
+    Copyright 2106-2018 D. Mitch Bailey  cvc at shuharisystem dot com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
 from __future__ import division
 
 import sys
+if sys.hexversion < 0x02060000:
+    sys.exit("Python 2.6 or newer is required to run this program.")
+
 import getopt
 import gzip
 import re
@@ -33,13 +36,15 @@ def ReadCellOverrides(theOverrideCellFileName):
     EXPAND cell1 <- cell1 will be expanded (flattened) unconditionally (LVS EXCLUDE HCELL)
     KEEP cell2   <- cell2 will remain in the final hierarchy unless parameterized
     IGNORE cell3 <- contents of cell3 will be removed from the final netlist (LVS BOX CELL)
+    MOSFET cell4 <- cell4 will be treated as a mosfet
+    RESISTOR cell5 <- cell4 will be treated as a resistor
     # comment
 
     Other formats result in fatal errors.
     Duplicate settings that don't match also result in fatal errors.
     """
     myCellOverrides = {}
-    myOverrideFilterRE = re.compile('^(EXPAND|KEEP|IGNORE)\s+(\S+)$')
+    myOverrideFilterRE = re.compile('^(EXPAND|KEEP|IGNORE|MOSFET|RESISTOR)\s+(\S+)')
     myCommentRE = re.compile('^#')
     myOverrideError = False
     myCellOverrideFile = OpenFile(theOverrideCellFileName)
@@ -51,13 +56,14 @@ def ReadCellOverrides(theOverrideCellFileName):
             myOverride = myMatch.group(1)
             myCell = myMatch.group(2)
             if myCell in myCellOverrides and myCellOverrides[myCell] != myOverride:
-                print("ERROR: conflicting override " + myLine 
-                      + " != " + myCellOverrides[myCell] + " " + myCell)
+#               print("ERROR: conflicting override " + myLine
+#                     + " != " + myCellOverrides[myCell] + " " + myCell)
+                print >> sys.stderr, "ERROR: conflicting override " + myLine + " != " + myCellOverrides[myCell] + " " + myCell
                 myOverrideError = True
             else:
                 myCellOverrides[myCell] = myOverride
         elif not myCommentRE.search(myLine):
-            print("ERROR: invalid format " + myLine)
+            print >> sys.stderr, "ERROR: invalid format " + myLine
             myOverrideError = True
     if myOverrideError: raise
     return myCellOverrides
@@ -70,7 +76,7 @@ def OpenFile(theFileName):
         else:
             myFile = open(theFileName)
     except IOError as myErrorDetail:
-        print("ERROR: Could not open " + theFileName + " " + str(myErrorDetail.args))
+        print >> sys.stderr, "ERROR: Could not open " + theFileName + " " + str(myErrorDetail.args)
         raise IOError
     return myFile
 
@@ -87,7 +93,12 @@ def ReadNetlist(theCDLFileName, theCellOverrideList):
     for line_it in myCDLFile:
         if line_it.startswith("*"): continue  #ignore comments
         if not line_it.strip(): continue  #ignore blank lines
-        if line_it.startswith("+"):
+        if line_it.startswith(".INCLUDE"):
+            myWordList = line_it.split()
+            myIncludeFile = myWordList[1]
+            print >> sys.stderr, "Reading from " + myIncludeFile
+            myLongLines += ReadNetlist(myIncludeFile, theCellOverrideList)
+        elif line_it.startswith("+"):
             myLine += " " + line_it[1:]
         else:
             if myLine:
@@ -102,19 +113,36 @@ def ReadNetlist(theCDLFileName, theCellOverrideList):
                         if (myName in theCellOverrideList
                                 and theCellOverrideList[myName] == 'IGNORE'):
                             gNetlist[myName]['small'] = True
-                myLongLines.append(myLine)
+                myLongLines.append(myLine.replace(" /", " "))
             myLine = line_it
     if myLine != myLongLines[-1]:
-        myLongLines.append(myLine)
+        myLongLines.append(myLine.replace(" /", " "))
     return myLongLines
+
+def CountResistor(theCircuit, theLine, theRE):
+    myMatch = theRE.search(theLine)
+    if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D resistor.
+        theCircuit['resistor_count'] += 1
+    else:
+        theCircuit['other_count'] += 1
+
+def CountMosfet(theCircuit, theLine, theRE):
+    myMatch = theRE.search(theLine)
+    if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D MOS.
+        myMosModel = myMatch.group(3)
+        if myMosModel not in theCircuit['mos_models']:
+            theCircuit['mos_models'][myMosModel] = 0
+        theCircuit['mos_models'][myMosModel] += 1
+    else:
+        theCircuit['other_count'] += 1
 
 def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
     """Count instances, mos models, resistor in each subckt and return hierarchy dictionary."""
     mySubcktStartRE = re.compile("^\.[sS][uU][bB][cC][kK][tT]\s+(\S+)")
     mySubcktEndRE = re.compile("^\.[eE][nN][dD][sS]")
     myPinRE = re.compile("\$PINS")
-    myMosRE = re.compile("^[mM]\S*\s+(\S+)\s+\S+\s+(\S+)\s+\S+\s+(\S+)")
-    myResistorRE = re.compile("^[rR]\S*\s+(\S+)\s+(\S+)")
+    myMosRE = re.compile("^[mMxX]\S*\s+(\S+)\s+\S+\s+(\S+)\s+\S+\s+(?:/\s+){,1}(\S+)")
+    myResistorRE = re.compile("^[rRxX]\S*\s+(\S+)\s+(?:/\s+){,1}(\S+)")
     myParameterRE = re.compile("([^=\s]+=[^=\s]+)|(\$\S+)")
     myCircuit = None
     for line_it in theSubcircuits:
@@ -126,8 +154,11 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
     #                myWord = word_it.strip()
                     if myParameterRE.match(word_it):
                         if not myPinRE.match(word_it):
-                            myInstance = myInstance.replace("/", "")
-                            gNetlist[myInstance]['small'] = True  # Expand parameterized instances.
+                            #myInstance = myInstance.replace("/", "")
+                            try:
+                                gNetlist[myInstance]['small'] = True  # Expand parameterized instances.
+                            except KeyError:
+                                print >> sys.stderr, "Missing subcircuit definition for " + myInstance
                             if not myInstance in gParameterList:
                                 gParameterList[myInstance] = 0
                             gParameterList[myInstance] += 1
@@ -136,25 +167,19 @@ def AnalyzeNetlist(theSubcircuits, theCellOverrideList):
                         myInstance = word_it  # Last word before first parameter
             else:
                 myInstance = myWordList[-1]
-            myInstance = myInstance.replace("/", "")
-            if myInstance not in myCircuit['instances']:
-                myCircuit['instances'][myInstance] = 0
-            myCircuit['instances'][myInstance] += 1
-        elif line_it.startswith("M") or line_it.startswith("m")::
-            myMatch = myMosRE.search(line_it)
-            if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D MOS.
-                myMosModel = myMatch.group(3)
-                if myMosModel not in myCircuit['mos_models']:
-                    myCircuit['mos_models'][myMosModel] = 0
-                myCircuit['mos_models'][myMosModel] += 1
+            #myInstance = myInstance.replace("/", "")
+            if myInstance in theCellOverrideList and theCellOverrideList[myInstance] == 'RESISTOR':
+                CountResistor(myCircuit, line_it, myResistorRE)
+            elif myInstance in theCellOverrideList and theCellOverrideList[myInstance] == 'MOSFET':
+                CountMosfet(myCircuit, line_it, myMosRE)
+            elif myInstance not in myCircuit['instances']:
+                myCircuit['instances'][myInstance] = 1
             else:
-                myCircuit['other_count'] += 1
+                myCircuit['instances'][myInstance] += 1
         elif line_it.startswith("R") or line_it.startswith("r"):
-            myMatch = myResistorRE.search(line_it)
-            if myMatch and myMatch.group(1) != myMatch.group(2):  # Skip S=D resistor.
-                myCircuit['resistor_count'] += 1
-            else:
-                myCircuit['other_count'] += 1
+            CountResistor(myCircuit, line_it, myResistorRE)
+        elif line_it.startswith("M") or line_it.startswith("m"):
+            CountMosfet(myCircuit, line_it, myMosRE)
         elif line_it.startswith("."):
             myMatch = mySubcktStartRE.search(line_it)
             if myMatch:
@@ -183,6 +208,9 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     myCircuit = gNetlist[theTopCell]
     myCircuit['checked'] = True
     for instance_it in myCircuit['instances'].keys():
+        if instance_it not in gNetlist:
+            print >> sys.stderr, "missing subcircuit definition for " + instance_it
+            continue
         if not gNetlist[instance_it]['checked']:
             PrintSmallCells(theCellOverrideList, instance_it)  # Recursive call
         if ('small' in gNetlist[instance_it]
@@ -209,6 +237,9 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     mySmashFlag = True
     myInstanceCount = 0
     for instance_it in myCircuit['instances']:
+        if instance_it not in gNetlist:
+            print >> sys.stderr, "missing subcircuit definition for " + instance_it
+            continue
         if not 'small' in gNetlist[instance_it]:  # Don't count small instances
             myInstanceCount += myCircuit['instances'][instance_it]
     if myInstanceCount > 1:
@@ -259,7 +290,7 @@ def main(argv):
     """
     options, arguments = getopt.getopt(argv, "?")
     if len(argv) != 3:
-        print("usage: expand_cells.py overrideCellFile topCell cdlFile[.gz]")
+        print >> sys.stderr, "usage: expand_cells.py overrideCellFile topCell cdlFile[.gz]"
         return
     myCellOverrideList = ReadCellOverrides(argv[0])
     mySubcircuits = ReadNetlist(argv[2], myCellOverrideList)

@@ -1,0 +1,51 @@
+#! /bin/csh -f
+
+set kisei = $1
+
+awk '\
+FILENAME == "'$kisei'" {\
+        if ( /^\*/ ) {\
+                next;\
+        }\
+        cell = $1;\
+        $1 = $2;\
+        $2 = "";\
+        if ( (cell, $0) in duplicate ) {\
+                next;\
+        }\
+        duplicate[cell, $0] = "";\
+        if ( cell in kisei ) {\
+                kisei[cell] = kisei[cell] "\n" $0;\
+        } else {\
+                kisei[cell] = $0;\
+                printed[cell] = 0;\
+        }\
+        #print kisei[cell] > "/dev/tty";\
+        next;\
+}\
+/^\.ENDS/ {\
+        if ( kisei[cell] != "" ) {\
+                printed[cell] = 1;\
+                print kisei[cell];\
+        }\
+        cell = "";\
+}\
+$1 ~ /^R/ && $4 == "RES" {\
+        print "*" $0;\
+        next;\
+}\
+/^\.SUBCKT/ {\
+        cell = $2;\
+}\
+ {\
+        print $0;\
+}\
+END {\
+        for ( cell in printed ) {\
+                if ( printed[cell] == 0 ) {\
+                        print "* skipped diodes for cell", cell;\
+                }\
+        }\
+}' $kisei - | \
+        sed 's/^\(.\)\1/\1/'
+

@@ -1,7 +1,7 @@
 /*
  * CModel.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -43,6 +43,8 @@ public:
 	string	maxVbsDefinition = "";
 	string	maxVbgDefinition = "";
 
+	string	vthDefinition = "";
+
 	voltage_t	maxVds = UNKNOWN_VOLTAGE;
 	voltage_t	maxVgs = UNKNOWN_VOLTAGE;
 	voltage_t	maxVbs = UNKNOWN_VOLTAGE;
@@ -51,11 +53,11 @@ public:
 	voltage_t	Vth = UNKNOWN_VOLTAGE;
 
 	string	resistanceDefinition;
-//	resistance_t	R = 1;
 
 	string	baseType = "";
 
 	bool isLDD = false;
+	bool validModel = true;
 
 	modelType_t type = UNKNOWN;
 
@@ -81,11 +83,13 @@ public:
 
 class CModelList : public list<CModel> {
 public:
-	int	Vth;
+	int		Vth = UNKNOWN_VOLTAGE;
+	string	vthDefinition;
 };
 
 class CTextModelPtrMap : public unordered_map<text_t, CModel *> {
 public:
+	CTextModelPtrMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 };
 
 class CModelListMap : public map<string, CModelList> {

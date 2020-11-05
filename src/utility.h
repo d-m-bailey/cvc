@@ -1,7 +1,7 @@
 /*
  * utility.h
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -37,13 +37,12 @@ std::string int_to_hex( T i )
 {
   std::stringstream stream;
   stream << "0x"
-         << std::setfill ('0') << std::setw(sizeof(T)*2)
-         << std::hex << i;
+	<< std::setfill ('0') << std::setw(sizeof(T)*2)
+	<< std::hex << i;
   return stream.str();
 }
 
 #define trim_(string) (string.substr(0, string.find_last_not_of(" \t\n") + 1).substr(string.find_first_not_of(" \t\n")))
-//#define IsValidVoltage_(string) (regex_search(string, regex("^[-+]?[0-9]+\\.?[0-9]*$", regex_constants::awk)))
 #define IsValidVoltage_(string) (\
 		sscanf((string).c_str(), "%[-+]%d.%d%1s", &vv_sign, &vv_integer, &vv_fraction, vv_trailer) == 3 \
 		|| sscanf((string).c_str(), "%[-+]%d%1s", &vv_sign, &vv_integer, vv_trailer) == 2 \
@@ -70,5 +69,7 @@ std::string RegexErrorString(std::regex_constants::error_type theErrorCode);
 
 std::string FuzzyFilter(std::string theFilter);
 bool IsAlphanumeric(std::string theString);
+inline bool IsEmpty(char * theText) {return (theText[0] == '\0' );};
+inline bool IsEmpty(std::string theString) {return (theString.empty());};
 
 #endif /* UTILITY_H_ */

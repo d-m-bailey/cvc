@@ -2,7 +2,7 @@
 
 #   calibre_cvc: runs calibre svs to create a standardized netlist
 
-#   Copyright 2106, 2017 D. Mitch Bailey
+#   Copyright 2106-2019 D. Mitch Bailey  cvc at shuharisystem dot com
 
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -21,22 +21,29 @@ echo $0 $*
 
 rulefile=cvc.svrf
 
-if [[ ${#*} -ne 3 ]]; then 
-	echo "usage: calibre_cvc topBlock dataPath output"
+if [[ ${#*} -ne 4 ]]; then 
+	echo "usage: calibre_cvc rulefile topBlock dataPath output"
 	exit 1
 fi
 
-PRIMARY="$1"
-DATA="$2"
-OUTPUT="$3"
+RULEFILE="$1"
+PRIMARY="$2"
+DATA="$3"
+OUTPUT="$4"
+
+if [[ ! -f $RULEFILE ]]; then
+	echo "ERROR: can not open $RULEFILE"
+	exit 1
+fi
+
+while [[ -L $DATA ]]; do
+	DATA=`readlink $DATA`
+done
 
 additionalRules="cvc.include"
 #   Additional rules include the following statements
-#   CASE (except LVS CASE[included later])
-#   VIRTUAL CONNECT COLON YES (if used)
-#   LVS (except LVS SOFTCHK[ignored], LVS REPORT/WRITE[fixed], LVS INJECT LOGIC[always NO], and
-#     LVS CULL PRIMITIVE CELLS[should be no for box instances])
-#   TRACE
+#   Switches for CVC
+#   Device filters for CVC
 
 cellOverrides="override.list"
 #   Cell overrides are
@@ -57,6 +64,27 @@ fi
 
 log="cdl.log"
 echo "log file: $log"
+
+if [[ ( $DATA -nt expand.list ) \
+		|| ( $cellOverrides -nt expand.list ) \
+		|| ( ! -s expand.list ) ]]; then
+	echo "Finding cells to expand using $cellOverrides ..."
+	if [[ -f $cellOverrides ]]; then
+		expand_cells.py $cellOverrides $PRIMARY $DATA > expand.list
+		expand_status=$?
+	else
+		echo "Warning: missing $cellOverrides"
+		expand_cells.py /dev/null $PRIMARY $DATA > expand.list
+		expand_status=$?
+	fi
+	if [[ $expand_status -ne 0 ]]; then
+		echo "ERROR: could not create expand.list"
+		rm -f expand.list
+		exit 1
+	fi
+else
+	echo "Reusing expand.list"
+fi
 
 cat > $rulefile <<-svs_rule
 	LAYOUT PRIMARY $PRIMARY
@@ -83,26 +111,42 @@ else
 	echo "Warning: missing $additionalRules"
 fi
 
-if [[ ( $DATA -nt expand.list ) || ( $cellOverrides -nt expand.list ) ]]; then
-	echo "Finding cells to expand using $cellOverrides ..."
-	if [[ -f $cellOverrides ]]; then
-		expand_cells.py $cellOverrides $PRIMARY $DATA > expand.list
-	else
-		echo "Warning: missing $cellOverrides"
-		expand_cells.py /dev/null $PRIMARY $DATA > expand.list
-	fi
-else
-	echo "Reusing expand.list"
-fi
+sed -e 's/[   ][      ]*/ /g' \
+	-e 's/^#!/\/\/&/I' \
+	-e 's/^ *LAYOUT PRIMARY/\/\/&/I' \
+	-e 's/^ *LAYOUT PATH/\/\/&/I' \
+	-e 's/^ *SOURCE PRIMARY/\/\/&/I' \
+	-e 's/^ *SOURCE PATH/\/\/&/I' \
+	-e 's/^ *LVS WRITE SOURCE NETLIST/\/\/&/I' \
+	-e 's/^ *LVS REPORT/\/\/&/I' \
+	-e 's/^ *MASK RESULTS DATABASE/\/\/&/I' \
+	-e 's/^ *SOURCE SYSTEM/\/\/&/I' \
+	-e 's/^ *LAYOUT SYSTEM/\/\/&/I' \
+	-e 's/^ *LVS INJECT LOGIC/\/\/&/I' \
+	-e 's/^ *LVS FILTER UNUSED/\/\/&/I' \
+	-e 's/^ *LVS EXECUTE ERC/\/\/&/I' \
+	-e 's/^ *LVS SUMMARY /\/\/&/I' \
+	-e 's/^ *MASK SVDB DIRECTORY/\/\/&/I' $RULEFILE >> $rulefile
+
 cat expand.list >> $rulefile
 
 if [[ -f $OUTPUT.0 ]]; then
 	mv $OUTPUT.0 $OUTPUT.0.bak
 fi
 
-echo "Performing SVS..."
-calibre -hier -automatch -lvs -64 $rulefile > $log
-tail -15 $log
+which calibre &> /dev/null
+if [[ $? -eq 1 ]]; then
+	read -p "Run SVS and hit return..."
+else
+	echo "Performing SVS..."
+	calibre -hier -automatch -lvs -64 $rulefile > $log
+	calibreStatus=$?
+	tail -15 $log
+	if [[ $calibreStatus -ne 0 ]]; then
+		echo "ERROR: Calibre status $calibreStatus"
+		exit 1
+	fi
+fi
 
 echo "Removing leading double characters and changing commented parameters ..."
 # ^RR -> R
@@ -121,6 +165,35 @@ sed -e 's/^\(.\)\1/\1/' \
     -e 's/\$//g' \
     -e 's/\^SUB=/$SUB=/' $OUTPUT.0 | \
 $BOX_FILTER > $OUTPUT
+
+echo "Calculating cksums..."
+if [[ ! -d sub_split ]] ; then
+	mkdir sub_split
+fi
+
+awk '\
+/^+/ { printf("\\=%s", $0); next } \
+ { printf("\n%s", $0) } \
+END { printf("\n") }' $OUTPUT | \
+	sed -e '/^ *$/d' \
+	    -e 's/\\=+/ /g' \
+	    -e 's/  */ /g' | \
+	csplit -s -f sub_split/sub -n 7 - "/^\.SUBCKT /" "{*}"
+
+for sub in sub_split/sub*; do
+	CIRCUIT=$(awk '/^\.SUBCKT/ {print $2; exit}' $sub)
+	sort $sub > sub_split/$CIRCUIT.cdl
+	rm $sub
+done
+
+DATE=${PWD##*/}
+
+echo "# Checksum file for $PRIMARY $DATE" > $PRIMARY.cksum
+
+cksum sub_split/* | \
+	sed -e 's,sub_split/,,' -e 's,\.cdl,,' >> $PRIMARY.cksum
+
+rm -rf sub_split
 
 if [[ ! -z "${compress+x}" ]]; then
 	gzip -f $OUTPUT

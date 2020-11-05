@@ -30,7 +30,7 @@
       ResultFile: Read and process error file data.
       SummaryApp: Kivy GUI App.
 
-    Copyright 2106, 2017 D. Mitch Bailey  d.mitch.bailey at gmail dot com
+    Copyright 2016-2018 D. Mitch Bailey  cvc at shuharisystem dot com
 
     This file is part of check_cvc.
 
@@ -56,6 +56,7 @@ from __future__ import print_function
 import sys
 import os
 import getopt
+import glob
 
 os.environ["KIVY_NO_ARGS"] = "1"
 os.environ["KIVY_NO_CONSOLELOG"] = "1"
@@ -68,7 +69,7 @@ from SummaryApp import SummaryApp
 
 def DisplayLicense():
     """Display GPLv3 reference."""
-    print("check_cvc v1.0.11 Copyright (C) 2016, 2017  D. Mitch Bailey")
+    print("check_cvc v1.0.14 Copyright (C) 2016-2018  D. Mitch Bailey")
     print("This program comes with ABSOLUTELY NO WARRANTY.")
     print("This is free software licensed under GPLv3,")
     print("and you are welcome to redistribute it under certain conditions.")
@@ -104,19 +105,19 @@ def main(argv):
  
 if __name__ == '__main__':
     if len(sys.argv) == 1:
-        main(["-i", "../cvc/summary_cvc",
-              "../cvc/test_logs/160829_1200/CVC_TEST_diode.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_voltage.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_SHORT1.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_float1.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_float2.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_float3.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_float4.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_gate1.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_shadan.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_shadan1.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_pleak.cvc_20131001.log",
-              "../cvc/test_logs/160829_1200/CVC_TEST_base.cvc_20131001.log"])
+        main(["-i", "../../check_cvc/summary_cvc",
+              "../test/test_logs/160829_1200/CVC_TEST_diode.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_voltage.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_SHORT1.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_float1.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_float2.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_float3.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_float4.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_gate1.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_shadan.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_shadan1.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_pleak.cvc_20131001.log",
+              "../test/test_logs/160829_1200/CVC_TEST_base.cvc_20131001.log"])
     else:
         main(sys.argv[1:])
 

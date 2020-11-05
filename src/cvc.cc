@@ -1,7 +1,7 @@
 /*
  * cvc.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -38,13 +38,16 @@ char vv_suffix[2], vv_trailer[2];
 ///@}
 
 bool gDebug_cvc = false;
+bool gSetup_cvc = false;
 bool gInterrupted = false;  //!< for detecting interrupts
 
 HIST_ENTRY **gHistoryList; //!< readline history
 
-/// \name global status constants
+/// \name global constants
 ///@{
-CStatus PMOS_ONLY, NMOS_ONLY, NMOS_PMOS, NO_TYPE;
+CStatus PMOS_ONLY, NMOS_ONLY, NMOS_PMOS, NO_TYPE; //, MIN_CHECK_BITS, MAX_CHECK_BITS;
+set<modelType_t> FUSE_MODELS;
+CNetIdSet EmptySet;
 ///@}
 
 CCvcDb	* gCvcDb; //!< CVC global database
@@ -66,10 +69,13 @@ int main(int argc, const char * argv[]) {
 	NMOS_PMOS[NMOS] = true;
 	NMOS_PMOS[PMOS] = true;
 	NO_TYPE = 0;
+	FUSE_MODELS.insert(FUSE_ON);
+	FUSE_MODELS.insert(FUSE_OFF);
 
 try {
 	using_history();
 	gCvcDb = new CCvcDb(argc, argv);
+	if ( gDebug_cvc ) gCvcDb->PrintClassSizes();
 	gCvcDb->VerifyCircuitForAllModes(argc, argv);
 }
 catch (EFatalError& e) {
@@ -82,6 +88,7 @@ catch (exception& e) {
 	gCvcDb->RemoveLock();
 	cout << "unexpected error: " << e.what() << endl;
 }
+	delete gCvcDb;
 }
 
 /// \file Coding guidelines:

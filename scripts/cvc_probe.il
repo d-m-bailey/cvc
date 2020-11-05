@@ -1,4 +1,4 @@
-; cvc_probe_selection, cvc_probe_device, cvc_probe_net: loads a hierarchy 
+; cvc_probe_selection, cvc_probe_device, cvc_probe_net: loads a hierarchy
 
 ; Copyright 2016 D. Mitch Bailey, Shuhari System
 
@@ -16,8 +16,10 @@
 ;   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ; Set the following 2 variables for each project
-myTopLib = ???
-myTopBlock = ???
+myTopLib = "????"
+myTopBlock = "????"
+myArrayStart = '_
+myArrayEnd = '_
 
 procedure(cvc_probe_selection()
 	; Probe the clipboard text.
@@ -43,15 +45,16 @@ procedure(cvc_probe_device(theDevicePath)
 		?viewType "schematic"
 		?mode "r"
 	)
-;	print(myDb~>instances->??)
+;       print(myDb~>instances->??)
 	myHierarchy = parseString(myDevicePath "/")
 	myDevice = car(reverse(myHierarchy))
 	myCellPath = reverse(cdr(reverse(myHierarchy)))
 	println(list(myHierarchy myCellPath myDevice))
 	while(myCellPath != '() && myDb != nil
-		myDb = find_cvc_instance(geGetWindowCellView() car(myCellPath))
+		myInstance = split_array_instance(car(myCellPath))
+		myDb = find_cvc_instance(geGetWindowCellView() car(myInstance))
 		if(myDb then
-			geSwitch(myWindow "r" myDb 0 0 0)
+			geSwitch(myWindow "r" myDb get_offset(myDb cadr(myInstance)) 0 0)
 			myCellPath = cdr(myCellPath)
 		)
 	)
@@ -59,7 +62,7 @@ procedure(cvc_probe_device(theDevicePath)
 )
 
 procedure(cvc_probe_net()
-;	myNetPath = clipboard
+;       myNetPath = clipboard
 	myNetPath = "/IO/I"
 	myDb = dbOpenCellViewByType("cvc_test" "test" "schematic")
 	myWindow = geOpen(
@@ -70,15 +73,16 @@ procedure(cvc_probe_net()
 		?viewType "schematic"
 		?mode "r"
 	)
-;	print(myDb~>instances->??)
+;       print(myDb~>instances->??)
 	myHierarchy = parseString(myNetPath "/")
 	myNet = car(reverse(myHierarchy))
 	myCellPath = reverse(cdr(reverse(myHierarchy)))
 	println(list(myHierarchy myCellPath myNet))
 	while(myCellPath != '() && myDb != nil
-		myDb = find_cvc_instance(geGetWindowCellView() car(myCellPath))
+		myInstance = split_array_instance(car(myCellPath))
+		myDb = find_cvc_instance(geGetWindowCellView() car(myInstance))
 		if(myDb then
-			geSwitch(myWindow "r" myDb 0 0 0)
+			geSwitch(myWindow "r" myDb get_offset(myDb cadr(myInstance)) 0 0)
 			myCellPath = cdr(myCellPath)
 		)
 	)
@@ -86,18 +90,18 @@ procedure(cvc_probe_net()
 )
 
 procedure(find_cvc_instance(myDb instanceName)
-	prog((myInstances)
+	prog((myInstances myInstance)
 		myInstances = myDb~>instances
 		while( car(myInstances)
 			myInstance = car(myInstances)
 			; Skip the first letter. CDL adds 'X', 'M', 'R', etc. not in schematic.
-			if( myInstance~>name == substring(instanceName 2) then
+			if( myInstance~>baseName == substring(instanceName 2) then
 				println(strcat("found " instanceName))
 				return(myInstance)
 			)
 			; Skip the first two letters.
 			; Flattened cells may add 'MX' to schematic instance name.
-			if( myInstance~>name == substring(instanceName 3) then
+			if( myInstance~>baseName == substring(instanceName 3) then
 				println(strcat("found " instanceName))
 				return(myInstance)
 			)
@@ -108,3 +112,33 @@ procedure(find_cvc_instance(myDb instanceName)
 	)
 )
 
+procedure(split_array_instance(instanceName)
+	prog((myArrayBase myOffsetString myIndexLength)
+		if(getchar(instanceName strlen(instanceName)) == myArrayEnd then
+			myArrayBase = substring(instanceName 1 strlen(instanceName)-1)
+			myOffsetString = substring(rindex(myArrayBase myArrayStart) 2)
+			myIndexLength = strlen(myOffsetString) + 2
+			println(strcat("array " substring(instanceName 1 strlen(instanceName)-myIndexLength) " " myOffsetString))
+			return(list(substring(instanceName 1 strlen(instanceName)-myIndexLength) evalstring(myOffsetString)))
+		)
+		return(list(instanceName 0))
+	)
+)
+
+procedure(get_offset(instance offset)
+	prog((myArray myRange myStart myEnd)
+		myArray = index(instance~>name "<")
+		if( myArray then
+			myRange = parseString(myArray "<:>")
+			myStart = evalstring(car(myRange))
+			myEnd = evalstring(cadr(myRange))
+			println(list("range " myStart ":" myEnd " index " offset ))
+			if( myStart < myEnd then
+				return(offset - myStart)
+			else
+				return(myStart - offset)
+			)
+		)
+		return(0)
+	)
+)

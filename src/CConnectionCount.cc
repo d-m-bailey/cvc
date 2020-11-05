@@ -1,7 +1,7 @@
 /*
  * CConnectionCount.cc
  *
- * Copyright 2014-2107 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -32,9 +32,21 @@ CDeviceCount::CDeviceCount(netId_t theNetId, CCvcDb * theCvcDb_p, instanceId_t t
 		if ( theCvcDb_p->IsSubcircuitOf(theCvcDb_p->deviceParent_v[device_it], theInstanceId) ) {
 			switch( theCvcDb_p->deviceType_v[device_it] ) {
 			case NMOS:
-			case LDDN: { nmosCount++; break; }
+			case LDDN: {
+				nmosCount++;
+				if ( theCvcDb_p->equivalentNet_v[theCvcDb_p->gateNet_v[device_it]] != theCvcDb_p->equivalentNet_v[theCvcDb_p->drainNet_v[device_it]] ) {
+					activeNmosCount++;
+				}
+				break;
+			}
 			case PMOS:
-			case LDDP: { pmosCount++; break; }
+			case LDDP: {
+				pmosCount++;
+				if ( theCvcDb_p->equivalentNet_v[theCvcDb_p->gateNet_v[device_it]] != theCvcDb_p->equivalentNet_v[theCvcDb_p->drainNet_v[device_it]] ) {
+					activePmosCount++;
+				}
+				break;
+			}
 			case RESISTOR: { resistorCount++; break; }
 			case CAPACITOR: { capacitorCount++; break; }
 			case DIODE: { diodeCount++; break; }
@@ -44,29 +56,48 @@ CDeviceCount::CDeviceCount(netId_t theNetId, CCvcDb * theCvcDb_p, instanceId_t t
 	}
 	for ( auto device_it = theCvcDb_p->firstDrain_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theCvcDb_p->nextDrain_v[device_it] ) {
 		if ( theCvcDb_p->IsSubcircuitOf(theCvcDb_p->deviceParent_v[device_it], theInstanceId) ) {
-			switch( theCvcDb_p->deviceType_v[device_it] ) {
-			case NMOS:
-			case LDDN: { nmosCount++; break; }
-			case PMOS:
-			case LDDP: { pmosCount++; break; }
-			case RESISTOR: { resistorCount++; break; }
-			case CAPACITOR: { capacitorCount++; break; }
-			case DIODE: { diodeCount++; break; }
-			default: break;
+			if ( theCvcDb_p->equivalentNet_v[theCvcDb_p->sourceNet_v[device_it]] != theCvcDb_p->equivalentNet_v[theCvcDb_p->drainNet_v[device_it]] ) {
+				// only count devices with source != drain (avoid double count)
+				switch( theCvcDb_p->deviceType_v[device_it] ) {
+				case NMOS:
+				case LDDN: {
+					nmosCount++;
+					if ( theCvcDb_p->equivalentNet_v[theCvcDb_p->gateNet_v[device_it]] != theCvcDb_p->equivalentNet_v[theCvcDb_p->sourceNet_v[device_it]] ) {
+						activeNmosCount++;
+					}
+					break;
+				}
+				case PMOS:
+				case LDDP: {
+					pmosCount++;
+					if ( theCvcDb_p->equivalentNet_v[theCvcDb_p->gateNet_v[device_it]] != theCvcDb_p->equivalentNet_v[theCvcDb_p->sourceNet_v[device_it]] ) {
+						activePmosCount++;
+					}
+					break;
+				}
+				case RESISTOR: { resistorCount++; break; }
+				case CAPACITOR: { capacitorCount++; break; }
+				case DIODE: { diodeCount++; break; }
+				default: break;
+				}
 			}
 		}
 	}
 	for ( auto device_it = theCvcDb_p->firstGate_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theCvcDb_p->nextGate_v[device_it] ) {
 		if ( theCvcDb_p->IsSubcircuitOf(theCvcDb_p->deviceParent_v[device_it], theInstanceId) ) {
-			switch( theCvcDb_p->deviceType_v[device_it] ) {
-			case NMOS:
-			case LDDN: { nmosGateCount++; break; }
-			case PMOS:
-			case LDDP: { pmosGateCount++; break; }
-			default: break;
+			if ( theCvcDb_p->equivalentNet_v[theCvcDb_p->sourceNet_v[device_it]] != theCvcDb_p->equivalentNet_v[theCvcDb_p->drainNet_v[device_it]] ) {
+				// does not count mos capacitors
+				switch( theCvcDb_p->deviceType_v[device_it] ) {
+				case NMOS:
+				case LDDN: { nmosGateCount++; break; }
+				case PMOS:
+				case LDDP: { pmosGateCount++; break; }
+				default: break;
+				}
 			}
 		}
 	}
+/*
 	for ( auto device_it = theCvcDb_p->firstBulk_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theCvcDb_p->nextBulk_v[device_it] ) {
 		if ( theCvcDb_p->IsSubcircuitOf(theCvcDb_p->deviceParent_v[device_it], theInstanceId) ) {
 			switch( theCvcDb_p->deviceType_v[device_it] ) {
@@ -78,14 +109,16 @@ CDeviceCount::CDeviceCount(netId_t theNetId, CCvcDb * theCvcDb_p, instanceId_t t
 			}
 		}
 	}
+*/
 }
 
 void CDeviceCount::Print(CCvcDb * theCvcDb_p) {
 	cout << "Device counts for net " << theCvcDb_p->NetName(netId) << endl;
 	cout << "Source/Drain counts" << endl;
-	cout << "NMOS: " << nmosCount << "; PMOS: " << pmosCount << "; RESISTOR: " << resistorCount << "; CAPACITOR: " << capacitorCount << "; DIODE: " << diodeCount << endl;
+	cout << "NMOS: " << activeNmosCount << "/" << nmosCount << "; PMOS: " << activePmosCount << "/" << pmosCount;
+	cout << "; RESISTOR: " << resistorCount << "; CAPACITOR: " << capacitorCount << "; DIODE: " << diodeCount << endl;
 	cout << "Gate counts" << endl;
 	cout << "NMOS: " << nmosGateCount << "; PMOS: " << pmosGateCount << endl;
-	cout << "Bulk counts" << endl;
-	cout << "NMOS: " << nmosBulkCount << "; PMOS: " << pmosBulkCount << endl;
+//	cout << "Bulk counts" << endl;
+//	cout << "NMOS: " << nmosBulkCount << "; PMOS: " << pmosBulkCount << endl;
 }

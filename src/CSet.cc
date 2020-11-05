@@ -1,7 +1,7 @@
 /*
  * CSet.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -24,18 +24,18 @@
 #include "CSet.hh"
 
 bool CSet::Intersects(CSet & theOtherSet) {
-	 CSet *mySmallSet_p, *myLargeSet_p;
-	 if ( size() > theOtherSet.size() ) {
-		 mySmallSet_p = &theOtherSet;
-		 myLargeSet_p = this;
-	 } else {
-		 mySmallSet_p = this;
-		 myLargeSet_p = &theOtherSet;
-	 }
-	 for ( auto myItem = mySmallSet_p->begin(); myItem != mySmallSet_p->end(); myItem++ ) {
-		 if ( myLargeSet_p->count(*myItem) > 0 ) return true;
-	 }
-	 return false;
+	CSet *mySmallSet_p, *myLargeSet_p;
+	if ( size() > theOtherSet.size() ) {
+		mySmallSet_p = &theOtherSet;
+		myLargeSet_p = this;
+	} else {
+		mySmallSet_p = this;
+		myLargeSet_p = &theOtherSet;
+	}
+	for ( auto myItem = mySmallSet_p->begin(); myItem != mySmallSet_p->end(); myItem++ ) {
+		if ( myLargeSet_p->count(*myItem) > 0 ) return true;
+	}
+	return false;
 };
 
 

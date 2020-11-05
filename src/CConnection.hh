@@ -1,7 +1,7 @@
 /*
  * CConnection.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -55,6 +55,7 @@ public:
 	inline bool IsUnknownGateVoltage() { return ( gateVoltage == UNKNOWN_VOLTAGE && ! (gatePower_p && gatePower_p->type[HIZ_BIT]) ); }
 	inline bool IsUnknownDrainVoltage() { return ( drainVoltage == UNKNOWN_VOLTAGE && ! (drainPower_p && drainPower_p->type[HIZ_BIT]) ); }
 	float EstimatedMosDiodeCurrent(voltage_t theSourceVoltage, CConnection & theConnections);
+	float EstimatedCurrent(voltage_t theSourceVoltage, voltage_t theDrainVoltage, resistance_t theSourceResistance, resistance_t theDrainResistance);
 //	inline bool IsUnknownBulkVoltage() { return ( bulkVoltage == UNKNOWN_VOLTAGE && ! (bulkPower_p && bulkPower_p->type[HIZ_BIT]) ); }
 
 };
@@ -155,6 +156,7 @@ public:
 	void SetUnknownVoltage();
 	void SetMinMaxLeakVoltagesAndFlags(CCvcDb * theCvcDb);
 	bool IsPossibleHiZ(CCvcDb * theCvcDb);
+	bool IsTransferGate(deviceId_t theNmos, deviceId_t thePmos, CCvcDb * theCvcDb);
 	bool IsPumpCapacitor();
 
 };

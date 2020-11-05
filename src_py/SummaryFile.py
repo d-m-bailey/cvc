@@ -1,6 +1,6 @@
 """ SummaryFile.py: Read and hold summary file data class.
 
-    Copyright 2106, 2017 D. Mitch Bailey  d.mitch.bailey at gmail dot com
+    Copyright 2016-2018 D. Mitch Bailey  cvc at shuharisystem dot com
 
     This file is part of check_cvc.
 
@@ -44,6 +44,7 @@ class SummaryFile():
     
     Class variables:
       countRE: regular expression to get error counts
+      checksumRE: regular expression to get check sum
     Instance variables:
       summaryFileName: Name of the summary file.
       summaryLine: List of non-blank lines in the summary file.
@@ -53,6 +54,7 @@ class SummaryFile():
         See ResultFile.CreateDisplayList for list record details
     """
     countRE = re.compile("^(.*INFO: .* error count )([0-9]+)/([0-9]+)")
+    checksumRE = re.compile("^.*INFO: .* (checksum\(.*\))")
     
     def __init__(self, theFileName):
         """Create SummaryFile object from summaryFile
@@ -121,11 +123,15 @@ class SummaryFile():
             if mySection in cvc_globals.priorityMap:
                 myData = myData.strip()
                 myMatch = self.countRE.match(myData)
+                myChecksum = "checksum()"
                 if myMatch:
                     if myMatch.group(2) == myMatch.group(3):  # all instance have errors
                         myKeyData = myMatch.group(1) + "all"
                     else:
                         myKeyData = myMatch.group(1) + myMatch.group(2)
+                    myChecksumMatch = self.checksumRE.match(myData)
+                    if myChecksumMatch:
+                        myChecksum = myChecksumMatch.group(1)
                 else:
                     myKeyData = myData
                 mySummaryList.append( 
@@ -133,6 +139,7 @@ class SummaryFile():
                      'reference': myReference, 
                      'level': myLevel,
                      'keyData': myKeyData,
+                     'checksum': myChecksum,
                      'data': myData})
             else:
                 print("Unknown format ignored:", summary_it)

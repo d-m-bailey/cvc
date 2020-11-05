@@ -1,7 +1,7 @@
 /*
  * CSet.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -26,9 +26,9 @@
 
 #include "Cvc.hh"
 
-class CSet : public unordered_set<string> {
+class CSet : public unordered_set<text_t> {
 public:
-	 bool Intersects(CSet & theOtherSet);
+	bool Intersects(CSet & theOtherSet);
 };
 
 #endif /* CSET_HH_ */

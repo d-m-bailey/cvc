@@ -13,6 +13,8 @@ proc load_selection {} {
 
 	set visu [Gui:GetMainVisualizer]
 
+	Gui:ActivateTab $visu Search&Cone
+
 	set db [Gui:GetDataBase $visu]
 	set topoid [Gui:GetCurrentModule $visu]
 	if { $topoid == "" } {
@@ -24,15 +26,21 @@ proc load_selection {} {
 	set path [$db oid path $topoid]
 
 	set oidList {}
-	regsub {\([^\)]*\)[     ]*$} $mySelection "" mySelection
-	regsub -all {\([^\)]*\)/} $mySelection " " mySelection
-	regsub -all {==} $mySelection "--" mySelection
-	regsub {^/} $mySelection "" mySelection
-	#regsub -all {/} $mySelection "-" mySelection
-	#regsub -all {\[} $mySelection "<" mySelection
-	#regsub -all {\]} $mySelection ">" mySelection
-	#Gui:Print $mySelection
-	lappend oidList "inst $topcell $path $mySelection"
+	set parentList {}
+
+	foreach myDevice [split $mySelection] {
+		regsub {\([^\)]*\)[     ]*$} $myDevice "" myDevice
+		regsub -all {\([^\)]*\)/} $myDevice " " myDevice
+		regsub -all {==} $myDevice "--" myDevice
+		regsub {^/} $myDevice "" myDevice
+		#regsub -all {/} $myDevice "-" myDevice
+		#regsub -all {\[} $myDevice "<" myDevice
+		#regsub -all {\]} $myDevice ">" myDevice
+		#Gui:Print $myDevice
+		lappend oidList "inst $topcell $path $myDevice"
+		regsub { [^ ]*$} $myDevice "" myDevice
+		lappend parentList "inst $topcell $path $myDevice"
+	}
 	Gui:AppendCone $visu $oidList
 
 	set col 12
@@ -43,13 +51,12 @@ proc load_selection {} {
 	}
 	Gui:HighlightChanged
 
-	set oidList {}
-	regsub { [^ ]*$} $mySelection "" mySelection
+	#set oidList {}
+	#regsub { [^ ]*$} $mySelection "" mySelection
 	#Gui:Print $mySelection
-	lappend oidList "inst $topcell $path $mySelection"
-	Gui:AppendCone $visu $oidList
-
-	Gui:ActivateTab $visu Search&Cone
+	#lappend oidList "inst $topcell $path $mySelection"
+	#Gui:AppendCone $visu $oidList
+	Gui:AppendCone $visu $parentList
 }
 
 proc toggle_selection {} {

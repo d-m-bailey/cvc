@@ -1,7 +1,7 @@
 /*
  * CConnection.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -72,19 +72,6 @@ float CFullConnection::EstimatedMinimumCurrent() {
 }
 
 float CConnection::EstimatedMosDiodeCurrent(voltage_t theSourceVoltage, CConnection & theConnections) {
-/*	voltage_t mySourceVoltage, myDrainVoltage;
-//	float myCurrent;
-	mySourceVoltage = sourceVoltage;
-	myDrainVoltage = drainVoltage;
-
-	if ( IsNmos_(device_p->model_p->type) && gateVoltage != UNKNOWN_VOLTAGE ) {
-		mySourceVoltage = min(sourceVoltage, drainVoltage);
-		myDrainVoltage = min(gateVoltage, max(sourceVoltage, drainVoltage));
-	} else if ( IsPmos_(device_p->model_p->type) && simGateVoltage != UNKNOWN_VOLTAGE ) {
-		mySourceVoltage = max(simSourceVoltage, simDrainVoltage);
-		myDrainVoltage = max(simGateVoltage, min(simSourceVoltage, simDrainVoltage));
-	}
-*/
 	// mos diodes are inherently low current. multiply resistance by 100 to simulate.
 	if ( gateId == drainId ) {
 		if ( sourcePower_p && sourcePower_p->type[HIZ_BIT] ) return float(0);  // no error for hi-z power
@@ -101,6 +88,10 @@ float CConnection::EstimatedMosDiodeCurrent(voltage_t theSourceVoltage, CConnect
 	}
 //	cout << "estimated current " << float(abs(theSourceVoltage-gateVoltage)) / (resistance*100 + masterSourceNet.finalResistance + masterDrainNet.finalResistance) / VOLTAGE_SCALE << endl;
 	return float(abs(theSourceVoltage-gateVoltage)) / (resistance + masterSourceNet.finalResistance + masterDrainNet.finalResistance) / VOLTAGE_SCALE ;
+}
+
+float CConnection::EstimatedCurrent(voltage_t theSourceVoltage, voltage_t theDrainVoltage, resistance_t theSourceResistance, resistance_t theDrainResistance) {
+	return float(abs(theSourceVoltage - theDrainVoltage)) / (resistance + theSourceResistance + theDrainResistance) / VOLTAGE_SCALE ;
 }
 
 float CFullConnection::EstimatedCurrent(bool theVthFlag) {
@@ -361,27 +352,6 @@ void CFullConnection::SetMinMaxLeakVoltagesAndFlags(CCvcDb * theCvcDb) {
 //	if ( maxBulkVoltage == UNKNOWN_VOLTAGE || ( maxBulkLeakVoltage != UNKNOWN_VOLTAGE && maxBulkLeakVoltage < maxBulkVoltage ) ) maxBulkVoltage = maxBulkLeakVoltage;
 }
 
-/*
-void AddTerminalConnections(deviceId_t theFirstDevice, list<deviceId_t>& myPmosToCheck,	list<deviceId_t>& myNmosToCheck,
-		list<deviceId_t>& myResistorToCheck, CNetIdVector& theFirstDevice_v, CNetIdVector& theNextDevice_v, vector<modelType_t>& theDeviceType_v) {
-	for ( deviceId_t device_it = theFirstDevice; device_it != UNKNOWN_DEVICE; device_it = theNextDevice_v[device_it] ) {
-//		if ( theCheckedDevices.count(device_it) == 0 ) {
-//				theCheckedDevices.insert(device_it);
-			switch (theDeviceType_v[device_it]) {
-				case NMOS:
-				case LDDN: { myNmosToCheck.push_back(device_it); break; }
-				case PMOS:
-				case LDDP: { myPmosToCheck.push_back(device_it); break; }
-				case RESISTOR:
-				case FUSE_ON:
-				case FUSE_OFF: { myResistorToCheck.push_back(device_it); break; }
-				default: { break; }
-			}
-//		}
-	}
-}
-*/
-
 void AddConnectedDevices(netId_t theNetId, list<deviceId_t>& myPmosToCheck,	list<deviceId_t>& myNmosToCheck,
 		list<deviceId_t>& myResistorToCheck, CDeviceIdVector& theFirstDevice_v, CDeviceIdVector& theNextDevice_v, vector<modelType_t>& theDeviceType_v ) {
 		for ( deviceId_t device_it = theFirstDevice_v[theNetId]; device_it != UNKNOWN_DEVICE; device_it = theNextDevice_v[device_it] ) {
@@ -409,13 +379,19 @@ bool CFullConnection::IsPossibleHiZ(CCvcDb * theCvcDb) {
 	list<deviceId_t> myPmosToCheck;
 	list<deviceId_t> myNmosToCheck;
 	list<deviceId_t> myResistorToCheck;
-	set<long> myPmosInputs;
-	set<long> myNmosInputs;
+	set<string> myPmosInputs;
+	set<string> myNmosInputs;
+	bool myDebug = false;
 	if ( theCvcDb->connectionCount_v[this->gateId].SourceDrainCount() > myCheckLimit ) return(false);
+	if ( theCvcDb->netVoltagePtr_v[gateId].full && theCvcDb->netVoltagePtr_v[gateId].full->type[INPUT_BIT] ) return(false);  // input ports not possible Hi-Z
 	myNetsToCheck.push_back(this->gateId);
 	AddConnectedDevices(this->gateId, myPmosToCheck, myNmosToCheck, myResistorToCheck, theCvcDb->firstSource_v, theCvcDb->nextSource_v, theCvcDb->deviceType_v);
 	AddConnectedDevices(this->gateId, myPmosToCheck, myNmosToCheck, myResistorToCheck, theCvcDb->firstDrain_v, theCvcDb->nextDrain_v, theCvcDb->deviceType_v);
 	if ( myResistorToCheck.size() > 0 || myNmosToCheck.size() != 1 || myPmosToCheck.size() != 1 ) return(false);
+	if ( theCvcDb->minNet_v[gateId].nextNetId == theCvcDb->maxNet_v[gateId].nextNetId ) {  // transfer gates
+		return IsTransferGate(myNmosToCheck.front(), myPmosToCheck.front(), theCvcDb);
+	} 
+	// check clocked inverters
 	for ( netId_t net_it = theCvcDb->maxNet_v[this->gateId].nextNetId; net_it != theCvcDb->maxNet_v[this->gateId].finalNetId; net_it = theCvcDb->maxNet_v[net_it].nextNetId ) {
 		CConnectionCount myCounts = theCvcDb->connectionCount_v[net_it];
 		if ( myCounts.SourceDrainCount() != 2 || myCounts.sourceDrainType != PMOS_ONLY ) return false;
@@ -429,30 +405,51 @@ bool CFullConnection::IsPossibleHiZ(CCvcDb * theCvcDb) {
 		AddConnectedDevices(net_it, myPmosToCheck, myNmosToCheck, myResistorToCheck, theCvcDb->firstDrain_v, theCvcDb->nextDrain_v, theCvcDb->deviceType_v);
 	}
 	netId_t myGateNet;
-//	cout << "Pmos gates to check:";
-//	for ( auto device_pit = myPmosToCheck.begin(); device_pit != myPmosToCheck.end(); device_pit++ ) {
-//		cout << " " << *device_pit << ":" << theCvcDb->gateNet_v[*device_pit];
-//	}
-//	cout << endl << "Nmos gates to check:";
-//	for ( auto device_pit = myNmosToCheck.begin(); device_pit != myNmosToCheck.end(); device_pit++ ) {
-//		cout << " " << *device_pit << ":" << theCvcDb->gateNet_v[*device_pit];
-//	}
-//	cout << endl;
+	if ( myDebug ) {
+		cout << "For device " << deviceId << " net " << gateId << endl;
+		cout << "Pmos gates to check:";
+		for ( auto device_pit = myPmosToCheck.begin(); device_pit != myPmosToCheck.end(); device_pit++ ) {
+			cout << " " << *device_pit << ":" << theCvcDb->gateNet_v[*device_pit];
+		}
+		cout << endl << "Nmos gates to check:";
+		for ( auto device_pit = myNmosToCheck.begin(); device_pit != myNmosToCheck.end(); device_pit++ ) {
+			cout << " " << *device_pit << ":" << theCvcDb->gateNet_v[*device_pit];
+		}
+		cout << endl;
+	}
 	for ( auto device_pit = myPmosToCheck.begin(); device_pit != myPmosToCheck.end(); device_pit++ ) {
 		myGateNet = theCvcDb->gateNet_v[*device_pit];
-		if ( theCvcDb->inverterNet_v[myGateNet] != UNKNOWN_NET ) {
-			myPmosInputs.insert(((theCvcDb->highLow_v[myGateNet]) ? 1 : -1) * (long)theCvcDb->inverterNet_v[myGateNet]);
-//			cout << "** Pmos clocked inverter input:" << myGateNet << ":" << (int(theCvcDb->highLow_v[myGateNet]) ? 1 : -1) * theCvcDb->inverterNet_v[myGateNet] << endl;
-		}
+		string myGoal = ( theCvcDb->inverterNet_v[myGateNet] == UNKNOWN_NET ) \
+			? ("+" + to_string<netId_t>(myGateNet)) \
+			: (((theCvcDb->highLow_v[myGateNet]) ? "+" : "-") + to_string<netId_t>(theCvcDb->inverterNet_v[myGateNet]));
+		myPmosInputs.insert(myGoal);
+		if (myDebug) cout << "** Pmos clocked inverter input:" << myGateNet << ":" << (theCvcDb->highLow_v[myGateNet] ? "+" : "-") << theCvcDb->inverterNet_v[myGateNet] << endl;
 	}
 	for ( auto device_pit = myNmosToCheck.begin(); device_pit != myNmosToCheck.end(); device_pit++ ) {
 		myGateNet = theCvcDb->gateNet_v[*device_pit];
-		if ( theCvcDb->inverterNet_v[myGateNet] != UNKNOWN_NET ) {
-//			cout << "** Nmos clocked inverter input:" << myGateNet << ":" << ((theCvcDb->highLow_v[myGateNet]) ? 1 : -1) * theCvcDb->inverterNet_v[myGateNet] << endl;
-			if ( myPmosInputs.count(int((theCvcDb->highLow_v[myGateNet]) ? -1 : 1) * (long)theCvcDb->inverterNet_v[myGateNet]) ) return true;
+		string myGoal = ( theCvcDb->inverterNet_v[myGateNet] == UNKNOWN_NET ) \
+			? ("-" + to_string<netId_t>(myGateNet)) \
+			: (((theCvcDb->highLow_v[myGateNet]) ? "-" : "+") + to_string<netId_t>(theCvcDb->inverterNet_v[myGateNet]));
+		if (myDebug) cout << "** Nmos clocked inverter input:" << myGateNet << ":" << (theCvcDb->highLow_v[myGateNet] ? "+" : "-") << theCvcDb->inverterNet_v[myGateNet] << endl;
+		if ( myPmosInputs.count(myGoal) ) {
+			CFullConnection myTristateConnections;
+			theCvcDb->MapDeviceNets(*device_pit, myTristateConnections);
+			if ( myTristateConnections.simGateVoltage == UNKNOWN_VOLTAGE )  return true;  // look for unknown opposite logic
 		}
 	}
 	return(false);
+}
+
+bool CFullConnection::IsTransferGate(deviceId_t theNmos, deviceId_t thePmos, CCvcDb * theCvcDb) {
+	netId_t myPmosGateNet = theCvcDb->gateNet_v[thePmos];
+	string myOrigin = ( theCvcDb->inverterNet_v[myPmosGateNet] == UNKNOWN_NET )
+		? ("+" + to_string<netId_t>(myPmosGateNet))
+		: (((theCvcDb->highLow_v[myPmosGateNet]) ? "+" : "-") + to_string<netId_t>(theCvcDb->inverterNet_v[myPmosGateNet]));
+	netId_t myNmosGateNet =  theCvcDb->gateNet_v[theNmos];
+	string myInvertedOrigin = ( theCvcDb->inverterNet_v[myNmosGateNet] == UNKNOWN_NET )
+		? ("-" + to_string<netId_t>(myNmosGateNet))
+		: (((theCvcDb->highLow_v[myNmosGateNet]) ? "-" : "+") + to_string<netId_t>(theCvcDb->inverterNet_v[myNmosGateNet]));
+	return ( myOrigin == myInvertedOrigin );
 }
 
 bool CFullConnection::IsPumpCapacitor() {

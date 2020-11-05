@@ -1,0 +1,50 @@
+#! /bin/csh -f
+# extract RES and parasitic diodes from layout netlist and annotate with source netlist names
+
+set nxf = $1
+
+awk '\
+FILENAME == "'$nxf'" {\
+        if ( /^%/ ) {\
+                layout_cell = $2;\
+                netlist_cell = $4;\
+                if ( layout_cell in mapped ) {\
+                        print "*ERROR:", layout_cell, "mapped to", mapped[layout_cell], "and", netlist_cell;\
+                } else {\
+                        mapped[layout_cell] = netlist_cell;\
+                }\
+        } else if ( /^[-0-9]/ ) {\
+                signal[layout_cell, $2] = $4;\
+        }\
+        next;\
+}\
+/^\.ENDS/ {\
+        cell = "";\
+        next;\
+}\
+/^\.SUBCKT/ {\
+        cell = $2;\
+}\
+$1 !~ /^D/ || $4 !~ /^K/ {\
+        if ( $1 !~ /^R/ || $4 != "RES" ) {\
+                # skip everything except parasitic diodes and RES\
+                next;\
+        }\
+}\
+cell != "" {\
+        if ( cell in mapped ) {\
+                for ( field = 2; field <= 3; field++ ) {\
+                        if ( (cell, $field) in signal ) {\
+                                $field = signal[cell, $field];\
+                        } else {\
+                                print "*ERROR:", cell, "missing", $field;\
+                                $field = "cvc-" $field;\
+                        }\
+                }\
+        } else {\
+                print "*ERROR:", cell, "not mapped";\
+        }\
+        $1 = $1 "-cvc";\
+        print mapped[cell], $0;\
+        next;\
+}' $nxf -

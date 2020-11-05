@@ -1,7 +1,7 @@
 /*
  * CDevice.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -26,6 +26,7 @@
 
 #include "Cvc.hh"
 
+class CCvcDb;
 #include "CModel.hh"
 
 class CCircuit;
@@ -37,17 +38,20 @@ public:
 	CNetIdVector signalId_v;
 	CCircuit * parent_p;
 
-	// for subcircuits
-	text_t masterName;
-	CCircuit * master_p = NULL;
-	// for devices
-	CModel * model_p = NULL;
-	text_t parameters = NULL;
-	CDevice * nextDevice_p = NULL;
-//	resistance_t	cvcResistance = INFINITE_RESISTANCE;
+	union {
+		CCircuit * master_p;  // for subcircuits
+		CModel * model_p;  // for devices
+	};
+	union {
+		text_t masterName;  // for subcircuits
+		CDevice * nextDevice_p;  // for devices, next device of the same model
+	};
+	text_t parameters;
+	deviceId_t offset;  // offset in circuit (devices and subcircuit instances counted separately)
 	bool	sourceDrainSet = false;
-	bool 	sourceDrainSwapOk = true;
+	bool	sourceDrainSwapOk = true;
 
+	~CDevice();
 	inline void AppendSignal (text_t theNewSignal) {
 		// skip null signals (missing bias)
 		if ( theNewSignal ) signalList_p->push_back(theNewSignal);
@@ -62,14 +66,15 @@ public:
 	inline bool IsFuse() { return name[0] == 'F'; }
 
 	void Print(CTextVector& theSignalName_v, const string theIndentation = "");
-	void Print(CTextVector& theSignalName_v, CTextDeviceIdMap& theSubcircuitId,
+	void Print(CTextVector& theSignalName_v, deviceId_t theDeviceId,
 			const string theIndentation = "");
+ 
+	instanceId_t MakePortHash(CNetIdVector & theLocalToGlobalNetId_v);
+	instanceId_t FindParallelInstance(CCvcDb * theCCvcDb_p, instanceId_t theInstanceId, CNetIdVector & theLocalToGlobalNetId_v);
 };
 
 class CDevicePtrList : public list<CDevice *> {
 public:
-//	CDeviceList();
-//	CDeviceList(int count, CDevice new_instance);
 	deviceId_t	subcircuitCount = 0;
 
 	inline deviceId_t	DeviceCount() { return (size() - subcircuitCount); }
@@ -81,9 +86,10 @@ public:
 class CDevicePtrVector : public vector<CDevice *> {
 public:
 
+	~CDevicePtrVector();
 	void Print(CTextVector& theSignalName_v, const string theIndentation = "",
 			const string theHeading = "DeviceList>");
-	void Print(CTextVector& theSignalName_v, CTextDeviceIdMap& theSubcircuitId,
+	void Print(CTextVector& theSignalName_v, CCircuit * theParent_p,
 			const string theIndentation = "", const string theHeading = "DeviceList>");
 };
 

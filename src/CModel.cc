@@ -1,7 +1,7 @@
 /*
  * CModel.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -45,13 +45,6 @@ CModel::CModel(string theParameterString) {
 	baseType = gBaseModelTypePrefixMap.at(type);
 	if ( IsMos_(type) ) {
 		resistanceDefinition = DEFAULT_MOS_RESISTANCE;
-		if ( IsNmos_(type) ) {
-			diodeList.push_back(make_pair(4,1));
-			diodeList.push_back(make_pair(4,3));
-		} else if ( IsPmos_(type) ) {
-			diodeList.push_back(make_pair(1,4));
-			diodeList.push_back(make_pair(3,4));
-		}
 	} else if ( type == RESISTOR ) {
 		resistanceDefinition = DEFAULT_RESISTANCE;
 	}
@@ -69,7 +62,7 @@ CModel::CModel(string theParameterString) {
 		myParameterName = theParameterString.substr(myStringBegin, myEqualIndex - myStringBegin);
 		myParameterValue = theParameterString.substr(myEqualIndex + 1, myStringEnd - (myEqualIndex + 1));
 		if (myParameterName == "Vth") {
-			Vth = String_to_Voltage(myParameterValue);
+			vthDefinition = myParameterValue; // String_to_Voltage(myParameterValue);
 		} else if (myParameterName == "Vgs") {
 			maxVgsDefinition = myParameterValue; // String_to_Voltage(myParameterValue);
 		} else if (myParameterName == "Vds") {
@@ -80,8 +73,6 @@ CModel::CModel(string theParameterString) {
 			maxVbgDefinition = myParameterValue; // String_to_Voltage(myParameterValue);
 		} else if (myParameterName == "R") {
 			resistanceDefinition = myParameterValue;
-//			CNormalValue myResistance(myParameterValue);
-//			R = myResistance.RealValue() + 0.1;
 		} else if (myParameterName == "model") {
 			if ( baseType != "M" && baseType != "R" && baseType != "C" && baseType != "X" ) throw EModelError("basetype " + baseType + "cannot be overriden as " + myParameterValue);
 			if ( baseType == "M" && ( myParameterValue != "fuse_on" && myParameterValue != "fuse_off" ) ) throw EModelError("mosfet cannot be overriden as " + myParameterValue);
@@ -96,6 +87,17 @@ CModel::CModel(string theParameterString) {
 		}
 		myStringBegin = theParameterString.find_first_not_of(" \t", myStringEnd);
 	}
+	if ( diodeList.empty() ) {
+		if ( IsNmos_(type) ) {
+			diodeList.push_back(make_pair(4,1));
+			diodeList.push_back(make_pair(4,3));
+		} else if ( IsPmos_(type) ) {
+			diodeList.push_back(make_pair(1,4));
+			diodeList.push_back(make_pair(3,4));
+		} else if ( type == DIODE ) {
+			diodeList.push_back(make_pair(1,2));
+		}
+	}
 }
 
 bool CModel::ParameterMatch(CParameterMap& theParameterMap, text_t theCellName) {
@@ -107,9 +109,7 @@ bool CModel::ParameterMatch(CParameterMap& theParameterMap, text_t theCellName) 
 			if ( ! (*condition_ppit)->CheckCondition(myCheckValue) ) return (false);
 		}
 		catch (const out_of_range& oor_exception) {
-	//		cout << "ERROR: missing parameter " << (*condition_ppit)->parameter << " in " << name << endl;
 			throw EFatalError("missing parameter " + (*condition_ppit)->parameter + " in " + name);
-	//		exit(1);
 		}
 	}
 	if ( cellFilterRegex_p ) {
@@ -135,10 +135,7 @@ void CModel::CreateConditions (string theConditionString) {
 		myConditionName = trim_(theConditionString.substr(myStringBegin, myRelationIndex - myStringBegin));
 		myConditionRelation = trim_(theConditionString.substr(myRelationIndex, myValueIndex - myRelationIndex));
 		myConditionValue = trim_(theConditionString.substr(myValueIndex, myStringEnd - myValueIndex));
-//		trim_(myConditionName);
 		toupper_(myConditionName);
-//		trim_(myConditionRelation);
-//		trim_(myConditionValue);
 		if ( myConditionName == "CELL" && myConditionRelation == "=" ) {
 			cellFilter = myConditionValue;
 			cellFilterRegex_p = new regex(FuzzyFilter(myConditionValue));
@@ -195,30 +192,26 @@ void CModel::Print(ostream & theLogFile, bool thePrintDeviceListFlag, string the
 	theLogFile << " Parameters>";
 	switch (type) {
 		case NMOS: case PMOS: case LDDN: case LDDP: {
-			theLogFile << " Vth=" << PrintParameter(Vth, VOLTAGE_SCALE);
-			if ( ! maxVdsDefinition.empty() ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
-			if ( ! maxVgsDefinition.empty() ) theLogFile << " Vgs=" << PrintToleranceParameter(maxVgsDefinition, maxVgs, VOLTAGE_SCALE);
-			if ( ! maxVbgDefinition.empty() ) theLogFile << " Vbg=" << PrintToleranceParameter(maxVbgDefinition, maxVbg, VOLTAGE_SCALE);
-			if ( ! maxVbsDefinition.empty() ) theLogFile << " Vbs=" << PrintToleranceParameter(maxVbsDefinition, maxVbs, VOLTAGE_SCALE);
-//			theLogFile << " R=" << PrintParameter(R, 1) << endl;
+			theLogFile << " Vth=" << PrintToleranceParameter(vthDefinition, Vth, VOLTAGE_SCALE);
+			if ( ! IsEmpty(maxVdsDefinition) ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
+			if ( ! IsEmpty(maxVgsDefinition) ) theLogFile << " Vgs=" << PrintToleranceParameter(maxVgsDefinition, maxVgs, VOLTAGE_SCALE);
+			if ( ! IsEmpty(maxVbgDefinition) ) theLogFile << " Vbg=" << PrintToleranceParameter(maxVbgDefinition, maxVbg, VOLTAGE_SCALE);
+			if ( ! IsEmpty(maxVbsDefinition) ) theLogFile << " Vbs=" << PrintToleranceParameter(maxVbsDefinition, maxVbs, VOLTAGE_SCALE);
 			theLogFile << " R=" << resistanceDefinition;
 			break; }
 		case RESISTOR: {
-			if ( ! maxVdsDefinition.empty() ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
-//			theLogFile << " R=" << PrintParameter(R, 1) << endl;
-			if ( ! resistanceDefinition.empty() ) theLogFile << " R=" << resistanceDefinition;
+			if ( ! IsEmpty(maxVdsDefinition) ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
+			if ( ! IsEmpty(resistanceDefinition) ) theLogFile << " R=" << resistanceDefinition;
 			break; }
 		case FUSE_ON:
 		case FUSE_OFF:
 		case CAPACITOR:
 		case DIODE: {
-			if ( ! maxVdsDefinition.empty() ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
-//			theLogFile << endl;
+			if ( ! IsEmpty(maxVdsDefinition) ) theLogFile << " Vds=" << PrintToleranceParameter(maxVdsDefinition, maxVds, VOLTAGE_SCALE);
 			break; }
 		case BIPOLAR:
 		case SWITCH_ON:
 		case SWITCH_OFF: {
-//			theLogFile << endl;
 			break; }
 		default: {
 			theLogFile << " Unknown type:";
@@ -229,7 +222,6 @@ void CModel::Print(ostream & theLogFile, bool thePrintDeviceListFlag, string the
 		for (CConditionPtrList::iterator condition_ppit = conditionPtrList.begin(); condition_ppit != conditionPtrList.end(); condition_ppit++) {
 			(*condition_ppit)->Print(theLogFile, "same-line");
 		}
-//		theLogFile << endl;
 	}
 	if ( cellFilter != "" ) {
 		theLogFile << " Cell filter>" << cellFilter;
@@ -248,7 +240,6 @@ void CModel::Print(ostream & theLogFile, bool thePrintDeviceListFlag, string the
 		}
 		theLogFile << myIndentation << "DeviceList> end" << endl;
 	}
-//	cout << theIndentation << "Model> end" << endl;
 }
 
 string CModel::ConditionString() {
@@ -282,15 +273,14 @@ void CModelListMap::AddModel(string theParameterString) {
 		string myModelKey = myNewModel.baseType + " " + myNewModel.name;
 		try {
 			this->at(myModelKey).push_back(myNewModel);
-			if ( (*this)[myModelKey].Vth != myNewModel.Vth ) {
+			if ( (*this)[myModelKey].vthDefinition != myNewModel.vthDefinition ) {
 				cout << "Vth mismatch for " << myNewModel.name << " ignored. ";
-				cout << (*this)[myModelKey].Vth << "!=" << myNewModel.Vth << endl;
+				cout << (*this)[myModelKey].vthDefinition << "!=" << myNewModel.vthDefinition << endl;
 			}
 		}
 		catch (const out_of_range& oor_exception) {
-			(*this)[myModelKey] = *(new CModelList);
 			(*this)[myModelKey].push_back(myNewModel);
-			(*this)[myModelKey].Vth = myNewModel.Vth;
+			(*this)[myModelKey].vthDefinition = myNewModel.vthDefinition;
 		}
 	}
 	catch (EModelError & myError) {
@@ -306,11 +296,8 @@ void CModelListMap::AddModel(string theParameterString) {
 
 CModel * CModelListMap::FindModel(text_t theCellName, text_t theParameterText, CTextResistanceMap& theParameterResistanceMap, ostream& theLogFile) {
 	string	myParameterString = trim_(string(theParameterText));
-//	trim_(myParameterString);
 	string	myModelKey = myParameterString.substr(0, myParameterString.find(" ", 2));
 	try {
-//		CModelList * searchList_p = at(myModelKey);
-
 		CParameterMap myParameterMap;
 		if ( myParameterString.length() > myModelKey.length() ) {
 			// if there are parameters besides the model name
@@ -319,22 +306,15 @@ CModel * CModelListMap::FindModel(text_t theCellName, text_t theParameterText, C
 		CModelList::iterator myLastModel = this->at(myModelKey).end();
 		for (CModelList::iterator model_pit = this->at(myModelKey).begin(); model_pit != myLastModel; model_pit++) {
 			if ( model_pit->ParameterMatch(myParameterMap, theCellName) ) {
-//				myParameterMap.Print("");
 				switch (model_pit->type) {
 					case NMOS: case PMOS: case LDDN: case LDDP: {
 						theParameterResistanceMap[theParameterText] = myParameterMap.CalculateResistance(model_pit->resistanceDefinition);
-//						CNormalValue myLength(myParameterMap["L"]);
-//						CNormalValue myWidth(myParameterMap["W"]);
-//						theParameterResistanceMap[theParameterText] =
-//								min(max(1, int(myLength.RealValue() / myWidth.RealValue() * model_pit->R)), int(MAX_RESISTANCE));
 						if ( theParameterResistanceMap[theParameterText] == MAX_RESISTANCE ) {
 							theLogFile << "WARNING: resistance for " << theParameterText << " exceeds maximum" << endl;
 						}
 						break; }
 					case RESISTOR: {
 						theParameterResistanceMap[theParameterText] = myParameterMap.CalculateResistance(model_pit->resistanceDefinition);
-//						CNormalValue myResistance(myParameterMap["R"]);
-//						theParameterResistanceMap[theParameterText] = min(max(1, int(myResistance.RealValue())), int(MAX_RESISTANCE));
 						if ( theParameterResistanceMap[theParameterText] == MAX_RESISTANCE ) {
 							theLogFile << "WARNING: resistance for " << theParameterText << " exceeds maximum" << endl;
 						}
@@ -374,16 +354,33 @@ void CModelListMap::DebugPrint(string theIndentation) {
 	cout << theIndentation << "ModelList> end" << endl << endl;
 }
 
+#define PERMIT_UNDEFINED true
 returnCode_t CModelListMap::SetVoltageTolerances(teestream & theReportFile, CPowerPtrMap & thePowerMacroPtrMap) {
 	theReportFile << "Setting model tolerances..." << endl;
 	bool myToleranceErrorFlag = false;
 	for (CModelListMap::iterator modelList_pit = begin(); modelList_pit != end(); modelList_pit++) {
 		for (CModelList::iterator model_pit = modelList_pit->second.begin(); model_pit != modelList_pit->second.end(); model_pit++) {
 			try {
-				if ( ! model_pit->maxVbgDefinition.empty() ) model_pit->maxVbg = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbgDefinition, SIM_POWER, (*this));
-				if ( ! model_pit->maxVbsDefinition.empty() ) model_pit->maxVbs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbsDefinition, SIM_POWER, (*this));
-				if ( ! model_pit->maxVdsDefinition.empty() ) model_pit->maxVds = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVdsDefinition, SIM_POWER, (*this));
-				if ( ! model_pit->maxVgsDefinition.empty() ) model_pit->maxVgs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVgsDefinition, SIM_POWER, (*this));
+				if ( ! IsEmpty(model_pit->vthDefinition) ) {
+					model_pit->Vth = thePowerMacroPtrMap.CalculateVoltage(model_pit->vthDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
+					if ( model_pit->Vth == UNKNOWN_VOLTAGE ) model_pit->validModel = false;
+				}
+				if ( ! IsEmpty(model_pit->maxVbgDefinition) ) {
+					model_pit->maxVbg = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbgDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
+					if ( model_pit->maxVbg == UNKNOWN_VOLTAGE ) model_pit->validModel = false;
+				}
+				if ( ! IsEmpty(model_pit->maxVbsDefinition) ) {
+					model_pit->maxVbs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVbsDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
+					if ( model_pit->maxVbs == UNKNOWN_VOLTAGE ) model_pit->validModel = false;
+				}
+				if ( ! IsEmpty(model_pit->maxVdsDefinition) ) {
+					model_pit->maxVds = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVdsDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
+					if ( model_pit->maxVds == UNKNOWN_VOLTAGE ) model_pit->validModel = false;
+				}
+				if ( ! IsEmpty(model_pit->maxVgsDefinition) ) {
+					model_pit->maxVgs = thePowerMacroPtrMap.CalculateVoltage(model_pit->maxVgsDefinition, SIM_POWER, (*this), PERMIT_UNDEFINED);
+					if ( model_pit->maxVgs == UNKNOWN_VOLTAGE ) model_pit->validModel = false;
+				}
 			}
 			catch (EPowerError & myException) {
 				theReportFile << "ERROR: Model tolerance " << myException.what() << endl;

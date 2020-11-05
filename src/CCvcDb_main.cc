@@ -1,7 +1,7 @@
 /*
  * CCvcDb_main.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -57,6 +57,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 	for ( ; cvcArgIndex < argc; cvcArgIndex++ ) { // loop through all cvcrc files on command line
 /// Setup
 		gContinueCount = 0;
+		if ( ! cvcParameters.cvcPowerPtrList.empty() ) Cleanup();
 		RemoveLock();
 		detectErrorFlag = true;
 		cout << "CVC: Circuit Validation Check  Version " << CVC_VERSION << endl;
@@ -82,6 +83,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		if ( cvcParameters.IsSameDatabase() ) {
 			reportFile << "CVC: Reusing " << cvcParameters.cvcTopBlock << " of "
 					<< cvcParameters.cvcNetlistFilename << endl;
+			// TODO: Reset error limits for cells
 /*
 			if ( isDeviceModelSet ) {
 				ResetMosFuse();
@@ -90,6 +92,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		} else {
 			reportFile << "CVC: Parsing netlist " << cvcParameters.cvcNetlistFilename << endl;
 			cvcCircuitList.Clear();
+			instancePtr_v.Clear();
 			if (cvcParserDriver.parse (cvcParameters.cvcNetlistFilename, cvcCircuitList,
 					cvcParameters.cvcSOI ) != 0 ) {
 				throw EFatalError("Could not parse " + cvcParameters.cvcNetlistFilename);
@@ -98,19 +101,30 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 				reportFile << "WARNING: unsupported devices in netlist" << endl;
 			}
 			cvcParameters.SaveDatabaseParameters();
-			reportFile << PrintProgress(&lastSnapshot) << endl;
+			reportFile << "Cdl fixed data size " << cvcCircuitList.cdlText.Size() << endl;
+			reportFile << PrintProgress(&lastSnapshot, "CDL") << endl;
+			LoadCellChecksums();
 			CountObjectsAndLinkSubcircuits();
 			AssignGlobalIDs();
+			LoadNetChecks();
+			PrintLargeCircuits();
+			reportFile << PrintProgress(&lastSnapshot, "DB") << endl;
 		}
-		reportFile << "CVC: " << topCircuit_p->subcircuitCount << " instances, "
-				<< topCircuit_p->netCount << " nets, " << topCircuit_p->deviceCount
-				<< " devices." << endl;
+		returnCode_t myCellErrorLimitStatus = LoadCellErrorLimits();
+		if ( myCellErrorLimitStatus != OK ) {
+			throw EFatalError("Could not load " + cvcParameters.cvcCellErrorLimitFile);
+		}
+		reportFile << "CVC: " << topCircuit_p->subcircuitCount << "(" << subcircuitCount << ") instances, "
+			<< topCircuit_p->netCount << "(" << netCount << ") nets, "
+			<< topCircuit_p->deviceCount << "(" << deviceCount << ") devices." << endl;
 
 /// Stage 1) Set power and model
 		if ( powerFileStatus == OK ) {
+			cout << "Setting power for mode..." << endl;
 			powerFileStatus = SetModePower();
 		}
 		if ( modelFileStatus == OK ) {
+			cout << "Setting models..." << endl;
 			modelFileStatus = SetDeviceModels();
 		}
 		if ( modelFileStatus == OK ) {
@@ -121,19 +135,34 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_START) == SKIP ) continue;
 		if ( modelFileStatus != OK || powerFileStatus != OK || fuseFileStatus != OK ) {
-			reportFile << "ERROR: skipped due to problems in model/power/fuse files" << endl;
+			if ( gSetup_cvc ) {
+				reportFile << endl << "CVC: Setup check complete." << endl;
+			} else {
+				reportFile << "ERROR: skipped due to problems in model/power/fuse files" << endl;
+			}
 			continue;
 		}
 
 /// Stage 2) Create database
+		ResetMinSimMaxAndQueues();
+		SetEquivalentNets();
+		if ( SetInstancePower() != OK || SetExpectedPower() != OK ) {
+			reportFile << "ERROR: skipped due to problems in power files" << endl;
+			continue;
+		}
+		cvcParameters.cvcPowerPtrList.SetFamilies(cvcParameters.cvcPowerFamilyMap);
+		cvcParameters.SetHiZPropagation();
 		cvcParameters.cvcModelListMap.Print(logFile);
 		PrintPowerList(logFile, "Power List");
 		cvcParameters.cvcPowerPtrList.SetPowerLimits(maxPower, minPower);
-		ResetMinSimMaxAndQueues();
-		SetEquivalentNets();
 		LinkDevices();
 		OverrideFuses();
-		reportFile << PrintProgress(&lastSnapshot) << endl;
+		mosDiodeSet.clear();
+		if ( gSetup_cvc ) {
+			PrintNetSuggestions();
+		}
+		reportFile << PrintProgress(&lastSnapshot, "EQUIV") << endl;
+		reportFile << "Power nets " << CPower::powerCount << endl;
 //		DumpStatistics(parameterModelPtrMap, "parameter->model map", logFile);
 		DumpStatistics(parameterResistanceMap, "parameter->resistance map", logFile);
 		DumpStatistics(cvcCircuitList.circuitNameMap, "text->circuit map", logFile);
@@ -145,7 +174,10 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// Stage 3) Calculate voltages across resistors
 /// - Calculated resistance
 		ShortNonConductingResistors();
+//		SetResistorVoltagesForMosSwitches();
 		SetResistorVoltagesByPower();
+		reportFile << PrintProgress(&lastSnapshot, "RES") << endl;
+		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_RESISTANCE) == SKIP ) continue;
 
@@ -157,35 +189,47 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// - PMOS source-bulk errors\n
 /// - PMOS gate-source errors\n
 		ResetMinMaxPower();
-		reportFile << PrintProgress(&lastSnapshot) << endl;
-//	Print("", "CVC Database");
-//	PrintAllVirtualNets<CVirtualNetVector>(minNet_v, simNet_v, maxNet_v, "(first)");
+		SetAnalogNets();
+		reportFile << PrintProgress(&lastSnapshot, "MIN/MAX1") << endl;
+		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( detectErrorFlag ) {
-			//FindForwardBiasDiodes();
+			if ( ! cvcParameters.cvcLogicDiodes ) {
+				FindForwardBiasDiodes();
+			}
 			if ( ! cvcParameters.cvcSOI ) {
 				FindNmosSourceVsBulkErrors();
 			}
-			FindNmosGateVsSourceErrors();
+			if ( ! gSetup_cvc ) {
+				FindNmosGateVsSourceErrors();
+			}
 			if ( ! cvcParameters.cvcSOI ) {
 				FindPmosSourceVsBulkErrors();
 			}
-			FindPmosGateVsSourceErrors();
+			if ( ! gSetup_cvc ) {
+				FindPmosGateVsSourceErrors();
+			}
+			reportFile << PrintProgress(&lastSnapshot, "ERROR") << endl;
 		}
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_FIRST_MINMAX) == SKIP ) continue;
+		if ( gSetup_cvc ) continue;
 
 /// Stage 5) First sim propagation\n
 /// - missing bulk connection check
 		SaveMinMaxLeakVoltages();
 		SetSimPower(POWER_NETS_ONLY);
-		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
-		CheckConnections();
+		cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Logic shorts 1");
+		reportFile << PrintProgress(&lastSnapshot, "SIM1") << endl;
+		reportFile << "Power nets " << CPower::powerCount << endl;
+		if ( ! cvcParameters.cvcSOI ) {
+			CheckConnections();
+		}
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_FIRST_SIM) == SKIP ) continue;
 		SaveInitialVoltages();
 		if ( gDebug_cvc ) {
-			PrintAllVirtualNets<CVirtualLeakNetVector>(
-					minLeakNet_v, simNet_v, maxLeakNet_v, "(1)");
+			PrintAllVirtualNets<CVirtualNetVector>(
+					minNet_v, simNet_v, maxNet_v, "(1)");
 		}
 
 /// Stage 6) Second sim propagation\n
@@ -194,13 +238,19 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 			SetSCRCPower();
 		}
 		SetSimPower(ALL_NETS_AND_FUSE);
-		while ( SetLatchPower() ) {
-			SetSimPower(ALL_NETS_AND_FUSE);
+		reportFile << PrintProgress(&lastSnapshot, "SIM2") << endl;
+		reportFile << "Power nets " << CPower::powerCount << endl;
+		CNetIdSet myNewNetSet;
+		vector<bool> myIgnoreNet_v(simNet_v.size(), false);
+		int myPassCount = 0;
+		while ( SetLatchPower(++myPassCount, myIgnoreNet_v, myNewNetSet) ) {
+			SetSimPower(ALL_NETS_AND_FUSE, myNewNetSet);
+			reportFile << PrintProgress(&lastSnapshot, "LATCH " + to_string(myPassCount)) << endl;
 		}
-		cvcCircuitList.PrintAndResetCircuitErrors(cvcParameters.cvcCircuitErrorLimit, errorFile);
+		cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Logic shorts 2");
 		if ( detectErrorFlag ) {
 			FindLDDErrors();
-			FindForwardBiasDiodes();
+//			FindForwardBiasDiodes();
 		}
 		if ( gInteractive_cvc && --gContinueCount < 1
 				&& InteractiveCvc(STAGE_SECOND_SIM) == SKIP ) continue;
@@ -212,13 +262,14 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 /// - floating gate errors\n
 /// - expected value errors
 		ResetMinMaxPower();
-		SetInverterHighLow();
-		reportFile << PrintProgress(&lastSnapshot) << endl;
+		SetInverters();
+		reportFile << PrintProgress(&lastSnapshot, "MIN/MAX2") << endl;
+		reportFile << "Power nets " << CPower::powerCount << endl;
 		if ( detectErrorFlag ) {
-			FindOverVoltageErrors("Vbg", OVERVOLTAGE_VBG);
-			FindOverVoltageErrors("Vbs", OVERVOLTAGE_VBS);
-			FindOverVoltageErrors("Vds", OVERVOLTAGE_VDS);
-			FindOverVoltageErrors("Vgs", OVERVOLTAGE_VGS);
+			if ( cvcParameters.cvcLogicDiodes ) {
+				FindForwardBiasDiodes();
+			}
+			FindAllOverVoltageErrors();
 			FindNmosPossibleLeakErrors();
 			FindPmosPossibleLeakErrors();
 			FindFloatingInputErrors();
@@ -226,7 +277,7 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		}
 		PrintErrorTotals();
 //		PrintShortedNets(cvcParameters.cvcReportBaseFilename + ".shorts.gz");
-		reportFile << PrintProgress(&lastSnapshot, "Total ") << endl;
+		reportFile << PrintProgress(&lastSnapshot, "Total") << endl;
 		if ( gDebug_cvc ) {
 			PrintAllVirtualNets<CVirtualNetVector>(minNet_v, simNet_v, maxNet_v, "(3)");
 			cvcCircuitList.Print("", "CVC Full Circuit List");
@@ -239,13 +290,13 @@ void CCvcDb::VerifyCircuitForAllModes(int argc, const char * argv[]) {
 		reportFile << "CVC: Log output to " << cvcParameters.cvcReportFilename << endl;
 		reportFile << "CVC: End: " << CurrentTime() << endl;
 		errorFile.close();
+		debugFile.close();
 		if ( gInteractive_cvc ) InteractiveCvc(STAGE_COMPLETE);
 
 /// Clean-up
 		logFile.close();
-		RemoveLock();
 	}
-	RemoveLock();
+	Cleanup();
 }
 
 

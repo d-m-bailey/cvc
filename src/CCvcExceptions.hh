@@ -1,7 +1,7 @@
 /*
  * CCvcExceptions.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -42,12 +42,19 @@ public:
 	const char* what() const noexcept { return "Unknown model"; }
 };
 
+class EInvalidTerminal : public exception {
+public:
+	string errorMessage = "";
+	EInvalidTerminal(const string theErrorMessage) { errorMessage = theErrorMessage; };
+	const char* what() const noexcept { string myMessage = "Invalid terminal: " + errorMessage; return myMessage.c_str(); }
+};
+
 class EModelError : public exception {
 public:
 	string errorMessage = "";
 	EModelError();
 	EModelError(const string theErrorMessage) { errorMessage = theErrorMessage; };
-	const char* what() const noexcept { string myMessage = "Model error:" + errorMessage; return myMessage.c_str(); }
+	const char* what() const noexcept { string myMessage = "Model error: " + errorMessage; return myMessage.c_str(); }
 };
 
 class EDuplicateInstance : public exception {

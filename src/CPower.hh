@@ -1,7 +1,7 @@
 /*
  * CPower.hh
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -27,39 +27,102 @@
 #include "Cvc.hh"
 #include "CSet.hh"
 #include "CModel.hh"
+#include "CFixedText.hh"
 
 class CCvcDb;
 class CEventQueue;
 class CVirtualNetVector;
 
 // status type bits
-enum powerType_t { POWER_BIT=0, INPUT_BIT, HIZ_BIT, RESISTOR_BIT, REFERENCE_BIT, MIN_CALCULATED_BIT, SIM_CALCULATED_BIT, MAX_CALCULATED_BIT };
-enum activeType_t { MIN_ACTIVE=0, MAX_ACTIVE, MIN_IGNORE, MAX_IGNORE };
+enum powerType_t : unsigned char { POWER_BIT=0, INPUT_BIT, HIZ_BIT, RESISTOR_BIT, ANALOG_BIT, MIN_CALCULATED_BIT, SIM_CALCULATED_BIT, MAX_CALCULATED_BIT };
+enum activeType_t : unsigned char { MIN_ACTIVE=0, MAX_ACTIVE, MIN_IGNORE, MAX_IGNORE };
+enum powerPtrType_t : unsigned char { UNKNOWN_POWER_PTR=0, FULL_POWER_PTR, MIN_POWER_PTR, SIM_POWER_PTR, MAX_POWER_PTR };
+
+enum calculationType_t : unsigned char { UNKNOWN_CALCULATION=0, NO_CALCULATION, UP_CALCULATION, DOWN_CALCULATION, RESISTOR_CALCULATION, ESTIMATED_CALCULATION };
 
 #define IsExternalPower_(power_p) ((power_p)->type[POWER_BIT] || (power_p)->type[INPUT_BIT])
 #define IsPriorityPower_(power_p) ((power_p)->type[POWER_BIT] || (power_p)->type[INPUT_BIT] || (power_p)->type[RESISTOR_BIT])
 
-class CPowerFamilyMap : public unordered_map<string, unordered_set<string>> {
+class CPowerFamilyMap : public unordered_map<string, CSet> {
 public:
+	string definition = "";
+	CPowerFamilyMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
 	void AddFamily(string thePowerString);
-
 };
 
 class CPowerPtrMap; // forward definition
 class CPowerPtrVector; // forward definition
 
+class CExtraPowerData {
+public:
+	string	expectedSim = "";
+	string	expectedMin = "";
+	string	expectedMax = "";
+	string	family = "";
+	string	implicitFamily = "";
+	CSet	relativeSet;
+	text_t	powerSignal; // power name from power file (possibly bus or cell level net)    must be initialized in constructor
+	text_t	powerAlias; // name used to represent this power definition (/VSS -> VSS, /X1/VDDA -> VDDA)    must be initialized in constructor
+	voltage_t pullDownVoltage = UNKNOWN_VOLTAGE;
+	voltage_t pullUpVoltage = UNKNOWN_VOLTAGE;
+
+	CExtraPowerData();
+};
+
+class CPower;  // forward declaration
+
+class CMiniPower {
+public:
+	static CFixedText powerDefinitionText;
+	
+	voltage_t voltage = UNKNOWN_VOLTAGE;
+	netId_t netId = UNKNOWN_NET; // netId for this power definition
+	netId_t	defaultNet = UNKNOWN_NET;
+	text_t definition;  // must be initialized in constructor
+//	CStatus active;  always active
+
+	CMiniPower();
+	CMiniPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModelListMap & theModelListMap);
+	CMiniPower(CPower * thePower_p);
+	CMiniPower(CPower * thePower_p, netId_t theNetId);
+	CMiniPower(netId_t theNetId);
+	CMiniPower(netId_t theNetId, voltage_t theSimVoltage, bool theCreateExtraData = false);
+	CMiniPower(netId_t theNetId, voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage, netId_t theDefaultMinNet, netId_t theDefaultSimNet, netId_t theDefaultMaxNet);
+	~CMiniPower();
+
+	string expectedSim() { return (""); };
+	string expectedMin() { return (""); };
+	string expectedMax() { return (""); };
+	string family() { return (""); };
+	string implicitFamily() { return (""); };
+	voltage_t pullDownVoltage() { return (UNKNOWN_VOLTAGE); };
+	voltage_t pullUpVoltage() { return (UNKNOWN_VOLTAGE); };
+	text_t powerSignal() { return (CMiniPower::powerDefinitionText.BlankTextAddress()); };
+	text_t powerAlias() { return (CMiniPower::powerDefinitionText.BlankTextAddress()); };
+	CPower * GetBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
+	void SetPowerAlias(string thePowerString, size_t theAliasStart);
+	bool IsSamePower(CPower * theMatchPower);
+	bool IsValidSubset(CPower * theMatchPower, voltage_t theThreshold);
+	bool IsRelative(CPower * theTestPower_p, bool theDefault, bool theIsHiZRelative = false);
+	bool IsRelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v, CVirtualNetVector & theTestNet_v,
+			bool theDefault, bool isHiZRelated = false);
+	inline bool IsInternalOverride() { return(true); };
+
+	void Print(ostream & theLogFile, string theIndentation = "", string theRealPowerName = "");
+	string PowerDefinition();
+	string StandardDefinition();
+	voltage_t RelativeVoltage(CPowerPtrMap & thePowerMacroPtrMap, netStatus_t theType, CModelListMap & theModelListMap);
+};
+
 class CPower {
 public:
 	static netId_t powerCount;
+	static CFixedText powerDefinitionText;
 
-	netId_t powerId; // unique for each power net. used in leak detection
-	string	powerSignal; // power name from power file (possibly bus or cell level net)
-	string	powerAlias; // name used to represent this power definition (/VSS -> VSS, /X1/VDDA -> VDDA)
-	CStatus	type;
-	CStatus active;
 	voltage_t	minVoltage = UNKNOWN_VOLTAGE;
 	voltage_t	simVoltage = UNKNOWN_VOLTAGE;
 	voltage_t	maxVoltage = UNKNOWN_VOLTAGE;
+	netId_t powerId; // unique for each power net. used in leak detection
 	netId_t netId = UNKNOWN_NET; // netId for this power definition
 	// default nets are the nets that are used if the calculated voltage is invalid
 	// the base from which voltages have been calculated
@@ -68,46 +131,41 @@ public:
 	netId_t	defaultMinNet = UNKNOWN_NET;
 	netId_t	defaultSimNet = UNKNOWN_NET;
 	netId_t	defaultMaxNet = UNKNOWN_NET;
-	string	expectedSim = "";
-	string	expectedMin = "";
-	string	expectedMax = "";
-	voltage_t pullDownVoltage = UNKNOWN_VOLTAGE;
-	voltage_t pullUpVoltage = UNKNOWN_VOLTAGE;
-	// base of calculations for calculated nets
-//	netId_t	baseMinId = UNKNOWN_NET;
-//	netId_t	baseSimId = UNKNOWN_NET;
-//	netId_t	baseMaxId = UNKNOWN_NET;
-	string	family = "";
-	string	definition = "";
+	text_t definition;  // must be initialized in constructor
+	CExtraPowerData * extraData = NULL;
+	CStatus	type;
+	CStatus active;
+	calculationType_t minCalculationType = UNKNOWN_CALCULATION;
+	calculationType_t simCalculationType = UNKNOWN_CALCULATION;
+	calculationType_t maxCalculationType = UNKNOWN_CALCULATION;
 	bool relativeFriendly = true;
-	CSet	relativeSet;
-	bool	printed = false;
-	bool    flagAllShorts = false;
+	bool flagAllShorts = false;
 
 	CPower();
 	CPower(string thePowerString, CPowerPtrMap & thePowerMacroPtrMap, CModelListMap & theModelListMap);
+	CPower(CPower * thePower_p);
 	CPower(CPower * thePower_p, netId_t theNetId);
 	CPower(netId_t theNetId);
-	CPower(netId_t theNetId, voltage_t theSimVoltage);
-	CPower(netId_t theNetId, string theNetName, voltage_t theNewVoltage, netId_t theMinNet, netId_t theMaxNet, string theCalculation);
-//	CPower(voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage);
+	CPower(netId_t theNetId, voltage_t theSimVoltage, bool theCreateExtraData = false);
 	CPower(netId_t theNetId, voltage_t theMinVoltage, voltage_t theSimVoltage, voltage_t theMaxVoltage, netId_t theDefaultMinNet, netId_t theDefaultSimNet, netId_t theDefaultMaxNet);
+	~CPower();
 
+	string expectedSim() { return (( extraData ) ? extraData->expectedSim : ""); };
+	string expectedMin() { return (( extraData ) ? extraData->expectedMin : ""); };
+	string expectedMax() { return (( extraData ) ? extraData->expectedMax : ""); };
+	string family() { return (( extraData ) ? extraData->family : ""); };
+	string implicitFamily() { return (( extraData ) ? extraData->implicitFamily : ""); };
+	voltage_t pullDownVoltage() { return (( extraData ) ? extraData->pullDownVoltage : UNKNOWN_VOLTAGE); };
+	voltage_t pullUpVoltage() { return (( extraData ) ? extraData->pullDownVoltage : UNKNOWN_VOLTAGE); };
+	text_t powerSignal() { return (( extraData ) ? extraData->powerSignal : CPower::powerDefinitionText.BlankTextAddress()); };
+	text_t powerAlias() { return (( extraData ) ? extraData->powerAlias : CPower::powerDefinitionText.BlankTextAddress()); };
 	CPower * GetBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	CPower * GetMinBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	CPower * GetSimBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	CPower * GetMaxBasePower(CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
 	void SetPowerAlias(string thePowerString, size_t theAliasStart);
 	bool IsSamePower(CPower * theMatchPower);
-	bool IsRelative(CPower * theTestPower_p, bool theDefault);
-	bool IsRelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v, CVirtualNetVector & theTestNet_v, bool theDefault);
-
-//	bool IsRelatedMinPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	bool IsRelatedSimPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	bool IsRelatedMaxPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v);
-//	bool RelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theMinNet_v, CVirtualNetVector & theSimNet_v, CVirtualNetVector & theMaxNet_v);
-//
-//	bool RelatedPower(CPower * theTestPower_p);
+	bool IsValidSubset(CPower * theMatchPower, voltage_t theThreshold);
+	bool IsRelative(CPower * theTestPower_p, bool theDefault, bool theIsHiZRelative = false);
+	bool IsRelatedPower(CPower * theTestPower_p, CPowerPtrVector & theNetVoltagePtr_v, CVirtualNetVector & theNet_v, CVirtualNetVector & theTestNet_v,
+			bool theDefault, bool isHiZRelated = false);
 	inline bool IsInternalOverride() {return( ! (type[INPUT_BIT] || type[POWER_BIT]) ); };
 
 	void Print(ostream & theLogFile, string theIndentation = "", string theRealPowerName = "");
@@ -115,27 +173,30 @@ public:
 	string StandardDefinition();
 	voltage_t RelativeVoltage(CPowerPtrMap & thePowerMacroPtrMap, netStatus_t theType, CModelListMap & theModelListMap);
 };
-
 #define PowerDelimiter_(power_p, BIT) ((power_p == NULL || power_p->type[BIT]) ? "=" : "@")
-#define IsDefinedVoltage_(power_p) (power_p && netStatus_v[power_p->baseNetId] && \
-		( netStatus_v[power_p->baseNetId][MIN_POWER] \
-		    || netStatus_v[power_p->baseNetId][SIM_POWER] \
-		    || netStatus_v[power_p->baseNetId][MAX_POWER] \
-     		|| power_p->type[HIZ_BIT] ) )
 #define IsCalculatedVoltage_(power_p) (power_p && ( power_p->type[MIN_CALCULATED_BIT] || power_p->type[SIM_CALCULATED_BIT] || power_p->type[MAX_CALCULATED_BIT] ) )
+#define IsPower_(power_p) (power_p && power_p->type[POWER_BIT])
+#define IsInputOrPower_(power_p) (power_p && ( power_p->type[INPUT_BIT] || power_p->type[POWER_BIT] ) )
+
 #define IsKnownVoltage_(theVoltage) (theVoltage != UNKNOWN_VOLTAGE)
 
 class CPowerPtrMap : public unordered_map<string, CPower *> {
 public:
+	string	implicitFamily = "";
+	CPowerPtrMap(float theLoadFactor = DEFAULT_LOAD_FACTOR) {max_load_factor(theLoadFactor);}
+	void Clear();
 	string CalculateExpectedValue(string theEquation, netStatus_t theType, CModelListMap & theModelListMap);
-	voltage_t CalculateVoltage(string theEquation, netStatus_t theType, CModelListMap & theModelListMap);
+	voltage_t CalculateVoltage(string theEquation, netStatus_t theType, CModelListMap & theModelListMap, bool thePermitUndefinedFlag = false, bool theResetImplicitFlag = true);
 };
+
+class CPowerPtrVector;  // forward definition
 
 class CPowerPtrList : public list<CPower *> {
 public:
-	CPowerPtrMap	calculatedPowerPtrMap;
+//	CPowerPtrMap	calculatedPowerPtrMap;
 
 	void Clear();
+	void Clear(CPowerPtrVector & theLeakVoltage_v, CPowerPtrVector & theNetVoltage_v, netId_t theNetCount);
 	void SetPowerLimits(voltage_t& theMaxPower, voltage_t& theMinPower);
 //	CPower * FindCalculatedPower(CEventQueue& theEventQueue, CPower * theCurrentPower_p, voltage_t theShortVoltage, string theNetName);
 //	CPower * FindCalculatedPower(CEventQueue& theEventQueue, CPower * theCurrentPower_p, voltage_t theShortVoltage, netId_t theNetId, netId_t theDefaultNetId, CCvcDb * theCvcDb);
@@ -143,12 +204,34 @@ public:
 	void SetFamilies(CPowerFamilyMap & thePowerFamilyMap);
 };
 
-class CPowerPtrVector : public vector<CPower *> {
+union PowerPtr_t {
+	CPower * full;
+	CMiniPower * mini;
+};
+
+class CPowerPtrVector : public vector<PowerPtr_t> {
 public:
+	vector<powerPtrType_t> powerPtrType_v;
+	
 	voltage_t MaxVoltage(netId_t theNetId);
 	voltage_t MinVoltage(netId_t theNetId);
 	voltage_t SimVoltage(netId_t theNetId);
 	void CalculatePower(CEventQueue& theEventQueue, voltage_t theShortVoltage, netId_t theNetId, netId_t theDefaultNetId, CCvcDb * theCvdDb_p, string theCalculation);
+	void ResetPowerPointerVector(size_t theSize);
+};
+
+class CInstancePower {
+public:
+	string	instanceName;
+	string	powerFile;
+	list<string>	powerList;
+
+	CInstancePower(string theDefinition);
+};
+
+class CInstancePowerPtrList : public list<CInstancePower *> {
+public:
+
 };
 
 #define IsUnknownMinVoltage_(power_p) ( ! power_p || power_p->minVoltage == UNKNOWN_VOLTAGE || power_p->active[MIN_ACTIVE] == false )

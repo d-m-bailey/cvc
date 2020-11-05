@@ -6,7 +6,7 @@
     Functions:
       InitializeErrors: Initialize error data from cvc_globals.
 
-    Copyright 2106 D. Mitch Bailey  d.mitch.bailey at gmail dot com
+    Copyright 2016-2018 D. Mitch Bailey  cvc at shuharisystem dot com
 
     This file is part of check_cvc.
 
@@ -71,6 +71,8 @@ errorList = [ \
      'searchText': "^WARNING: resistance "},
     {'source': 'log', 'section': 'unexpected_diode',
      'searchText': "^INFO: unexpected diode"},
+    {'source': 'report', 'section': 'FUSE_ERROR',
+     'searchText': "^! Power/Ground path through fuse"},
     {'source': 'report', 'section': 'MOS_DIODE',
      'searchText': "^! ... voltage already"},
     {'source': 'report', 'section': 'SHORT',

@@ -1,6 +1,6 @@
 """ SummaryApp.py: Kivy App class for check_cvc.
 
-    Copyright 2106 D. Mitch Bailey  d.mitch.bailey at gmail dot com
+    Copyright 2016-2018 D. Mitch Bailey  cvc at shuharisystem dot com
 
     This file is part of check_cvc.
 
@@ -44,6 +44,7 @@ try:  # kivy installed
           build: Create top widget and start event loop.
           SetCheckFilters: Stub to root method for display check box filters.
           SetCopyFilters: Stub to root method for copy check box filters.
+          SetOverwriteFilters: Stub to root method for overwrite check box filters.
           BatchRun: Display error totals without GUI.
         """
         modeRows = NumericProperty(1)
@@ -72,6 +73,10 @@ try:  # kivy installed
         def SetCopyFilters(self, theId):
             """Stub to root method for copy check box filters."""
             self.root.SetFilters(theId, 'copy_', self.root.copyValues)
+
+        def SetOverwriteFilters(self, theId):
+            """Stub to root method for overwrite check box filters."""
+            self.root.SetFilters(theId, 'overwrite_', self.root.overwriteValues)
 
         def on_stop(self):
             self.root.AutoSaveSummary(None)

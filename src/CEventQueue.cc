@@ -1,7 +1,7 @@
 /*
  * CEventQueue.cc
  *
- * Copyright 2014-2106 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -38,18 +38,6 @@ bool CEventQueue::IsNextMainQueue() {
 	return ( queueType == SIM_QUEUE || ( mainQueue.begin()->first <= delayQueue.begin()->first ) );
 }
 
-/*
-void CEventQueue::BackupQueue() {
-	savedMainQueue = mainQueue;
-	savedDelayQueue = delayQueue;
-}
-
-void CEventQueue::RestoreQueue() {
-	mainQueue = savedMainQueue;
-	delayQueue = savedDelayQueue;
-}
-*/
-
 void CEventQueue::AddEvent(eventKey_t theEventKey, deviceId_t theDeviceIndex, queuePosition_t theQueuePosition) {
 	// theDelay = 1 : front of delay queue
 	// theDelay = 2 : back of delay queue
@@ -66,33 +54,13 @@ void CEventQueue::AddEvent(eventKey_t theEventKey, deviceId_t theDeviceIndex, qu
 		case DELAY_BACK: { delayQueue[theEventKey].push_back(theDeviceIndex); break; }
 		default: { throw EFatalError("invalid queue delay " + to_string<int>((int) theQueuePosition)); }
 	}
-/*
-	if ( theDelay > 0 ) { // normal delay. (Min/Max delay same voltage, Sim: delay until after all voltage)
-		// delay = 1 is priority delay. add to front of delay queue
-		if ( queueType == SIM_QUEUE || theDelay > 1 ) {
-			delayQueue[theEventKey].push_back(theDeviceIndex);
-		} else {
-			delayQueue[theEventKey].push_front(theDeviceIndex); // should increase priority of subsequent propagations (less unknown min/max gates)
-		}
-	} else if ( theDelay < 0 ) { // mos bias connection or Hi-Z prop in second min/max
-		assert( queueType != SIM_QUEUE );
-		assert( theDelay != -2 );
-		// Min/Max queues high priority
-		mainQueue[theEventKey].push_front(theDeviceIndex);
-	} else {
-		assert( theDelay == 0 );
-		mainQueue[theEventKey].push_back(theDeviceIndex);
-	}
-*/
 	enqueueCount++;
 	if ( --printCounter <= 0 ) PrintStatus();
 	if (gDebug_cvc) cout << "Adding to queue(" << gEventQueueTypeMap[queueType] << ") device: " << theDeviceIndex << "@" << theEventKey << "+" << theQueuePosition << endl;
-//	if (debug_cvc) Print(gEventQueueTypeMap[queueType] + "After add");
   }
 
 deviceId_t CEventQueue::GetMainEvent() {
-	deviceId_t myDeviceIndex = mainQueue.begin()->second.front();
-	mainQueue.begin()->second.pop_front();
+	deviceId_t myDeviceIndex = mainQueue.begin()->second.pop_front(); //mainQueue.begin()->second.front();
 	if ( mainQueue.begin()->second.empty() ) {
 		mainQueue.erase(mainQueue.begin());
 	}
@@ -102,8 +70,7 @@ deviceId_t CEventQueue::GetMainEvent() {
 }
 
 deviceId_t CEventQueue::GetDelayEvent() {
-	deviceId_t myDeviceIndex = delayQueue.begin()->second.front();
-	delayQueue.begin()->second.pop_front();
+	deviceId_t myDeviceIndex = delayQueue.begin()->second.pop_front(); //delayQueue.begin()->second.front();
 	if ( delayQueue.begin()->second.empty() ) {
 		delayQueue.erase(delayQueue.begin());
 	}
@@ -138,11 +105,6 @@ void CEventQueue::Print(string theIndentation) {
 	cout << myIndentation << "Main Queue>" << endl;
 	for (CEventSubQueue::iterator eventPair_pit = mainQueue.begin(); eventPair_pit != mainQueue.end(); eventPair_pit++) {
 		cout << myIndentation << "Time: " << eventPair_pit->first << " (" << eventPair_pit->second.size() << "):";
-/*
-		for (CEventList::iterator device_pit = eventPair_pit->second.begin(); device_pit != eventPair_pit->second.end(); device_pit++) {
-			cout  << " " << *device_pit;
-		}
-*/
 		for (deviceId_t device_it = eventPair_pit->second.first, myLastDevice = UNKNOWN_DEVICE;
 				device_it != UNKNOWN_DEVICE && device_it != myLastDevice;
 				myLastDevice = device_it, device_it = queueArray[device_it]) {
@@ -153,11 +115,6 @@ void CEventQueue::Print(string theIndentation) {
 	cout << myIndentation << "Delay Queue>" << endl;
 	for (CEventSubQueue::iterator eventPair_pit = delayQueue.begin(); eventPair_pit != delayQueue.end(); eventPair_pit++) {
 		cout << myIndentation << "Time: " << eventPair_pit->first << " (" << eventPair_pit->second.size() << "):";
-/*
-		for (CEventList::iterator device_pit = eventPair_pit->second.begin(); device_pit != eventPair_pit->second.end(); device_pit++) {
-			cout  << " " << *device_pit;
-		}
-*/
 		for (deviceId_t device_it = eventPair_pit->second.first, myLastDevice = UNKNOWN_DEVICE;
 				device_it != UNKNOWN_DEVICE && device_it != myLastDevice;
 				myLastDevice = device_it, device_it = queueArray[device_it]) {
@@ -169,13 +126,23 @@ void CEventQueue::Print(string theIndentation) {
 	cout << theIndentation << "EventQueue> end" << endl;
 }
 
+CEventList& CEventSubQueue::operator[] (eventKey_t theEventKey) {
+	CEventSubQueue::iterator myItem_it = find(theEventKey);
+	if ( myItem_it == end() ) {
+		pair<CEventSubQueue::iterator, bool> myResult;
+		myResult = insert(make_pair(theEventKey, CEventList(queueArray)));
+		return (myResult.first->second);
+	} else {
+		return (myItem_it->second);
+	}
+}
+
 eventKey_t CEventSubQueue::QueueTime(eventQueue_t theQueueType) {
 	if ( size() == 0 ) return MAX_EVENT_TIME;
 	return ( begin()->first );
 }
 
 eventKey_t CEventQueue::QueueTime() {
-//	if ( delayQueue.empty() && mainQueue.empty() || ) return 0;
 	if ( (! queueStart) || (delayQueue.empty() && mainQueue.empty()) ) return 0;
 	if ( queueType == MAX_QUEUE ) {
 		return (- min(mainQueue.QueueTime(queueType), delayQueue.QueueTime(queueType)));
@@ -213,10 +180,9 @@ string CLeakMap::PrintLeakKey(string theKey) {
 	unsigned int mySecondKey = from_string<unsigned int>(theKey.substr(theKey.find(" ")));
 	string myFirstPowerName = "", mySecondPowerName = "";
 	for (CPowerPtrList::iterator power_ppit = powerPtrList_p->begin(); power_ppit != powerPtrList_p->end(); power_ppit++) {
-		if ( (*power_ppit)->powerId == myFirstKey ) myFirstPowerName = (*power_ppit)->powerSignal;
-		if ( (*power_ppit)->powerId == mySecondKey ) mySecondPowerName = (*power_ppit)->powerSignal;
+		if ( (*power_ppit)->powerId == myFirstKey ) myFirstPowerName = string((*power_ppit)->powerSignal());
+		if ( (*power_ppit)->powerId == mySecondKey ) mySecondPowerName = string((*power_ppit)->powerSignal());
 	}
-//	cout << "PrintLeakKey> " << myFirstPowerName << ":" << mySecondPowerName << endl;
 	return (myFirstPowerName + ":" + mySecondPowerName);
 }
 
@@ -280,19 +246,6 @@ deviceId_t CEventList::pop_front() {
 inline deviceId_t CEventList::front() {
 	return(first);
 }
-
-/*
-size_t CEventList::size() {
-	if (first == UNKNOWN_DEVICE) return(0);
-	size_t mySize = 1;
-	deviceId_t myDevice = first;
-	while ( myDevice != queueArray[myDevice] ) {
-		mySize++;
-		myDevice = queueArray[myDevice];
-	}
-	return(mySize);
-}
-*/
 
 bool CEventList::empty() {
 	return(first == UNKNOWN_DEVICE);
