@@ -776,6 +776,7 @@ void CCvcDb::PrintErrorTotals() {
 		reportFile << "CVC: Overvoltage-VBS:       " << errorCount[OVERVOLTAGE_VBS] << endl;
 		reportFile << "CVC: Overvoltage-VDS:       " << errorCount[OVERVOLTAGE_VDS] << endl;
 		reportFile << "CVC: Overvoltage-VGS:       " << errorCount[OVERVOLTAGE_VGS] << endl;
+		reportFile << "CVC: Model errors:          " << errorCount[MODEL_CHECK] << endl;
 		reportFile << "CVC: Unexpected voltage :   " << errorCount[EXPECTED_VOLTAGE] << endl;
 	} else {
 		reportFile << "WARNING: Error detection incomplete" << endl;

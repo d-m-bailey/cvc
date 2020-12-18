@@ -107,6 +107,8 @@ void CCvcParameters::ResetEnvironment() {
 	//! Minimum device count to display large circuits
 	cvcNetCheckFile = defaultNetCheckFile;
 	//! Name of file containing list of net checks
+	cvcModelCheckFile = defaultModelCheckFile;
+	//! Name of file containing list of model checks
 }
 
 void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
@@ -146,6 +148,7 @@ void CCvcParameters::PrintEnvironment(ostream & theOutputFile) {
 	theOutputFile << "CVC_CELL_CHECKSUM_FILE = '" << cvcCellChecksumFile << "'" << endl;
 	theOutputFile << "CVC_LARGE_CIRCUIT_SIZE = '" << cvcLargeCircuitSize << "'" << endl;
 	theOutputFile << "CVC_NET_CHECK_FILE = '" << cvcNetCheckFile << "'" << endl;
+	theOutputFile << "CVC_MODEL_CHECK_FILE = '" << cvcModelCheckFile << "'" << endl;
 	theOutputFile << "End of parameters" << endl << endl;
 }
 
@@ -192,6 +195,7 @@ void CCvcParameters::PrintDefaultEnvironment() {
 	myDefaultCvcrc << "CVC_CELL_CHECKSUM_FILE = '" << cvcCellChecksumFile << "'" << endl;
 	myDefaultCvcrc << "CVC_LARGE_CIRCUIT_SIZE = '" << cvcLargeCircuitSize << "'" << endl;
 	myDefaultCvcrc << "CVC_NET_CHECK_FILE = '" << cvcNetCheckFile << "'" << endl;
+	myDefaultCvcrc << "CVC_MODEL_CHECK_FILE = '" << cvcModelCheckFile << "'" << endl;
 	myDefaultCvcrc.close();
 }
 
@@ -305,6 +309,8 @@ void CCvcParameters::LoadEnvironment(const string theEnvironmentFilename, const 
 			cvcLargeCircuitSize = from_string<size_t>(myBuffer);
 		} else if ( myVariable == "CVC_NET_CHECK_FILE" ) {
 			cvcNetCheckFile = myBuffer;
+		} else if ( myVariable == "CVC_MODEL_CHECK_FILE" ) {
+			cvcModelCheckFile = myBuffer;
 		}
 	}
 	if ( ! IsEmpty(theReportPrefix) ) {

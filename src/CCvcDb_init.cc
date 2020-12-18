@@ -1742,6 +1742,7 @@ void CCvcDb::LoadNetChecks() {
 	/// "inverter_input=output": check to verify inverter output ground/power are the same as input ground/power
 	/// "opposite_logic": verify that 2 nets are logically opposite
 	if ( IsEmpty(cvcParameters.cvcNetCheckFile) ) return;
+
 	igzstream myNetCheckFile;
 	myNetCheckFile.open(cvcParameters.cvcNetCheckFile);
 	if ( myNetCheckFile.fail() ) {
@@ -1780,5 +1781,60 @@ void CCvcDb::LoadNetChecks() {
 		}
 	}
 	myNetCheckFile.close();
+}
+
+void CCvcDb::LoadModelChecks() {
+	/// Load model checks from file.
+	///
+	/// Currently supports:
+	/// "Vb": check bulk voltage
+	if ( IsEmpty(cvcParameters.cvcModelCheckFile) ) return;
+
+	igzstream myModelCheckFile;
+	myModelCheckFile.open(cvcParameters.cvcModelCheckFile);
+	if ( myModelCheckFile.fail() ) {
+		throw EFatalError("Could not open model check file: '" + cvcParameters.cvcModelCheckFile + "'");
+		exit(1);
+
+	}
+	string myInput;
+	reportFile << "CVC: Reading model checks..." << endl;
+	while ( getline(myModelCheckFile, myInput) ) {
+		if ( myInput.substr(0, 1) == "#" ) continue;  // ignore comments
+
+		size_t myStringBegin = myInput.find_first_not_of(" \t");
+		size_t myStringEnd = myInput.find_first_of(" \t", myStringBegin);
+		string myModelName = myInput.substr(myStringBegin, myStringEnd - myStringBegin);
+		CModelList * myModelList_p = cvcParameters.cvcModelListMap.FindModelList(myModelName);
+		if ( ! myModelList_p ) {
+			reportFile << "WARNING: could not find model " << myModelName << " for model check '" << myInput << "'" << endl;
+			continue;
+
+		}
+		myStringBegin = myInput.find_first_not_of(" \t", myStringEnd);
+		myStringEnd = myInput.find_first_of(" \t", myStringBegin);
+		string myCheck = myInput.substr(myStringBegin, myStringEnd - myStringBegin);
+		myStringEnd = myInput.find_first_of(" \t=<>", myStringBegin);
+		string myParameter = myInput.substr(myStringBegin, myStringEnd - myStringBegin);
+		myStringBegin = myInput.find_first_of("=<>", myStringEnd);
+		myStringEnd = myInput.find_first_not_of("=<>", myStringBegin);
+		string myOperation = myInput.substr(myStringBegin, myStringEnd - myStringBegin);
+		myStringBegin = myInput.find_first_not_of("=<>", myStringEnd);
+		myStringEnd = myInput.find_first_of(" \t", myStringBegin);
+		string myValue = myInput.substr(myStringBegin, myStringEnd - myStringBegin);
+		if ( myParameter == "Vb" ) {
+			if ( myOperation != "=" ) {
+				reportFile << "WARNING: unknown operation '" << myOperation << "' in model check '" << myInput << "'" << endl;
+				continue;
+
+			}
+			for ( auto model_pit = myModelList_p->begin(); model_pit != myModelList_p->end(); model_pit++ ) {
+				model_pit->checkList.push_front(CModelCheck(myCheck, "Vb", myValue, "", myValue, ""));
+			}
+		} else {
+			reportFile << "WARNING: unknown parameter '" << myParameter << "' in model check '" << myInput << "'" << endl;
+		}
+	}
+	myModelCheckFile.close();
 }
 

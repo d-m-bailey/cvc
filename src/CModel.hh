@@ -34,6 +34,29 @@ class CPowerPtrMap;
 #include "CParameterMap.hh"
 #include <regex>
 
+class CModelCheck {
+public:
+	string check = "";
+	string parameter = "";
+	bool isVoltage = false;
+	string minInclusiveText = "";
+	string minExclusiveText = "";
+	string maxInclusiveText = "";
+	string maxExclusiveText = "";
+	float minInclusiveValue = 0.;
+	float minExclusiveValue = 0.;
+	float maxInclusiveValue = 0.;
+	float maxExclusiveValue = 0.;
+	voltage_t minInclusiveVoltage = 0.;
+	voltage_t minExclusiveVoltage = 0.;
+	voltage_t maxInclusiveVoltage = 0.;
+	voltage_t maxExclusiveVoltage = 0.;
+
+	CModelCheck(string theCheck, string theParameter, string theInclusiveMin, string theExclusiveMin, string theInclusiveMax, string theExclusiveMax );
+	void SetValue(string theParameter, voltage_t &theVoltage, float &theValue);
+
+};
+
 class CModel {
 public:
 	string	name;
@@ -70,6 +93,8 @@ public:
 
 	string	definition;
 
+	forward_list<CModelCheck> checkList;
+
 	CModel(string theParameterString);
 	void Clear();
 	size_t ModelCount();
@@ -100,6 +125,7 @@ public:
 	void Clear();
 	void AddModel(string theParameterString);
 	CModel * FindModel(text_t theCellName, text_t theParameterText, CTextResistanceMap & theParameterResistanceMap, ostream& theLogFile);
+	CModelList * FindModelList(string theModelName);
 	void Print(ostream & theLogFile, string theIndentation = "");
 	void DebugPrint(string theIndentation = "");
 	returnCode_t SetVoltageTolerances(teestream & theReportFile, CPowerPtrMap & thePowerMacroPtrMap);

@@ -30,6 +30,30 @@
 #include "CPower.hh"
 #include <regex>
 
+CModelCheck::CModelCheck(string theCheck, string theParameter, string theInclusiveMin, string theExclusiveMin, string theInclusiveMax, string theExclusiveMax ) {
+	check = theCheck;
+	parameter = theParameter;
+	isVoltage = (theParameter[0] == 'V');
+	minInclusiveText = theInclusiveMin;
+	minExclusiveText = theExclusiveMin;
+	maxInclusiveText = theInclusiveMax;
+	maxExclusiveText = theExclusiveMax;
+	SetValue(minInclusiveText, minInclusiveVoltage, minInclusiveValue);
+	SetValue(maxInclusiveText, maxInclusiveVoltage, maxInclusiveValue);
+	SetValue(minExclusiveText, minExclusiveVoltage, minExclusiveValue);
+	SetValue(maxExclusiveText, maxExclusiveVoltage, maxExclusiveValue);
+}
+
+void CModelCheck::SetValue(string theParameter, voltage_t &theVoltage, float &theValue) {
+	if ( ! IsEmpty(theParameter) ) {
+		if ( isVoltage && IsValidVoltage_(theParameter) ) {
+			theVoltage = round(from_string<float>(theParameter) * VOLTAGE_SCALE + 0.1);
+		} else {
+			theValue = from_string<float>(theParameter);
+		}
+	}
+}
+
 CModel::CModel(string theParameterString) {
 // parameter string example
 // NMOS nch Vth=0.500 Vgs=0.3 Vds=0.5 Vbs=0.4 condition=(L<0.4u w>=1.2u)
@@ -295,6 +319,7 @@ void CModelListMap::AddModel(string theParameterString) {
 }
 
 CModel * CModelListMap::FindModel(text_t theCellName, text_t theParameterText, CTextResistanceMap& theParameterResistanceMap, ostream& theLogFile) {
+	// FindModel: Set the model type based on theParameterText. Also adds entry to theParameterResistanceMap.
 	string	myParameterString = trim_(string(theParameterText));
 	string	myModelKey = myParameterString.substr(0, myParameterString.find(" ", 2));
 	try {
@@ -307,6 +332,7 @@ CModel * CModelListMap::FindModel(text_t theCellName, text_t theParameterText, C
 		for (CModelList::iterator model_pit = this->at(myModelKey).begin(); model_pit != myLastModel; model_pit++) {
 			if ( model_pit->ParameterMatch(myParameterMap, theCellName) ) {
 				switch (model_pit->type) {
+				// TODO: do not recalculate if already exists
 					case NMOS: case PMOS: case LDDN: case LDDP: {
 						theParameterResistanceMap[theParameterText] = myParameterMap.CalculateResistance(model_pit->resistanceDefinition);
 						if ( theParameterResistanceMap[theParameterText] == MAX_RESISTANCE ) {
@@ -330,6 +356,19 @@ CModel * CModelListMap::FindModel(text_t theCellName, text_t theParameterText, C
 	catch (const out_of_range& oor_exception) {
 		return (NULL);
 	}
+}
+
+CModelList * CModelListMap::FindModelList(string theModelName) {
+	// FindModelList: Return a pointer to the first model list for theModelName
+	//
+	// Warning: is 2 different types of models have the same name, only returns the first.
+	for (auto mapPair_pit = begin(); mapPair_pit != end(); mapPair_pit++) {
+		if ( mapPair_pit->first.substr(2) == theModelName ) {
+			return &mapPair_pit->second;
+
+		}
+	}
+	return NULL;
 }
 
 void CModelListMap::Print(ostream & theLogFile, string theIndentation) {

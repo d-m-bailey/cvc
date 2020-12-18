@@ -743,7 +743,7 @@ size_t CCvcDb::IncrementDeviceError(deviceId_t theDeviceId, int theErrorIndex) {
 	CInstance * myInstance_p = instancePtr_v[deviceParent_v[theDeviceId]];
 	CCircuit * myParent_p = myInstance_p->master_p;
 	int myErrorSubIndex = 0;
-	if ( theErrorIndex >= OVERVOLTAGE_VBG && theErrorIndex <= OVERVOLTAGE_VGS ) {
+	if ( theErrorIndex >= OVERVOLTAGE_VBG && theErrorIndex <= MODEL_CHECK ) {
 		myErrorSubIndex = theErrorIndex - OVERVOLTAGE_VBG;
 	}
 	int myMFactor = CalculateMFactor(deviceParent_v[theDeviceId]);

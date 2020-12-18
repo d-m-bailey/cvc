@@ -221,6 +221,7 @@ public:
 	returnCode_t	LoadCellErrorLimits();
 	void LoadCellChecksums();
 	void LoadNetChecks();
+	void LoadModelChecks();
 
 	// error
 	void PrintFuseError(netId_t theTargetNetId, CConnection & theConnections);
@@ -230,7 +231,9 @@ public:
 	void FindVbsError(ogzstream & theErrorFile, voltage_t theParameter, CFullConnection & theConnections, instanceId_t theInstance_p, string theDisplayParameter);
 	void FindVdsError(ogzstream & theErrorFile, voltage_t theParameter, CFullConnection & theConnections, instanceId_t theInstance_p, string theDisplayParameter);
 	void FindVgsError(ogzstream & theErrorFile, voltage_t theParameter, CFullConnection & theConnections, instanceId_t theInstance_p, string theDisplayParameter);
+	void FindModelError(ogzstream & theErrorFile, CModelCheck &theCheck, CFullConnection & theConnections, instanceId_t theInstanceId);
 	void PrintOverVoltageError(ogzstream & theErrorFile, CFullConnection & theConnections, cvcError_t theErrorIndex, string theExplanation, instanceId_t theInstance_p);
+	void PrintModelError(ogzstream & theErrorFile, CFullConnection & theConnections, CModelCheck & theCheck, instanceId_t theInstanceId);
 	void FindAllOverVoltageErrors();
 	void AppendErrorFile(string theTempFileName, string theHeading, int theErrorSubIndex);
 	void FindNmosGateVsSourceErrors();

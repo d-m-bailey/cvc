@@ -213,6 +213,29 @@ void CCvcDb::FindVgsError(ogzstream & theErrorFile, voltage_t theParameter, CFul
 	}
 }
 
+void CCvcDb::FindModelError(ogzstream & theErrorFile, CModelCheck & theCheck, CFullConnection & theConnections, instanceId_t theInstanceId) {
+	bool myError = false;
+	if ( theCheck.parameter == "Vb" ) {
+		if ( ! (theConnections.validMinBulk && theConnections.validMaxBulk) ) {
+			myError = true;
+		} else {
+			if ( ! IsEmpty(theCheck.minExclusiveText) ) {
+				myError |= theConnections.minBulkVoltage <= theCheck.minExclusiveVoltage;
+			} else if ( ! IsEmpty(theCheck.minInclusiveText) ) {
+				myError |= theConnections.minBulkVoltage < theCheck.minInclusiveVoltage;
+			}
+			if ( ! IsEmpty(theCheck.maxExclusiveText) ) {
+				myError |= theConnections.maxBulkVoltage >= theCheck.maxExclusiveVoltage;
+			} else if ( ! IsEmpty(theCheck.maxInclusiveText) ) {
+				myError |= theConnections.maxBulkVoltage > theCheck.maxInclusiveVoltage;
+			}
+		}
+	}
+	if ( myError ) {
+		PrintModelError(theErrorFile, theConnections, theCheck, theInstanceId);
+	}
+}
+
 void CCvcDb::PrintOverVoltageError(ogzstream & theErrorFile, CFullConnection & theConnections, cvcError_t theErrorIndex, string theExplanation, instanceId_t theInstanceId) {
 	if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theConnections.deviceId, theErrorIndex) < cvcParameters.cvcCircuitErrorLimit ) {
 		theErrorFile << theExplanation << endl;
@@ -222,6 +245,14 @@ void CCvcDb::PrintOverVoltageError(ogzstream & theErrorFile, CFullConnection & t
 	}
 }
  
+void CCvcDb::PrintModelError(ogzstream & theErrorFile, CFullConnection & theConnections, CModelCheck & theCheck, instanceId_t theInstanceId) {
+	if ( cvcParameters.cvcCircuitErrorLimit == 0 || IncrementDeviceError(theConnections.deviceId, MODEL_CHECK) < cvcParameters.cvcCircuitErrorLimit ) {
+		theErrorFile << "Model error: " << theCheck.check << endl;
+		PrintDeviceWithAllConnections(theInstanceId, theConnections, theErrorFile, false);
+		theErrorFile << endl;
+	}
+}
+
 void CCvcDb::FindAllOverVoltageErrors() {
 	CFullConnection myConnections;
 	reportFile << "! Checking overvoltage errors" << endl << endl;
@@ -237,6 +268,9 @@ void CCvcDb::FindAllOverVoltageErrors() {
 	string myVgsErrorFileName(tmpnam(NULL));
 	ogzstream myVgsErrorFile(myVgsErrorFileName);
 	myVgsErrorFile << "! Checking Vgs overvoltage errors" << endl << endl;
+	string myModelErrorFileName(tmpnam(NULL));
+	ogzstream myModelErrorFile(myModelErrorFileName);
+	myModelErrorFile << "! Checking Model errors" << endl << endl;
 
 	for (CModelListMap::iterator keyModelListPair_pit = cvcParameters.cvcModelListMap.begin(); keyModelListPair_pit != cvcParameters.cvcModelListMap.end(); keyModelListPair_pit++) {
 		for (CModelList::iterator model_pit = keyModelListPair_pit->second.begin(); model_pit != keyModelListPair_pit->second.end(); model_pit++) {
@@ -269,6 +303,9 @@ void CCvcDb::FindAllOverVoltageErrors() {
 					if ( model_pit->maxVbs != UNKNOWN_VOLTAGE ) FindVbsError(myVbsErrorFile, model_pit->maxVbs, myConnections, myInstanceId, myVbsDisplayParameter);
 					if ( model_pit->maxVds != UNKNOWN_VOLTAGE ) FindVdsError(myVdsErrorFile, model_pit->maxVds, myConnections, myInstanceId, myVdsDisplayParameter);
 					if ( model_pit->maxVgs != UNKNOWN_VOLTAGE ) FindVgsError(myVgsErrorFile, model_pit->maxVgs, myConnections, myInstanceId, myVgsDisplayParameter);
+					for ( auto check_pit = model_pit->checkList.begin(); check_pit != model_pit->checkList.end(); check_pit++ ) {
+						FindModelError(myModelErrorFile, *check_pit, myConnections, myInstanceId);
+					}
 				}
 				myDevice_p = myDevice_p->nextDevice_p;
 			}
@@ -278,10 +315,12 @@ void CCvcDb::FindAllOverVoltageErrors() {
 	myVbsErrorFile.close();
 	myVdsErrorFile.close();
 	myVgsErrorFile.close();
+	myModelErrorFile.close();
 	AppendErrorFile(myVbgErrorFileName, "! Checking Vbg overvoltage errors", OVERVOLTAGE_VBG - OVERVOLTAGE_VBG);
 	AppendErrorFile(myVbsErrorFileName, "! Checking Vbs overvoltage errors", OVERVOLTAGE_VBS - OVERVOLTAGE_VBG);
 	AppendErrorFile(myVdsErrorFileName, "! Checking Vds overvoltage errors", OVERVOLTAGE_VDS - OVERVOLTAGE_VBG);
 	AppendErrorFile(myVgsErrorFileName, "! Checking Vgs overvoltage errors", OVERVOLTAGE_VGS - OVERVOLTAGE_VBG);
+	AppendErrorFile(myModelErrorFileName, "! Checking Model errors", MODEL_CHECK - OVERVOLTAGE_VBG);
 }
 
 void CCvcDb::AppendErrorFile(string theTempFileName, string theHeading, int theErrorSubIndex) {
