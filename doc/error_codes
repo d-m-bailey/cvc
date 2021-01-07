@@ -33,6 +33,7 @@ LC: Logic conflict
 LG: Overvoltage error based on Lg
 LO: Logically ok.
 LS: Level shifter
+MC: Missing capacitor
 MD: Mos diode unexpected voltage ok
 MO: Monitor circuit
 ND: Not driven
