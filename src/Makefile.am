@@ -2,7 +2,7 @@
 CFLAGS = -O3 
 CXXFLAGS = -O3 -std=gnu++11
 #LIBS = -lz -lreadline -lcurses -lhistory -lintl
-LIBS = -lz -lreadline -lcurses -lhistory 
+LIBS = -lz -lreadline -lcurses -lhistory $(INTLLIBS)
 LDFLAGS = -static-libstdc++ -static-libgcc
 
 # this lists the binaries to produce, the (non-PHONY, binary) targets in
