@@ -26,3 +26,4 @@ test
 ylwrap
 src_py/__pycache__
 src_py/.deps
+/configure~

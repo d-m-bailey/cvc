@@ -12,4 +12,5 @@ Makefile
 Makefile.in
 default.cvcrc
 cvc.exe
+cvc
 autoscan*

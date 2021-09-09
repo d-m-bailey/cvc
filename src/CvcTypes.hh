@@ -24,12 +24,12 @@
 #ifndef CVCTYPES_HH_
 #define CVCTYPES_HH_
 
-#include <stdint-gcc.h>
+#include <cstdint>
 #include <string>
 #include <sstream>
 #include <cstring>
 #include <stdexcept>
-#include <malloc.h>
+#include <cstdlib>
 #include <unordered_map>
 
 #ifndef INT64_MAX
