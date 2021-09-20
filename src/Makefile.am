@@ -1,6 +1,8 @@
 # what flags you want to pass to the C compiler & linker
-CFLAGS = -O3 
-CXXFLAGS = -O3 -std=gnu++11
+#CFLAGS = -O3 
+#CXXFLAGS = -O3 -std=gnu++11
+CFLAGS = -g
+CXXFLAGS = -g -std=gnu++11
 #LIBS = -lz -lreadline -lcurses -lhistory -lintl
 LIBS = -lz -lreadline -lcurses -lhistory $(INTLLIBS)
 LDFLAGS = -static-libstdc++ -static-libgcc
