@@ -29,6 +29,7 @@ Requirements:
 - gcc 4.9.3
 - python 2.7.10
 - bison 3.0.1 (only if making changes to parser or compiling from github)
+
 GUI requirements:
 - kivy 1.10.0
 - pyinstaller 3.1.1 (for standalone check_cvc)
@@ -38,8 +39,9 @@ Install CVC by:
 1. download tarball from release page https://github.com/d-m-bailey/cvc/releases.
 2. extract
 3. cd cvc-\<version>
-4. ./configure --disable-nls [--prefix=<install_directory>]
-5. make install
+4. autoreconf -vif
+5. ./configure --disable-nls [--prefix=<install_directory>]
+6. make install
 
 There have been problems compiling check_cvc on some Linux platfroms.
 If GUI check_cvc does not compile, try
