@@ -34,14 +34,22 @@ GUI requirements:
 - kivy 1.10.0
 - pyinstaller 3.1.1 (for standalone check_cvc)
 
-Install CVC by:
+Should be able to install CVC after cloning the repo by:
+
+1. autoreconf -vif
+2. ./configure --disable-nls [--prefix=<install_directory>]
+3. make
+4. make install
+
+If that doesn't work, try:
 
 1. download tarball from release page https://github.com/d-m-bailey/cvc/releases.
 2. extract
 3. cd cvc-\<version>
 4. autoreconf -vif
 5. ./configure --disable-nls [--prefix=<install_directory>]
-6. make install
+6. make
+7. make install
 
 There have been problems compiling check_cvc on some Linux platfroms.
 If GUI check_cvc does not compile, try
