@@ -34,6 +34,7 @@
 // <http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=333231>.
 # undef yywrap
 # define yywrap() 1
+//# define CDL_FLEX_DEBUG
 
 // The location of the current token.
 static yy::location scanner_location;
@@ -82,7 +83,7 @@ TEXT			[[:alnum:][:punct:]]
 		BEGIN(READING);
 		yylval->charPtr = cdlCircuitList.cdlText.SetTextAddress(yytext);
 #ifdef CDL_FLEX_DEBUG
-		cout << "FLEX DEBUG: found subcircuit " << *(yylval->charPtr) << "\n" << endl;
+		cout << "FLEX DEBUG: found subcircuit " << yylval->charPtr << "\n" << endl;
 #endif
 		return( token::SUBCIRCUIT ); 
 	}; 
@@ -167,14 +168,6 @@ TEXT			[[:alnum:][:punct:]]
 #endif
 	};
 
-<READING>{TEXT}+	{ 
-		yylval->charPtr = cdlCircuitList.cdlText.SetTextAddress(yytext);
-#ifdef CDL_FLEX_DEBUG
-		cout << "FLEX DEBUG: found string " << *(yylval->charPtr) << "\n" << endl;
-#endif
-		return( token::STRING ); 
-	};
-
 <*>^\*.*	{ 
 		/* comment */ 
 #ifdef CDL_FLEX_DEBUG
@@ -182,11 +175,12 @@ TEXT			[[:alnum:][:punct:]]
 #endif
 	};
 
-<*>ÅO[[:blank:]]*$	{ 
-		/* blank line */ 
+<READING>{TEXT}+	{
+		yylval->charPtr = cdlCircuitList.cdlText.SetTextAddress(yytext);
 #ifdef CDL_FLEX_DEBUG
-		cout << "FLEX DEBUG: found blank line\n" << endl;
+		cout << "FLEX DEBUG: found string " << yytext << "\n" << endl;
 #endif
+		return( token::STRING );
 	};
 
 <INITIAL>\n	{
@@ -234,6 +228,13 @@ TEXT			[[:alnum:][:punct:]]
 		return( token::EOL ); 
 	};
 	
+<*>^[[:blank:]]+/\n	{
+		/* blank line */
+#ifdef CDL_FLEX_DEBUG
+		cout << "FLEX DEBUG: found blank line" << yytext << "\n" << endl;
+#endif
+	};
+
 <*><<EOF>>	{
 #ifdef CDL_FLEX_DEBUG
 		cout << "FLEX DEBUG: found EOF\n" << endl;

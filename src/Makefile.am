@@ -8,7 +8,7 @@ LDFLAGS = -static-libstdc++ -static-libgcc
 # this lists the binaries to produce, the (non-PHONY, binary) targets in
 # the previous manual Makefile
 BUILT_SOURCES = cdlParser.hh stack.hh position.hh location.hh
-AM_YFLAGS = -d
+AM_YFLAGS = -d -Wno-yacc
 bin_PROGRAMS = cvc
 cvc_SOURCES = cvc.cc Cvc.hh \
 	cdlParser.yy cdlScanner.ll \
