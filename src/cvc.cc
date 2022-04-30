@@ -43,6 +43,15 @@ bool gInterrupted = false;  //!< for detecting interrupts
 
 HIST_ENTRY **gHistoryList; //!< readline history
 
+/// \name Initialize static variables
+string EInvalidTerminal::displayMessage = "";
+string EPowerError::displayMessage = "";
+string EQueueError::displayMessage = "";
+string EFatalError::displayMessage = "";
+string EModelError::displayMessage = "";
+string EDatabaseError::displayMessage = "";
+string EResistanceError::displayMessage = "";
+
 /// \name global constants
 ///@{
 CStatus PMOS_ONLY, NMOS_ONLY, NMOS_PMOS, NO_TYPE; //, MIN_CHECK_BITS, MAX_CHECK_BITS;
