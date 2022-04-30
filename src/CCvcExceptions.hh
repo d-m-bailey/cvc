@@ -44,17 +44,19 @@ public:
 
 class EInvalidTerminal : public exception {
 public:
-	string errorMessage = "";
+	static string displayMessage;
+	string errorMessage;
 	EInvalidTerminal(const string theErrorMessage) { errorMessage = theErrorMessage; };
-	const char* what() const noexcept { string myMessage = "Invalid terminal: " + errorMessage; return myMessage.c_str(); }
+	const char* what() const noexcept { displayMessage = "Invalid terminal: " + errorMessage; return displayMessage.c_str(); }
 };
 
 class EModelError : public exception {
 public:
-	string errorMessage = "";
+	static string displayMessage;
+	string errorMessage;
 	EModelError();
 	EModelError(const string theErrorMessage) { errorMessage = theErrorMessage; };
-	const char* what() const noexcept { string myMessage = "Model error: " + errorMessage; return myMessage.c_str(); }
+	const char* what() const noexcept { displayMessage = "Model error: " + errorMessage; return displayMessage.c_str(); }
 };
 
 class EDuplicateInstance : public exception {
@@ -64,18 +66,20 @@ public:
 
 class EDatabaseError : public exception {
 public:
-	string errorMessage = "";
+	static string displayMessage;
+	string errorMessage;
 	EDatabaseError();
 	EDatabaseError(const string theErrorMessage) { errorMessage = theErrorMessage; };
-	const char* what() const noexcept { string myMessage = "Database error:" + errorMessage; return myMessage.c_str(); }
+	const char* what() const noexcept { displayMessage = "Database error:" + errorMessage; return displayMessage.c_str(); }
 };
 
 class EFatalError : public exception {
 public:
-	string errorMessage = "";
+	static string displayMessage;
+	string errorMessage;
 	EFatalError();
 	EFatalError(const string theErrorMessage) { errorMessage = theErrorMessage; };
-	const char* what() const noexcept { string myMessage = "Fatal error:" + errorMessage; return myMessage.c_str(); }
+	const char* what() const noexcept { displayMessage = "Fatal error:" + errorMessage; return displayMessage.c_str(); }
 };
 
 class EBadEnvironment : public exception {
@@ -85,31 +89,33 @@ public:
 
 class EQueueError : public exception {
 public:
-	string errorMessage = "";
+	static string displayMessage;
+	string errorMessage;
 	EQueueError();
 	EQueueError(const string theErrorMessage) { errorMessage = theErrorMessage; };
-	const char* what() const noexcept { string myMessage = "Queue error:" + errorMessage; return myMessage.c_str(); }
+	const char* what() const noexcept { displayMessage = "Queue error:" + errorMessage; return displayMessage.c_str(); }
 };
 
 class EPowerError : public exception {
 public:
-	string errorMessage = "";
+	static string displayMessage;
+	string errorMessage;
 	EPowerError();
 	EPowerError(const string theErrorMessage) { errorMessage = theErrorMessage; };
-	const char* what() const noexcept { string myMessage = "Power error:" + errorMessage; return myMessage.c_str(); }
+	const char* what() const noexcept { displayMessage = "Power error:" + errorMessage; return displayMessage.c_str(); }
 };
 
 class EResistanceError : public exception {
 public:
-	string errorMessage = "";
+	static string displayMessage;
+	string errorMessage;
 	EResistanceError();
 	EResistanceError(const string theErrorMessage) { errorMessage = theErrorMessage; };
-	const char* what() const noexcept { string myMessage = "Resistance error:" + errorMessage; return myMessage.c_str(); }
+	const char* what() const noexcept { displayMessage = "Resistance error:" + errorMessage; return displayMessage.c_str(); }
 };
 
 class EShortFileError : public exception {
 public:
-	string errorMessage = "";
 	const char* what() const noexcept { return "Error reading short file"; }
 };
 
