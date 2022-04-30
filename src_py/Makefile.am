@@ -9,11 +9,13 @@ checkcvc_sources = ResultFile.py \
 	summaryGUI.py \
 	utility.py
 
-all : check_cvc
+all : ;
+
+install : ;
 
 check_cvc : $(checkcvc_sources) check_cvc.spec
 	pyinstaller -F check_cvc.spec --clean
 	cp dist/check_cvc .
 
-install : check_cvc
+install_check_cvc : check_cvc
 	cp check_cvc ${exec_prefix}/bin
