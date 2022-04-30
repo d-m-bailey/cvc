@@ -68,7 +68,7 @@ public:
 //	deviceId_t		warningCount = 0;
 	bool	linked = false;
 
-	inline netId_t	LocalNetCount() { return ( localSignalIdMap.size() - portCount); }
+	inline netId_t	LocalNetCount() { assert(localSignalIdMap.size() >= portCount); return ( localSignalIdMap.size() - portCount); }
 
 	void AddPortSignalIds(CTextList * thePortList_p);
 	void SetSignalIds(CTextList * theSignalList_p, CNetIdVector & theSignalId_v);
