@@ -35,6 +35,11 @@ CTextDeviceIdMap CCircuit::localSubcircuitIdMap;
 
 void CCircuit::AddPortSignalIds(CTextList * thePortList_p) {
 	for (CTextList::iterator text_pit = thePortList_p->begin(); text_pit != thePortList_p->end(); ++text_pit) {
+		if ( localSignalIdMap.count(*text_pit) > 0 ) {
+			stringstream myErrorMessage;
+			myErrorMessage << "duplicate port " << *text_pit << " in " << name << endl;
+			throw EFatalError(myErrorMessage.str());
+		}
 		localSignalIdMap[*text_pit] = portCount++;
 	}
 }
@@ -147,7 +152,8 @@ void CCircuit::CountObjectsAndLinkSubcircuits(unordered_map<text_t, CCircuit *> 
 			}
 			if ( (*subcircuit_ppit)->signalId_v.size() != myChild_p->portCount ) {
 				stringstream myErrorMessage;
-				myErrorMessage << "port mismatch in " << (*subcircuit_ppit)->name << " " << (*subcircuit_ppit)->signalId_v.size() << ":" << myChild_p->portCount << endl;
+				myErrorMessage << "port count mismatch in " << (*subcircuit_ppit)->name << " of " << name \
+					<< " found " << (*subcircuit_ppit)->signalId_v.size() << " expected " << myChild_p->portCount << endl;
 				throw EFatalError(myErrorMessage.str());
 			}
 			myChild_p->instanceCount++;
