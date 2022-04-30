@@ -24,7 +24,7 @@
 %skeleton "lalr1.cc"
 %require "3.0"
 
-%define parser_class_name {CCdlParser}
+%define api.parser.class {CCdlParser}
 
 %define parse.assert
 
@@ -119,7 +119,7 @@ circuitList[after]:
 	};
 
 circuit:
-	SUBCKT interface ENDS EOL {
+	SUBCKT interface ends {
 /**/
 		$circuit = new CCircuit();
 		$circuit->name = $interface->front();
@@ -129,7 +129,7 @@ circuit:
 		delete $interface;
 //		$circuit = NULL;
 	}
-|	SUBCKT interface deviceList ENDS EOL {
+|	SUBCKT interface deviceList ends {
 		$circuit = new CCircuit();
 		$circuit->name = $interface->front();
 		$interface->pop_front();
@@ -305,6 +305,10 @@ resistor:
 		$resistor->parameters = cdlCircuitList.parameterText.SetTextAddress("R", $stringList);	
 		delete $stringList;
 	};
+ends:  /* end of subckt */
+	ENDS EOL {}
+|
+	ENDS STRING EOL {};
 
 %%
 
