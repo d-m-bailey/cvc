@@ -198,7 +198,7 @@ std::string RegexErrorString(std::regex_constants::error_type theErrorCode) {
 /**
  * \brief Converts shell globbing syntax to regex
  *
- * Replaces '*' -> '.*' and '?' -> '.'.\n
+ * Replaces '*' -> '.*', '?' -> '.', '[' -> '\[', and ']' -> '\]'.
  * Combines with original filter to search for both simultaneously.
  */
 std::string FuzzyFilter(std::string theFilter) {
@@ -212,6 +212,16 @@ std::string FuzzyFilter(std::string theFilter) {
 					char_it++;
 					myUseGlob = true;
 				} break;
+			}
+			case '[': {
+				myGlobFilter.replace(char_it, 1, "\\[");
+				char_it++;
+				break;
+			}
+			case ']': {
+				myGlobFilter.replace(char_it, 1, "\\]");
+				char_it++;
+				break;
 			}
 			case '?': { myGlobFilter.replace(char_it, 1, "."); break; }
 			default: break;
