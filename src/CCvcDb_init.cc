@@ -1,7 +1,7 @@
 /*
  * CCvcDb_init.cc
  *
- * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2022 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -343,7 +343,7 @@ void CCvcDb::LinkDevices() {
 	deviceId_t myDeviceCount = 0;
 	instanceId_t myInstanceCount = 0;
 	deviceId_t myPrintCount = 0;
-	register netId_t mySourceNet, myDrainNet, myGateNet; //, myBulkNet;
+	netId_t mySourceNet, myDrainNet, myGateNet; //, myBulkNet;
 	for (CCircuitPtrList::iterator circuit_ppit = cvcCircuitList.begin(); circuit_ppit != cvcCircuitList.end(); circuit_ppit++) {
 		CCircuit * myCircuit_p = *circuit_ppit;
 		if ( myCircuit_p->linked ) {

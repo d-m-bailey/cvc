@@ -1,7 +1,7 @@
 /*
  * CCvcDb_interactive.cc
  *
- * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2022 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -1197,7 +1197,7 @@ void CCvcDb::DumpUnknownLogicalPorts(instanceId_t theCurrentInstanceId, string t
 					mySearchInstance = UNKNOWN_INSTANCE;
 				}
 				if ( mySearchInstance == UNKNOWN_INSTANCE ) {  // source outside hierarchy or input (no source)
-					mySearchInstance == FindNetInstance(myNet, theCurrentInstanceId);
+					mySearchInstance = FindNetInstance(myNet, theCurrentInstanceId);
 				}
 				if ( IsInternalNet(myNet, mySearchInstance) ) continue;  // ignore non ports
 				netId_t port_it;

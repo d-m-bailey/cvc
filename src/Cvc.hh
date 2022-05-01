@@ -1,7 +1,7 @@
 /*
  * Cvc.hh
  *
- * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2022 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -24,7 +24,7 @@
 #ifndef CVC_H_
 #define CVC_H_
 
-#define CVC_VERSION "1.1.1"
+#define CVC_VERSION "1.1.2"
 
 extern bool gDebug_cvc;
 extern bool gSetup_cvc;
@@ -59,6 +59,7 @@ extern char vv_suffix[], vv_trailer[];
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
+#include <array>
 #include <vector>
 #include <iomanip>
 #include <set>
