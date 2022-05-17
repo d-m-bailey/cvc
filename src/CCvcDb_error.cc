@@ -345,6 +345,7 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 		bool myUnrelatedFlag = false;
 		if ( ! myConnections.minGatePower_p ) continue;
 		if ( myConnections.minGatePower_p->type[ANALOG_BIT] && ! cvcParameters.cvcAnalogGates ) continue;  // ignore analog gate errors
+		if ( IsSCRCPower(myConnections.minGatePower_p) ) continue;  // ignore SCRC input (if not logically ok, should yield floating error)
 		if ( myConnections.minGatePower_p->IsRelatedPower(myConnections.minSourcePower_p, netVoltagePtr_v, minNet_v, minNet_v, true, true)
 				&& myConnections.minGatePower_p->IsRelatedPower(myConnections.minDrainPower_p, netVoltagePtr_v, minNet_v, minNet_v, true, true) ) {
 			// if relatives (default), then checks are conditional
@@ -405,6 +406,7 @@ void CCvcDb::FindNmosGateVsSourceErrors() {
 	CheckOppositeLogic(NMOS);
 	cvcCircuitList.PrintAndResetCircuitErrors(this, cvcParameters.cvcCircuitErrorLimit, logFile, errorFile, "! Checking nmos gate vs source errors: ");
 }
+char GATE_LOGIC_CHECK[] = "GateVsSource logic check";
 
 void CCvcDb::FindPmosGateVsSourceErrors() {
 	CFullConnection myConnections;
@@ -420,6 +422,7 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 		bool myUnrelatedFlag = false;
 		if ( ! myConnections.maxGatePower_p ) continue;
 		if ( myConnections.maxGatePower_p->type[ANALOG_BIT] && ! cvcParameters.cvcAnalogGates ) continue;  // ignore analog gate errors
+		if ( IsSCRCPower(myConnections.maxGatePower_p) ) continue;  // ignore SCRC input (if not logically ok, should yield floating error)
 		if ( myConnections.maxGatePower_p->IsRelatedPower(myConnections.maxSourcePower_p, netVoltagePtr_v, maxNet_v, maxNet_v, true, true)
 				&& myConnections.maxGatePower_p->IsRelatedPower(myConnections.maxDrainPower_p, netVoltagePtr_v, maxNet_v, maxNet_v, true, true) ) {
 			// if relatives (default), then checks are conditional
@@ -461,6 +464,22 @@ void CCvcDb::FindPmosGateVsSourceErrors() {
 			if ( myVthFlag && ! cvcParameters.cvcVthGates ) continue;
 		} else {
 			myUnrelatedFlag = true; // if not relatives, always an error
+		}
+		if ( myConnections.maxGatePower_p->type[MAX_CALCULATED_BIT] && cvcParameters.cvcLogicDiodes && ! netVoltagePtr_v[myConnections.gateId].full ) {
+			// If the source is a calculated value and the CVC_LOGIC_DIODE switch is on and there is no current definition,
+			// there is no error if the gate logic value is low (WARNING: set to 0V is just a kludge)
+			// check expected value later
+			debugFile << "EXPECT low for GateVsSource: " << NetName(myConnections.gateId) << " at " << DeviceName(myConnections.deviceId, PRINT_CIRCUIT_ON) << endl;
+			CPower * myPower_p = new CPower(myConnections.gateId);
+			myPower_p->definition = CPower::powerDefinitionText.SetTextAddress(GATE_LOGIC_CHECK);
+			myPower_p->extraData = new CExtraPowerData;
+			myPower_p->minVoltage = UNKNOWN_VOLTAGE;
+			myPower_p->simVoltage = UNKNOWN_VOLTAGE;
+			myPower_p->maxVoltage = UNKNOWN_VOLTAGE;
+			myPower_p->type[INPUT_BIT] = false;
+			myPower_p->extraData->expectedSim = "0";
+			cvcParameters.cvcExpectedLevelPtrList.push_back(myPower_p);
+			continue;  // Don't flag error here
 		}
 		if ( IncrementDeviceError(myConnections.deviceId, PMOS_GATE_SOURCE) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 			if ( myUnrelatedFlag ) {
