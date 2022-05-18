@@ -1056,6 +1056,7 @@ void CCvcDb::Cleanup() {
 	if ( errorFile.is_open() ) errorFile.close();
 	if ( debugFile.is_open() ) debugFile.close();
 	RemoveLock();
+#ifdef CVC_MEMORY_DEBUG
 	try {
 		cvcParameters.cvcPowerPtrList.Clear(leakVoltagePtr_v, netVoltagePtr_v, netCount);  // defined power deleted here
 		if ( gDebug_cvc ) cout << "Cleared power pointer list" << endl;
@@ -1089,6 +1090,7 @@ void CCvcDb::Cleanup() {
 	catch (...) {  // ignore errors freeing malloc memory
 		cout << "INFO: problem with memory cleanup" << endl;
 	}
+#endif
 }
 
 deviceId_t CCvcDb::CountBulkConnections(netId_t theNetId) {

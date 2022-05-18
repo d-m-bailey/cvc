@@ -1318,11 +1318,19 @@ void CCvcDb::ShortSimNets(CEventQueue& theEventQueue, deviceId_t theDeviceId, CC
 		myCalculation = " Limited to min";
 	}
 	if ( theShortVoltage == myMasterVoltage ) {
-		if ( IsSCRCPower(myMasterPower_p) && connectionCount_v[mySlaveNet].sourceDrainType[NMOS] && connectionCount_v[mySlaveNet].sourceDrainType[PMOS] ) {
-			if ( IncrementDeviceError(theDeviceId, LEAK) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
+		if ( IsSCRCPower(myMasterPower_p) && connectionCount_v[mySlaveNet].sourceDrainType[NMOS] && connectionCount_v[mySlaveNet].sourceDrainType[PMOS] && IsMos_(deviceType_v[theDeviceId]) ) {
+			static CFullConnection myConnections;
+			MapDeviceNets(theDeviceId, myConnections);
+			CPower * myOppositePower_p;
+			if ( IsNmos_(deviceType_v[theDeviceId]) ) {
+				myOppositePower_p = ( theDirection == DRAIN_TO_MASTER_SOURCE ) ? myConnections.maxDrainPower_p : myConnections.maxSourcePower_p;
+			} else {  // Pmos
+				myOppositePower_p = ( theDirection == DRAIN_TO_MASTER_SOURCE ) ? myConnections.minDrainPower_p : myConnections.minSourcePower_p;
+			}
+			if ( ! IsSCRCPower(myOppositePower_p)  // don't count both power & ground SCRC
+					&& ( IncrementDeviceError(theDeviceId, LEAK) < cvcParameters.cvcCircuitErrorLimit
+						|| cvcParameters.cvcCircuitErrorLimit == 0 ) ) {
 				errorFile << "! Short Detected: SCRC " << PrintVoltage(myMasterVoltage) << " to output" << endl;
-				static CFullConnection myConnections;
-				MapDeviceNets(theDeviceId, myConnections);
 				PrintDeviceWithAllConnections(deviceParent_v[theDeviceId], myConnections, errorFile);
 				errorFile << endl;
 			}

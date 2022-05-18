@@ -1258,6 +1258,7 @@ void CCvcDb::SetSCRCPower() {
 			if ( myAttemptCount == 0 ) {  // Could not set any gate nets, so set net directly
 				CPower * myFinalMinPower_p = netVoltagePtr_v[minNet_v[net_it].finalNetId].full;
 				CPower * myFinalMaxPower_p = netVoltagePtr_v[maxNet_v[net_it].finalNetId].full;
+				if ( IsSCRCPower(myFinalMinPower_p) && IsSCRCPower(myFinalMaxPower_p) ) continue;  // don't set double SCRC
 				voltage_t myExpectedVoltage = IsSCRCPower(myFinalMinPower_p) ? myFinalMaxPower_p->maxVoltage : myFinalMinPower_p->minVoltage;
 				if ( netVoltagePtr_v[net_it].full ) {
 					if ( netVoltagePtr_v[net_it].full->simVoltage != myExpectedVoltage ) {
@@ -1286,6 +1287,7 @@ size_t CCvcDb::SetSCRCGatePower(netId_t theNetId, CDeviceIdVector & theFirstSour
 		if ( ! IsMos_(deviceType_v[device_it]) ) continue;  // Only process mosfets.
 		CPower * myDrainPower_p = netVoltagePtr_v[theDrain_v[device_it]].full;
 		if ( ! myDrainPower_p ) continue;  // ignore non-power nets
+		if ( GetEquivalentNet(theNetId) == GetEquivalentNet(gateNet_v[device_it]) ) continue;  // ignore gate-drain connections
 		if ( theNoCheckFlag && mySourcePower_p->IsRelatedPower(myDrainPower_p, netVoltagePtr_v, simNet_v, simNet_v, false) ) continue;  // ignore relatives
 		if ( myDrainPower_p->type[POWER_BIT] && (theNoCheckFlag || IsSCRCPower(myDrainPower_p)) ) {  // Mosfet bridges power nets.
 			SetSCRCParentPower(theNetId, device_it, IsPmos_(deviceType_v[device_it]), theSCRCSignalCount, theSCRCIgnoreCount);
@@ -1324,7 +1326,7 @@ void CCvcDb::SetSCRCParentPower(netId_t theNetId, deviceId_t theDeviceId, bool t
 		assert(myExpectedPower_p);
 		if ( myExpectedVoltage == UNKNOWN_VOLTAGE || myExpectedPower_p->type[HIZ_BIT] ) {
 			reportFile << "Warning: " << NetName(theNetId) << ": voltage not set for " << NetName(myParentNet) << " expected " << (theExpectedHighInput ? "high" : "low");
-			reportFile << " found " << (myExpectedVoltage == UNKNOWN_VOLTAGE ? "???" : "Hi-Z") << endl;
+			reportFile << " found " << (myExpectedVoltage == UNKNOWN_VOLTAGE ? "???" : "Hi-Z") << " at " << DeviceName(theDeviceId) << endl;
 			theSCRCIgnoreCount++;
 		} else if ( netVoltagePtr_v[myParentNet].full == NULL ) {
 			debugFile << "Setting net " << NetName(myParentNet) << " to " << PrintVoltage(myExpectedVoltage) << " for " << NetName(gateNet_v[theDeviceId]);
@@ -1348,7 +1350,7 @@ bool CCvcDb::IsSCRCLogicNet(netId_t theNetId) {
 	if ( myMinPower->type[HIZ_BIT] == myMaxPower->type[HIZ_BIT] ) return false;
 	if ( myMinPower->type[MIN_CALCULATED_BIT] || myMaxPower->type[MAX_CALCULATED_BIT] ) return false;
 	if ( connectionCount_v[theNetId].sourceDrainType != NMOS_PMOS ) return false;
-	if ( IsSCRCPower(myMinPower) || IsSCRCPower(myMaxPower) ) return true;
+	if ( IsSCRCPower(myMinPower) ^ IsSCRCPower(myMaxPower) ) return true;
 	return false;
 }
 
