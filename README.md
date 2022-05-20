@@ -28,7 +28,7 @@ Installation
 Requirements:
 - gcc 4.9.3
 - python 2.7.10
-- bison 3.0.1 (only if making changes to parser or compiling from github)
+- bison 3.3 (only if making changes to the parser or compiling from github)
 
 GUI requirements:
 - kivy 1.10.0

@@ -440,6 +440,57 @@ bool CFullConnection::IsPossibleHiZ(CCvcDb * theCvcDb) {
 	return(false);
 }
 
+/**
+ * \brief HasParallelShort: Check connected devices for parallel short.
+ *
+ * Only parallel devices of the same type that are fully on are considered shorted.
+ */
+bool CFullConnection::HasParallelShort(CCvcDb * theCvcDb) {
+	netId_t myDrainId, mySourceId;
+	CFullConnection myParallelDeviceConnections;
+	// Choose the least connected pin as the drain
+	if ( theCvcDb->connectionCount_v[drainId].SourceDrainCount() < theCvcDb->connectionCount_v[sourceId].SourceDrainCount() ) {
+		myDrainId = drainId;
+		mySourceId = sourceId;
+	} else {
+		myDrainId = sourceId;
+		mySourceId = drainId;
+	}
+	modelType_t myModelType = device_p->model_p->type;
+	assert( IsMos_(myModelType) );
+	myModelType = IsNmos_(myModelType) ? NMOS : PMOS;
+	for ( auto device_it = theCvcDb->firstSource_v[myDrainId]; device_it != UNKNOWN_DEVICE; device_it = theCvcDb->nextSource_v[device_it] ) {
+		if ( device_it == deviceId ) continue;  // same device
+		if ( myModelType == NMOS && ! IsNmos_(theCvcDb->deviceType_v[device_it] )) continue;  // skip non-matching device types
+		if ( myModelType == PMOS && ! IsPmos_(theCvcDb->deviceType_v[device_it] )) continue;  // skip non-matching device types
+		if ( theCvcDb->drainNet_v[device_it] != mySourceId ) continue;  // not parallel
+		theCvcDb->MapDeviceNets(device_it, myParallelDeviceConnections);
+		if ( myModelType == NMOS && IsKnownVoltage_(myParallelDeviceConnections.simGateVoltage)
+				&& myParallelDeviceConnections.simGateVoltage > myParallelDeviceConnections.minDrainVoltage + myParallelDeviceConnections.device_p->model_p->Vth ) {
+			return true;
+		} else if ( myModelType == PMOS && IsKnownVoltage_(myParallelDeviceConnections.simGateVoltage)
+				&& myParallelDeviceConnections.simGateVoltage < myParallelDeviceConnections.maxDrainVoltage + myParallelDeviceConnections.device_p->model_p->Vth ) {
+			return true;
+		}
+	}
+	for ( auto device_it = theCvcDb->firstDrain_v[myDrainId]; device_it != UNKNOWN_DEVICE; device_it = theCvcDb->nextDrain_v[device_it] ) {
+		if ( device_it == deviceId ) continue;  // same device
+		if ( myModelType == NMOS && ! IsNmos_(theCvcDb->deviceType_v[device_it] )) continue;  // skip non-matching device types
+		if ( myModelType == PMOS && ! IsPmos_(theCvcDb->deviceType_v[device_it] )) continue;  // skip non-matching device types
+		if ( theCvcDb->sourceNet_v[device_it] != mySourceId ) continue;  // not parallel
+		theCvcDb->MapDeviceNets(device_it, myParallelDeviceConnections);
+		if ( myModelType == NMOS && IsKnownVoltage_(myParallelDeviceConnections.simGateVoltage)
+				&& myParallelDeviceConnections.simGateVoltage > myParallelDeviceConnections.minSourceVoltage + myParallelDeviceConnections.device_p->model_p->Vth ) {
+			return true;
+		} else if ( myModelType == PMOS && IsKnownVoltage_(myParallelDeviceConnections.simGateVoltage)
+				&& myParallelDeviceConnections.simGateVoltage < myParallelDeviceConnections.maxSourceVoltage + myParallelDeviceConnections.device_p->model_p->Vth ) {
+			return true;
+		}
+	}
+	return false;
+
+}
+
 bool CFullConnection::IsTransferGate(deviceId_t theNmos, deviceId_t thePmos, CCvcDb * theCvcDb) {
 	netId_t myPmosGateNet = theCvcDb->gateNet_v[thePmos];
 	string myOrigin = ( theCvcDb->inverterNet_v[myPmosGateNet] == UNKNOWN_NET )

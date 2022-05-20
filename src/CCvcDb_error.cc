@@ -1020,8 +1020,10 @@ void CCvcDb::FindFloatingInputErrors() {
 						deviceStatus_v[device_it][SIM_INACTIVE] = true;  // ignore true floating input gates (not possible floating)
 					}
 					if ( cvcParameters.cvcIgnoreVthFloating && IsAlwaysOff(myConnections) ) continue;  // skips Hi-Z input that is never on
-					if ( ! myHasLeakPath && cvcParameters.cvcIgnoreNoLeakFloating
-							&& connectionCount_v[net_it].SourceDrainCount() == 0 ) continue;  // skip no leak floating
+					bool myIsPhysicallyFloating = connectionCount_v[net_it].SourceDrainCount() == 0;
+					if ( ! myHasLeakPath && cvcParameters.cvcIgnoreNoLeakFloating && myIsPhysicallyFloating ) continue;  // skip no leak floating
+					bool myHasParallelShort = myConnections.HasParallelShort(this);
+					if ( myHasParallelShort && ( cvcParameters.cvcIgnoreNoLeakFloating || ! myIsPhysicallyFloating ) ) continue;  // skip devices that have source/drain shorted
 					if ( myHasLeakPath || connectionCount_v[net_it].SourceDrainCount() == 0 ) {  // physically floating gates too
 						if ( IncrementDeviceError(myConnections.deviceId, HIZ_INPUT) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
 							if ( ! myHasLeakPath ) errorFile << "* No leak path" << endl;
@@ -1043,6 +1045,7 @@ void CCvcDb::FindFloatingInputErrors() {
 			if ( IsFloatingGate(myConnections) ) continue;  // Already processed previously
 			for ( deviceId_t device_it = firstGate_v[net_it]; device_it != UNKNOWN_DEVICE; device_it = nextGate_v[device_it] ) {
 				MapDeviceNets(device_it, myConnections);
+				if ( myConnections.HasParallelShort(this) ) continue;  // skip devices that have source/drain shorted
 				bool myHasLeakPath = HasLeakPath(myConnections);
 				if ( myHasLeakPath ) {
 					if ( IncrementDeviceError(myConnections.deviceId, HIZ_INPUT) < cvcParameters.cvcCircuitErrorLimit || cvcParameters.cvcCircuitErrorLimit == 0 ) {
