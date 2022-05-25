@@ -1197,12 +1197,12 @@ void CCvcDb::DumpUnknownLogicalPorts(instanceId_t theCurrentInstanceId, string t
 					mySearchInstance = UNKNOWN_INSTANCE;
 				}
 				if ( mySearchInstance == UNKNOWN_INSTANCE ) {  // source outside hierarchy or input (no source)
-					mySearchInstance == FindNetInstance(myNet, theCurrentInstanceId);
+					mySearchInstance = FindNetInstance(myNet, theCurrentInstanceId);
 				}
 				if ( IsInternalNet(myNet, mySearchInstance) ) continue;  // ignore non ports
-				netId_t port_it;
+				//netId_t port_it;
 				CInstance * mySearchInstance_p;
-				CCircuit * mySearchCircuit_p;
+				//CCircuit * mySearchCircuit_p;
 				text_t myLocalNetName = NULL;
 				while ( mySearchInstance != theCurrentInstanceId && IsSubcircuitOf(mySearchInstance, theCurrentInstanceId) && ! myNetFound ) {
 					// unfortunately requires 2 reverse searches. port given global net, and name given port
@@ -1220,8 +1220,8 @@ void CCvcDb::DumpUnknownLogicalPorts(instanceId_t theCurrentInstanceId, string t
 				}
 				if ( ! myNetFound && mySearchInstance == theCurrentInstanceId ) {  // include internal nets of top level
 					mySearchInstance_p = instancePtr_v[theCurrentInstanceId];
-					mySearchCircuit_p = mySearchInstance_p->master_p;
-					netId_t mySearchLimit = mySearchInstance_p->localToGlobalNetId_v.size();
+					//mySearchCircuit_p = mySearchInstance_p->master_p;
+					//netId_t mySearchLimit = mySearchInstance_p->localToGlobalNetId_v.size();
 					myLocalNetName = GetLocalNetName(theCurrentInstanceId, myNet);
 					if ( myLocalNetName != NULL ) {
 						myNetFound = regex_match(myLocalNetName, mySearchPattern);
