@@ -9,7 +9,7 @@ LDFLAGS = -static-libstdc++ -static-libgcc
 # the previous manual Makefile
 BUILT_SOURCES = cdlParser.hh stack.hh position.hh location.hh
 AM_YFLAGS = -d -Wno-yacc
-bin_PROGRAMS = cvc
+bin_PROGRAMS = cvc-rv
 cvc_SOURCES = cvc.cc Cvc.hh \
 	cdlParser.yy cdlScanner.ll \
 	stack.hh position.hh location.hh \
