@@ -60,13 +60,13 @@ void CInstance::AssignTopGlobalIDs(CCvcDb * theCvcDb_p, CCircuit * theMaster_p) 
 	instanceId_t myLastSubcircuitId = theMaster_p->subcircuitPtr_v.size();
 	instanceId_t myNewInstanceId;
 	for (instanceId_t subcircuit_it = 0; subcircuit_it < myLastSubcircuitId; subcircuit_it++) {
-		if (theMaster_p->subcircuitPtr_v[subcircuit_it]->master_p->deviceCount > 0) {
+		//if (theMaster_p->subcircuitPtr_v[subcircuit_it]->master_p->deviceCount > 0) {
 			myNewInstanceId = firstSubcircuitId + subcircuit_it;
 			CDevice * mySubcircuit_p = theMaster_p->subcircuitPtr_v[subcircuit_it];
 			if ( mySubcircuit_p->master_p->instanceId_v.size() == 0 ) mySubcircuit_p->master_p->AllocateInstances(theCvcDb_p, myNewInstanceId);
 			theCvcDb_p->instancePtr_v[myNewInstanceId] = new CInstance;
 			theCvcDb_p->instancePtr_v[myNewInstanceId]->AssignGlobalIDs(theCvcDb_p, myNewInstanceId, mySubcircuit_p, 0, this, NOT_PARALLEL);
-		}
+		//}
 	}
 	theCvcDb_p->netParent_v.shrink_to_fit();
 	theCvcDb_p->deviceParent_v.shrink_to_fit();
@@ -133,11 +133,11 @@ void CInstance::AssignGlobalIDs(CCvcDb * theCvcDb_p, const instanceId_t theInsta
 	for (instanceId_t subcircuit_it = 0; subcircuit_it < myLastSubcircuitId; subcircuit_it++) {
 		myNewInstanceId = firstSubcircuitId + subcircuit_it;
 		CDevice * mySubcircuit_p = master_p->subcircuitPtr_v[subcircuit_it];
-		if (mySubcircuit_p->master_p->deviceCount > 0) {
+		//if (mySubcircuit_p->master_p->deviceCount > 0) {
 			if ( mySubcircuit_p->master_p->instanceId_v.size() == 0 ) mySubcircuit_p->master_p->AllocateInstances(theCvcDb_p, myNewInstanceId);
 			theCvcDb_p->instancePtr_v[myNewInstanceId] = new CInstance;
 			theCvcDb_p->instancePtr_v[myNewInstanceId]->AssignGlobalIDs(theCvcDb_p, myNewInstanceId, mySubcircuit_p, theInstanceId, this, isParallel);
-		}
+		//}
 	}
 }
 
