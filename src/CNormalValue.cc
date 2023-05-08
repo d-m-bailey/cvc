@@ -33,6 +33,7 @@ CNormalValue::CNormalValue(string theStringValue) {
 		case 'G': {	myRealValue *= pow(10, 9); break; }
 		case 'M': {	myRealValue *= pow(10, 6); break; }
 		case 'K': {	myRealValue *= pow(10, 3); break; }
+		case 'k': {	myRealValue *= pow(10, 3); break; }
 		case 'm': {	myRealValue *= pow(10, -3); break; }
 		case 'u': {	myRealValue *= pow(10, -6); break; }
 		case 'n': {	myRealValue *= pow(10, -9); break; }

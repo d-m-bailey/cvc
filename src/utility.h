@@ -48,10 +48,10 @@ std::string int_to_hex( T i )
 		|| sscanf((string).c_str(), "%[-+]%d%1s", &vv_sign, &vv_integer, vv_trailer) == 2 \
 		|| sscanf((string).c_str(), "%d.%d%1s", &vv_integer, &vv_fraction, vv_trailer) == 2 \
 		|| sscanf((string).c_str(), "%d%1s", &vv_integer, vv_trailer) == 1 \
-		|| sscanf((string).c_str(), "%[-+]%d.%d%1[afpnumKMGTPE]%1s", &vv_sign, &vv_integer, &vv_fraction, vv_suffix, vv_trailer) == 4 \
-		|| sscanf((string).c_str(), "%[-+]%d%1[afpnumKMGTPE]%1s", &vv_sign, &vv_integer, vv_suffix, vv_trailer) == 3 \
-		|| sscanf((string).c_str(), "%d.%d%1[afpnumKMGTPE]%1s", &vv_integer, &vv_fraction, vv_suffix, vv_trailer) == 3 \
-		|| sscanf((string).c_str(), "%d%1[afpnumKMGTPE]%1s", &vv_integer, vv_suffix, vv_trailer) == 2 \
+		|| sscanf((string).c_str(), "%[-+]%d.%d%1[afpnumkKMGTPE]%1s", &vv_sign, &vv_integer, &vv_fraction, vv_suffix, vv_trailer) == 4 \
+		|| sscanf((string).c_str(), "%[-+]%d%1[afpnumkKMGTPE]%1s", &vv_sign, &vv_integer, vv_suffix, vv_trailer) == 3 \
+		|| sscanf((string).c_str(), "%d.%d%1[afpnumkKMGTPE]%1s", &vv_integer, &vv_fraction, vv_suffix, vv_trailer) == 3 \
+		|| sscanf((string).c_str(), "%d%1[afpnumkKMGTPE]%1s", &vv_integer, vv_suffix, vv_trailer) == 2 \
 )
 
 char * CurrentTime();

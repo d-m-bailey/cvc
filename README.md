@@ -30,8 +30,8 @@ Requirements:
 - python 2.7.10
 
 The following are only required if making changes to the parser or compiling from github
-- bison 3.3
-- automake 1.14.1
+- bison 3.3.2
+- automake 1.16.1
 
 GUI requirements:
 - kivy 1.10.0

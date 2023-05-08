@@ -62,7 +62,7 @@ std::string PrintToleranceParameter(std::string definition, int parameter, int s
 
 std::string AddSiSuffix(float theValue) {
 	char myFormattedString[64];
-	const string myBigSuffix = "KMGTPE";
+	const string myBigSuffix = "kMGTPE";
 	const string mySmallSuffix = "munpfa";
 	int myIndex = 0;
 	while ( abs(theValue) > 1000 && myIndex < 6 ) {
