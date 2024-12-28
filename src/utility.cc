@@ -1,7 +1,7 @@
 /*
  * utility.cc
  *
- * Copyright 2014-2018 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2024 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -30,7 +30,7 @@
 #include <time.h>
 
 void * xmalloc (size_t size) {
-	register void *value = malloc (size);
+	void *value = malloc (size);
 	if (value == 0) {
 		perror ("virtual memory exhausted");
 		exit (1);
