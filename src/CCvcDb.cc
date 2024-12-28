@@ -2350,10 +2350,19 @@ void CCvcDb::CheckConnections() {
 }
 
 void CCvcDb::SetInverterHighLow(netId_t theNetId, netId_t theMaxNetId) {
+	static int myLoopCount = 0;
 	bool myDebug = false;
+	if ( ++myLoopCount > netCount ) {
+		// Original theMaxNetId might be outside of loop. This will cause recursive subroutine overflow.
+		// This detects the recursion past the total net counts and resets theMaxNetId.
+		theMaxNetId = theNetId;
+		myLoopCount = 0;
+	}
 	if ( inverterNet_v[theNetId] == UNKNOWN_NET ) {
+		myLoopCount = 0;
 		return;
 	} else if ( inverterNet_v[theNetId] == theMaxNetId ) { // prevent looping
+		myLoopCount = 0;
 		return;
 	} else {
 		netId_t myInputId = inverterNet_v[theNetId];
@@ -2364,10 +2373,19 @@ void CCvcDb::SetInverterHighLow(netId_t theNetId, netId_t theMaxNetId) {
 }
 
 netId_t CCvcDb::SetInverterInput(netId_t theNetId, netId_t theMaxNetId) {
+	static int myLoopCount = 0;
 	bool myDebug = false;
+	if ( ++myLoopCount > netCount ) {
+		// Original theMaxNetId might be outside of loop. This will cause recursive subroutine overflow.
+		// This detects the recursion past the total net counts and resets theMaxNetId.
+		theMaxNetId = theNetId;
+		myLoopCount = 0;
+	}
 	if ( inverterNet_v[theNetId] == UNKNOWN_NET ) {
+		myLoopCount = 0;
 		return(theNetId);
 	} else if ( inverterNet_v[theNetId] == theMaxNetId ) { // prevent looping
+		myLoopCount = 0;
 		return(theMaxNetId);
 	} else {
 		netId_t myInputId = inverterNet_v[theNetId];
