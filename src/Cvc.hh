@@ -41,6 +41,7 @@ extern char vv_suffix[], vv_trailer[];
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <array>
 #include <bitset>
 #include <cassert>
 #include <cerrno>

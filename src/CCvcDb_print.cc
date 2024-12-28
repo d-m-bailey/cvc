@@ -1,7 +1,7 @@
 /*
  * CCvcDb_print.cc
  *
- * Copyright 2014-2020 D. Mitch Bailey  cvc at shuharisystem dot com
+ * Copyright 2014-2024 D. Mitch Bailey  cvc at shuharisystem dot com
  *
  * This file is part of cvc.
  *
@@ -552,7 +552,7 @@ void CCvcDb::PrintDeviceWithAllConnections(instanceId_t theParentId, CFullConnec
 			PrintAllTerminalConnections(DRAIN, theConnections, theErrorFile, theIncludeLeakVoltage);
 		break; }
 		default: {
-			throw EDatabaseError("Invalid device type: " + theConnections.device_p->model_p->type);
+			throw EDatabaseError("Invalid device type: " + to_string(theConnections.device_p->model_p->type));
 		}
 	}
 }
@@ -582,7 +582,7 @@ void CCvcDb::PrintDeviceWithSimConnections(instanceId_t theParentId, CFullConnec
 			PrintSimTerminalConnections(DRAIN, theConnections, theErrorFile);
 		break; }
 		default: {
-			throw EDatabaseError("Invalid device type: " + theConnections.device_p->model_p->type);
+			throw EDatabaseError("Invalid device type: " + to_string(theConnections.device_p->model_p->type));
 		}
 	}
 }
@@ -704,7 +704,7 @@ void CCvcDb::PrintAllTerminalConnections(terminal_t theTerminal, CFullConnection
 				myMaxLeakVoltageString = PrintVoltage(theConnections.maxBulkLeakVoltage, (CPower *) NULL);;
 			}
 		break; }
-		default: { throw EDatabaseError("Invalid terminal type: " + theTerminal); }
+		default: { throw EDatabaseError("Invalid terminal type: " + to_string(theTerminal)); }
 	}
 	theErrorFile << NetName(myNetId) << endl;
 	theErrorFile << " Min: " << NetName(myMinNetId) << NetVoltageSuffix(myMinPowerDelimiter, myMinVoltageString, myMinResistance, myMinLeakVoltageString) << endl;
@@ -750,7 +750,7 @@ void CCvcDb::PrintSimTerminalConnections(terminal_t theTerminal, CFullConnection
 			mySimVoltageString = PrintVoltage(theConnections.simBulkVoltage, theConnections.simBulkPower_p);
 			mySimPowerDelimiter = PowerDelimiter_(theConnections.simBulkPower_p, SIM_CALCULATED_BIT);
 		break; }
-		default: { throw EDatabaseError("Invalid terminal type: " + theTerminal); }
+		default: { throw EDatabaseError("Invalid terminal type: " + to_string(theTerminal)); }
 	}
 	theErrorFile << NetName(myNetId) << endl;
 	theErrorFile << " Sim: " << NetName(mySimNetId) << NetVoltageSuffix(mySimPowerDelimiter, mySimVoltageString, mySimResistance) << endl;
