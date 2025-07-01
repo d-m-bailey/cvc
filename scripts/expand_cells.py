@@ -207,7 +207,7 @@ def PrintSmallCells(theCellOverrideList, theTopCell):
     """
     myCircuit = gNetlist[theTopCell]
     myCircuit['checked'] = True
-    for instance_it in myCircuit['instances'].keys():
+    for instance_it in list(myCircuit['instances'].keys()):
         if instance_it not in gNetlist:
             print >> sys.stderr, "missing subcircuit definition for " + instance_it
             continue
