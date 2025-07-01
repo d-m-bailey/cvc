@@ -1,0 +1,9 @@
+ERROR: invalid format abc
+Traceback (most recent call last):
+  File "expand_cells.py", line 304, in <module>
+    main(sys.argv[1:])
+  File "expand_cells.py", line 296, in main
+    myCellOverrideList = ReadCellOverrides(argv[0])
+  File "expand_cells.py", line 68, in ReadCellOverrides
+    if myOverrideError: raise
+TypeError: exceptions must be old-style classes or derived from BaseException, not NoneType
