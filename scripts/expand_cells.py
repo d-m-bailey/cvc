@@ -96,6 +96,7 @@ def ReadNetlist(theCDLFileName, theCellOverrideList):
         if line_it.startswith(".INCLUDE"):
             myWordList = line_it.split()
             myIncludeFile = myWordList[1]
+            myIncludeFile = re.sub(r'"', '', myIncludeFile)
             print >> sys.stderr, "Reading from " + myIncludeFile
             myLongLines += ReadNetlist(myIncludeFile, theCellOverrideList)
         elif line_it.startswith("+"):
