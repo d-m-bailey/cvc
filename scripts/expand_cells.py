@@ -96,7 +96,14 @@ def ReadNetlist(theCDLFileName, theCellOverrideList):
         if line_it.startswith(".INCLUDE"):
             myWordList = line_it.split()
             myIncludeFile = myWordList[1]
-            myIncludeFile = re.sub(r'"', '', myIncludeFile)
+            """
+            To read INCLUDE "$dir/rules.antenna" statement
+                1. Filename enclosed by quotation marks (")
+                2. Using env variable ($...)
+            """
+            myIncludeFile = re.sub(r'"', '', myIncludeFile)     #1
+            if re.match(r'\$[^/]+', myIncludeFile):
+                myIncludeFile = os.path.expandvars(myIncludeFile)   #2
             print >> sys.stderr, "Reading from " + myIncludeFile
             myLongLines += ReadNetlist(myIncludeFile, theCellOverrideList)
         elif line_it.startswith("+"):
