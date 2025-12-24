@@ -305,8 +305,8 @@ public:
 	void IgnoreUnusedDevices();
 	void SetSimPower(propagation_t thePropagationType, CNetIdSet & theNewNetSet = EmptySet);
 
-	void SetInverterHighLow(netId_t theNetId, netId_t theMaxNetId);
-	netId_t SetInverterInput(netId_t theNetId, netId_t theMaxNetId);
+	void SetInverterHighLow(netId_t theNetId, set<netId_t> & theInverterNets, netId_t theLoopCount);
+	netId_t SetInverterInput(netId_t theNetId, set<netId_t> & theInverterNets, netId_t theLoopCount);
 	void SetInverters();
 
 	// CCvcDb-utility
