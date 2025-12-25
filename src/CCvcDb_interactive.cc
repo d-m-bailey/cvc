@@ -306,16 +306,6 @@ void CCvcDb::PrintNets(instanceId_t theCurrentInstanceId, string theFilter, bool
 			mySignal_v[pair_pit->second] = pair_pit->first;
 		}
 		for ( netId_t net_it = 0; net_it < myMasterCircuit_p->localSignalIdMap.size(); net_it++ ) {
-			if ( net_it == myMasterCircuit_p->portCount && net_it != 0 ) {
-				reportFile << "Ports:" << endl;
-				sort(mySearchList.begin(), mySearchList.end());
-				for ( size_t myIndex = 0; myIndex < mySearchList.size(); myIndex++ ) {
-					reportFile << mySearchList[myIndex] << endl;
-				}
-				reportFile << "Displayed " << mySearchList.size() << "/" << myMatchCount << " matches" << endl;
-				myMatchCount = 0;
-				mySearchList.clear();
-			}
 			myGlobalNetId = instancePtr_v[theCurrentInstanceId]->localToGlobalNetId_v[net_it];
 			string	myGlobalNet = "";
 			if ( thePrintSubcircuitNameFlag ) {
@@ -329,6 +319,16 @@ void CCvcDb::PrintNets(instanceId_t theCurrentInstanceId, string theFilter, bool
 				if ( myMatchCount++ < cvcParameters.cvcSearchLimit ) {
 					mySearchList.push_back(myNetString.str());
 				}
+			}
+			if ( (net_it + 1) == myMasterCircuit_p->portCount ) {
+				reportFile << "Ports:" << endl;
+				sort(mySearchList.begin(), mySearchList.end());
+				for ( size_t myIndex = 0; myIndex < mySearchList.size(); myIndex++ ) {
+					reportFile << mySearchList[myIndex] << endl;
+				}
+				reportFile << "Displayed " << mySearchList.size() << "/" << myMatchCount << " matches" << endl;
+				myMatchCount = 0;
+				mySearchList.clear();
 			}
 		}
 		reportFile << "Internal nets:" << endl;
