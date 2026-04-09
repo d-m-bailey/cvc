@@ -12,7 +12,7 @@ AM_INIT_AUTOMAKE([foreign])
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
-AC_PROG_LEX
+AC_PROG_LEX([yywrap])
 AC_PROG_YACC
 
 # Checks for libraries.
